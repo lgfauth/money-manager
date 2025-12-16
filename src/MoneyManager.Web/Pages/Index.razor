@@ -1,0 +1,559 @@
+@page "/"
+@page "/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@using MoneyManager.Web.Services
+@attribute [Authorize]
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject IDashboardService DashboardService
+@implements IAsyncDisposable
+
+<PageTitle>Dashboard - MoneyManager</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="mb-2">
+                <i class="fas fa-chart-line text-primary"></i> Dashboard Financeiro
+            </h1>
+            <p class="text-muted">Visão geral das suas finanças</p>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando dashboard...</p>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> @errorMessage
+                <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+            </div>
+        }
+
+        <!-- Saldo Total das Contas -->
+        <div class="row g-4 mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-4">
+                    <h6 class="text-muted mb-2">SALDO LÍQUIDO</h6>
+                    <h2 class="display-5 fw-bold text-primary mb-0">R$ @liquidBalance.ToString("N2")</h2>
+                    <small class="text-muted">Corrente + Poupança + Dinheiro</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body text-center py-4">
+                    <h6 class="text-muted mb-2">PATRIMÔNIO TOTAL</h6>
+                    <h2 class="display-5 fw-bold text-success mb-0">R$ @totalBalance.ToString("N2")</h2>
+                    <small class="text-muted">Líquido + Investimentos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Métricas -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="stat-card success">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-success">R$ @monthlyIncome.ToString("N2")</div>
+                        <div class="stat-label">Receitas do Mês</div>
+                    </div>
+                    <i class="fas fa-arrow-up fa-3x text-muted opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="stat-card danger">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-danger">R$ @monthlyExpenses.ToString("N2")</div>
+                        <div class="stat-label">Despesas do Mês</div>
+                    </div>
+                    <i class="fas fa-arrow-down fa-3x text-muted opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="stat-card warning">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-warning">@budgetUsedPercentage.ToString("N1")%</div>
+                        <div class="stat-label">Orçamento Utilizado</div>
+                    </div>
+                    <i class="fas fa-calculator fa-3x text-muted opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row g-4 mb-4">
+        <!-- Gráfico: Orçamento Utilizado vs Planejado -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Orçamento do Mês</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="budgetChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico: Receitas vs Despesas -->
+        <div class="col-12 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Receitas vs Despesas</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="incomeExpenseChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de Contas -->
+    <div class="row g-4 mb-4">
+        <!-- Saldo por Conta Líquida -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Contas Líquidas</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="liquidAccountsChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cartões de Crédito -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-credit-card"></i> Cartões de Crédito</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="creditCardsChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investimentos -->
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Investimentos</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="investmentsChart" style="max-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Limite de Crédito -->
+    @if (creditCardLimits.Any())
+    {
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Limite Disponível - Cartões de Crédito</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            @foreach (var card in creditCardLimits)
+                            {
+                                <div class="col-12 col-md-6 col-lg-4">
+                                    <div class="border rounded p-3">
+                                        <h6 class="mb-2">@card.CardName</h6>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <small class="text-muted">Limite:</small>
+                                            <strong>R$ @card.CreditLimit.ToString("N2")</strong>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <small class="text-muted">Usado:</small>
+                                            <span class="text-danger">R$ @card.UsedAmount.ToString("N2")</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <small class="text-muted">Disponível:</small>
+                                            <span class="text-success fw-bold">R$ @card.AvailableAmount.ToString("N2")</span>
+                                        </div>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar @GetProgressBarClass(card.UsedPercentage)" 
+                                                 role="progressbar" 
+                                                 style="width: @card.UsedPercentage.ToString("N1")%"
+                                                 aria-valuenow="@card.UsedPercentage" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                @card.UsedPercentage.ToString("N1")%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Transações Recentes -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Transações Recentes</h5>
+                    <a href="/transactions" class="btn btn-primary btn-sm">
+                        <i class="fas fa-eye"></i> Ver todas
+                    </a>
+                </div>
+                <div class="card-body">
+                    @if (recentTransactions.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th>Categoria</th>
+                                        <th>Conta</th>
+                                        <th class="text-end">Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transaction in recentTransactions)
+                                    {
+                                        <tr>
+                                            <td>@transaction.Date.ToString("dd/MM/yyyy")</td>
+                                            <td>@transaction.Description</td>
+                                            <td>
+                                                <span class="badge @GetCategoryBadgeClass(transaction.Type)">@GetTransactionTypeLabel(transaction.Type)</span>
+                                                <span class="badge bg-light text-dark ms-1">@transaction.Category</span>
+                                            </td>
+                                            <td>@transaction.Account</td>
+                                            <td class="text-end @GetValueClass(transaction.Type)">
+                                                @(transaction.Type == "Income" ? "+" : "-") R$ @Math.Abs(transaction.Amount).ToString("N2")
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhuma transação encontrada</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+@code {
+private decimal totalBalance = 0m;
+private decimal liquidBalance = 0m;
+private decimal monthlyIncome = 0m;
+private decimal monthlyExpenses = 0m;
+private decimal budgetUsedPercentage = 0m;
+private decimal plannedBudget = 0m;
+
+private List<RecentTransactionDto> recentTransactions = new();
+private List<AccountBalanceDto> accountBalances = new();
+private List<AccountBalanceDto> creditCardBalances = new();
+private List<AccountBalanceDto> investmentBalances = new();
+private List<CreditCardLimitDto> creditCardLimits = new();
+private bool isLoading = true;
+private string? errorMessage;
+
+private bool chartsRendered = false;
+
+protected override async Task OnInitializedAsync()
+{
+    await LoadDashboardData();
+}
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (!isLoading && !chartsRendered && accountBalances != null)
+    {
+        chartsRendered = true;
+        await RenderCharts();
+    }
+}
+
+private async Task LoadDashboardData()
+{
+    isLoading = true;
+    errorMessage = null;
+
+    try
+    {
+        var summary = await DashboardService.GetDashboardSummaryAsync();
+
+        totalBalance = summary.TotalBalance;
+        liquidBalance = summary.LiquidBalance;
+        monthlyIncome = summary.MonthlyIncome;
+        monthlyExpenses = summary.MonthlyExpenses;
+        budgetUsedPercentage = summary.BudgetUsedPercentage;
+        plannedBudget = summary.PlannedBudget;
+        accountBalances = summary.AccountBalances;
+        creditCardBalances = summary.CreditCardBalances;
+        investmentBalances = summary.InvestmentBalances;
+        creditCardLimits = summary.CreditCardLimits;
+        recentTransactions = summary.RecentTransactions;
+    }
+    catch (Exception ex)
+    {
+        errorMessage = $"Erro ao carregar dados do dashboard: {ex.Message}";
+        Console.WriteLine($"Erro: {ex}");
+    }
+    finally
+    {
+        isLoading = false;
+    }
+}
+
+    private async Task RenderCharts()
+    {
+        try
+        {
+            // Pequeno delay para garantir que o DOM está pronto
+            await Task.Delay(100);
+            
+            await RenderBudgetChart();
+            await RenderIncomeExpenseChart();
+            await RenderLiquidAccountsChart();
+            await RenderCreditCardsChart();
+            await RenderInvestmentsChart();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar gráficos: {ex.Message}");
+        }
+    }
+
+    private async Task RenderBudgetChart()
+    {
+        try
+        {
+            string[] chartLabels;
+            double[] chartData;
+            string[] chartColors;
+
+            if (plannedBudget == 0)
+            {
+                chartLabels = new[] { "Sem orçamento definido" };
+                chartData = new[] { 1.0 };
+                chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
+            }
+            else
+            {
+                var usedBudget = monthlyExpenses;
+                var remainingBudget = plannedBudget - usedBudget;
+                if (remainingBudget < 0) remainingBudget = 0;
+
+                chartLabels = new[] { "Utilizado", "Disponível" };
+                chartData = new[] { (double)usedBudget, (double)remainingBudget };
+                chartColors = new[] { "rgba(220, 53, 69, 0.7)", "rgba(40, 167, 69, 0.7)" };
+            }
+
+            await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "budgetChart", chartLabels, chartData, chartColors);
+            Console.WriteLine("Budget chart renderizado com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar budget chart: {ex.Message}");
+        }
+    }
+
+    private async Task RenderIncomeExpenseChart()
+    {
+        try
+        {
+            string[] chartLabels;
+            double[] chartData;
+            string[] chartColors;
+
+            if (monthlyIncome == 0 && monthlyExpenses == 0)
+            {
+                chartLabels = new[] { "Sem movimentações" };
+                chartData = new[] { 1.0 };
+                chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
+            }
+            else
+            {
+                chartLabels = new[] { "Receitas", "Despesas" };
+                chartData = new[] { (double)monthlyIncome, (double)monthlyExpenses };
+                chartColors = new[] { "rgba(40, 167, 69, 0.7)", "rgba(220, 53, 69, 0.7)" };
+            }
+
+            await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "incomeExpenseChart", chartLabels, chartData, chartColors);
+            Console.WriteLine("Income/Expense chart renderizado com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar income/expense chart: {ex.Message}");
+        }
+    }
+
+    private async Task RenderLiquidAccountsChart()
+    {
+        try
+        {
+            string[] chartLabels;
+            double[] chartData;
+            string[] chartColors;
+
+            if (!accountBalances.Any())
+            {
+                chartLabels = new[] { "Sem contas" };
+                chartData = new[] { 0.0 };
+                chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
+            }
+            else
+            {
+                chartLabels = accountBalances.Select(a => a.AccountName).ToArray();
+                chartData = accountBalances.Select(a => (double)a.Balance).ToArray();
+                chartColors = accountBalances.Select((_, i) => GetChartColor(i)).ToArray();
+            }
+
+            await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "liquidAccountsChart", chartLabels, chartData, chartColors);
+            Console.WriteLine("Liquid accounts chart renderizado com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar liquid accounts chart: {ex.Message}");
+        }
+    }
+
+    private async Task RenderCreditCardsChart()
+    {
+        try
+        {
+            string[] chartLabels;
+            double[] chartData;
+            string[] chartColors;
+
+            if (!creditCardBalances.Any())
+            {
+                chartLabels = new[] { "Sem cartões" };
+                chartData = new[] { 0.0 };
+                chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
+            }
+            else
+            {
+                chartLabels = creditCardBalances.Select(a => a.AccountName).ToArray();
+                chartData = creditCardBalances.Select(a => (double)Math.Abs(a.Balance)).ToArray();
+                chartColors = creditCardBalances.Select((_, i) => "rgba(220, 53, 69, 0.7)").ToArray();
+            }
+
+            await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "creditCardsChart", chartLabels, chartData, chartColors);
+            Console.WriteLine("Credit cards chart renderizado com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar credit cards chart: {ex.Message}");
+        }
+    }
+
+    private async Task RenderInvestmentsChart()
+    {
+        try
+        {
+            string[] chartLabels;
+            double[] chartData;
+            string[] chartColors;
+
+            if (!investmentBalances.Any())
+            {
+                chartLabels = new[] { "Sem investimentos" };
+                chartData = new[] { 0.0 };
+                chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
+            }
+            else
+            {
+                chartLabels = investmentBalances.Select(a => a.AccountName).ToArray();
+                chartData = investmentBalances.Select(a => (double)a.Balance).ToArray();
+                chartColors = investmentBalances.Select((_, i) => "rgba(40, 167, 69, 0.7)").ToArray();
+            }
+
+            await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "investmentsChart", chartLabels, chartData, chartColors);
+            Console.WriteLine("Investments chart renderizado com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar investments chart: {ex.Message}");
+        }
+    }
+
+    private string GetChartColor(int index)
+    {
+        var colors = new[]
+        {
+            "rgba(54, 162, 235, 0.7)",
+            "rgba(255, 159, 64, 0.7)",
+            "rgba(153, 102, 255, 0.7)",
+            "rgba(255, 205, 86, 0.7)",
+            "rgba(75, 192, 192, 0.7)"
+        };
+        return colors[index % colors.Length];
+    }
+
+    private string GetCategoryBadgeClass(string type)
+    {
+        return type == "Income" ? "badge-income" : "badge-expense";
+    }
+    
+    private string GetTransactionTypeLabel(string type)
+    {
+        return type == "Income" ? "Receita" : "Despesa";
+    }
+
+    private string GetValueClass(string type)
+    {
+        return type == "Income" ? "text-success fw-bold" : "text-danger";
+    }
+
+    private string GetProgressBarClass(decimal percentage)
+    {
+        return percentage switch
+        {
+            <= 50 => "bg-success",
+            <= 75 => "bg-warning",
+            _ => "bg-danger"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("chartInterop.destroyAllCharts");
+        }
+        catch { }
+    }
+}

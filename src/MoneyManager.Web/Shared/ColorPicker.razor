@@ -1,0 +1,124 @@
+@* ColorPicker Component *@
+
+<div class="color-picker-container">
+    <div class="d-flex align-items-center gap-3">
+        <div class="color-preview" style="background-color: @SelectedColor;" @onclick="OpenColorPicker">
+            <input type="color" 
+                   id="@InputId" 
+                   class="color-input-hidden" 
+                   value="@SelectedColor" 
+                   @onchange="OnColorChanged"
+                   @ref="colorInputRef" />
+        </div>
+        <div class="flex-grow-1">
+            <input type="text" 
+                   class="form-control form-control-sm" 
+                   placeholder="#000000" 
+                   value="@SelectedColor" 
+                   @onchange="OnTextChanged"
+                   maxlength="7"
+                   pattern="^#[0-9A-Fa-f]{6}$" />
+            <small class="text-muted">Clique no quadrado colorido para escolher</small>
+        </div>
+    </div>
+    
+    @if (ShowPresets)
+    {
+        <div class="color-presets mt-3">
+            <small class="text-muted d-block mb-2">Cores sugeridas:</small>
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var preset in PresetColors)
+                {
+                    <button type="button" 
+                            class="color-preset-btn @(preset == SelectedColor ? "selected" : "")" 
+                            style="background-color: @preset;"
+                            @onclick="() => SelectPresetColor(preset)"
+                            title="@preset">
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+private string _selectedColor = "#667eea";
+private ElementReference colorInputRef;
+
+[Parameter]
+public string SelectedColor
+{
+    get => _selectedColor;
+    set
+    {
+        if (_selectedColor != value)
+        {
+            _selectedColor = NormalizeColor(value);
+        }
+    }
+}
+
+[Parameter]
+public EventCallback<string> SelectedColorChanged { get; set; }
+
+[Parameter]
+public bool ShowPresets { get; set; } = true;
+
+[Parameter]
+public string InputId { get; set; } = $"colorpicker-{Guid.NewGuid():N}";
+
+private string[] PresetColors = new[]
+{
+    "#667eea", "#764ba2", "#f093fb", "#4facfe",
+    "#43e97b", "#fa709a", "#fee140", "#30cfd0",
+    "#a8edea", "#fed6e3", "#ff6b6b", "#4ecdc4",
+    "#45b7d1", "#96ceb4", "#ffeaa7", "#dfe6e9",
+    "#6c5ce7", "#fd79a8", "#fdcb6e", "#00b894"
+};
+
+private void OpenColorPicker()
+{
+    // O click no preview vai propagar para o input que está absolutamente posicionado
+}
+
+    private string NormalizeColor(string color)
+    {
+        if (string.IsNullOrWhiteSpace(color))
+            return "#667eea";
+
+        color = color.Trim();
+        
+        if (!color.StartsWith("#"))
+            color = "#" + color;
+
+        if (color.Length == 4) // #RGB to #RRGGBB
+        {
+            color = $"#{color[1]}{color[1]}{color[2]}{color[2]}{color[3]}{color[3]}";
+        }
+
+        if (color.Length != 7 || !System.Text.RegularExpressions.Regex.IsMatch(color, "^#[0-9A-Fa-f]{6}$"))
+            return "#667eea";
+
+        return color.ToLower();
+    }
+
+    private async Task OnColorChanged(ChangeEventArgs e)
+    {
+        var newColor = e.Value?.ToString() ?? "#667eea";
+        _selectedColor = NormalizeColor(newColor);
+        await SelectedColorChanged.InvokeAsync(_selectedColor);
+    }
+
+    private async Task OnTextChanged(ChangeEventArgs e)
+    {
+        var newColor = e.Value?.ToString() ?? "#667eea";
+        _selectedColor = NormalizeColor(newColor);
+        await SelectedColorChanged.InvokeAsync(_selectedColor);
+    }
+
+    private async Task SelectPresetColor(string color)
+    {
+        _selectedColor = color;
+        await SelectedColorChanged.InvokeAsync(_selectedColor);
+    }
+}

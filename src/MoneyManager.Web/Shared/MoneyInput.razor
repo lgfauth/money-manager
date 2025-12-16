@@ -1,0 +1,80 @@
+@using System.Globalization
+@using System.Linq
+@using Microsoft.AspNetCore.Components
+@using System.Threading.Tasks
+<input class="form-control" value="@displayValue" placeholder="@Placeholder" @oninput="OnInput" @onblur="OnBlur" @onfocus="OnFocus" />
+
+@code {
+    [Parameter]
+    public decimal Value { get; set; }
+
+    [Parameter]
+    public EventCallback<decimal> ValueChanged { get; set; }
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    private string displayValue = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        displayValue = Format(Value);
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        var s = e?.Value?.ToString() ?? string.Empty;
+        displayValue = s;
+        var parsed = ParseDecimal(s);
+        if (parsed.HasValue)
+        {
+            Value = parsed.Value;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    private async Task OnBlur(FocusEventArgs e)
+    {
+        displayValue = Format(Value);
+        await Task.CompletedTask;
+    }
+
+    private void OnFocus(FocusEventArgs e)
+    {
+        // show plain numeric for editing
+        displayValue = Value.ToString("F2", CultureInfo.CurrentCulture);
+    }
+
+    private string Format(decimal value)
+    {
+        try
+        {
+            var ci = CultureInfo.CurrentCulture;
+            return string.Format(ci, "{0:C2}", value);
+        }
+        catch
+        {
+            return value.ToString("N2");
+        }
+    }
+
+    private decimal? ParseDecimal(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return 0m;
+        var ci = CultureInfo.CurrentCulture;
+        var symbol = ci.NumberFormat.CurrencySymbol;
+        var cleaned = s.Replace(symbol, "").Trim();
+        var allowed = "0123456789-" + ci.NumberFormat.NumberDecimalSeparator + ci.NumberFormat.NumberGroupSeparator;
+        var filteredChars = cleaned.Where(c => allowed.Contains(c)).ToArray();
+        var filtered = new string(filteredChars);
+        if (!string.IsNullOrEmpty(ci.NumberFormat.NumberGroupSeparator))
+            filtered = filtered.Replace(ci.NumberFormat.NumberGroupSeparator, string.Empty);
+        if (ci.NumberFormat.NumberDecimalSeparator != ".")
+            filtered = filtered.Replace(".", ci.NumberFormat.NumberDecimalSeparator);
+
+        if (decimal.TryParse(filtered, NumberStyles.Number | NumberStyles.AllowLeadingSign, ci, out var result))
+            return result;
+
+        return null;
+    }
+}

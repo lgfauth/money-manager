@@ -1,0 +1,232 @@
+@page "/accounts"
+@using MoneyManager.Domain.Entities
+@using MoneyManager.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IAccountService AccountService
+
+<PageTitle>Contas - MoneyManager</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-wallet text-primary"></i> Contas Bancárias
+                </h1>
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="fas fa-plus"></i> Nova Conta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (showAdd)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Nova Conta</h5>
+                @if (!string.IsNullOrEmpty(addError))
+                {
+                    <div class="alert alert-danger">@addError</div>
+                }
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <input class="form-control" placeholder="Nome da conta" @bind="newAccount.Name" />
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select text-dark" @onchange="OnAccountTypeChanged">
+                            <option value="Checking">Checking</option>
+                            <option value="Savings">Savings</option>
+                            <option value="Cash">Cash</option>
+                            <option value="CreditCard">CreditCard</option>
+                            <option value="Investment">Investment</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" />
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-success" @onclick="CreateAccount">Salvar</button>
+                        <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando contas...</p>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+    else if (accounts != null && accounts.Any())
+    {
+        <div class="row g-4">
+            @foreach (var account in accounts)
+            {
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">@account.Name</h5>
+                            <div class="mb-3">
+                                <p class="text-muted small mb-2">Saldo</p>
+                                <h3 class="text-primary mb-0">R$ @account.Balance.ToString("F2")</h3>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Tipo: @account.Type</small><br/>
+                                <small class="text-muted">Saldo Inicial: R$ @account.InitialBalance.ToString("F2")</small>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm btn-warning" @onclick="() => BeginEditAccount(account.Id)">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteAccount(account.Id)">
+                                    <i class="fas fa-trash"></i> Deletar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i> Nenhuma conta encontrada. <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
+        </div>
+    }
+</div>
+
+@code {
+    private IEnumerable<Account>? accounts;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAccounts();
+    }
+
+    private async Task LoadAccounts()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            accounts = await AccountService.GetAllAsync();
+            if (accounts == null || !accounts.Any())
+            {
+                errorMessage = "Nenhuma conta disponível.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar contas: {ex.Message}";
+            Console.WriteLine($"Erro: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ShowAddModal()
+    {
+        showAdd = true;
+        newAccount = new Account();
+        await Task.Yield();
+        StateHasChanged();
+    }
+
+    private bool showAdd;
+    private Account newAccount = new Account();
+    private string? addError;
+    private string? editingAccountId;
+
+    private async Task BeginEditAccount(string id)
+    {
+        try
+        {
+            var acc = await AccountService.GetByIdAsync(id);
+            if (acc != null)
+            {
+                newAccount = acc;
+                editingAccountId = id;
+                showAdd = true;
+                await Task.Yield();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            addError = ex.Message;
+        }
+    }
+
+    private void OnAccountTypeChanged(ChangeEventArgs e)
+    {
+        var value = e?.Value?.ToString();
+        if (Enum.TryParse<MoneyManager.Domain.Enums.AccountType>(value, out var at))
+        {
+            newAccount.Type = at;
+        }
+    }
+
+    private async Task DeleteAccount(string id)
+    {
+        try
+        {
+            await AccountService.DeleteAsync(id);
+            await LoadAccounts();
+        }
+        catch (Exception ex)
+        {
+            addError = ex.Message;
+        }
+    }
+
+    private async Task CreateAccount()
+    {
+        addError = null;
+        try
+        {
+            newAccount.Balance = newAccount.InitialBalance;
+            if (!string.IsNullOrEmpty(editingAccountId))
+            {
+                await AccountService.UpdateAsync(editingAccountId, newAccount);
+                editingAccountId = null;
+            }
+            else
+            {
+                var created = await AccountService.CreateAsync(newAccount);
+            }
+            newAccount = new Account();
+            showAdd = false;
+            await LoadAccounts();
+        }
+        catch (Exception ex)
+        {
+            addError = ex.Message;
+        }
+    }
+
+    private void CancelAdd()
+    {
+        showAdd = false;
+        newAccount = new Account();
+        addError = null;
+    }
+}

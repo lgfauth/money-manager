@@ -1,0 +1,277 @@
+@page "/transactions"
+@using MoneyManager.Domain.Entities
+@using MoneyManager.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ITransactionService TransactionService
+@inject IAccountService AccountService
+@inject ICategoryService CategoryService
+
+<PageTitle>Transações - MoneyManager</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-exchange-alt text-primary"></i> Transações
+                </h1>
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="fas fa-plus"></i> Nova Transação
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (showAdd)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Nova Transação</h5>
+                @if (!string.IsNullOrEmpty(addError))
+                {
+                    <div class="alert alert-danger">@addError</div>
+                }
+                <div class="row g-2">
+                    <div class="col-md-2">
+                        <input type="date" class="form-control" @bind="newTransaction.Date" />
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" @bind="newRequest.AccountId">
+                            <option value="">-- Conta --</option>
+                            @foreach (var a in accountsList)
+                            {
+                                <option value="@a.Id">@a.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input class="form-control" placeholder="Descrição" @bind="newRequest.Description" />
+                    </div>
+                    <div class="col-md-2">
+                        <MoneyInput @bind-Value="newRequest.Amount" Placeholder="Valor" />
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select" @bind="newRequest.Type">
+                            <option value="0">Income</option>
+                            <option value="1">Expense</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" @bind="newRequest.CategoryId">
+                            <option value="">-- Categoria --</option>
+                            @if (categoriesList != null)
+                            {
+                                @foreach (var c in categoriesList)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-success" @onclick="CreateTransaction">Salvar</button>
+                        <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando transações...</p>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+    else if (transactions != null && transactions.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th><i class="fas fa-calendar"></i> Data</th>
+                            <th><i class="fas fa-file-alt"></i> Descrição</th>
+                            <th><i class="fas fa-tag"></i> Categoria</th>
+                            <th class="text-end"><i class="fas fa-money-bill"></i> Valor</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var transaction in transactions)
+                        {
+                            <tr>
+                                <td>@transaction.Date.ToString("dd/MM/yyyy")</td>
+                                <td>@transaction.Description</td>
+                                <td>
+                                    <span class="badge bg-light text-dark">@GetCategoryName(transaction.CategoryId)</span>
+                                </td>
+                                <td class="text-end fw-bold">
+                                    @if (transaction.Type.ToString() == "Income")
+                                    {
+                                        <span class="text-success">+ R$ @transaction.Amount.ToString("F2")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-danger">- R$ @transaction.Amount.ToString("F2")</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                <button class="btn btn-sm btn-warning me-2" @onclick="() => BeginEditTransaction(transaction.Id)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                    <button class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i> Nenhuma transação encontrada. <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
+        </div>
+    }
+</div>
+
+@code {
+    private IEnumerable<Transaction>? transactions;
+    private bool isLoading = true;
+    private string? errorMessage;
+    private IEnumerable<Account>? accountsList;
+    private IEnumerable<Category>? categoriesList;
+    private Dictionary<string, string> categoriesDict = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+        accountsList = await AccountService.GetAllAsync();
+        categoriesList = await CategoryService.GetAllAsync();
+        categoriesDict = categoriesList?.ToDictionary(c => c.Id, c => c.Name) ?? new Dictionary<string, string>();
+    }
+
+    private async Task LoadTransactions()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            transactions = await TransactionService.GetAllAsync();
+            if (transactions == null || !transactions.Any())
+            {
+                errorMessage = "Nenhuma transação disponível.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar transações: {ex.Message}";
+            Console.WriteLine($"Erro: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        showAdd = true;
+    }
+
+    private bool showAdd;
+    private Transaction newTransaction = new Transaction { Date = DateTime.Today };
+    private string? addError;
+    private CreateTransactionRequestDto newRequest = new CreateTransactionRequestDto { Date = DateTime.Today };
+    private string? editingTransactionId;
+
+    private async Task BeginEditTransaction(string id)
+    {
+        try
+        {
+            var tx = await TransactionService.GetByIdAsync(id);
+            if (tx != null)
+            {
+                // populate request DTO from existing transaction
+                newRequest = new CreateTransactionRequestDto
+                {
+                    AccountId = tx.AccountId,
+                    Amount = tx.Amount,
+                    CategoryId = tx.CategoryId,
+                    Date = tx.Date,
+                    Description = tx.Description,
+                    Status = (int)tx.Status,
+                    Tags = tx.Tags ?? new List<string>(),
+                    ToAccountId = tx.ToAccountId,
+                    Type = (int)tx.Type
+                };
+
+                editingTransactionId = id;
+                showAdd = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            addError = ex.Message;
+        }
+    }
+
+    private async Task CreateTransaction()
+    {
+        addError = null;
+        try
+        {
+            if (string.IsNullOrEmpty(newRequest.AccountId))
+            {
+                addError = "Selecione uma conta";
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(editingTransactionId))
+            {
+                await TransactionService.UpdateAsync(editingTransactionId, newRequest);
+            }
+            else
+            {
+                var created = await TransactionService.CreateAsync(newRequest);
+            }
+            newRequest = new CreateTransactionRequestDto { Date = DateTime.Today };
+            showAdd = false;
+            await LoadTransactions();
+        }
+        catch (Exception ex)
+        {
+            addError = ex.Message;
+        }
+    }
+
+    private void CancelAdd()
+    {
+        showAdd = false;
+        newTransaction = new Transaction { Date = DateTime.Today };
+        addError = null;
+    }
+
+    private string GetCategoryName(string? categoryId)
+    {
+        if (string.IsNullOrEmpty(categoryId))
+            return "Sem categoria";
+        
+        return categoriesDict.TryGetValue(categoryId, out var name) ? name : "Categoria desconhecida";
+    }
+}

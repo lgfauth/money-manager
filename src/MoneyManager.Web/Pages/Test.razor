@@ -1,0 +1,29 @@
+@page "/test"
+
+<PageTitle>Teste - MoneyManager</PageTitle>
+
+<div class="container mt-5">
+    <div class="alert alert-success" role="alert">
+        <h4 class="alert-heading">✅ Blazor WebAssembly está funcionando!</h4>
+        <p>Se você está vendo esta mensagem, a aplicação Blazor foi carregada com sucesso.</p>
+        <hr/>
+        <p class="mb-0">Você pode navegar para <a href="/">Home</a>, <a href="/login">Login</a> ou <a href="/register">Registro</a>.</p>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">
+            <h5>Informações do Sistema</h5>
+        </div>
+        <div class="card-body">
+            <ul>
+                <li>Framework: Blazor WebAssembly (.NET 9)</li>
+                <li>Porta: 7001 (HTTPS)</li>
+                <li>API Base URL: https://localhost:5001</li>
+                <li>Data/Hora: @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+@code {
+}

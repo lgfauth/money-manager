@@ -1,0 +1,191 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using MoneyManager.Web.Services
+@using MoneyManager.Application.DTOs.Response
+@using System.Security.Claims
+@inherits LayoutComponentBase
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
+@inject IUserProfileService ProfileService
+
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <Authorized>
+            <nav class="navbar navbar-expand-lg modern-navbar">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="/">
+                        <i class="fas fa-chart-line"></i>
+                        <span>MoneyManager</span>
+                    </a>
+                    
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav ms-auto align-items-lg-center">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/">
+                                    <i class="fas fa-home"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/categories">
+                                    <i class="fas fa-tags"></i> Categorias
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/accounts">
+                                    <i class="fas fa-wallet"></i> Contas
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/transactions">
+                                    <i class="fas fa-exchange-alt"></i> Transações
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/recurring-transactions">
+                                    <i class="fas fa-repeat"></i> Recorrentes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/budgets">
+                                    <i class="fas fa-calculator"></i> Orçamentos
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/reports">
+                                    <i class="fas fa-chart-pie"></i> Relatórios
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center user-menu-toggle" 
+                                   href="#" 
+                                   id="userDropdown" 
+                                   role="button" 
+                                   data-bs-toggle="dropdown" 
+                                   aria-expanded="false">
+                                    @if (!string.IsNullOrEmpty(userProfile?.ProfilePicture))
+                                    {
+                                        <img src="@userProfile.ProfilePicture" alt="Profile" class="user-avatar me-2" />
+                                    }
+                                    else
+                                    {
+                                        <div class="user-avatar-placeholder me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    }
+                                    <span class="d-none d-lg-inline">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "Usuário")</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end modern-dropdown" aria-labelledby="userDropdown">
+                                    <li class="dropdown-header-modern">
+                                        <div class="d-flex align-items-center">
+                                            @if (!string.IsNullOrEmpty(userProfile?.ProfilePicture))
+                                            {
+                                                <img src="@userProfile.ProfilePicture" alt="Profile" class="dropdown-header-avatar me-3" />
+                                            }
+                                            else
+                                            {
+                                                <div class="dropdown-header-placeholder me-3">
+                                                    <i class="fas fa-user"></i>
+                                                </div>
+                                            }
+                                            <div>
+                                                <div class="fw-bold">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "Usuário")</div>
+                                                <small class="text-muted">@userProfile?.Email</small>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="/profile">
+                                            <i class="fas fa-user me-2"></i> Meu Perfil
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/settings">
+                                            <i class="fas fa-cog me-2"></i> Configurações
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item text-danger" @onclick="Logout">
+                                            <i class="fas fa-sign-out-alt me-2"></i> Sair
+                                        </button>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            <main style="flex: 1; overflow-y: auto;">
+                <div class="content">
+                    @Body
+                </div>
+            </main>
+        </Authorized>
+        <NotAuthorized>
+            @{
+                var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].Trim('/');
+                var isPublicPage = currentPath == "login" || currentPath == "register";
+            }
+            
+            @if (isPublicPage)
+            {
+                @Body
+            }
+            else
+            {
+                <RedirectToLogin />
+            }
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
+
+@code {
+[CascadingParameter]
+private Task<AuthenticationState>? authStateTask { get; set; }
+
+[Inject]
+private NavigationManager? Nav { get; set; }
+
+    [Inject]
+    private AuthenticationStateProvider? CustomAuthProvider { get; set; }
+
+    private UserProfileResponseDto? userProfile;
+
+protected override async Task OnInitializedAsync()
+{
+    await LoadUserProfile();
+}
+
+    private async Task LoadUserProfile()
+    {
+        try
+        {
+            var authState = await authStateTask!;
+            if (authState?.User?.Identity?.IsAuthenticated == true)
+            {
+                userProfile = await ProfileService.GetProfileAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar perfil: {ex.Message}");
+            // Se falhar, o menu vai exibir o nome do usuário do token
+        }
+    }
+
+    private async Task Logout()
+    {
+        if (CustomAuthProvider is MoneyManager.Web.Services.CustomAuthenticationStateProvider cap)
+        {
+            await cap.MarkUserAsLoggedOut();
+        }
+        if (Nav != null)
+        {
+            Nav.NavigateTo("/login", true);
+        }
+    }
+}

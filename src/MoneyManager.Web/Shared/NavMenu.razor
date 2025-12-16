@@ -1,0 +1,62 @@
+@implements IDisposable
+@inject NavigationManager NavigationManager
+
+<AuthorizeView>
+    <Authorized>
+        <nav class="nav flex-column">
+            <a href="/" class="nav-link" @onclick="@(e => SetActive("/"))">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="/categories" class="nav-link" @onclick="@(e => SetActive("/categories"))">
+                <i class="fas fa-tags"></i>
+                <span>Categorias</span>
+            </a>
+            <a href="/accounts" class="nav-link" @onclick="@(e => SetActive("/accounts"))">
+                <i class="fas fa-wallet"></i>
+                <span>Contas</span>
+            </a>
+            <a href="/transactions" class="nav-link" @onclick="@(e => SetActive("/transactions"))">
+                <i class="fas fa-exchange-alt"></i>
+                <span>Transações</span>
+            </a>
+            <a href="/budgets" class="nav-link" @onclick="@(e => SetActive("/budgets"))">
+                <i class="fas fa-calculator"></i>
+                <span>Orçamentos</span>
+            </a>
+            <a href="/reports" class="nav-link" @onclick="@(e => SetActive("/reports"))">
+                <i class="fas fa-chart-pie"></i>
+                <span>Relatórios</span>
+            </a>
+        </nav>
+    </Authorized>
+    <NotAuthorized>
+        <!-- empty when not authorized -->
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string currentPath = "/";
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += OnLocationChanged;
+        currentPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+    }
+
+    private void OnLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        currentPath = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    private void SetActive(string path)
+    {
+        currentPath = path;
+    }
+
+    void IDisposable.Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}

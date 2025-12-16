@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: moneymanager-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: MoneyAgent
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - moneymanager-network
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: moneymanager-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017
+      ME_CONFIG_MONGODB_DATABASE: MoneyAgent
+    depends_on:
+      - mongodb
+    networks:
+      - moneymanager-network
+
+  api:
+    build:
+      context: .
+      dockerfile: src/MoneyManager.Presentation/Dockerfile
+    container_name: moneymanager-api
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - MongoDB__ConnectionString=mongodb://mongodb:27017
+      - MongoDB__DatabaseName=MoneyAgent
+      - Jwt__SecretKey=your-super-secret-key-that-is-long-enough-for-256-bits
+      - Jwt__Issuer=MoneyManager
+      - Jwt__Audience=MoneyManagerUsers
+      - Jwt__ExpirationHours=24
+    depends_on:
+      - mongodb
+    networks:
+      - moneymanager-network
+
+  web:
+    build:
+      context: .
+      dockerfile: src/MoneyManager.Web/Dockerfile
+    container_name: moneymanager-web
+    ports:
+      - "8000:80"
+    environment:
+      - ApiUrl=http://api:5000
+    depends_on:
+      - api

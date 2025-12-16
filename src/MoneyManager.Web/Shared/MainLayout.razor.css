@@ -1,0 +1,44 @@
+:deep .page {
+    position: flex;
+    flex-direction: row;
+    height: 100vh;
+}
+
+:deep .sidebar {
+    flex: 0 0 250px;
+    overflow-y: auto;
+    border-right: 1px solid #ccc;
+}
+
+:deep main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+:deep .top-row {
+    padding: 0 1rem !important;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+}
+
+:deep .content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+:deep article {
+    padding: 2rem;
+}
+
+@media (max-width: 767.98px) {
+    :deep .sidebar {
+        width: 100%;
+        height: auto;
+    }
+
+    :deep main {
+        flex-direction: column;
+    }
+}

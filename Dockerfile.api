@@ -1,0 +1,29 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy csproj files and restore dependencies
+COPY ["src/MoneyManager.Presentation/MoneyManager.Presentation.csproj", "src/MoneyManager.Presentation/"]
+COPY ["src/MoneyManager.Application/MoneyManager.Application.csproj", "src/MoneyManager.Application/"]
+COPY ["src/MoneyManager.Domain/MoneyManager.Domain.csproj", "src/MoneyManager.Domain/"]
+COPY ["src/MoneyManager.Infrastructure/MoneyManager.Infrastructure.csproj", "src/MoneyManager.Infrastructure/"]
+
+RUN dotnet restore "src/MoneyManager.Presentation/MoneyManager.Presentation.csproj"
+
+# Copy everything else and build
+COPY . .
+WORKDIR "/src/src/MoneyManager.Presentation"
+RUN dotnet build "MoneyManager.Presentation.csproj" -c Release -o /app/build
+
+# Publish stage
+FROM build AS publish
+RUN dotnet publish "MoneyManager.Presentation.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "MoneyManager.Presentation.dll"]

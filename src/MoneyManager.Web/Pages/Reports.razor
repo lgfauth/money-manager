@@ -1,0 +1,338 @@
+@page "/reports"
+@using MoneyManager.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
+@attribute [Authorize]
+@inject IReportService ReportService
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>Relatórios - MoneyManager</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="mb-0">
+                <i class="fas fa-chart-pie text-primary"></i> Relatórios Financeiros
+            </h1>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando relatórios...</p>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+    else
+    {
+        <!-- Filtro de Período -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="row align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Período</label>
+                                <select class="form-select" @bind="selectedPeriod" @bind:after="LoadReportsWithPeriod">
+                                    <option value="1">Último mês</option>
+                                    <option value="3">Últimos 3 meses</option>
+                                    <option value="6">Últimos 6 meses</option>
+                                    <option value="12">Último ano</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="stat-card success">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-value text-success">R$ @reportSummary.TotalIncome.ToString("N2")</div>
+                            <div class="stat-label">Receitas (@GetPeriodLabel())</div>
+                        </div>
+                        <i class="fas fa-arrow-up fa-3x text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="stat-card danger">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-value text-danger">R$ @reportSummary.TotalExpenses.ToString("N2")</div>
+                            <div class="stat-label">Despesas (@GetPeriodLabel())</div>
+                        </div>
+                        <i class="fas fa-arrow-down fa-3x text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-value text-primary">R$ @reportSummary.NetBalance.ToString("N2")</div>
+                            <div class="stat-label">Saldo Líquido</div>
+                        </div>
+                        <i class="fas fa-chart-line fa-3x text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="stat-card @(reportSummary.SavingsRate >= 20 ? "success" : reportSummary.SavingsRate >= 10 ? "warning" : "danger")">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="stat-value @(reportSummary.SavingsRate >= 20 ? "text-success" : reportSummary.SavingsRate >= 10 ? "text-warning" : "text-danger")">
+                                @reportSummary.SavingsRate.ToString("N1")%
+                            </div>
+                            <div class="stat-label">Taxa de Economia</div>
+                        </div>
+                        <i class="fas fa-piggy-bank fa-3x text-muted opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Gráfico de Pizza - Despesas por Categoria -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Despesas por Categoria</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="expensesByCategoryChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de Linhas - Evolução Mensal -->
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> Evolução Mensal</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="monthlyTrendChart" style="max-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista Detalhada de Despesas por Categoria -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-list"></i> Detalhamento de Despesas por Categoria</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (reportSummary.ExpensesByCategory.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var expense in reportSummary.ExpensesByCategory)
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div>
+                                                <h6 class="mb-1">@expense.CategoryName</h6>
+                                                <small class="text-muted">@expense.Percentage.ToString("N1")% do total</small>
+                                            </div>
+                                            <span class="badge bg-primary fs-6">R$ @expense.Amount.ToString("N2")</span>
+                                        </div>
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar" 
+                                                 role="progressbar" 
+                                                 style="width: @expense.Percentage.ToString("N1")%" 
+                                                 aria-valuenow="@expense.Percentage" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Nenhuma despesa registrada no período</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private ReportSummary reportSummary = new();
+    private int selectedPeriod = 1;
+    private bool chartsRendered = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReports();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!isLoading && !chartsRendered && reportSummary != null)
+        {
+            chartsRendered = true;
+            await RenderCharts();
+        }
+    }
+
+    private async Task LoadReportsWithPeriod()
+    {
+        chartsRendered = false;
+        await LoadReports();
+    }
+
+    private async Task LoadReports()
+    {
+        isLoading = true;
+        errorMessage = null;
+        
+        try
+        {
+            reportSummary = await ReportService.GetReportSummaryAsync(selectedPeriod);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar relatórios: {ex.Message}";
+            Console.WriteLine($"Erro: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RenderCharts()
+    {
+        try
+        {
+            await Task.Delay(100);
+
+            await RenderExpensesByCategoryChart();
+            await RenderMonthlyTrendChart();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar gráficos: {ex.Message}");
+        }
+    }
+
+    private async Task RenderExpensesByCategoryChart()
+    {
+        try
+        {
+            if (!reportSummary.ExpensesByCategory.Any())
+            {
+                var labels = new[] { "Sem despesas" };
+                var data = new[] { 1.0 };
+                var colors = new[] { "rgba(200, 200, 200, 0.7)" };
+                await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "expensesByCategoryChart", labels, data, colors);
+                return;
+            }
+
+            var chartLabels = reportSummary.ExpensesByCategory.Select(e => e.CategoryName).ToArray();
+            var chartData = reportSummary.ExpensesByCategory.Select(e => (double)e.Amount).ToArray();
+            var chartColors = reportSummary.ExpensesByCategory.Select((_, i) => GetChartColor(i)).ToArray();
+
+            await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "expensesByCategoryChart", chartLabels, chartData, chartColors);
+            Console.WriteLine("Expenses by category chart renderizado com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar expenses by category chart: {ex.Message}");
+        }
+    }
+
+    private async Task RenderMonthlyTrendChart()
+    {
+        try
+        {
+            if (!reportSummary.MonthlyTrends.Any())
+            {
+                return;
+            }
+
+            var labels = reportSummary.MonthlyTrends.Select(t => t.Month).ToArray();
+            var incomeData = reportSummary.MonthlyTrends.Select(t => (double)t.Income).ToArray();
+            var expensesData = reportSummary.MonthlyTrends.Select(t => (double)t.Expenses).ToArray();
+
+            await JSRuntime.InvokeVoidAsync("chartInterop.createLineChart", 
+                "monthlyTrendChart", 
+                labels, 
+                new { income = incomeData, expenses = expensesData });
+
+            Console.WriteLine("Monthly trend chart renderizado com sucesso");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao renderizar monthly trend chart: {ex.Message}");
+        }
+    }
+
+    private string GetChartColor(int index)
+    {
+        var colors = new[]
+        {
+            "rgba(102, 126, 234, 0.7)",
+            "rgba(118, 75, 162, 0.7)",
+            "rgba(255, 107, 107, 0.7)",
+            "rgba(78, 205, 196, 0.7)",
+            "rgba(255, 159, 64, 0.7)",
+            "rgba(153, 102, 255, 0.7)",
+            "rgba(255, 205, 86, 0.7)",
+            "rgba(75, 192, 192, 0.7)",
+            "rgba(255, 99, 132, 0.7)",
+            "rgba(54, 162, 235, 0.7)"
+        };
+        return colors[index % colors.Length];
+    }
+
+    private string GetPeriodLabel()
+    {
+        return selectedPeriod switch
+        {
+            1 => "30 dias",
+            3 => "90 dias",
+            6 => "6 meses",
+            12 => "12 meses",
+            _ => "período"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("chartInterop.destroyAllCharts");
+        }
+        catch { }
+    }
+}

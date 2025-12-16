@@ -1,0 +1,249 @@
+@page "/categories"
+@using MoneyManager.Domain.Entities
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<PageTitle>Categorias - MoneyManager</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">
+                    <i class="fas fa-tags text-primary"></i> Categorias
+                </h1>
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="fas fa-plus"></i> Nova Categoria
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (showAdd)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>@(isEditingCategory ? "Editar Categoria" : "Nova Categoria")</h5>
+                @if (!string.IsNullOrEmpty(addError))
+                {
+                    <div class="alert alert-danger">@addError</div>
+                }
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nome da Categoria</label>
+                        <input class="form-control" placeholder="Digite o nome" @bind="newCategory.Name" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo</label>
+                        <select class="form-select" @bind="categoryType">
+                            <option value="Income">Receita</option>
+                            <option value="Expense">Despesa</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Cor da Categoria</label>
+                        <ColorPicker @bind-SelectedColor="newCategory.Color" />
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success" @onclick="CreateCategory">
+                                <i class="fas fa-save"></i> @(isEditingCategory ? "Atualizar" : "Salvar")
+                            </button>
+                            <button class="btn btn-outline-secondary" @onclick="CancelAdd">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando categorias...</p>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+    else if (categories != null && categories.Any())
+    {
+        <div class="row g-4">
+            @foreach (var category in categories)
+            {
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h5 class="card-title mb-0">@category.Name</h5>
+                                <span class="badge bg-primary">@category.Type</span>
+                            </div>
+                            <div class="mb-3">
+                                <span class="badge p-2" style="background-color: @category.Color; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;">
+                                </span>
+                                <span class="ms-2 text-muted">@category.Color</span>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-sm btn-warning" @onclick="@(() => EditCategory(category.Id))">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="@(() => DeleteCategory(category.Id))">
+                                    <i class="fas fa-trash"></i> Deletar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle"></i> Nenhuma categoria encontrada. <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
+        </div>
+    }
+</div>
+
+@code {
+    private IEnumerable<Category>? categories;
+    private bool isLoading = true;
+    private string? errorMessage;
+    
+    [Inject]
+    private IJSRuntime? JSRuntime { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        isLoading = true;
+        errorMessage = null;
+        try
+        {
+            categories = await CategoryService.GetAllAsync();
+            if (categories == null || !categories.Any())
+            {
+                errorMessage = "Nenhuma categoria disponível.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar categorias: {ex.Message}";
+            Console.WriteLine($"Erro: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowAddModal()
+    {
+        newCategory = new Category { Color = "#667eea" };
+        editingCategoryId = null;
+        addError = null;
+        showAdd = true;
+    }
+
+    private string? editingCategoryId;
+    private bool isEditingCategory => !string.IsNullOrEmpty(editingCategoryId);
+
+    private async Task EditCategory(string categoryId)
+    {
+        try
+        {
+            var cat = await CategoryService.GetByIdAsync(categoryId);
+            if (cat != null)
+            {
+                newCategory = cat;
+                editingCategoryId = categoryId;
+                showAdd = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            addError = ex.Message;
+        }
+    }
+
+    private bool showAdd;
+    private Category newCategory = new Category();
+    private string? addError;
+    private string categoryType
+    {
+        get => newCategory.Type == CategoryType.Income ? "Income" : "Expense";
+        set
+        {
+            if (value == "Income")
+                newCategory.Type = CategoryType.Income;
+            else
+                newCategory.Type = CategoryType.Expense;
+        }
+    }
+
+    private async Task CreateCategory()
+    {
+        addError = null;
+        try
+        {
+            if (isEditingCategory && editingCategoryId != null)
+            {
+                await CategoryService.UpdateAsync(editingCategoryId, newCategory);
+            }
+            else
+            {
+                await CategoryService.CreateAsync(newCategory);
+            }
+
+            newCategory = new Category { Color = "#667eea" };
+            editingCategoryId = null;
+            showAdd = false;
+            await LoadCategories();
+        }
+        catch (Exception ex)
+        {
+            addError = ex.Message;
+        }
+    }
+
+    private void CancelAdd()
+    {
+        showAdd = false;
+        newCategory = new Category { Color = "#667eea" };
+        editingCategoryId = null;
+        addError = null;
+    }
+
+    private async Task DeleteCategory(string categoryId)
+    {
+        if (JSRuntime != null && await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta categoria?"))
+        {
+            try
+            {
+                await CategoryService.DeleteAsync(categoryId);
+                await LoadCategories();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Erro ao deletar categoria: {ex.Message}";
+            }
+        }
+    }
+}

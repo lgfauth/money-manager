@@ -1,0 +1,135 @@
+@page "/register"
+@using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [AllowAnonymous]
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Registrar - MoneyManager</PageTitle>
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <h2 class="mb-2">
+                <i class="fas fa-user-plus text-primary"></i> Criar Conta
+            </h2>
+            <p class="text-muted">Registre-se no MoneyManager</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle"></i> @errorMessage
+                <button type="button" class="btn-close" @onclick="@(() => errorMessage = "")"></button>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle"></i> @successMessage
+                <button type="button" class="btn-close" @onclick="@(() => successMessage = "")"></button>
+            </div>
+        }
+
+        <form @onsubmit="HandleRegister">
+            <div class="mb-3">
+                <label for="name" class="form-label">
+                    <i class="fas fa-user"></i> Nome Completo
+                </label>
+                <input type="text" class="form-control" id="name" @bind="registerRequest.Name" placeholder="Seu nome completo" required />
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">
+                    <i class="fas fa-envelope"></i> Email
+                </label>
+                <input type="email" class="form-control" id="email" @bind="registerRequest.Email" placeholder="seu@email.com" required />
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">
+                    <i class="fas fa-lock"></i> Senha
+                </label>
+                <input type="password" class="form-control" id="password" @bind="registerRequest.Password" placeholder="Crie uma senha forte" required />
+                <small class="text-muted d-block mt-1">Mínimo 6 caracteres</small>
+            </div>
+
+            <div class="mb-4">
+                <label for="passwordConfirm" class="form-label">
+                    <i class="fas fa-lock"></i> Confirmar Senha
+                </label>
+                <input type="password" class="form-control" id="passwordConfirm" placeholder="Confirme sua senha" required />
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 btn-lg mb-3" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Criando conta...</span>
+                }
+                else
+                {
+                    <span><i class="fas fa-user-plus"></i> Registrar</span>
+                }
+            </button>
+        </form>
+
+        <hr />
+
+        <p class="text-center text-muted mb-0">
+            Já tem conta? <a href="/login" class="text-primary fw-bold">Faça login</a>
+        </p>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 40px;
+}
+</style>
+
+@code {
+    private RegisterRequestDto registerRequest = new();
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isLoading;
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            await AuthService.RegisterAsync(registerRequest);
+            successMessage = "Conta criada com sucesso! Redirecionando...";
+            await Task.Delay(1500);
+            NavigationManager.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Falha ao registrar. Tente novamente.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
