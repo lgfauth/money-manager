@@ -25,7 +25,7 @@ try
 catch (Exception ex)
 {
     Console.WriteLine($"[MoneyManager] Erro ao ler configuração JS: {ex.Message}");
-}
+} 
 
 Console.WriteLine($"[MoneyManager] API URL configurada: {apiUrl}");
 
