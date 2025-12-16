@@ -7,21 +7,18 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
+// Configure HttpClient - hard-coded para a API no Railway
+var apiUrl = "https://money-manager-production-6120.up.railway.app";
+
+Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
+
+builder.Services.AddScoped(sp => new HttpClient 
+{ 
+    BaseAddress = new Uri(apiUrl) 
+});
+
 // Register Blazored LocalStorage
 builder.Services.AddBlazoredLocalStorage();
-
-// Register API configuration service
-builder.Services.AddScoped<IApiConfigService, ApiConfigService>();
-
-// Configure HttpClient factory that uses API config
-builder.Services.AddScoped(sp => 
-{
-    var apiConfigService = sp.GetRequiredService<IApiConfigService>();
-    var apiUrl = apiConfigService.GetApiUrlAsync().GetAwaiter().GetResult();
-    var httpClient = new HttpClient { BaseAddress = new Uri(apiUrl) };
-    Console.WriteLine($"[HttpClient] Configured with base address: {apiUrl}");
-    return httpClient;
-});
 
 // Register application services
 builder.Services.AddScoped<IAuthService, AuthService>();
