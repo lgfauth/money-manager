@@ -2,46 +2,26 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Blazored.LocalStorage;
 using MoneyManager.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.JSInterop;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Build temporário para obter JSRuntime
-var tempHost = builder.Build();
-var jsRuntime = tempHost.Services.GetRequiredService<IJSRuntime>();
-
-// Obter API URL da variável JavaScript injetada no index.html
-var apiUrl = "https://localhost:5001"; // Default
-try
-{
-    var configApiUrl = await jsRuntime.InvokeAsync<string>("eval", "window.blazorConfig?.apiUrl || ''");
-    if (!string.IsNullOrEmpty(configApiUrl) && configApiUrl != "__API_URL__")
-    {
-        apiUrl = configApiUrl;
-    }
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"[MoneyManager] Erro ao ler configuração JS: {ex.Message}");
-} 
-
-Console.WriteLine($"[MoneyManager] API URL configurada: {apiUrl}");
-
-// Recriar o builder com a configuração correta
-builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<MoneyManager.Web.App>("#app");
-builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
-
-// Configure HttpClient com base address
-builder.Services.AddScoped(sp => new HttpClient 
-{ 
-    BaseAddress = new Uri(apiUrl) 
-});
-
 // Register Blazored LocalStorage
 builder.Services.AddBlazoredLocalStorage();
+
+// Register API configuration service
+builder.Services.AddScoped<IApiConfigService, ApiConfigService>();
+
+// Configure HttpClient factory that uses API config
+builder.Services.AddScoped(sp => 
+{
+    var apiConfigService = sp.GetRequiredService<IApiConfigService>();
+    var apiUrl = apiConfigService.GetApiUrlAsync().GetAwaiter().GetResult();
+    var httpClient = new HttpClient { BaseAddress = new Uri(apiUrl) };
+    Console.WriteLine($"[HttpClient] Configured with base address: {apiUrl}");
+    return httpClient;
+});
 
 // Register application services
 builder.Services.AddScoped<IAuthService, AuthService>();
