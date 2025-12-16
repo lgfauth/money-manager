@@ -2,43 +2,37 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Blazored.LocalStorage;
 using MoneyManager.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
-using System.Net.Http.Json;
+using Microsoft.JSInterop;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Carregar configuração do appsettings.json
-var http = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
+// Build temporário para obter JSRuntime
+var tempHost = builder.Build();
+var jsRuntime = tempHost.Services.GetRequiredService<IJSRuntime>();
+
+// Obter API URL da variável JavaScript injetada no index.html
 var apiUrl = "https://localhost:5001"; // Default
-
-try 
+try
 {
-    // Tentar carregar appsettings.Production.json primeiro (para produção)
-    var productionConfig = await http.GetFromJsonAsync<Dictionary<string, string>>("appsettings.Production.json");
-    if (productionConfig != null && productionConfig.ContainsKey("ApiUrl"))
+    var configApiUrl = await jsRuntime.InvokeAsync<string>("eval", "window.blazorConfig?.apiUrl || ''");
+    if (!string.IsNullOrEmpty(configApiUrl) && configApiUrl != "__API_URL__")
     {
-        apiUrl = productionConfig["ApiUrl"];
+        apiUrl = configApiUrl;
     }
 }
-catch 
+catch (Exception ex)
 {
-    try 
-    {
-        // Fallback para appsettings.json
-        var config = await http.GetFromJsonAsync<Dictionary<string, string>>("appsettings.json");
-        if (config != null && config.ContainsKey("ApiUrl"))
-        {
-            apiUrl = config["ApiUrl"];
-        }
-    }
-    catch 
-    {
-        // Usar valor padrão
-    }
+    Console.WriteLine($"[MoneyManager] Erro ao ler configuração JS: {ex.Message}");
 }
 
-Console.WriteLine($"API URL configurada: {apiUrl}");
+Console.WriteLine($"[MoneyManager] API URL configurada: {apiUrl}");
+
+// Recriar o builder com a configuração correta
+builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<MoneyManager.Web.App>("#app");
+builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
 // Configure HttpClient com base address
 builder.Services.AddScoped(sp => new HttpClient 
