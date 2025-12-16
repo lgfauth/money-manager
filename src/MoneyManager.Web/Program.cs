@@ -2,15 +2,43 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Blazored.LocalStorage;
 using MoneyManager.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using System.Net.Http.Json;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Determinar a URL base da API baseado no ambiente
-var apiUrl = builder.HostEnvironment.IsDevelopment() 
-    ? "https://localhost:5001" 
-    : builder.Configuration["ApiUrl"] ?? "https://localhost:5001";
+// Carregar configuração do appsettings.json
+var http = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
+var apiUrl = "https://localhost:5001"; // Default
+
+try 
+{
+    // Tentar carregar appsettings.Production.json primeiro (para produção)
+    var productionConfig = await http.GetFromJsonAsync<Dictionary<string, string>>("appsettings.Production.json");
+    if (productionConfig != null && productionConfig.ContainsKey("ApiUrl"))
+    {
+        apiUrl = productionConfig["ApiUrl"];
+    }
+}
+catch 
+{
+    try 
+    {
+        // Fallback para appsettings.json
+        var config = await http.GetFromJsonAsync<Dictionary<string, string>>("appsettings.json");
+        if (config != null && config.ContainsKey("ApiUrl"))
+        {
+            apiUrl = config["ApiUrl"];
+        }
+    }
+    catch 
+    {
+        // Usar valor padrão
+    }
+}
+
+Console.WriteLine($"API URL configurada: {apiUrl}");
 
 // Configure HttpClient com base address
 builder.Services.AddScoped(sp => new HttpClient 
