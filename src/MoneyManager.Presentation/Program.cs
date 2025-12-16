@@ -107,9 +107,23 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Add CORS
+// Add CORS - Allow frontend domain
 builder.Services.AddCors(options =>
 {
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+                "https://money-manager-web-production.up.railway.app",
+                "http://localhost:5000",
+                "https://localhost:5001",
+                "http://localhost:8080"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+    
+    // Keep AllowAll for development/testing
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
@@ -195,7 +209,10 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-app.UseCors("AllowAll");
+// Use AllowFrontend policy in production, AllowAll in development
+var corsPolicy = app.Environment.IsDevelopment() ? "AllowAll" : "AllowFrontend";
+Console.WriteLine($"Using CORS policy: {corsPolicy}");
+app.UseCors(corsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
