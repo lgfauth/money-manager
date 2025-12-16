@@ -132,12 +132,34 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var mongoContext = scope.ServiceProvider.GetRequiredService<MongoContext>();
+        
+        // Test connection first
+        Console.WriteLine("========================================");
+        Console.WriteLine("Testing MongoDB connection...");
+        await mongoContext.TestConnectionAsync();
+        Console.WriteLine("? MongoDB connection successful!");
+        Console.WriteLine("========================================");
+        
+        // Create indexes
+        Console.WriteLine("Creating MongoDB indexes...");
         await mongoContext.CreateIndexesAsync();
+        Console.WriteLine("? MongoDB indexes created successfully!");
+        Console.WriteLine("========================================");
     }
     catch (Exception ex)
     {
         // Log the exception but don't fail the startup
-        System.Console.WriteLine($"Warning: Failed to create MongoDB indexes: {ex.Message}");
+        Console.WriteLine("========================================");
+        Console.WriteLine("? MongoDB Error:");
+        Console.WriteLine($"Message: {ex.Message}");
+        Console.WriteLine($"Type: {ex.GetType().Name}");
+        if (ex.InnerException != null)
+        {
+            Console.WriteLine($"Inner: {ex.InnerException.Message}");
+        }
+        Console.WriteLine("========================================");
+        Console.WriteLine("??  API started but MongoDB is not accessible!");
+        Console.WriteLine("========================================");
     }
 }
 
@@ -187,6 +209,31 @@ app.MapGet("/health", () => Results.Ok(new
     timestamp = DateTime.UtcNow,
     environment = app.Environment.EnvironmentName
 }));
+
+// IP discovery endpoint (temporary - for Railway IP discovery)
+app.MapGet("/api/discover-ip", async (HttpContext context) =>
+{
+    var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+    var remoteIp = context.Connection.RemoteIpAddress?.ToString();
+    
+    // Try to get real public IP by calling external service
+    string? publicIp = null;
+    try
+    {
+        using var httpClient = new HttpClient();
+        publicIp = await httpClient.GetStringAsync("https://api.ipify.org");
+    }
+    catch { }
+    
+    return Results.Ok(new
+    {
+        message = "Railway IP Discovery",
+        remoteIp = remoteIp,
+        forwardedFor = forwardedFor,
+        publicIp = publicIp,
+        allHeaders = context.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString())
+    });
+});
 
 // Root endpoint
 app.MapGet("/", () => Results.Redirect("/swagger"));
