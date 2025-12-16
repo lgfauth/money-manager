@@ -62,17 +62,33 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // Add controllers
 builder.Services.AddControllers();
 
+// Configure forwarded headers for Railway (proxy behind HTTPS)
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "MoneyManager API", Version = "v1" });
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo 
+    { 
+        Title = "MoneyManager API", 
+        Version = "v1",
+        Description = "API para gerenciamento financeiro pessoal"
+    });
     
     // Add JWT to Swagger
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme = "bearer"
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
     });
     
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -107,6 +123,9 @@ var app = builder.Build();
 // Configure for Railway deployment
 app.Urls.Add("http://0.0.0.0:8080");
 
+// Use forwarded headers FIRST (before any other middleware)
+app.UseForwardedHeaders();
+
 // Create MongoDB indexes (with error handling)
 using (var scope = app.Services.CreateScope())
 {
@@ -123,11 +142,27 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Enable Swagger in all environments for Railway
-app.UseSwagger();
+app.UseSwagger(c =>
+{
+    c.PreSerializeFilters.Add((swagger, httpReq) =>
+    {
+        // Force HTTPS in Swagger when behind proxy
+        if (httpReq.Headers.ContainsKey("X-Forwarded-Proto"))
+        {
+            swagger.Servers = new List<Microsoft.OpenApi.Models.OpenApiServer>
+            {
+                new Microsoft.OpenApi.Models.OpenApiServer { Url = $"https://{httpReq.Host.Value}" }
+            };
+        }
+    });
+});
+
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "MoneyManager API v1");
     c.RoutePrefix = string.Empty; // Serve Swagger at root
+    c.DisplayRequestDuration();
+    c.EnableDeepLinking();
 });
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
