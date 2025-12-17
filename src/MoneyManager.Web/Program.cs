@@ -2,15 +2,30 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Blazored.LocalStorage;
 using MoneyManager.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using System.Net.Http.Json;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Configure HttpClient - URL correta da API no Railway
-var apiUrl = "https://money-manager-api.up.railway.app";
+// Configure HttpClient - Ler URL da API do appsettings.json
+var httpClient = new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) };
 
-Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
+string apiUrl;
+try
+{
+    // Tenta ler do appsettings.json
+    var config = await httpClient.GetFromJsonAsync<Dictionary<string, string>>("appsettings.json");
+    apiUrl = config?["ApiUrl"] ?? "https://money-manager-api.up.railway.app";
+    Console.WriteLine($"[MoneyManager] API URL loaded from config: {apiUrl}");
+}
+catch (Exception ex)
+{
+    // Fallback se não conseguir ler
+    apiUrl = "https://money-manager-api.up.railway.app";
+    Console.WriteLine($"[MoneyManager] Failed to load config, using default API URL: {apiUrl}");
+    Console.WriteLine($"[MoneyManager] Error: {ex.Message}");
+}
 
 builder.Services.AddScoped(sp => new HttpClient 
 { 
