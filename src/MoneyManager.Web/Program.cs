@@ -7,8 +7,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Configure HttpClient - hard-coded para a API no Railway
-var apiUrl = "https://money-manager-production-6120.up.railway.app";
+// Configure HttpClient - URL correta da API no Railway
+var apiUrl = "https://money-manager-api.up.railway.app";
 
 Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
 
