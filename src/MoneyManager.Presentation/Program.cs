@@ -107,28 +107,15 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Add CORS - Allow frontend domain
+// Add CORS - Configuração permissiva para funcionar
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(
-                "https://money-manager-web-production.up.railway.app",
-                "http://localhost:5000",
-                "https://localhost:5001",
-                "http://localhost:8080"
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-    
-    // Keep AllowAll for development/testing
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(origin => true) // Permite qualquer origem temporariamente
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -139,6 +126,28 @@ app.Urls.Add("http://0.0.0.0:8080");
 
 // Use forwarded headers FIRST (before any other middleware)
 app.UseForwardedHeaders();
+
+// Add CORS headers manually (garantia extra)
+app.Use(async (context, next) =>
+{
+    var origin = context.Request.Headers["Origin"].FirstOrDefault();
+    if (!string.IsNullOrEmpty(origin))
+    {
+        context.Response.Headers.Add("Access-Control-Allow-Origin", origin);
+        context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    }
+    
+    // Handle preflight
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.StatusCode = 204;
+        return;
+    }
+    
+    await next();
+});
 
 // Create MongoDB indexes (with error handling)
 using (var scope = app.Services.CreateScope())
@@ -201,6 +210,9 @@ app.UseSwaggerUI(c =>
     c.EnableDeepLinking();
 });
 
+// CORS deve vir ANTES de qualquer outro middleware
+app.UseCors();
+
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Don't redirect to HTTPS in production (Railway handles SSL)
@@ -208,11 +220,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-
-// Use AllowFrontend policy in production, AllowAll in development
-var corsPolicy = app.Environment.IsDevelopment() ? "AllowAll" : "AllowFrontend";
-Console.WriteLine($"Using CORS policy: {corsPolicy}");
-app.UseCors(corsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
