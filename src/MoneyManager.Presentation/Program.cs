@@ -127,27 +127,37 @@ app.Urls.Add("http://0.0.0.0:8080");
 // Use forwarded headers FIRST (before any other middleware)
 app.UseForwardedHeaders();
 
-// Add CORS headers manually (garantia extra)
+// Add CORS headers manually (garantia extra) com logs
 app.Use(async (context, next) =>
 {
     var origin = context.Request.Headers["Origin"].FirstOrDefault();
+    var method = context.Request.Method;
+    var path = context.Request.Path;
+    
+    Console.WriteLine($"[CORS] Request: {method} {path} from Origin: {origin ?? "NO ORIGIN"}");
+    
     if (!string.IsNullOrEmpty(origin))
     {
         context.Response.Headers["Access-Control-Allow-Origin"] = origin;
         context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH";
         context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With";
-        context.Response.Headers["Access-Control-Max-Age"] = "86400"; // 24 hours
+        context.Response.Headers["Access-Control-Max-Age"] = "86400";
+        
+        Console.WriteLine($"[CORS] Added headers for origin: {origin}");
     }
     
     // Handle preflight
     if (context.Request.Method == "OPTIONS")
     {
+        Console.WriteLine($"[CORS] Handling OPTIONS (preflight) request");
         context.Response.StatusCode = 204;
         return;
     }
     
     await next();
+    
+    Console.WriteLine($"[CORS] Response status: {context.Response.StatusCode}");
 });
 
 // Create MongoDB indexes (with error handling)
@@ -233,6 +243,14 @@ app.MapGet("/health", () => Results.Ok(new
     status = "healthy",
     timestamp = DateTime.UtcNow,
     environment = app.Environment.EnvironmentName
+}));
+
+// CORS test endpoint
+app.MapGet("/api/test-cors", () => Results.Ok(new
+{
+    message = "CORS is working!",
+    timestamp = DateTime.UtcNow,
+    corsConfigured = true
 }));
 
 // IP discovery endpoint (temporary - for Railway IP discovery)
