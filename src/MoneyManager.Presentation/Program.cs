@@ -127,7 +127,8 @@ app.Urls.Add("http://0.0.0.0:8080");
 // Use forwarded headers FIRST (before any other middleware)
 app.UseForwardedHeaders();
 
-// Add CORS headers manually (garantia extra) com logs
+// CORS deve ser o PRIMEIRO middleware depois de ForwardedHeaders
+// Importante: Antes de qualquer middleware que possa curto-circuitar a requisição
 app.Use(async (context, next) =>
 {
     var origin = context.Request.Headers["Origin"].FirstOrDefault();
@@ -136,6 +137,7 @@ app.Use(async (context, next) =>
     
     Console.WriteLine($"[CORS] Request: {method} {path} from Origin: {origin ?? "NO ORIGIN"}");
     
+    // Sempre adiciona headers CORS se houver Origin
     if (!string.IsNullOrEmpty(origin))
     {
         context.Response.Headers["Access-Control-Allow-Origin"] = origin;
@@ -147,11 +149,12 @@ app.Use(async (context, next) =>
         Console.WriteLine($"[CORS] Added headers for origin: {origin}");
     }
     
-    // Handle preflight
-    if (context.Request.Method == "OPTIONS")
+    // Handle preflight OPTIONS - DEVE retornar imediatamente
+    if (method == "OPTIONS")
     {
-        Console.WriteLine($"[CORS] Handling OPTIONS (preflight) request");
+        Console.WriteLine($"[CORS] Handling OPTIONS (preflight) request - returning 204");
         context.Response.StatusCode = 204;
+        await context.Response.CompleteAsync();
         return;
     }
     
@@ -221,9 +224,7 @@ app.UseSwaggerUI(c =>
     c.EnableDeepLinking();
 });
 
-// CORS deve vir ANTES de qualquer outro middleware
-app.UseCors();
-
+// ExceptionHandlingMiddleware DEPOIS do CORS
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Don't redirect to HTTPS in production (Railway handles SSL)
