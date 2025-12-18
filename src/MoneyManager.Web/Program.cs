@@ -31,6 +31,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
 builder.Services.AddScoped<MoneyManager.Web.Services.IUserSettingsService, MoneyManager.Web.Services.UserSettingsService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<MoneyManager.Web.Services.IOnboardingService, MoneyManager.Web.Services.OnboardingService>();
 
 // Configure authorization
 builder.Services.AddAuthorizationCore();

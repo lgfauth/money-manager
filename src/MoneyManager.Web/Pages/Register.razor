@@ -118,10 +118,20 @@
 
         try
         {
-            await AuthService.RegisterAsync(registerRequest);
-            successMessage = "Conta criada com sucesso! Redirecionando...";
+            var result = await AuthService.RegisterAsync(registerRequest);
+            successMessage = "Conta criada com sucesso! Vamos configurar sua conta...";
             await Task.Delay(1500);
-            NavigationManager.NavigateTo("/login");
+            
+            // Faz login automático após registro
+            var loginRequest = new LoginRequestDto 
+            { 
+                Email = registerRequest.Email, 
+                Password = registerRequest.Password 
+            };
+            await AuthService.LoginAsync(loginRequest);
+            
+            // Redireciona para onboarding
+            NavigationManager.NavigateTo("/onboarding", true);
         }
         catch (Exception ex)
         {

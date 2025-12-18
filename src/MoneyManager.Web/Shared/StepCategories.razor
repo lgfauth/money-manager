@@ -1,0 +1,234 @@
+@using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Application.DTOs.Response
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Web.Services
+@inject ICategoryService CategoryService
+@inject MoneyManager.Web.Services.IOnboardingService OnboardingService
+
+<div class="step-categories">
+    <h2 class="mb-4">
+        <i class="fas fa-tags text-primary"></i>
+        Suas Categorias
+    </h2>
+    <p class="text-muted mb-4">
+        As categorias ajudam a organizar suas receitas e despesas. Você pode usar nossas sugestões ou criar as suas próprias.
+    </p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+
+    <!-- Category Suggestions -->
+    @if (isLoadingSuggestions)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary"></div>
+            <p class="text-muted mt-2">Carregando sugestões...</p>
+        </div>
+    }
+    else if (categorySuggestions.Any())
+    {
+        <div class="mb-4">
+            <h5 class="mb-3">
+                <i class="fas fa-lightbulb text-warning"></i>
+                Categorias Sugeridas
+            </h5>
+            <p class="text-muted small">Clique para adicionar rapidamente:</p>
+            
+            <div class="mb-3">
+                <h6 class="text-success">Receitas:</h6>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    @foreach (var suggestion in categorySuggestions.Where(c => c.Type == (int)CategoryType.Income))
+                    {
+                        <button class="btn btn-sm btn-outline-success category-suggestion" 
+                                @onclick="() => AddSuggestion(suggestion)"
+                                disabled="@addedSuggestions.Contains(suggestion.Name)">
+                            <i class="fas @suggestion.Icon"></i>
+                            @suggestion.Name
+                            @if (addedSuggestions.Contains(suggestion.Name))
+                            {
+                                <i class="fas fa-check ms-2"></i>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div>
+                <h6 class="text-danger">Despesas:</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var suggestion in categorySuggestions.Where(c => c.Type == (int)CategoryType.Expense))
+                    {
+                        <button class="btn btn-sm btn-outline-danger category-suggestion" 
+                                @onclick="() => AddSuggestion(suggestion)"
+                                disabled="@addedSuggestions.Contains(suggestion.Name)">
+                            <i class="fas @suggestion.Icon"></i>
+                            @suggestion.Name
+                            @if (addedSuggestions.Contains(suggestion.Name))
+                            {
+                                <i class="fas fa-check ms-2"></i>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (addedSuggestions.Any())
+        {
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i>
+                @addedSuggestions.Count categoria(s) adicionada(s) com sucesso!
+            </div>
+        }
+    }
+
+    <!-- Custom Category Form -->
+    <div class="card bg-light p-4 mb-4">
+        <h6 class="mb-3">Ou crie uma categoria personalizada:</h6>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Nome</label>
+                <input type="text" class="form-control" @bind="newCategory.Name" placeholder="Ex: Streaming" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" @bind="selectedCategoryType">
+                    <option value="1">Despesa</option>
+                    <option value="0">Receita</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cor</label>
+                <input type="color" class="form-control form-control-color" @bind="newCategory.Color" />
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary" @onclick="AddCustomCategory" disabled="@isCreating">
+                    <i class="fas @(isCreating ? "fa-spinner fa-spin" : "fa-plus")"></i>
+                    Adicionar Categoria
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons d-flex justify-content-between">
+        <button class="btn btn-outline-secondary" @onclick="OnBack">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+        <div>
+            <button class="btn btn-outline-secondary me-2" @onclick="OnSkip">
+                Pular
+            </button>
+            <button class="btn btn-primary btn-lg" @onclick="HandleNext" disabled="@(!addedSuggestions.Any())">
+                Próximo <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .category-suggestion {
+        transition: all 0.3s ease;
+    }
+
+    .category-suggestion:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+</style>
+
+@code {
+    [Parameter] public EventCallback OnNext { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+    [Parameter] public EventCallback OnSkip { get; set; }
+
+    private CreateCategoryRequestDto newCategory = new() { Color = "#007bff" };
+    private string selectedCategoryType = "1";
+    private List<CategorySuggestionDto> categorySuggestions = new();
+    private HashSet<string> addedSuggestions = new();
+    private bool isLoadingSuggestions = true;
+    private bool isCreating = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategorySuggestions();
+    }
+
+    private async Task LoadCategorySuggestions()
+    {
+        try
+        {
+            categorySuggestions = await OnboardingService.GetCategorySuggestionsAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar sugestões: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingSuggestions = false;
+        }
+    }
+
+    private async Task AddSuggestion(CategorySuggestionDto suggestion)
+    {
+        try
+        {
+            var request = new CreateCategoryRequestDto
+            {
+                Name = suggestion.Name,
+                Type = (CategoryType)suggestion.Type,
+                Color = suggestion.Color
+            };
+            
+            await CategoryService.CreateAsync(request);
+            addedSuggestions.Add(suggestion.Name);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao adicionar categoria: {ex.Message}";
+        }
+    }
+
+    private async Task AddCustomCategory()
+    {
+        if (string.IsNullOrWhiteSpace(newCategory.Name))
+        {
+            errorMessage = "Por favor, informe o nome da categoria";
+            return;
+        }
+
+        isCreating = true;
+        errorMessage = null;
+
+        try
+        {
+            newCategory.Type = (CategoryType)int.Parse(selectedCategoryType);
+            await CategoryService.CreateAsync(newCategory);
+            
+            addedSuggestions.Add(newCategory.Name);
+            
+            // Reset form
+            newCategory = new CreateCategoryRequestDto { Color = "#007bff" };
+            selectedCategoryType = "1";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao criar categoria: {ex.Message}";
+        }
+        finally
+        {
+            isCreating = false;
+        }
+    }
+
+    private async Task HandleNext()
+    {
+        await OnNext.InvokeAsync();
+    }
+}

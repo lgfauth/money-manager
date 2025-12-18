@@ -1,0 +1,227 @@
+@using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Domain.Entities
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Web.Services
+@inject ICategoryService CategoryService
+@inject IBudgetService BudgetService
+
+<div class="step-budget">
+    <h2 class="mb-4">
+        <i class="fas fa-calculator text-primary"></i>
+        Seu Primeiro Orçamento
+    </h2>
+    <p class="text-muted mb-4">
+        Defina quanto você planeja gastar em cada categoria este mês. Isso te ajudará a controlar suas finanças!
+    </p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+
+    @if (isLoadingCategories)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="text-muted mt-2">Carregando categorias...</p>
+        </div>
+    }
+    else if (!expenseCategories.Any())
+    {
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            Você precisa criar categorias de despesa primeiro!
+            <button class="btn btn-warning btn-sm ms-3" @onclick="OnBack">
+                Voltar e criar categorias
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="budget-items mb-4">
+            @foreach (var category in expenseCategories)
+            {
+                <div class="budget-item card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="category-info flex-grow-1">
+                                <span class="category-badge" style="background-color: @category.Color;">
+                                    @category.Name
+                                </span>
+                            </div>
+                            <div class="budget-input" style="width: 200px;">
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           @bind="budgetValues[category.Id]"
+                                           placeholder="0,00"
+                                           step="0.01"
+                                           min="0" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="budget-summary card bg-primary text-white mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Total do Orçamento</h5>
+                <h2 class="display-4 mb-0">R$ @GetTotalBudget().ToString("N2")</h2>
+            </div>
+        </div>
+
+        <div class="quick-budget mb-4">
+            <h6 class="text-muted mb-3">
+                <i class="fas fa-magic"></i> Ou defina um valor total e distribua automaticamente:
+            </h6>
+            <div class="input-group">
+                <span class="input-group-text">R$</span>
+                <input type="number" class="form-control" @bind="quickBudgetAmount" placeholder="Ex: 5000,00" step="0.01" />
+                <button class="btn btn-outline-secondary" @onclick="DistributeBudget">
+                    <i class="fas fa-wand-magic-sparkles"></i> Distribuir igualmente
+                </button>
+            </div>
+        </div>
+    }
+
+    <div class="action-buttons d-flex justify-content-between">
+        <button class="btn btn-outline-secondary" @onclick="OnBack">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+        <button class="btn btn-success btn-lg" @onclick="HandleComplete" disabled="@isCreating">
+            <i class="fas @(isCreating ? "fa-spinner fa-spin" : "fa-check")"></i>
+            @(isCreating ? "Finalizando..." : "Concluir Configuração")
+        </button>
+    </div>
+</div>
+
+<style>
+    .budget-item {
+        transition: all 0.3s ease;
+    }
+
+    .budget-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .category-badge {
+        padding: 8px 16px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 500;
+    }
+
+    .budget-input input:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+</style>
+
+@code {
+    [Parameter] public EventCallback OnComplete { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+
+    private List<Category> expenseCategories = new();
+    private Dictionary<string, decimal> budgetValues = new();
+    private decimal quickBudgetAmount = 0;
+    private bool isLoadingCategories = true;
+    private bool isCreating = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            var categories = await CategoryService.GetAllAsync();
+            expenseCategories = categories
+                .Where(c => c.Type == CategoryType.Expense)
+                .ToList();
+
+            // Initialize budget values
+            foreach (var category in expenseCategories)
+            {
+                budgetValues[category.Id] = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar categorias: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingCategories = false;
+        }
+    }
+
+    private decimal GetTotalBudget()
+    {
+        return budgetValues.Values.Sum();
+    }
+
+    private void DistributeBudget()
+    {
+        if (quickBudgetAmount > 0 && expenseCategories.Any())
+        {
+            var amountPerCategory = quickBudgetAmount / expenseCategories.Count;
+            foreach (var category in expenseCategories)
+            {
+                budgetValues[category.Id] = Math.Round(amountPerCategory, 2);
+            }
+        }
+    }
+
+    private async Task HandleComplete()
+    {
+        // Verificar se há pelo menos um valor definido
+        if (!budgetValues.Any(b => b.Value > 0))
+        {
+            errorMessage = "Por favor, defina pelo menos um valor de orçamento";
+            return;
+        }
+
+        isCreating = true;
+        errorMessage = null;
+
+        try
+        {
+            var currentMonth = DateTime.Now.ToString("yyyy-MM");
+            
+            var budgetItems = budgetValues
+                .Where(b => b.Value > 0)
+                .Select(b => new BudgetItemRequestDto
+                {
+                    CategoryId = b.Key,
+                    LimitAmount = b.Value
+                })
+                .ToList();
+
+            var request = new CreateBudgetRequestDto
+            {
+                Month = currentMonth,
+                Items = budgetItems
+            };
+
+            await BudgetService.CreateAsync(request);
+            await OnComplete.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao criar orçamento: {ex.Message}";
+        }
+        finally
+        {
+            isCreating = false;
+        }
+    }
+}

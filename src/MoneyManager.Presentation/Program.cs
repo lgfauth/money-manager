@@ -35,6 +35,7 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
 builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 
 // Register validators
 builder.Services.AddValidatorsFromAssembly(typeof(RegisterRequestValidator).Assembly);
