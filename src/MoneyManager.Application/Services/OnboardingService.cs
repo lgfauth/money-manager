@@ -83,24 +83,12 @@ public class OnboardingService : IOnboardingService
             new CategorySuggestionDto { Name = "Salário", Type = (int)CategoryType.Income, Color = "#28a745", Icon = "fa-money-bill-wave", IsDefault = true },
             new CategorySuggestionDto { Name = "Freelance", Type = (int)CategoryType.Income, Color = "#17a2b8", Icon = "fa-laptop-code", IsDefault = true },
             new CategorySuggestionDto { Name = "Investimentos", Type = (int)CategoryType.Income, Color = "#20c997", Icon = "fa-chart-line", IsDefault = true },
-            new CategorySuggestionDto { Name = "Outros Rendimentos", Type = (int)CategoryType.Income, Color = "#6c757d", Icon = "fa-coins", IsDefault = true },
-
-            // Despesas Essenciais
+            
+            // Despesas
             new CategorySuggestionDto { Name = "Moradia", Type = (int)CategoryType.Expense, Color = "#fd7e14", Icon = "fa-home", IsDefault = true },
             new CategorySuggestionDto { Name = "Alimentação", Type = (int)CategoryType.Expense, Color = "#dc3545", Icon = "fa-utensils", IsDefault = true },
             new CategorySuggestionDto { Name = "Transporte", Type = (int)CategoryType.Expense, Color = "#ffc107", Icon = "fa-car", IsDefault = true },
-            new CategorySuggestionDto { Name = "Saúde", Type = (int)CategoryType.Expense, Color = "#e83e8c", Icon = "fa-heartbeat", IsDefault = true },
-            new CategorySuggestionDto { Name = "Educação", Type = (int)CategoryType.Expense, Color = "#6f42c1", Icon = "fa-graduation-cap", IsDefault = true },
-
-            // Despesas Variáveis
             new CategorySuggestionDto { Name = "Lazer", Type = (int)CategoryType.Expense, Color = "#007bff", Icon = "fa-gamepad", IsDefault = true },
-            new CategorySuggestionDto { Name = "Vestuário", Type = (int)CategoryType.Expense, Color = "#e91e63", Icon = "fa-tshirt", IsDefault = true },
-            new CategorySuggestionDto { Name = "Beleza", Type = (int)CategoryType.Expense, Color = "#f06292", Icon = "fa-spa", IsDefault = true },
-            new CategorySuggestionDto { Name = "Telefone/Internet", Type = (int)CategoryType.Expense, Color = "#00acc1", Icon = "fa-phone", IsDefault = true },
-            new CategorySuggestionDto { Name = "Streaming", Type = (int)CategoryType.Expense, Color = "#ab47bc", Icon = "fa-tv", IsDefault = true },
-            new CategorySuggestionDto { Name = "Pets", Type = (int)CategoryType.Expense, Color = "#8d6e63", Icon = "fa-paw", IsDefault = true },
-            new CategorySuggestionDto { Name = "Presentes", Type = (int)CategoryType.Expense, Color = "#ef5350", Icon = "fa-gift", IsDefault = true },
-            new CategorySuggestionDto { Name = "Outros", Type = (int)CategoryType.Expense, Color = "#78909c", Icon = "fa-ellipsis-h", IsDefault = true },
         });
     }
 
@@ -109,11 +97,6 @@ public class OnboardingService : IOnboardingService
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         if (user == null)
             throw new KeyNotFoundException("Usuário não encontrado");
-
-        // Aqui você pode adicionar lógica adicional, como:
-        // - Marcar flag de onboarding completo no usuário
-        // - Enviar email de boas-vindas
-        // - Criar estatísticas iniciais
         
         await Task.CompletedTask;
     }

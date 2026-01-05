@@ -8,7 +8,6 @@ namespace MoneyManager.Presentation.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class AccountDeletionController : ControllerBase
 {
     private readonly IAccountDeletionService _accountDeletionService;
@@ -19,19 +18,57 @@ public class AccountDeletionController : ControllerBase
     }
 
     /// <summary>
+    /// Teste de conexão - endpoint público
+    /// </summary>
+    [HttpGet("test")]
+    public IActionResult Test()
+    {
+        return Ok(new 
+        { 
+            message = "AccountDeletion controller está funcionando!",
+            timestamp = DateTime.UtcNow,
+            authenticated = User.Identity?.IsAuthenticated ?? false,
+            userName = User.Identity?.Name ?? "anonymous"
+        });
+    }
+
+    /// <summary>
     /// Obtém a contagem de dados do usuário antes da exclusão
     /// </summary>
     [HttpGet("data-count")]
+    [Authorize]
     public async Task<IActionResult> GetDataCount()
     {
-        var userId = HttpContext.GetUserId();
-        var count = await _accountDeletionService.GetUserDataCountAsync(userId);
-        
-        return Ok(new 
-        { 
-            totalRecords = count,
-            message = $"Você possui {count} registros que serão permanentemente excluídos."
-        });
+        try
+        {
+            Console.WriteLine("[AccountDeletion] Iniciando GetDataCount");
+            Console.WriteLine($"[AccountDeletion] User.Identity.IsAuthenticated: {User.Identity?.IsAuthenticated}");
+            Console.WriteLine($"[AccountDeletion] User.Claims: {string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}"))}");
+            
+            var userId = HttpContext.GetUserId();
+            Console.WriteLine($"[AccountDeletion] UserId obtido: {userId}");
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                Console.WriteLine("[AccountDeletion] UserId vazio - não autenticado");
+                return Unauthorized(new { message = "Usuário não autenticado" });
+            }
+
+            var count = await _accountDeletionService.GetUserDataCountAsync(userId);
+            Console.WriteLine($"[AccountDeletion] Contagem retornada: {count}");
+            
+            return Ok(new 
+            { 
+                totalRecords = count,
+                message = $"Você possui {count} registros que serão permanentemente excluídos."
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AccountDeletion] ERRO: {ex.Message}");
+            Console.WriteLine($"[AccountDeletion] StackTrace: {ex.StackTrace}");
+            return StatusCode(500, new { message = "Erro ao obter contagem de dados", error = ex.Message, stackTrace = ex.StackTrace });
+        }
     }
 
     /// <summary>
@@ -39,6 +76,7 @@ public class AccountDeletionController : ControllerBase
     /// ATENÇÃO: Esta ação é IRREVERSÍVEL!
     /// </summary>
     [HttpPost("delete-account")]
+    [Authorize]
     public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequestDto request)
     {
         try

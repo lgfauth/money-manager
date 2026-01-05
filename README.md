@@ -2,6 +2,8 @@
 
 Sistema completo de gerenciamento financeiro desenvolvido em **.NET 9 + MongoDB**, seguindo os princípios de **Clean Architecture**.
 
+> **✨ Novidade:** Agora com exclusão completa de conta (LGPD compliance) e sistema de onboarding!
+
 ## 📋 Sumário
 
 - [Tecnologias](#tecnologias)

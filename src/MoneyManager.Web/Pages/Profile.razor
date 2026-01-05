@@ -221,23 +221,111 @@
                 </div>
             </div>
         }
+
+        <!-- Seção PERIGOSA: Exclusão de Conta (LGPD) -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card shadow-sm border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-exclamation-triangle"></i> Zona de Perigo
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="text-danger fw-bold">Excluir Conta Permanentemente</h6>
+                        <p class="text-muted mb-3">
+                            Esta ação é <strong>IRREVERSÍVEL</strong>. Todos os seus dados serão permanentemente excluídos, incluindo:
+                        </p>
+                        <ul class="text-muted mb-4">
+                            <li>Todas as suas contas e saldos</li>
+                            <li>Todas as transações registradas</li>
+                            <li>Todas as categorias personalizadas</li>
+                            <li>Todos os orçamentos criados</li>
+                            <li>Todas as transações recorrentes</li>
+                            <li>Seu perfil e configurações</li>
+                        </ul>
+
+                        @if (!showDeleteConfirmation)
+                        {
+                            <button class="btn btn-outline-danger" @onclick="ShowDeleteConfirmation">
+                                <i class="fas fa-trash-alt"></i> Quero Excluir Minha Conta
+                            </button>
+                        }
+                        else
+                        {
+                            <div class="alert alert-danger">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-exclamation-circle"></i> Confirmação de Exclusão
+                                </h6>
+                                <p><strong>Esta ação NÃO pode ser desfeita!</strong></p>
+                                <p class="mb-3">Você possui <strong class="fs-5">@dataCount</strong> registros que serão permanentemente excluídos.</p>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Digite sua senha para continuar:</label>
+                                    <input type="password" class="form-control" @bind="deletePassword" placeholder="Sua senha" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Digite exatamente "DELETAR MINHA CONTA" para confirmar:</label>
+                                    <input type="text" class="form-control" @bind="deleteConfirmationText" placeholder="DELETAR MINHA CONTA" />
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" @bind="understandConsequences" id="understandCheck" />
+                                    <label class="form-check-label" for="understandCheck">
+                                        Eu entendo que esta ação é permanente e todos os meus dados serão excluídos
+                                    </label>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-danger" @onclick="DeleteAccount" disabled="@(!CanDeleteAccount() || isDeletingAccount)">
+                                        @if (isDeletingAccount)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                            <span>Excluindo...</span>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="fas fa-trash-alt"></i> Confirmar Exclusão Permanente</span>
+                                        }
+                                    </button>
+                                    <button class="btn btn-secondary" @onclick="@(() => { showDeleteConfirmation = false; ClearDeleteFields(); })">
+                                        <i class="fas fa-times"></i> Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 </div>
 
 @code {
-    private bool isLoading = true;
-    private bool isSaving = false;
-    private bool isChangingPassword = false;
-    private bool isUpdatingEmail = false;
-    private bool showChangePassword = false;
-    private bool showChangeEmail = false;
-    private string? errorMessage;
-    private string? successMessage;
+[Inject] private MoneyManager.Web.Services.IAccountDeletionService AccountDeletionService { get; set; } = default!;
+[Inject] private NavigationManager Nav { get; set; } = default!;
+[Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
-    private UserProfileResponseDto profile = new();
-    private UpdateProfileRequestDto updateProfileRequest = new();
-    private ChangePasswordRequestDto changePasswordRequest = new();
-    private UpdateEmailRequestDto updateEmailRequest = new();
+private bool isLoading = true;
+private bool isSaving = false;
+private bool isChangingPassword = false;
+private bool isUpdatingEmail = false;
+private bool isDeletingAccount = false;
+private bool showChangePassword = false;
+private bool showChangeEmail = false;
+private bool showDeleteConfirmation = false;
+private bool understandConsequences = false;
+private string? errorMessage;
+private string? successMessage;
+private string deletePassword = string.Empty;
+private string deleteConfirmationText = string.Empty;
+private int dataCount = 0;
+
+private UserProfileResponseDto profile = new();
+private UpdateProfileRequestDto updateProfileRequest = new();
+private ChangePasswordRequestDto changePasswordRequest = new();
+private UpdateEmailRequestDto updateEmailRequest = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -397,5 +485,79 @@
     private void ClearPasswordFields()
     {
         changePasswordRequest = new ChangePasswordRequestDto();
+    }
+
+    private async Task ShowDeleteConfirmation()
+    {
+        try
+        {
+            dataCount = await AccountDeletionService.GetDataCountAsync();
+            showDeleteConfirmation = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar informações: {ex.Message}";
+        }
+    }
+
+    private bool CanDeleteAccount()
+    {
+        return !string.IsNullOrWhiteSpace(deletePassword) &&
+               deleteConfirmationText == "DELETAR MINHA CONTA" &&
+               understandConsequences;
+    }
+
+    private void ClearDeleteFields()
+    {
+        deletePassword = string.Empty;
+        deleteConfirmationText = string.Empty;
+        understandConsequences = false;
+        showDeleteConfirmation = false;
+    }
+
+    private async Task DeleteAccount()
+    {
+        if (!CanDeleteAccount())
+        {
+            errorMessage = "Por favor, preencha todos os campos corretamente";
+            return;
+        }
+
+        isDeletingAccount = true;
+        errorMessage = null;
+
+        try
+        {
+            var success = await AccountDeletionService.DeleteAccountAsync(deletePassword, deleteConfirmationText);
+            
+            if (success)
+            {
+                // Faz logout
+                if (AuthStateProvider is MoneyManager.Web.Services.CustomAuthenticationStateProvider customAuthProvider)
+                {
+                    await customAuthProvider.MarkUserAsLoggedOut();
+                }
+                
+                // Redireciona para página de confirmação
+                Nav.NavigateTo("/account-deleted", true);
+            }
+            else
+            {
+                errorMessage = "Erro ao excluir conta. Verifique sua senha e tente novamente.";
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            errorMessage = "Senha incorreta. Por favor, verifique e tente novamente.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao excluir conta: {ex.Message}";
+            Console.WriteLine($"Erro: {ex}");
+        }
+        finally
+        {
+            isDeletingAccount = false;
+        }
     }
 }

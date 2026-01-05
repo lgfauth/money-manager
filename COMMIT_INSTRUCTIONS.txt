@@ -1,0 +1,72 @@
+=================================================================
+ARQUIVOS PARA COMMIT - FEATURE: EXCLUSÃO DE CONTA (LGPD) + FIX AUTH
+=================================================================
+
+BACKEND (API):
+--------------
+? src/MoneyManager.Application/Services/AccountDeletionService.cs
+? src/MoneyManager.Application/DTOs/Request/DeleteAccountRequestDto.cs
+? src/MoneyManager.Presentation/Controllers/AccountDeletionController.cs
+? src/MoneyManager.Presentation/Program.cs (adicionado logs de DI)
+? src/MoneyManager.Application/Services/OnboardingService.cs
+? src/MoneyManager.Application/DTOs/Response/OnboardingStatusDto.cs
+? src/MoneyManager.Application/DTOs/Response/CategorySuggestionDto.cs
+? src/MoneyManager.Presentation/Controllers/OnboardingController.cs
+
+FRONTEND (Blazor):
+------------------
+? src/MoneyManager.Web/Services/AccountDeletionService.cs
+? src/MoneyManager.Web/Services/AuthorizationMessageHandler.cs (FIX CRÍTICO)
+? src/MoneyManager.Web/Program.cs (configuração do AuthHandler)
+? src/MoneyManager.Web/Pages/Profile.razor (seção Zona de Perigo)
+? src/MoneyManager.Web/Pages/AccountDeleted.razor
+? src/MoneyManager.Web/Services/OnboardingService.cs
+? src/MoneyManager.Web/Pages/Onboarding.razor
+? src/MoneyManager.Web/Pages/Register.razor (redirecionamento)
+
+DOCUMENTAÇÃO:
+-------------
+? docs/FEATURE_ACCOUNT_DELETION_LGPD.md
+? README.md (linha de novidade adicionada)
+
+=================================================================
+
+COMANDOS SUGERIDOS:
+-------------------
+
+1. Adicionar todos os arquivos:
+   git add .
+
+2. Verificar status:
+   git status
+
+3. Commit com mensagem descritiva:
+   git commit -m "feat: implementar exclusão completa de conta (LGPD) + fix auth handler
+
+- Adiciona recurso de exclusão de conta conforme LGPD
+- Cria AccountDeletionService para deletar todos os dados do usuário
+- Cria controller e endpoints da API para exclusão
+- Adiciona seção Zona de Perigo na página de Perfil
+- Implementa confirmação em múltiplas etapas (senha + texto + checkbox)
+- Cria página de confirmação pós-exclusão
+- CORRIGE AuthorizationMessageHandler para enviar token JWT em TODAS as requisições
+- Adiciona logs de debug para DI no Program.cs
+- Adiciona sistema de onboarding simplificado
+- Documentação completa do recurso de LGPD"
+
+4. Push para o GitHub (VAI ACIONAR DEPLOY NO RAILWAY):
+   git push origin main
+
+=================================================================
+
+IMPORTANTE:
+-----------
+?? O erro "Unable to resolve service for type 'IAccountDeletionService'"
+   acontece porque o RAILWAY está rodando código ANTIGO!
+   
+?? Após o push, o Railway vai fazer REDEPLOY automático e o erro
+   será corrigido!
+
+?? Tempo estimado de deploy: ~5-10 minutos
+
+=================================================================

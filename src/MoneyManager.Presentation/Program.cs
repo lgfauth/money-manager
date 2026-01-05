@@ -36,6 +36,7 @@ builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionSer
 builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 
 // Register validators
 builder.Services.AddValidatorsFromAssembly(typeof(RegisterRequestValidator).Assembly);
@@ -66,7 +67,7 @@ builder.Services.AddControllers();
 // Configure forwarded headers for Railway (proxy behind HTTPS)
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
                                Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
@@ -75,13 +76,13 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
 // Add Swagger
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo 
-    { 
-        Title = "MoneyManager API", 
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "MoneyManager API",
         Version = "v1",
         Description = "API para gerenciamento financeiro pessoal"
     });
-    
+
     // Add JWT to Swagger
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
@@ -91,7 +92,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
         {
@@ -113,7 +114,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.SetIsOriginAllowed(origin => true) // Permite qualquer origem temporariamente
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -129,16 +130,14 @@ app.Urls.Add("http://0.0.0.0:8080");
 app.UseForwardedHeaders();
 
 // CORS deve ser o PRIMEIRO middleware depois de ForwardedHeaders
-// Importante: Antes de qualquer middleware que possa curto-circuitar a requisição
 app.Use(async (context, next) =>
 {
     var origin = context.Request.Headers["Origin"].FirstOrDefault();
     var method = context.Request.Method;
     var path = context.Request.Path;
-    
+
     Console.WriteLine($"[CORS] Request: {method} {path} from Origin: {origin ?? "NO ORIGIN"}");
-    
-    // Sempre adiciona headers CORS se houver Origin
+
     if (!string.IsNullOrEmpty(origin))
     {
         context.Response.Headers["Access-Control-Allow-Origin"] = origin;
@@ -146,21 +145,20 @@ app.Use(async (context, next) =>
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH";
         context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With";
         context.Response.Headers["Access-Control-Max-Age"] = "86400";
-        
+
         Console.WriteLine($"[CORS] Added headers for origin: {origin}");
     }
-    
-    // Handle preflight OPTIONS - DEVE retornar imediatamente
+
     if (method == "OPTIONS")
     {
-        Console.WriteLine($"[CORS] Handling OPTIONS (preflight) request - returning 204");
+        Console.WriteLine("[CORS] Handling OPTIONS (preflight) request - returning 204");
         context.Response.StatusCode = 204;
         await context.Response.CompleteAsync();
         return;
     }
-    
+
     await next();
-    
+
     Console.WriteLine($"[CORS] Response status: {context.Response.StatusCode}");
 });
 
@@ -170,15 +168,13 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var mongoContext = scope.ServiceProvider.GetRequiredService<MongoContext>();
-        
-        // Test connection first
+
         Console.WriteLine("========================================");
         Console.WriteLine("Testing MongoDB connection...");
         await mongoContext.TestConnectionAsync();
         Console.WriteLine("? MongoDB connection successful!");
         Console.WriteLine("========================================");
-        
-        // Create indexes
+
         Console.WriteLine("Creating MongoDB indexes...");
         await mongoContext.CreateIndexesAsync();
         Console.WriteLine("? MongoDB indexes created successfully!");
@@ -186,7 +182,6 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        // Log the exception but don't fail the startup
         Console.WriteLine("========================================");
         Console.WriteLine("? MongoDB Error:");
         Console.WriteLine($"Message: {ex.Message}");
@@ -196,7 +191,7 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine($"Inner: {ex.InnerException.Message}");
         }
         Console.WriteLine("========================================");
-        Console.WriteLine("??  API started but MongoDB is not accessible!");
+        Console.WriteLine("? API started but MongoDB is not accessible!");
         Console.WriteLine("========================================");
     }
 }
@@ -206,7 +201,6 @@ app.UseSwagger(c =>
 {
     c.PreSerializeFilters.Add((swagger, httpReq) =>
     {
-        // Force HTTPS in Swagger when behind proxy
         if (httpReq.Headers.ContainsKey("X-Forwarded-Proto"))
         {
             swagger.Servers = new List<Microsoft.OpenApi.Models.OpenApiServer>
@@ -220,7 +214,7 @@ app.UseSwagger(c =>
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "MoneyManager API v1");
-    c.RoutePrefix = string.Empty; // Serve Swagger at root
+    c.RoutePrefix = string.Empty;
     c.DisplayRequestDuration();
     c.EnableDeepLinking();
 });
@@ -228,7 +222,6 @@ app.UseSwaggerUI(c =>
 // ExceptionHandlingMiddleware DEPOIS do CORS
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Don't redirect to HTTPS in production (Railway handles SSL)
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -239,15 +232,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Health check endpoint for Railway
-app.MapGet("/health", () => Results.Ok(new 
-{ 
+app.MapGet("/health", () => Results.Ok(new
+{
     status = "healthy",
     timestamp = DateTime.UtcNow,
     environment = app.Environment.EnvironmentName
 }));
 
-// CORS test endpoint
 app.MapGet("/api/test-cors", () => Results.Ok(new
 {
     message = "CORS is working!",
@@ -255,13 +246,11 @@ app.MapGet("/api/test-cors", () => Results.Ok(new
     corsConfigured = true
 }));
 
-// IP discovery endpoint (temporary - for Railway IP discovery)
 app.MapGet("/api/discover-ip", async (HttpContext context) =>
 {
     var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
     var remoteIp = context.Connection.RemoteIpAddress?.ToString();
-    
-    // Try to get real public IP by calling external service
+
     string? publicIp = null;
     try
     {
@@ -269,7 +258,7 @@ app.MapGet("/api/discover-ip", async (HttpContext context) =>
         publicIp = await httpClient.GetStringAsync("https://api.ipify.org");
     }
     catch { }
-    
+
     return Results.Ok(new
     {
         message = "Railway IP Discovery",
@@ -280,7 +269,6 @@ app.MapGet("/api/discover-ip", async (HttpContext context) =>
     });
 });
 
-// Root endpoint
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();

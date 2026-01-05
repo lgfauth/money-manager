@@ -119,10 +119,10 @@
         try
         {
             var result = await AuthService.RegisterAsync(registerRequest);
-            successMessage = "Conta criada com sucesso! Vamos configurar sua conta...";
-            await Task.Delay(1500);
+            successMessage = "Conta criada com sucesso! Vamos configurar...";
+            await Task.Delay(1000);
             
-            // Faz login automático após registro
+            // Faz login automático
             var loginRequest = new LoginRequestDto 
             { 
                 Email = registerRequest.Email, 

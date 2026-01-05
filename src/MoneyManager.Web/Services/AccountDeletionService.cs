@@ -19,8 +19,31 @@ public class AccountDeletionService : IAccountDeletionService
 
     public async Task<int> GetDataCountAsync()
     {
-        var response = await _httpClient.GetFromJsonAsync<DataCountResponse>("api/accountdeletion/data-count");
-        return response?.TotalRecords ?? 0;
+        try
+        {
+            Console.WriteLine("[Frontend] Chamando api/accountdeletion/data-count");
+            Console.WriteLine($"[Frontend] BaseAddress: {_httpClient.BaseAddress}");
+            
+            var response = await _httpClient.GetAsync("api/accountdeletion/data-count");
+            Console.WriteLine($"[Frontend] Status: {response.StatusCode}");
+            
+            var content = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"[Frontend] Response: {content}");
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException($"Erro ao obter contagem: {response.StatusCode} - {content}");
+            }
+            
+            var data = await response.Content.ReadFromJsonAsync<DataCountResponse>();
+            return data?.TotalRecords ?? 0;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Frontend] ERRO: {ex.Message}");
+            Console.WriteLine($"[Frontend] StackTrace: {ex.StackTrace}");
+            throw;
+        }
     }
 
     public async Task<bool> DeleteAccountAsync(string password, string confirmationText)

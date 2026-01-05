@@ -2,7 +2,14 @@
 @using System.Linq
 @using Microsoft.AspNetCore.Components
 @using System.Threading.Tasks
-<input class="form-control" value="@displayValue" placeholder="@Placeholder" @oninput="OnInput" @onblur="OnBlur" @onfocus="OnFocus" />
+
+<input class="form-control"
+       value="@displayValue"
+       placeholder="@Placeholder"
+       inputmode="decimal"
+       @oninput="OnInput"
+       @onblur="OnBlur"
+       @onfocus="OnFocus" />
 
 @code {
     [Parameter]
@@ -15,34 +22,46 @@
     public string? Placeholder { get; set; }
 
     private string displayValue = string.Empty;
+    private string rawValue = string.Empty;
 
     protected override void OnParametersSet()
     {
-        displayValue = Format(Value);
+        // Se o usuário não está editando, mantenha a máscara no display.
+        // Durante edição (focus), o displayValue é controlado por OnInput/OnFocus.
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            displayValue = Format(Value);
+        }
     }
 
     private async Task OnInput(ChangeEventArgs e)
     {
         var s = e?.Value?.ToString() ?? string.Empty;
+        // Enquanto digita, não aplica máscara. Apenas guarda o texto cru.
+        rawValue = s;
         displayValue = s;
-        var parsed = ParseDecimal(s);
+    }
+
+    private async Task OnBlur(FocusEventArgs e)
+    {
+        // Ao sair do campo (TAB/click), aplica a máscara e atualiza o Value.
+        var parsed = ParseDecimal(rawValue);
         if (parsed.HasValue)
         {
             Value = parsed.Value;
             await ValueChanged.InvokeAsync(Value);
         }
-    }
 
-    private async Task OnBlur(FocusEventArgs e)
-    {
+        rawValue = string.Empty;
         displayValue = Format(Value);
         await Task.CompletedTask;
     }
 
     private void OnFocus(FocusEventArgs e)
     {
-        // show plain numeric for editing
-        displayValue = Value.ToString("F2", CultureInfo.CurrentCulture);
+        // Durante edição, mostra valor "cru" e não formatado.
+        rawValue = Value == 0m ? string.Empty : Value.ToString("0.##", CultureInfo.CurrentCulture);
+        displayValue = rawValue;
     }
 
     private string Format(decimal value)

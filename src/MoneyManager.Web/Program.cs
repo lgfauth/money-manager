@@ -12,9 +12,21 @@ var apiUrl = "https://money-manager-api.up.railway.app";
 
 Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
 
-builder.Services.AddScoped(sp => new HttpClient 
-{ 
-    BaseAddress = new Uri(apiUrl) 
+// Register AuthorizationMessageHandler
+builder.Services.AddScoped<AuthorizationMessageHandler>();
+
+// Configure HttpClient with AuthorizationMessageHandler
+builder.Services.AddScoped(sp =>
+{
+    var authHandler = sp.GetRequiredService<AuthorizationMessageHandler>();
+    authHandler.InnerHandler = new HttpClientHandler();
+    
+    var httpClient = new HttpClient(authHandler)
+    {
+        BaseAddress = new Uri(apiUrl)
+    };
+    
+    return httpClient;
 });
 
 // Register Blazored LocalStorage
@@ -32,6 +44,7 @@ builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionSer
 builder.Services.AddScoped<MoneyManager.Web.Services.IUserSettingsService, MoneyManager.Web.Services.UserSettingsService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<MoneyManager.Web.Services.IOnboardingService, MoneyManager.Web.Services.OnboardingService>();
+builder.Services.AddScoped<MoneyManager.Web.Services.IAccountDeletionService, MoneyManager.Web.Services.AccountDeletionService>();
 
 // Configure authorization
 builder.Services.AddAuthorizationCore();

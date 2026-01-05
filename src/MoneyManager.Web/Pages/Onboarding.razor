@@ -1,16 +1,9 @@
 @page "/onboarding"
-@using MoneyManager.Application.DTOs.Response
-@using MoneyManager.Application.DTOs.Request
-@using MoneyManager.Domain.Enums
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject NavigationManager Navigation
 @inject MoneyManager.Web.Services.IOnboardingService OnboardingService
-@inject IAccountService AccountService
-@inject ICategoryService CategoryService
-@inject IBudgetService BudgetService
-@inject IRecurringTransactionService RecurringService
 
 <PageTitle>Bem-vindo ao MoneyManager!</PageTitle>
 
@@ -25,74 +18,31 @@
         </p>
     </div>
 
-    <!-- Progress Bar -->
-    <div class="progress-container mb-5">
-        <div class="progress" style="height: 30px;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" 
-                 role="progressbar" 
-                 style="width: @GetProgressWidth()%"
-                 aria-valuenow="@currentStep" 
-                 aria-valuemin="0" 
-                 aria-valuemax="4">
-                Passo @currentStep de 4
+    <div class="card shadow-lg border-0">
+        <div class="card-body p-5 text-center">
+            <i class="fas fa-check-circle text-success" style="font-size: 80px;"></i>
+            <h2 class="mt-4 mb-3">Conta Criada com Sucesso!</h2>
+            <p class="text-muted mb-4">
+                Sua conta foi criada. Agora você pode começar a usar o MoneyManager!
+            </p>
+            <div class="d-grid gap-3">
+                <button class="btn btn-primary btn-lg" @onclick="@(() => Navigation.NavigateTo("/accounts"))">
+                    <i class="fas fa-wallet"></i> Criar Primeira Conta
+                </button>
+                <button class="btn btn-outline-primary btn-lg" @onclick="@(() => Navigation.NavigateTo("/categories"))">
+                    <i class="fas fa-tags"></i> Criar Categorias
+                </button>
+                <button class="btn btn-outline-secondary btn-lg" @onclick="CompleteOnboarding">
+                    <i class="fas fa-home"></i> Ir para Dashboard
+                </button>
             </div>
-        </div>
-        <div class="step-indicators mt-3 d-flex justify-content-between">
-            <div class="step @(currentStep >= 1 ? "active" : "")">
-                <i class="fas fa-wallet"></i>
-                <span>Contas</span>
-            </div>
-            <div class="step @(currentStep >= 2 ? "active" : "")">
-                <i class="fas fa-tags"></i>
-                <span>Categorias</span>
-            </div>
-            <div class="step @(currentStep >= 3 ? "active" : "")">
-                <i class="fas fa-repeat"></i>
-                <span>Recorrentes</span>
-            </div>
-            <div class="step @(currentStep >= 4 ? "active" : "")">
-                <i class="fas fa-calculator"></i>
-                <span>Orçamento</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Step Content -->
-    <div class="step-content card shadow-lg border-0">
-        <div class="card-body p-5">
-            @if (currentStep == 1)
-            {
-                <StepAccounts 
-                    OnNext="HandleStep1Complete" 
-                    OnSkip="SkipToNextStep" />
-            }
-            else if (currentStep == 2)
-            {
-                <StepCategories 
-                    OnNext="HandleStep2Complete" 
-                    OnBack="GoToPreviousStep" 
-                    OnSkip="SkipToNextStep" />
-            }
-            else if (currentStep == 3)
-            {
-                <StepRecurring 
-                    OnNext="HandleStep3Complete" 
-                    OnBack="GoToPreviousStep" 
-                    OnSkip="SkipToNextStep" />
-            }
-            else if (currentStep == 4)
-            {
-                <StepBudget 
-                    OnComplete="HandleOnboardingComplete" 
-                    OnBack="GoToPreviousStep" />
-            }
         </div>
     </div>
 </div>
 
 <style>
     .onboarding-container {
-        max-width: 900px;
+        max-width: 600px;
         margin: 50px auto;
         padding: 20px;
     }
@@ -100,110 +50,20 @@
     .onboarding-header h1 {
         font-weight: 700;
     }
-
-    .step-indicators {
-        display: flex;
-        justify-content: space-around;
-        padding: 0 20px;
-    }
-
-    .step {
-        text-align: center;
-        opacity: 0.4;
-        transition: all 0.3s ease;
-    }
-
-    .step.active {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-
-    .step i {
-        font-size: 2rem;
-        display: block;
-        margin-bottom: 10px;
-        color: #6c757d;
-    }
-
-    .step.active i {
-        color: #0d6efd;
-    }
-
-    .step span {
-        font-size: 0.9rem;
-        font-weight: 500;
-    }
-
-    .step-content {
-        min-height: 500px;
-        animation: fadeIn 0.5s ease-in;
-    }
-
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
 </style>
 
 @code {
-    private int currentStep = 1;
-
-    private string GetProgressWidth()
-    {
-        return ((currentStep / 4.0) * 100).ToString("F0");
-    }
-
-    private void HandleStep1Complete()
-    {
-        currentStep = 2;
-    }
-
-    private void HandleStep2Complete()
-    {
-        currentStep = 3;
-    }
-
-    private void HandleStep3Complete()
-    {
-        currentStep = 4;
-    }
-
-    private async Task HandleOnboardingComplete()
+    private async Task CompleteOnboarding()
     {
         try
         {
             await OnboardingService.CompleteOnboardingAsync();
-            Navigation.NavigateTo("/dashboard");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Erro ao completar onboarding: {ex.Message}");
-            // Ainda assim redireciona para o dashboard
-            Navigation.NavigateTo("/dashboard");
         }
-    }
-
-    private void GoToPreviousStep()
-    {
-        if (currentStep > 1)
-        {
-            currentStep--;
-        }
-    }
-
-    private void SkipToNextStep()
-    {
-        if (currentStep < 4)
-        {
-            currentStep++;
-        }
-        else
+        finally
         {
             Navigation.NavigateTo("/dashboard");
         }
