@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Blazored.LocalStorage;
-using MoneyManager.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MoneyManager.Web.Services;
 using MoneyManager.Web.Services.Localization;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -21,12 +21,12 @@ builder.Services.AddScoped(sp =>
 {
     var authHandler = sp.GetRequiredService<AuthorizationMessageHandler>();
     authHandler.InnerHandler = new HttpClientHandler();
-    
+
     var httpClient = new HttpClient(authHandler)
     {
         BaseAddress = new Uri(apiUrl)
     };
-    
+
     return httpClient;
 });
 
@@ -42,13 +42,13 @@ builder.Services.AddScoped<IBudgetService, BudgetService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
-builder.Services.AddScoped<MoneyManager.Web.Services.IUserSettingsService, MoneyManager.Web.Services.UserSettingsService>();
+builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-builder.Services.AddScoped<MoneyManager.Web.Services.IOnboardingService, MoneyManager.Web.Services.OnboardingService>();
-builder.Services.AddScoped<MoneyManager.Web.Services.IAccountDeletionService, MoneyManager.Web.Services.AccountDeletionService>();
+builder.Services.AddScoped<IOnboardingService, OnboardingService>();
+builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 
 // Localization (JSON in wwwroot/i18n)
-builder.Services.AddScoped<ILocalizationService, MoneyManager.Web.Services.Localization.LocalizationService>();
+builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 
 // Configure authorization
 builder.Services.AddAuthorizationCore();
