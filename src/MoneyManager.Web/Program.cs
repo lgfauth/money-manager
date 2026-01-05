@@ -48,7 +48,7 @@ builder.Services.AddScoped<MoneyManager.Web.Services.IOnboardingService, MoneyMa
 builder.Services.AddScoped<MoneyManager.Web.Services.IAccountDeletionService, MoneyManager.Web.Services.AccountDeletionService>();
 
 // Localization (JSON in wwwroot/i18n)
-builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+builder.Services.AddScoped<ILocalizationService, MoneyManager.Web.Services.Localization.LocalizationService>();
 
 // Configure authorization
 builder.Services.AddAuthorizationCore();
