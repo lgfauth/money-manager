@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Blazored.LocalStorage;
 using MoneyManager.Web.Services;
 using Microsoft.AspNetCore.Components.Authorization;
+using MoneyManager.Web.Services.Localization;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
@@ -46,6 +47,9 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<MoneyManager.Web.Services.IOnboardingService, MoneyManager.Web.Services.OnboardingService>();
 builder.Services.AddScoped<MoneyManager.Web.Services.IAccountDeletionService, MoneyManager.Web.Services.AccountDeletionService>();
 
+// Localization (JSON in wwwroot/i18n)
+builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+
 // Configure authorization
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
@@ -56,5 +60,9 @@ var host = builder.Build();
 // Initialize authentication state provider
 var authProvider = host.Services.GetRequiredService<CustomAuthenticationStateProvider>();
 await authProvider.InitializeAsync();
+
+// Initialize localization
+var localization = host.Services.GetRequiredService<ILocalizationService>();
+await localization.InitializeAsync();
 
 await host.RunAsync();

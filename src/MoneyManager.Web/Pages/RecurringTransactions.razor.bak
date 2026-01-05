@@ -1,4 +1,4 @@
-ï»¿@page "/recurring-transactions"
+@page "/recurring-transactions"
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Application.DTOs.Request
@@ -9,17 +9,17 @@
 @inject IAccountService AccountService
 @inject ICategoryService CategoryService
 
-<PageTitle>TransaÃ§Ãµes Recorrentes - MoneyManager</PageTitle>
+<PageTitle>Transações Recorrentes - MoneyManager</PageTitle>
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-repeat text-primary"></i> TransaÃ§Ãµes Recorrentes
+                    <i class="fas fa-repeat text-primary"></i> Transações Recorrentes
                 </h1>
                 <button class="btn btn-primary" @onclick="ShowAddModal">
-                    <i class="fas fa-plus"></i> Nova RecorrÃªncia
+                    <i class="fas fa-plus"></i> Nova Recorrência
                 </button>
             </div>
         </div>
@@ -29,7 +29,7 @@
     {
         <div class="card mb-4">
             <div class="card-body">
-                <h5>@(isEditing ? "Editar" : "Nova") TransaÃ§Ã£o Recorrente</h5>
+                <h5>@(isEditing ? "Editar" : "Nova") Transação Recorrente</h5>
                 @if (!string.IsNullOrEmpty(addError))
                 {
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -39,8 +39,8 @@
                 }
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">DescriÃ§Ã£o</label>
-                        <input class="form-control" placeholder="Ex: Aluguel, SalÃ¡rio, Netflix" @bind="newRecurring.Description" />
+                        <label class="form-label">Descrição</label>
+                        <input class="form-control" placeholder="Ex: Aluguel, Salário, Netflix" @bind="newRecurring.Description" />
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Tipo</label>
@@ -74,7 +74,7 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">FrequÃªncia</label>
+                        <label class="form-label">Frequência</label>
                         <select class="form-select" @bind="recurringFrequency">
                             <option value="3">Mensal</option>
                             <option value="1">Semanal</option>
@@ -87,19 +87,19 @@
                     @if (recurringFrequency == "3")
                     {
                         <div class="col-md-3">
-                            <label class="form-label">Dia do MÃªs</label>
+                            <label class="form-label">Dia do Mês</label>
                             <input type="number" class="form-control" min="1" max="31" @bind="newRecurring.DayOfMonth" placeholder="Ex: 5" />
-                            <small class="text-muted">Dia em que ocorre todo mÃªs</small>
+                            <small class="text-muted">Dia em que ocorre todo mês</small>
                         </div>
                     }
                     <div class="col-md-@(recurringFrequency == "3" ? "4" : "6")">
-                        <label class="form-label">Data de InÃ­cio</label>
+                        <label class="form-label">Data de Início</label>
                         <input type="date" class="form-control" @bind="startDateInput" />
                     </div>
                     <div class="col-md-@(recurringFrequency == "3" ? "5" : "6")">
-                        <label class="form-label">Data de TÃ©rmino (opcional)</label>
+                        <label class="form-label">Data de Término (opcional)</label>
                         <input type="date" class="form-control" @bind="endDateInput" />
-                        <small class="text-muted">Deixe vazio para recorrÃªncia indefinida</small>
+                        <small class="text-muted">Deixe vazio para recorrência indefinida</small>
                     </div>
                     <div class="col-12">
                         <div class="d-flex gap-2">
@@ -122,7 +122,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando transaÃ§Ãµes recorrentes...</p>
+            <p class="mt-3 text-muted">Carregando transações recorrentes...</p>
         </div>
     }
     else if (errorMessage != null)
@@ -164,12 +164,12 @@
                                     <i class="fas fa-sync-alt"></i> @GetFrequencyText(recurring.Frequency)
                                 </small>
                                 <small class="text-muted d-block">
-                                    <i class="fas fa-calendar"></i> PrÃ³xima: @recurring.NextOccurrenceDate.ToString("dd/MM/yyyy")
+                                    <i class="fas fa-calendar"></i> Próxima: @recurring.NextOccurrenceDate.ToString("dd/MM/yyyy")
                                 </small>
                                 @if (recurring.LastProcessedDate.HasValue)
                                 {
                                     <small class="text-muted d-block">
-                                        <i class="fas fa-check"></i> Ãšltima: @recurring.LastProcessedDate.Value.ToString("dd/MM/yyyy")
+                                        <i class="fas fa-check"></i> Última: @recurring.LastProcessedDate.Value.ToString("dd/MM/yyyy")
                                     </small>
                                 }
                             </div>
@@ -190,7 +190,7 @@
     else
     {
         <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle"></i> Nenhuma transaÃ§Ã£o recorrente encontrada.
+            <i class="fas fa-info-circle"></i> Nenhuma transação recorrente encontrada.
             <a href="#" @onclick="ShowAddModal" @onclick:preventDefault>Clique aqui para criar uma.</a>
         </div>
     }
@@ -295,7 +295,7 @@
         }
         catch (Exception ex)
         {
-            addError = $"Erro ao carregar recorrÃªncia: {ex.Message}";
+            addError = $"Erro ao carregar recorrência: {ex.Message}";
         }
     }
 
@@ -307,13 +307,13 @@
         {
             if (string.IsNullOrEmpty(newRecurring.Description))
             {
-                addError = "DescriÃ§Ã£o Ã© obrigatÃ³ria";
+                addError = "Descrição é obrigatória";
                 return;
             }
 
             if (string.IsNullOrEmpty(newRecurring.AccountId))
             {
-                addError = "Conta Ã© obrigatÃ³ria";
+                addError = "Conta é obrigatória";
                 return;
             }
 
@@ -351,7 +351,7 @@
 
     private async Task DeleteRecurring(string id)
     {
-        if (JSRuntime != null && await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transaÃ§Ã£o recorrente?"))
+        if (JSRuntime != null && await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transação recorrente?"))
         {
             try
             {
@@ -369,7 +369,7 @@
     {
         return frequency switch
         {
-            RecurrenceFrequency.Daily => "DiÃ¡ria",
+            RecurrenceFrequency.Daily => "Diária",
             RecurrenceFrequency.Weekly => "Semanal",
             RecurrenceFrequency.Biweekly => "Quinzenal",
             RecurrenceFrequency.Monthly => "Mensal",
@@ -380,4 +380,3 @@
         };
     }
 }
-
