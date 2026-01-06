@@ -57,8 +57,9 @@
                     </div>
                     <div class="col-md-2">
                         <select class="form-select" @bind="newRequest.Type">
-                            <option value="0">Income</option>
-                            <option value="1">Expense</option>
+                            <option value="0">Receita</option>
+                            <option value="1">Despesa</option>
+                            <option value="2">Transferência</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -125,6 +126,10 @@
                                     @if (transaction.Type.ToString() == "Income")
                                     {
                                         <span class="text-success">+ R$ @transaction.Amount.ToString("F2")</span>
+                                    }
+                                    else if (transaction.Type.ToString() == "Transfer")
+                                    {
+                                        <span class="text-primary">R$ @transaction.Amount.ToString("F2")</span>
                                     }
                                     else
                                     {

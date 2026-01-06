@@ -1,9 +1,12 @@
 @page "/accounts"
 @using MoneyManager.Domain.Entities
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Application.DTOs.Request
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IAccountService AccountService
+@inject ITransactionService TransactionService
 
 <PageTitle>Contas - MoneyManager</PageTitle>
 
@@ -38,11 +41,11 @@
                     </div>
                     <div class="col-md-3">
                         <select class="form-select text-dark" @onchange="OnAccountTypeChanged">
-                            <option value="Checking">Checking</option>
-                            <option value="Savings">Savings</option>
-                            <option value="Cash">Cash</option>
-                            <option value="CreditCard">CreditCard</option>
-                            <option value="Investment">Investment</option>
+                            <option value="Checking">Conta Corrente</option>
+                            <option value="Savings">Poupança</option>
+                            <option value="Cash">Dinheiro</option>
+                            <option value="CreditCard">Cartão de Crédito</option>
+                            <option value="Investment">Investimento</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -87,10 +90,16 @@
                                 <h3 class="text-primary mb-0">R$ @account.Balance.ToString("F2")</h3>
                             </div>
                             <div class="mb-3">
-                                <small class="text-muted">Tipo: @account.Type</small><br/>
+                                <small class="text-muted">Tipo: @GetAccountTypeLabel(account.Type)</small><br/>
                                 <small class="text-muted">Saldo Inicial: R$ @account.InitialBalance.ToString("F2")</small>
                             </div>
                             <div class="d-grid gap-2">
+                                @if (account.Type == AccountType.CreditCard)
+                                {
+                                    <button class="btn btn-sm btn-primary" @onclick="() => ShowPayInvoice(account)">
+                                        <i class="fas fa-file-invoice-dollar"></i> Pagar Fatura
+                                    </button>
+                                }
                                 <button class="btn btn-sm btn-warning" @onclick="() => BeginEditAccount(account.Id)">
                                     <i class="fas fa-edit"></i> Editar
                                 </button>
@@ -102,6 +111,47 @@
                     </div>
                 </div>
             }
+
+    @if (showPayInvoice)
+    {
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5>Pagamento de fatura - @selectedCard?.Name</h5>
+                @if (!string.IsNullOrEmpty(invoiceError))
+                {
+                    <div class="alert alert-danger">@invoiceError</div>
+                }
+
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <label class="form-label">Data</label>
+                        <input type="date" class="form-control" @bind="invoicePaymentDate" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Conta que vai pagar</label>
+                        <select class="form-select" @bind="payFromAccountId">
+                            <option value="">-- Selecione --</option>
+                            @foreach (var a in accountsListForPay)
+                            {
+                                <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Valor do pagamento</label>
+                        <MoneyInput @bind-Value="invoicePaymentAmount" Placeholder="0,00" />
+                        <small class="text-muted">Dívida atual: R$ @Math.Abs(selectedCard?.Balance ?? 0).ToString("F2")</small>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button class="btn btn-success" @onclick="PayInvoice" disabled="@isBusy">
+                            <i class="fas fa-check"></i> Confirmar
+                        </button>
+                        <button class="btn btn-link text-danger" @onclick="CancelPayInvoice" disabled="@isBusy">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
         </div>
     }
     else
@@ -117,6 +167,8 @@
     private bool isLoading = true;
     private string? errorMessage;
 
+    private List<Account> accountsListForPay = new();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadAccounts();
@@ -129,6 +181,7 @@
         try
         {
             accounts = await AccountService.GetAllAsync();
+            accountsListForPay = (accounts ?? Enumerable.Empty<Account>()).ToList();
             if (accounts == null || !accounts.Any())
             {
                 errorMessage = "Nenhuma conta disponível.";
@@ -160,6 +213,13 @@
     private decimal? editingOriginalInitialBalance;
     private bool isBusy;
 
+    private bool showPayInvoice;
+    private Account? selectedCard;
+    private string? payFromAccountId;
+    private decimal invoicePaymentAmount;
+    private DateTime invoicePaymentDate = DateTime.Today;
+    private string? invoiceError;
+
     private async Task BeginEditAccount(string id)
     {
         try
@@ -188,6 +248,108 @@
         {
             newAccount.Type = at;
         }
+    }
+
+    private void ShowPayInvoice(Account creditCard)
+    {
+        selectedCard = creditCard;
+        showPayInvoice = true;
+        invoiceError = null;
+        payFromAccountId = string.Empty;
+        invoicePaymentAmount = Math.Abs(creditCard.Balance);
+        invoicePaymentDate = DateTime.Today;
+    }
+
+    private void CancelPayInvoice()
+    {
+        if (isBusy) return;
+        showPayInvoice = false;
+        selectedCard = null;
+        payFromAccountId = null;
+        invoicePaymentAmount = 0;
+        invoiceError = null;
+    }
+
+    private async Task PayInvoice()
+    {
+        invoiceError = null;
+        if (isBusy) return;
+        isBusy = true;
+
+        try
+        {
+            if (selectedCard is null)
+            {
+                invoiceError = "Cartão não selecionado";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(payFromAccountId))
+            {
+                invoiceError = "Selecione a conta que realizará o pagamento";
+                return;
+            }
+
+            var fromAcc = accountsListForPay.FirstOrDefault(a => a.Id == payFromAccountId);
+            if (fromAcc is null)
+            {
+                invoiceError = "Conta pagadora inválida";
+                return;
+            }
+
+            if (fromAcc.Type == AccountType.CreditCard)
+            {
+                invoiceError = "A conta pagadora deve ser uma conta não-cartão";
+                return;
+            }
+
+            if (invoicePaymentAmount <= 0)
+            {
+                invoiceError = "Informe um valor maior que zero";
+                return;
+            }
+
+            var request = new CreateTransactionRequestDto
+            {
+                AccountId = payFromAccountId,
+                ToAccountId = selectedCard.Id,
+                Type = (int)TransactionType.Transfer,
+                Amount = invoicePaymentAmount,
+                Date = invoicePaymentDate,
+                Description = $"Pagamento de fatura - {selectedCard.Name}",
+                Status = 0
+            };
+
+            await TransactionService.CreateAsync(request);
+
+            showPayInvoice = false;
+            selectedCard = null;
+            payFromAccountId = null;
+            invoicePaymentAmount = 0;
+
+            await LoadAccounts();
+        }
+        catch (Exception ex)
+        {
+            invoiceError = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private static string GetAccountTypeLabel(AccountType type)
+    {
+        return type switch
+        {
+            AccountType.Checking => "Conta Corrente",
+            AccountType.Savings => "Poupança",
+            AccountType.Cash => "Dinheiro",
+            AccountType.CreditCard => "Cartão de Crédito",
+            AccountType.Investment => "Investimento",
+            _ => type.ToString()
+        };
     }
 
     private async Task DeleteAccount(string id)

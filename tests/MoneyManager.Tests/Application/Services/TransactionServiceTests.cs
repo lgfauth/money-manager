@@ -254,6 +254,9 @@ public class TransactionServiceTests
         transactionRepo.GetByIdAsync(transactionId).Returns(transaction);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
+        var account = new Account { Id = "acc123", UserId = userId, Balance = 1000m };
+        _unitOfWorkMock.Accounts.GetByIdAsync("acc123").Returns(account);
+
         // Act
         await _transactionService.DeleteAsync(userId, transactionId);
 

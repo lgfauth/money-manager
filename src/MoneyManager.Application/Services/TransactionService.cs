@@ -51,6 +51,13 @@ public class TransactionService : ITransactionService
         else
         {
             var impactAmount = transactionType == TransactionType.Income ? request.Amount : -request.Amount;
+
+            // Credit card balance represents debt (invoice amount).
+            // Expense increases debt; Income decreases debt.
+            if (account.Type == AccountType.CreditCard)
+            {
+                impactAmount = transactionType == TransactionType.Income ? -request.Amount : request.Amount;
+            }
             await _accountService.UpdateBalanceAsync(userId, request.AccountId, impactAmount);
         }
 
@@ -149,6 +156,15 @@ public class TransactionService : ITransactionService
         else
         {
             var impactAmount = transaction.Type == TransactionType.Income ? transaction.Amount : -transaction.Amount;
+
+            var account = await _unitOfWork.Accounts.GetByIdAsync(transaction.AccountId);
+            if (account == null || account.UserId != userId || account.IsDeleted)
+                throw new KeyNotFoundException("Account not found");
+
+            if (account.Type == AccountType.CreditCard)
+            {
+                impactAmount = transaction.Type == TransactionType.Income ? -transaction.Amount : transaction.Amount;
+            }
             await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, impactAmount);
         }
     }
@@ -166,6 +182,15 @@ public class TransactionService : ITransactionService
         else
         {
             var impactAmount = transaction.Type == TransactionType.Income ? -transaction.Amount : transaction.Amount;
+
+            var account = await _unitOfWork.Accounts.GetByIdAsync(transaction.AccountId);
+            if (account == null || account.UserId != userId || account.IsDeleted)
+                throw new KeyNotFoundException("Account not found");
+
+            if (account.Type == AccountType.CreditCard)
+            {
+                impactAmount = transaction.Type == TransactionType.Income ? transaction.Amount : -transaction.Amount;
+            }
             await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, impactAmount);
         }
     }
