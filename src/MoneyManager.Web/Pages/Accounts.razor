@@ -49,7 +49,7 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" disabled="@(!string.IsNullOrEmpty(editingAccountId))" />
+                        <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" Disabled="@(!string.IsNullOrEmpty(editingAccountId))" />
                     </div>
                     <div class="col-md-2 d-grid">
                         <button class="btn btn-success" @onclick="CreateAccount">Salvar</button>
