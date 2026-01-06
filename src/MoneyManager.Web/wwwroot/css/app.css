@@ -188,3 +188,8 @@ canvas {
     font-weight: 600;
     color: #2d3748;
 }
+
+/* Badges */
+.badge.bg-primary {
+    color: #fff !important;
+}

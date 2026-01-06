@@ -4,9 +4,11 @@
 @using MoneyManager.Application.DTOs.Request
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
 @attribute [Authorize]
 @inject IAccountService AccountService
 @inject ITransactionService TransactionService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Contas - MoneyManager</PageTitle>
 
@@ -23,6 +25,18 @@
                     <i class="fas fa-plus"></i> Nova Conta
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12 col-md-4">
+            <label class="form-label">Ordenar por</label>
+            <select class="form-select" @bind="accountsSort" @bind:after="OnAccountsSortChanged">
+                <option value="type">Tipo</option>
+                <option value="name">Nome</option>
+                <option value="balance_desc">Saldo (maior primeiro)</option>
+                <option value="balance_asc">Saldo (menor primeiro)</option>
+            </select>
         </div>
     </div>
 
@@ -79,7 +93,7 @@
     else if (accounts != null && accounts.Any())
     {
         <div class="row g-4">
-            @foreach (var account in accounts)
+            @foreach (var account in GetAccountsSorted(accounts))
             {
                 <div class="col-12 col-sm-6 col-lg-4">
                     <div class="card shadow-sm">
@@ -169,9 +183,43 @@
 
     private List<Account> accountsListForPay = new();
 
+    private const string AccountsSortStorageKey = "mm.accounts.sort";
+    private string accountsSort = "type";
+
     protected override async Task OnInitializedAsync()
     {
+        await LoadAccountsSortPreference();
         await LoadAccounts();
+    }
+
+    private async Task LoadAccountsSortPreference()
+    {
+        try
+        {
+            var v = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", AccountsSortStorageKey);
+            if (!string.IsNullOrWhiteSpace(v))
+            {
+                accountsSort = v;
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    private async Task OnAccountsSortChanged()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", AccountsSortStorageKey, accountsSort);
+        }
+        catch
+        {
+            // ignore
+        }
+
+        StateHasChanged();
     }
 
     private async Task LoadAccounts()
@@ -340,6 +388,32 @@
             AccountType.CreditCard => "Cartão de Crédito",
             AccountType.Investment => "Investimento",
             _ => type.ToString()
+        };
+    }
+
+    private static int GetAccountTypeSortKey(AccountType type)
+    {
+        return type switch
+        {
+            AccountType.Cash => 0,
+            AccountType.Checking => 1,
+            AccountType.Savings => 2,
+            AccountType.CreditCard => 3,
+            AccountType.Investment => 4,
+            _ => 99
+        };
+    }
+
+    private IEnumerable<Account> GetAccountsSorted(IEnumerable<Account>? list)
+    {
+        if (list is null) return Enumerable.Empty<Account>();
+
+        return accountsSort switch
+        {
+            "name" => list.OrderBy(a => a.Name),
+            "balance_asc" => list.OrderBy(a => a.Balance),
+            "balance_desc" => list.OrderByDescending(a => a.Balance),
+            _ => list.OrderBy(a => GetAccountTypeSortKey(a.Type)).ThenBy(a => a.Name)
         };
     }
 

@@ -28,6 +28,19 @@
         </div>
     </div>
 
+    <div class="row mb-3">
+        <div class="col-12 col-md-4">
+            <label class="form-label">Ordenar por</label>
+            <select class="form-select" @bind="transactionsSort">
+                <option value="date_desc">Data (mais recente)</option>
+                <option value="date_asc">Data (mais antiga)</option>
+                <option value="category">Categoria</option>
+                <option value="amount_desc">Valor (maior)</option>
+                <option value="amount_asc">Valor (menor)</option>
+            </select>
+        </div>
+    </div>
+
     @if (showAdd)
     {
         <div class="card mb-4">
@@ -120,6 +133,7 @@
     }
     else if (transactions != null && transactions.Any())
     {
+        var viewTransactions = GetTransactionsSorted(transactions);
         <div class="card shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -133,7 +147,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var transaction in transactions)
+                        @foreach (var transaction in viewTransactions)
                         {
                             <tr>
                                 <td>@transaction.Date.ToString("dd/MM/yyyy")</td>
@@ -185,6 +199,8 @@
     private IEnumerable<Account>? accountsList;
     private IEnumerable<Category>? categoriesList;
     private Dictionary<string, string> categoriesDict = new();
+
+    private string transactionsSort = "date_desc";
 
     protected override async Task OnInitializedAsync()
     {
@@ -350,6 +366,18 @@
             return "Sem categoria";
         
         return categoriesDict.TryGetValue(categoryId, out var name) ? name : "Categoria desconhecida";
+    }
+
+    private IEnumerable<Transaction> GetTransactionsSorted(IEnumerable<Transaction> list)
+    {
+        return transactionsSort switch
+        {
+            "date_asc" => list.OrderBy(t => t.Date),
+            "category" => list.OrderBy(t => GetCategoryName(t.CategoryId)).ThenByDescending(t => t.Date),
+            "amount_asc" => list.OrderBy(t => t.Amount),
+            "amount_desc" => list.OrderByDescending(t => t.Amount),
+            _ => list.OrderByDescending(t => t.Date)
+        };
     }
 
     private static IEnumerable<Account> GetAccountsOrdered(IEnumerable<Account>? accounts)
