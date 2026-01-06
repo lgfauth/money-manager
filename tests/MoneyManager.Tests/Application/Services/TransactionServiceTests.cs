@@ -106,8 +106,8 @@ public class TransactionServiceTests
             Status = 0
         };
 
-        var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m };
-        var toAccount = new Account { Id = toAccountId, UserId = userId, Balance = 500m };
+        var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m, Type = AccountType.Checking };
+        var toAccount = new Account { Id = toAccountId, UserId = userId, Balance = 500m, Type = AccountType.Checking };
         var transactionRepo = Substitute.For<IRepository<Transaction>>();
         transactionRepo.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
 
@@ -122,6 +122,42 @@ public class TransactionServiceTests
         Assert.NotNull(result);
         await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, fromAccountId, -300m);
         await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, toAccountId, 300m);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithTransfer_ToCreditCard_ShouldReduceDebt()
+    {
+        // Arrange
+        var userId = "user123";
+        var fromAccountId = "acc123";
+        var toAccountId = "cc456";
+        var request = new CreateTransactionRequestDto
+        {
+            AccountId = fromAccountId,
+            ToAccountId = toAccountId,
+            Type = 2, // Transfer
+            Amount = 300m,
+            Date = DateTime.UtcNow,
+            Description = "Payment",
+            Status = 0
+        };
+
+        var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m, Type = AccountType.Checking };
+        var toAccount = new Account { Id = toAccountId, UserId = userId, Balance = 500m, Type = AccountType.CreditCard };
+        var transactionRepo = Substitute.For<IRepository<Transaction>>();
+        transactionRepo.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
+
+        _unitOfWorkMock.Accounts.GetByIdAsync(fromAccountId).Returns(fromAccount);
+        _unitOfWorkMock.Accounts.GetByIdAsync(toAccountId).Returns(toAccount);
+        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+
+        // Act
+        var result = await _transactionService.CreateAsync(userId, request);
+
+        // Assert
+        Assert.NotNull(result);
+        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, fromAccountId, -300m);
+        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, toAccountId, -300m);
     }
 
     [Fact]

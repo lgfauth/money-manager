@@ -46,7 +46,13 @@ public class TransactionService : ITransactionService
             // Debit from source
             await _accountService.UpdateBalanceAsync(userId, request.AccountId, -request.Amount);
             // Credit to destination
-            await _accountService.UpdateBalanceAsync(userId, request.ToAccountId, request.Amount);
+            var toImpact = request.Amount;
+            if (toAccount.Type == AccountType.CreditCard)
+            {
+                // Credit card balance is debt; transferring money to the card reduces debt.
+                toImpact = -request.Amount;
+            }
+            await _accountService.UpdateBalanceAsync(userId, request.ToAccountId, toImpact);
         }
         else
         {
@@ -150,7 +156,18 @@ public class TransactionService : ITransactionService
             if (!string.IsNullOrEmpty(transaction.ToAccountId))
             {
                 await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, -transaction.Amount);
-                await _accountService.UpdateBalanceAsync(userId, transaction.ToAccountId, transaction.Amount);
+
+                var toAccount = await _unitOfWork.Accounts.GetByIdAsync(transaction.ToAccountId);
+                if (toAccount == null || toAccount.UserId != userId || toAccount.IsDeleted)
+                    throw new KeyNotFoundException("Destination account not found");
+
+                var toImpact = transaction.Amount;
+                if (toAccount.Type == AccountType.CreditCard)
+                {
+                    toImpact = -transaction.Amount;
+                }
+
+                await _accountService.UpdateBalanceAsync(userId, transaction.ToAccountId, toImpact);
             }
         }
         else
@@ -176,7 +193,19 @@ public class TransactionService : ITransactionService
             if (!string.IsNullOrEmpty(transaction.ToAccountId))
             {
                 await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, transaction.Amount);
-                await _accountService.UpdateBalanceAsync(userId, transaction.ToAccountId, -transaction.Amount);
+
+                var toAccount = await _unitOfWork.Accounts.GetByIdAsync(transaction.ToAccountId);
+                if (toAccount == null || toAccount.UserId != userId || toAccount.IsDeleted)
+                    throw new KeyNotFoundException("Destination account not found");
+
+                var toImpact = -transaction.Amount;
+                if (toAccount.Type == AccountType.CreditCard)
+                {
+                    // Original transfer reduced debt; reverting it should increase debt back.
+                    toImpact = transaction.Amount;
+                }
+
+                await _accountService.UpdateBalanceAsync(userId, transaction.ToAccountId, toImpact);
             }
         }
         else
