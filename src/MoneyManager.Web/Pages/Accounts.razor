@@ -40,12 +40,12 @@
                         <input class="form-control" placeholder="Nome da conta" @bind="newAccount.Name" />
                     </div>
                     <div class="col-md-3">
-                        <select class="form-select text-dark" @onchange="OnAccountTypeChanged">
-                            <option value="Checking">Conta Corrente</option>
-                            <option value="Savings">Poupança</option>
-                            <option value="Cash">Dinheiro</option>
-                            <option value="CreditCard">Cartão de Crédito</option>
-                            <option value="Investment">Investimento</option>
+                        <select class="form-select text-dark" @bind="newAccount.Type">
+                            <option value="@AccountType.Checking">Conta Corrente</option>
+                            <option value="@AccountType.Savings">Poupança</option>
+                            <option value="@AccountType.Cash">Dinheiro</option>
+                            <option value="@AccountType.CreditCard">Cartão de Crédito</option>
+                            <option value="@AccountType.Investment">Investimento</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -238,15 +238,6 @@
         catch (Exception ex)
         {
             addError = ex.Message;
-        }
-    }
-
-    private void OnAccountTypeChanged(ChangeEventArgs e)
-    {
-        var value = e?.Value?.ToString();
-        if (Enum.TryParse<MoneyManager.Domain.Enums.AccountType>(value, out var at))
-        {
-            newAccount.Type = at;
         }
     }
 
