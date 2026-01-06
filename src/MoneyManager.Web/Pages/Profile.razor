@@ -259,7 +259,7 @@
                                 </h6>
                                 <p><strong>Esta ação NÃO pode ser desfeita!</strong></p>
                                 <p class="mb-3">Você possui <strong class="fs-5">@dataCount</strong> registros que serão permanentemente excluídos.</p>
-                                
+
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Digite sua senha para continuar:</label>
                                     <input type="password" class="form-control" @bind="deletePassword" placeholder="Sua senha" />
@@ -303,29 +303,29 @@
 </div>
 
 @code {
-[Inject] private MoneyManager.Web.Services.IAccountDeletionService AccountDeletionService { get; set; } = default!;
-[Inject] private NavigationManager Nav { get; set; } = default!;
-[Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private MoneyManager.Web.Services.IAccountDeletionService AccountDeletionService { get; set; } = default!;
+    [Inject] private NavigationManager Nav { get; set; } = default!;
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
-private bool isLoading = true;
-private bool isSaving = false;
-private bool isChangingPassword = false;
-private bool isUpdatingEmail = false;
-private bool isDeletingAccount = false;
-private bool showChangePassword = false;
-private bool showChangeEmail = false;
-private bool showDeleteConfirmation = false;
-private bool understandConsequences = false;
-private string? errorMessage;
-private string? successMessage;
-private string deletePassword = string.Empty;
-private string deleteConfirmationText = string.Empty;
-private int dataCount = 0;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private bool isChangingPassword = false;
+    private bool isUpdatingEmail = false;
+    private bool isDeletingAccount = false;
+    private bool showChangePassword = false;
+    private bool showChangeEmail = false;
+    private bool showDeleteConfirmation = false;
+    private bool understandConsequences = false;
+    private string? errorMessage;
+    private string? successMessage;
+    private string deletePassword = string.Empty;
+    private string deleteConfirmationText = string.Empty;
+    private int dataCount = 0;
 
-private UserProfileResponseDto profile = new();
-private UpdateProfileRequestDto updateProfileRequest = new();
-private ChangePasswordRequestDto changePasswordRequest = new();
-private UpdateEmailRequestDto updateEmailRequest = new();
+    private UserProfileResponseDto profile = new();
+    private UpdateProfileRequestDto updateProfileRequest = new();
+    private ChangePasswordRequestDto changePasswordRequest = new();
+    private UpdateEmailRequestDto updateEmailRequest = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -529,7 +529,7 @@ private UpdateEmailRequestDto updateEmailRequest = new();
         try
         {
             var success = await AccountDeletionService.DeleteAccountAsync(deletePassword, deleteConfirmationText);
-            
+
             if (success)
             {
                 // Faz logout
@@ -537,7 +537,7 @@ private UpdateEmailRequestDto updateEmailRequest = new();
                 {
                     await customAuthProvider.MarkUserAsLoggedOut();
                 }
-                
+
                 // Redireciona para página de confirmação
                 Nav.NavigateTo("/account-deleted", true);
             }
