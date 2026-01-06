@@ -11,6 +11,8 @@
 
 <PageTitle>Transações - MoneyManager</PageTitle>
 
+<BusyOverlay IsBusy="@isBusy" Message="Processando..." />
+
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
@@ -133,7 +135,7 @@
                                 <button class="btn btn-sm btn-warning me-2" @onclick="() => BeginEditTransaction(transaction.Id)">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteTransaction(transaction.Id)">
+                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteTransaction(transaction.Id)" disabled="@isBusy">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -201,6 +203,7 @@
     private string? addError;
     private CreateTransactionRequestDto newRequest = new CreateTransactionRequestDto { Date = DateTime.Today };
     private string? editingTransactionId;
+    private bool isBusy;
 
     private async Task BeginEditTransaction(string id)
     {
@@ -236,6 +239,8 @@
     private async Task CreateTransaction()
     {
         addError = null;
+        if (isBusy) return;
+        isBusy = true;
         try
         {
             if (string.IsNullOrEmpty(newRequest.AccountId))
@@ -260,10 +265,15 @@
         {
             addError = ex.Message;
         }
+        finally
+        {
+            isBusy = false;
+        }
     }
 
     private void CancelAdd()
     {
+        if (isBusy) return;
         showAdd = false;
         newTransaction = new Transaction { Date = DateTime.Today };
         addError = null;
@@ -271,6 +281,8 @@
 
     private async Task DeleteTransaction(string id)
     {
+        if (isBusy) return;
+        isBusy = true;
         try
         {
             var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transação?");
@@ -283,6 +295,10 @@
         catch (Exception ex)
         {
             errorMessage = $"Erro ao deletar transação: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
         }
     }
 

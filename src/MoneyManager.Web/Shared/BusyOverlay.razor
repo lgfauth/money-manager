@@ -1,0 +1,19 @@
+@if (IsBusy)
+{
+    <div class="mm-busy-overlay" role="alert" aria-busy="true" aria-live="polite">
+        <div class="mm-busy-card">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <div class="mt-3 mm-busy-message">@Message</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public string? Message { get; set; }
+}
