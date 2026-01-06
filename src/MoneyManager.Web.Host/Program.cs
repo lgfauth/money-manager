@@ -52,6 +52,6 @@ app.UseStaticFiles(new StaticFileOptions
 
 // Fallback para index.html (SPA)
 var indexPath = Path.Combine(wwwrootPath, "index.html");
-app.MapFallback(() => Results.File(indexPath, "text/html"));
+app.MapFallback(() => Results.File(indexPath, "text/html; charset=utf-8"));
 
 app.Run();
