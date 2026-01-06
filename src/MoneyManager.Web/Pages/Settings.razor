@@ -260,10 +260,10 @@
         {
             settings.DefaultBudget = defaultBudgetValue > 0 ? defaultBudgetValue : null;
             await SettingsService.UpdateSettingsAsync(settings);
-            
+
             // Apply theme
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", settings.Theme);
-            
+
             successMessage = "Configurações salvas com sucesso!";
         }
         catch (Exception ex)
@@ -292,3 +292,4 @@
         }
     }
 }
+
