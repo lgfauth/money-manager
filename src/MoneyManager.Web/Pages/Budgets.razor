@@ -1,5 +1,6 @@
 @page "/budgets"
 @using MoneyManager.Domain.Entities
+@using MoneyManager.Domain.Enums
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
@@ -177,7 +178,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadBudgets();
-        categoriesList = await CategoryService.GetAllAsync();
+        categoriesList = await CategoryService.GetAllAsync(CategoryType.Expense);
         categoriesDict = categoriesList?.ToDictionary(c => c.Id, c => c.Name) ?? new Dictionary<string, string>();
         monthPicker = DateTime.UtcNow.ToString("yyyy-MM");
     }

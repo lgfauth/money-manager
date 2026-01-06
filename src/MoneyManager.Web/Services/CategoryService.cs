@@ -1,4 +1,5 @@
 using MoneyManager.Domain.Entities;
+using MoneyManager.Domain.Enums;
 using System.Net.Http.Json;
 
 namespace MoneyManager.Web.Services;
@@ -15,6 +16,12 @@ public class CategoryService : ICategoryService
     public async Task<IEnumerable<Category>> GetAllAsync()
     {
         return await _httpClient.GetFromJsonAsync<IEnumerable<Category>>("api/categories") 
+            ?? new List<Category>();
+    }
+
+    public async Task<IEnumerable<Category>> GetAllAsync(CategoryType type)
+    {
+        return await _httpClient.GetFromJsonAsync<IEnumerable<Category>>($"api/categories?type={(int)type}")
             ?? new List<Category>();
     }
 
