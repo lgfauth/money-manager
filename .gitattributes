@@ -7,3 +7,11 @@ Dockerfile* text eol=lf
 
 # Auto detect text files and normalize to LF
 * text=auto eol=lf
+
+# Force UTF-8 for UI/resource files to prevent mojibake with accented characters
+*.razor text working-tree-encoding=UTF-8 eol=lf
+*.cshtml text working-tree-encoding=UTF-8 eol=lf
+*.html text working-tree-encoding=UTF-8 eol=lf
+*.css text working-tree-encoding=UTF-8 eol=lf
+*.js text working-tree-encoding=UTF-8 eol=lf
+*.json text working-tree-encoding=UTF-8 eol=lf
