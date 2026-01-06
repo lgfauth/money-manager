@@ -2,10 +2,12 @@
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
 @attribute [Authorize]
 @inject ITransactionService TransactionService
 @inject IAccountService AccountService
 @inject ICategoryService CategoryService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>Transações - MoneyManager</PageTitle>
 
@@ -131,7 +133,7 @@
                                 <button class="btn btn-sm btn-warning me-2" @onclick="() => BeginEditTransaction(transaction.Id)">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                    <button class="btn btn-sm btn-danger">
+                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteTransaction(transaction.Id)">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </td>
@@ -265,6 +267,23 @@
         showAdd = false;
         newTransaction = new Transaction { Date = DateTime.Today };
         addError = null;
+    }
+
+    private async Task DeleteTransaction(string id)
+    {
+        try
+        {
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transação?");
+            if (!confirmed)
+                return;
+
+            await TransactionService.DeleteAsync(id);
+            await LoadTransactions();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao deletar transação: {ex.Message}";
+        }
     }
 
     private string GetCategoryName(string? categoryId)

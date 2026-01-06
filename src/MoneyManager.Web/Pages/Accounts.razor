@@ -44,7 +44,7 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" />
+                        <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" disabled="@(!string.IsNullOrEmpty(editingAccountId))" />
                     </div>
                     <div class="col-md-2 d-grid">
                         <button class="btn btn-success" @onclick="CreateAccount">Salvar</button>
@@ -155,6 +155,7 @@
     private Account newAccount = new Account();
     private string? addError;
     private string? editingAccountId;
+    private decimal? editingOriginalInitialBalance;
 
     private async Task BeginEditAccount(string id)
     {
@@ -165,6 +166,7 @@
             {
                 newAccount = acc;
                 editingAccountId = id;
+                editingOriginalInitialBalance = acc.InitialBalance;
                 showAdd = true;
                 await Task.Yield();
                 StateHasChanged();
@@ -203,14 +205,20 @@
         addError = null;
         try
         {
-            newAccount.Balance = newAccount.InitialBalance;
             if (!string.IsNullOrEmpty(editingAccountId))
             {
+                // Editing: do not allow changing initial balance/balance here.
+                if (editingOriginalInitialBalance.HasValue)
+                {
+                    newAccount.InitialBalance = editingOriginalInitialBalance.Value;
+                }
                 await AccountService.UpdateAsync(editingAccountId, newAccount);
                 editingAccountId = null;
+                editingOriginalInitialBalance = null;
             }
             else
             {
+                newAccount.Balance = newAccount.InitialBalance;
                 var created = await AccountService.CreateAsync(newAccount);
             }
             newAccount = new Account();
@@ -228,5 +236,7 @@
         showAdd = false;
         newAccount = new Account();
         addError = null;
+        editingAccountId = null;
+        editingOriginalInitialBalance = null;
     }
 }
