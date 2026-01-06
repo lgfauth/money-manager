@@ -49,6 +49,21 @@
                             }
                         </select>
                     </div>
+                    @if (newRequest.Type == 2)
+                    {
+                        <div class="col-md-3">
+                            <select class="form-select" @bind="newRequest.ToAccountId">
+                                <option value="">-- Conta destino --</option>
+                                @foreach (var a in accountsList)
+                                {
+                                    if (a.Id != newRequest.AccountId)
+                                    {
+                                        <option value="@a.Id">@a.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    }
                     <div class="col-md-3">
                         <input class="form-control" placeholder="Descrição" @bind="newRequest.Description" />
                     </div>
@@ -62,18 +77,21 @@
                             <option value="2">Transferência</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select" @bind="newRequest.CategoryId">
-                            <option value="">-- Categoria --</option>
-                            @if (categoriesList != null)
-                            {
-                                @foreach (var c in categoriesList)
+                    @if (newRequest.Type != 2)
+                    {
+                        <div class="col-md-3">
+                            <select class="form-select" @bind="newRequest.CategoryId">
+                                <option value="">-- Categoria --</option>
+                                @if (categoriesList != null)
                                 {
-                                    <option value="@c.Id">@c.Name</option>
+                                    @foreach (var c in categoriesList)
+                                    {
+                                        <option value="@c.Id">@c.Name</option>
+                                    }
                                 }
-                            }
-                        </select>
-                    </div>
+                            </select>
+                        </div>
+                    }
                     <div class="col-md-2 d-grid">
                         <button class="btn btn-success" @onclick="CreateTransaction">Salvar</button>
                         <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
@@ -252,6 +270,24 @@
             {
                 addError = "Selecione uma conta";
                 return;
+            }
+
+            if (newRequest.Type == 2)
+            {
+                if (string.IsNullOrEmpty(newRequest.ToAccountId))
+                {
+                    addError = "Selecione a conta destino";
+                    return;
+                }
+
+                if (newRequest.ToAccountId == newRequest.AccountId)
+                {
+                    addError = "A conta destino deve ser diferente da conta origem";
+                    return;
+                }
+
+                // Categoria não se aplica a Transferências
+                newRequest.CategoryId = null;
             }
 
             if (!string.IsNullOrEmpty(editingTransactionId))
