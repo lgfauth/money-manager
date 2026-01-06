@@ -16,6 +16,7 @@ provider.Mappings[".json"] = "application/json";
 provider.Mappings[".js"] = "application/javascript";
 provider.Mappings[".css"] = "text/css";
 provider.Mappings[".svg"] = "image/svg+xml";
+provider.Mappings[".html"] = "text/html; charset=utf-8";
 
 // Caminho para o wwwroot do Blazor Web
 var blazorWebProjectPath = Path.Combine(app.Environment.ContentRootPath, "..", "MoneyManager.Web");
