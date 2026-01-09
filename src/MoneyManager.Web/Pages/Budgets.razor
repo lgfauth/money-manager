@@ -119,11 +119,11 @@
                                                     var percentage = item.LimitAmount > 0 ? (item.SpentAmount / item.LimitAmount) * 100 : 0;
                                                     var progressClass = percentage > 90 ? "bg-danger" : percentage > 75 ? "bg-warning" : "bg-success";
                                                 }
-                                                <div class="progress-bar @progressClass" role="progressbar" style="width: @percentage%;" aria-valuenow="@percentage" aria-valuemin="0" aria-valuemax="100">
+                                                <div class="progress-bar @progressClass" role="progressbar" style="width: @percentage.ToString("F0")%;" aria-valuenow="@percentage" aria-valuemin="0" aria-valuemax="100">
                                                     @percentage.ToString("F0")%
                                                 </div>
                                             </div>
-                                            <small class="text-muted d-block mt-1">Disponível: R$ @(item.LimitAmount - item.SpentAmount).ToString("F2")</small>
+                                            <small class="text-muted d-block mt-1">Disponível: R$ @((item.LimitAmount - item.SpentAmount).ToString("F2"))</small>
                                         </div>
                                     }
                                 }
