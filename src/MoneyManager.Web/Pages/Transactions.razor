@@ -6,6 +6,7 @@
 @using Microsoft.JSInterop
 @attribute [Authorize]
 @inject ITransactionService TransactionService
+@inject IRecurringTransactionService RecurringTransactionService
 @inject IAccountService AccountService
 @inject ICategoryService CategoryService
 @inject IJSRuntime JSRuntime
@@ -120,19 +121,36 @@
 
                     @if (IsSelectedAccountCreditCard() && newRequest.Type == 1)
                     {
-                        <div class="col-md-2">
-                            <label class="form-label">Parcelas</label>
-                            <input type="number" class="form-control" min="1" max="60" @bind="installmentsCount" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Início da cobrança</label>
-                            <select class="form-select" @bind="firstInstallmentInCurrentInvoice">
-                                <option value="true">Fatura corrente</option>
-                                <option value="false">Próxima fatura</option>
-                            </select>
-                            <small class="text-muted">Cria 1 lançamento por mês (uma parcela por fatura).</small>
+                        <div class="col-12">
+                            <div class="alert alert-secondary py-2 mb-0">
+                                <div class="d-flex flex-wrap gap-3 align-items-center">
+                                    <div>
+                                        <label class="form-label mb-0">Parcelamento</label>
+                                        <select class="form-select" style="min-width: 110px" @bind="installmentsCount">
+                                            @for (var i = 1; i <= 12; i++)
+                                            {
+                                                <option value="@i">@i x</option>
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="firstInCurrent" @bind="firstInstallmentInCurrentInvoice" />
+                                        <label class="form-check-label" for="firstInCurrent">
+                                            Primeira parcela entra na fatura atual
+                                        </label>
+                                    </div>
+                                </div>
+                                @if (installmentsCount > 1)
+                                {
+                                    <small class="text-muted d-block mt-2">
+                                        O valor informado é o total. O sistema lançará a 1ª parcela agora (se marcado) e criará uma recorrência mensal para as demais.
+                                    </small>
+                                }
+                            </div>
                         </div>
                     }
+
                     @if (newRequest.Type != 2)
                     {
                         <div class="col-md-3">
@@ -383,6 +401,7 @@
             }
             else
             {
+                // Purchase installment flow (credit card expense)
                 if (ShouldCreateInstallments())
                 {
                     var confirmed = await ConfirmInstallmentStartAsync();
@@ -391,13 +410,14 @@
                         return;
                     }
 
-                    await CreateInstallmentTransactionsAsync(newRequest);
+                    await CreateInstallmentPurchaseAsync(newRequest);
                 }
                 else
                 {
-                    var created = await TransactionService.CreateAsync(newRequest);
+                    await TransactionService.CreateAsync(newRequest);
                 }
             }
+
             newRequest = new CreateTransactionRequestDto { Date = DateTime.Today };
             showAdd = false;
             await LoadTransactions();
@@ -447,7 +467,7 @@
     {
         if (string.IsNullOrEmpty(categoryId))
             return "Sem categoria";
-        
+
         return categoriesDict.TryGetValue(categoryId, out var name) ? name : "Categoria desconhecida";
     }
 
@@ -534,51 +554,82 @@
     }
 
     private bool ShouldCreateInstallments() =>
-        IsSelectedAccountCreditCard() && newRequest.Type == (int)TransactionType.Expense && installmentsCount > 1;
+        IsSelectedAccountCreditCard() &&
+        newRequest.Type == (int)TransactionType.Expense &&
+        installmentsCount > 1;
 
     private async Task<bool> ConfirmInstallmentStartAsync()
     {
         var startText = firstInstallmentInCurrentInvoice ? "fatura corrente" : "próxima fatura";
         return await JSRuntime.InvokeAsync<bool>(
             "confirm",
-            $"Confirma cadastrar compra parcelada em {installmentsCount}x, iniciando a 1ª parcela na {startText}?"
+            $"Confirma cadastrar compra parcelada em {installmentsCount}x, com a 1ª parcela na {startText}?"
+
         );
     }
 
-    private async Task CreateInstallmentTransactionsAsync(CreateTransactionRequestDto baseRequest)
+    private async Task CreateInstallmentPurchaseAsync(CreateTransactionRequestDto baseRequest)
     {
-        var amountPerInstallment = Math.Round(baseRequest.Amount / installmentsCount, 2, MidpointRounding.AwayFromZero);
-
-        // Ajuste da última parcela para fechar exatamente o total (evita erro por arredondamento).
-        var totalFirst = amountPerInstallment * (installmentsCount - 1);
-        var lastAmount = baseRequest.Amount - totalFirst;
-
-        // Se o usuário escolher "próxima fatura", começa no mês seguinte ao da data selecionada.
-        var startDate = baseRequest.Date.Date;
-        if (!firstInstallmentInCurrentInvoice)
+        if (installmentsCount <= 1)
         {
-            startDate = new DateTime(startDate.Year, startDate.Month, 1).AddMonths(1);
+            await TransactionService.CreateAsync(baseRequest);
+            return;
         }
 
-        for (var i = 1; i <= installmentsCount; i++)
-        {
-            var installmentDate = startDate.AddMonths(i - 1);
-            var installmentAmount = i == installmentsCount ? lastAmount : amountPerInstallment;
+        // Assumimos que o valor digitado é o TOTAL da compra.
+        var installmentAmount = Math.Round(baseRequest.Amount / installmentsCount, 2, MidpointRounding.AwayFromZero);
 
-            var req = new CreateTransactionRequestDto
+        // Ajuste simples para manter a soma (caso haja arredondamento):
+        // deixamos a última parcela como "restante" dentro da recorrência, mas como a recorrência
+        // no backend não tem suporte a "última com valor diferente", mantemos o valor fixo.
+        // (Se isso for um requisito, precisamos estender a modelagem.)
+
+        // 1) Cria a 1ª parcela imediatamente (se marcado)
+        if (firstInstallmentInCurrentInvoice)
+        {
+            var firstReq = new CreateTransactionRequestDto
             {
                 AccountId = baseRequest.AccountId,
                 CategoryId = baseRequest.CategoryId,
                 Type = baseRequest.Type,
                 Amount = installmentAmount,
-                Date = installmentDate,
-                Description = $"{baseRequest.Description} ({i}/{installmentsCount})",
+                Date = baseRequest.Date.Date,
+                Description = $"{baseRequest.Description} (1/{installmentsCount})",
                 Tags = baseRequest.Tags,
                 ToAccountId = baseRequest.ToAccountId,
                 Status = baseRequest.Status
             };
 
-            await TransactionService.CreateAsync(req);
+            await TransactionService.CreateAsync(firstReq);
         }
+
+        // 2) Demais parcelas viram uma recorrência mensal com data fim conforme parcelas restantes
+        var remaining = firstInstallmentInCurrentInvoice ? installmentsCount - 1 : installmentsCount;
+        if (remaining <= 0)
+        {
+            return;
+        }
+
+        var startDate = firstInstallmentInCurrentInvoice
+            ? baseRequest.Date.Date.AddMonths(1)
+            : baseRequest.Date.Date.AddMonths(1); // próxima fatura => começa no mês seguinte
+
+        var endDate = startDate.AddMonths(remaining - 1);
+
+        var recurringRequest = new MoneyManager.Application.DTOs.Request.CreateRecurringTransactionRequestDto
+        {
+            AccountId = baseRequest.AccountId,
+            CategoryId = baseRequest.CategoryId,
+            Type = baseRequest.Type == (int)TransactionType.Income ? TransactionType.Income : TransactionType.Expense,
+            Amount = installmentAmount,
+            Description = $"{baseRequest.Description} (Parcela)",
+            Frequency = RecurrenceFrequency.Monthly,
+            StartDate = startDate,
+            EndDate = endDate,
+            DayOfMonth = baseRequest.Date.Day,
+            Tags = baseRequest.Tags
+        };
+
+        await RecurringTransactionService.CreateAsync(recurringRequest);
     }
 }

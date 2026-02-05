@@ -10,15 +10,22 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddWorkerHost(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddMoneyManagerServicesForWorker(configuration);
+
         services
             .AddOptions<WorkerOptions>()
             .Bind(configuration.GetSection(WorkerOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<ScheduleOptions>()
+            .Bind(configuration.GetSection(ScheduleOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddSingleton<ITimeProvider>(sp => new SystemTimeProvider(TimeProvider.System));
 
-        // Implementação default (placeholder). Substituir por uma implementação real que consome MongoDB.
-        services.AddScoped<ITransactionScheduleProcessor, NoOpTransactionScheduleProcessor>();
+        // Only recurring transactions are processed by the worker.
+        services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
 

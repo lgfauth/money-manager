@@ -239,36 +239,6 @@ app.MapGet("/health", () => Results.Ok(new
     environment = app.Environment.EnvironmentName
 }));
 
-app.MapGet("/api/test-cors", () => Results.Ok(new
-{
-    message = "CORS is working!",
-    timestamp = DateTime.UtcNow,
-    corsConfigured = true
-}));
-
-app.MapGet("/api/discover-ip", async (HttpContext context) =>
-{
-    var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-    var remoteIp = context.Connection.RemoteIpAddress?.ToString();
-
-    string? publicIp = null;
-    try
-    {
-        using var httpClient = new HttpClient();
-        publicIp = await httpClient.GetStringAsync("https://api.ipify.org");
-    }
-    catch { }
-
-    return Results.Ok(new
-    {
-        message = "Railway IP Discovery",
-        remoteIp = remoteIp,
-        forwardedFor = forwardedFor,
-        publicIp = publicIp,
-        allHeaders = context.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString())
-    });
-});
-
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
 app.Run();

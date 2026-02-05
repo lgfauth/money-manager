@@ -57,12 +57,4 @@ public class RecurringTransactionsController : ControllerBase
         await _recurringTransactionService.DeleteAsync(userId, id);
         return NoContent();
     }
-
-    [HttpPost("process")]
-    [AllowAnonymous] // Para permitir job scheduler
-    public async Task<IActionResult> ProcessDueRecurrences()
-    {
-        await _recurringTransactionService.ProcessDueRecurrencesAsync();
-        return Ok(new { message = "Recorrências processadas com sucesso" });
-    }
 }

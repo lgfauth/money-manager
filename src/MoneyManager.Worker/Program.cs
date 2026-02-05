@@ -1,7 +1,8 @@
-using MoneyManager.Worker;
+using TransactionSchedulerWorker.WorkerHost.DependencyInjection;
 
 var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
+
+builder.Services.AddWorkerHost(builder.Configuration);
 
 var host = builder.Build();
 host.Run();

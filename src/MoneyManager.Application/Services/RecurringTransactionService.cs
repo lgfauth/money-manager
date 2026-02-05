@@ -33,7 +33,9 @@ public class RecurringTransactionService : IRecurringTransactionService
         if (account == null || account.UserId != userId)
             throw new KeyNotFoundException("Account not found");
 
-        var nextOccurrence = await CalculateNextOccurrence(request.StartDate, request.Frequency, request.DayOfMonth);
+        // For a new schedule we want the first due occurrence to be the StartDate itself.
+        // This is important for parcelamento where StartDate = next month on day X.
+        var firstOccurrence = request.StartDate;
 
         var recurring = new RecurringTransaction
         {
@@ -47,7 +49,7 @@ public class RecurringTransactionService : IRecurringTransactionService
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             DayOfMonth = request.DayOfMonth,
-            NextOccurrenceDate = nextOccurrence,
+            NextOccurrenceDate = firstOccurrence,
             Tags = request.Tags,
             IsActive = true
         };
@@ -91,8 +93,9 @@ public class RecurringTransactionService : IRecurringTransactionService
         recurring.Tags = request.Tags;
         recurring.UpdatedAt = DateTime.UtcNow;
 
-        var nextOccurrence = await CalculateNextOccurrence(DateTime.UtcNow, recurring.Frequency, recurring.DayOfMonth);
-        recurring.NextOccurrenceDate = nextOccurrence;
+        // When updating, reset next occurrence to the start date (or today if start is in the past)
+        var resetFrom = request.StartDate.Date < DateTime.UtcNow.Date ? DateTime.UtcNow : request.StartDate;
+        recurring.NextOccurrenceDate = resetFrom;
 
         await _unitOfWork.RecurringTransactions.UpdateAsync(recurring);
         await _unitOfWork.SaveChangesAsync();
@@ -120,8 +123,8 @@ public class RecurringTransactionService : IRecurringTransactionService
         var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
 
         var dueRecurrences = recurrences
-            .Where(r => r.IsActive 
-                     && !r.IsDeleted 
+            .Where(r => r.IsActive
+                     && !r.IsDeleted
                      && r.NextOccurrenceDate.Date <= today
                      && (!r.EndDate.HasValue || r.EndDate.Value.Date >= today))
             .ToList();
@@ -184,7 +187,7 @@ public class RecurringTransactionService : IRecurringTransactionService
         return Task.FromResult(nextDate);
     }
 
-    private DateTime GetNextMonthlyDate(DateTime currentDate, int? dayOfMonth)
+    private static DateTime GetNextMonthlyDate(DateTime currentDate, int? dayOfMonth)
     {
         if (!dayOfMonth.HasValue || dayOfMonth.Value < 1 || dayOfMonth.Value > 31)
         {
