@@ -39,6 +39,32 @@
                 <option value="amount_asc">Valor (menor)</option>
             </select>
         </div>
+
+        <div class="col-12 col-md-4">
+            <label class="form-label">Período</label>
+            <select class="form-select" @bind="PeriodPreset">
+                <option value="current_month">Mês atual</option>
+                <option value="custom">Personalizado</option>
+            </select>
+        </div>
+
+        <div class="col-6 col-md-2">
+            <label class="form-label">De</label>
+            <input type="date" class="form-control" @bind="filterStart" disabled="@(periodPreset != "custom")" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label">Até</label>
+            <input type="date" class="form-control" @bind="filterEnd" disabled="@(periodPreset != "custom")" />
+        </div>
+
+        <div class="col-12 col-md-4 mt-3 mt-md-0">
+            <label class="form-label">Mostrar</label>
+            <select class="form-select" @bind="transactionTypeFilter">
+                <option value="all">Entradas e Saídas</option>
+                <option value="income">Somente Entradas</option>
+                <option value="expense">Somente Saídas</option>
+            </select>
+        </div>
     </div>
 
     @if (showAdd)
@@ -91,6 +117,22 @@
                             <option value="2">Transferência</option>
                         </select>
                     </div>
+
+                    @if (IsSelectedAccountCreditCard() && newRequest.Type == 1)
+                    {
+                        <div class="col-md-2">
+                            <label class="form-label">Parcelas</label>
+                            <input type="number" class="form-control" min="1" max="60" @bind="installmentsCount" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Início da cobrança</label>
+                            <select class="form-select" @bind="firstInstallmentInCurrentInvoice">
+                                <option value="true">Fatura corrente</option>
+                                <option value="false">Próxima fatura</option>
+                            </select>
+                            <small class="text-muted">Cria 1 lançamento por mês (uma parcela por fatura).</small>
+                        </div>
+                    }
                     @if (newRequest.Type != 2)
                     {
                         <div class="col-md-3">
@@ -133,7 +175,7 @@
     }
     else if (transactions != null && transactions.Any())
     {
-        var viewTransactions = GetTransactionsSorted(transactions);
+        var viewTransactions = GetTransactionsSorted(ApplyFilters(transactions));
         <div class="card shadow-sm">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -202,12 +244,40 @@
 
     private string transactionsSort = "date_desc";
 
+    private string periodPreset = "current_month";
+    private string transactionTypeFilter = "all";
+    private DateTime filterStart = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime filterEnd = new(DateTime.Today.Year, DateTime.Today.Month, DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month));
+
+    private string PeriodPreset
+    {
+        get => periodPreset;
+        set
+        {
+            if (periodPreset == value) return;
+
+            periodPreset = value;
+            if (periodPreset == "current_month")
+            {
+                ResetFilterToCurrentMonth();
+            }
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        ResetFilterToCurrentMonth();
         await LoadTransactions();
         accountsList = await AccountService.GetAllAsync();
         categoriesList = await CategoryService.GetAllAsync();
         categoriesDict = categoriesList?.ToDictionary(c => c.Id, c => c.Name) ?? new Dictionary<string, string>();
+    }
+
+    private void ResetFilterToCurrentMonth()
+    {
+        var today = DateTime.Today;
+        filterStart = new DateTime(today.Year, today.Month, 1);
+        filterEnd = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
     }
 
     private async Task LoadTransactions()
@@ -313,7 +383,20 @@
             }
             else
             {
-                var created = await TransactionService.CreateAsync(newRequest);
+                if (ShouldCreateInstallments())
+                {
+                    var confirmed = await ConfirmInstallmentStartAsync();
+                    if (!confirmed)
+                    {
+                        return;
+                    }
+
+                    await CreateInstallmentTransactionsAsync(newRequest);
+                }
+                else
+                {
+                    var created = await TransactionService.CreateAsync(newRequest);
+                }
             }
             newRequest = new CreateTransactionRequestDto { Date = DateTime.Today };
             showAdd = false;
@@ -380,6 +463,29 @@
         };
     }
 
+    private IEnumerable<Transaction> ApplyFilters(IEnumerable<Transaction> list)
+    {
+        var start = filterStart.Date;
+        var end = filterEnd.Date;
+        if (end < start)
+        {
+            (start, end) = (end, start);
+        }
+
+        var query = list.Where(t => t.Date.Date >= start && t.Date.Date <= end);
+
+        // Separar corretamente transações de despesa das de receita.
+        // Transferências não entram em entradas/saídas.
+        query = transactionTypeFilter switch
+        {
+            "income" => query.Where(t => t.Type == TransactionType.Income),
+            "expense" => query.Where(t => t.Type == TransactionType.Expense),
+            _ => query
+        };
+
+        return query;
+    }
+
     private static IEnumerable<Account> GetAccountsOrdered(IEnumerable<Account>? accounts)
     {
         if (accounts is null) return Enumerable.Empty<Account>();
@@ -413,5 +519,66 @@
             AccountType.Investment => "Investimento",
             _ => type.ToString()
         };
+    }
+
+    private int installmentsCount = 1;
+    private bool firstInstallmentInCurrentInvoice = true;
+
+    private bool IsSelectedAccountCreditCard()
+    {
+        if (accountsList is null) return false;
+        if (string.IsNullOrWhiteSpace(newRequest.AccountId)) return false;
+
+        var acc = accountsList.FirstOrDefault(a => a.Id == newRequest.AccountId);
+        return acc?.Type == AccountType.CreditCard;
+    }
+
+    private bool ShouldCreateInstallments() =>
+        IsSelectedAccountCreditCard() && newRequest.Type == (int)TransactionType.Expense && installmentsCount > 1;
+
+    private async Task<bool> ConfirmInstallmentStartAsync()
+    {
+        var startText = firstInstallmentInCurrentInvoice ? "fatura corrente" : "próxima fatura";
+        return await JSRuntime.InvokeAsync<bool>(
+            "confirm",
+            $"Confirma cadastrar compra parcelada em {installmentsCount}x, iniciando a 1ª parcela na {startText}?"
+        );
+    }
+
+    private async Task CreateInstallmentTransactionsAsync(CreateTransactionRequestDto baseRequest)
+    {
+        var amountPerInstallment = Math.Round(baseRequest.Amount / installmentsCount, 2, MidpointRounding.AwayFromZero);
+
+        // Ajuste da última parcela para fechar exatamente o total (evita erro por arredondamento).
+        var totalFirst = amountPerInstallment * (installmentsCount - 1);
+        var lastAmount = baseRequest.Amount - totalFirst;
+
+        // Se o usuário escolher "próxima fatura", começa no mês seguinte ao da data selecionada.
+        var startDate = baseRequest.Date.Date;
+        if (!firstInstallmentInCurrentInvoice)
+        {
+            startDate = new DateTime(startDate.Year, startDate.Month, 1).AddMonths(1);
+        }
+
+        for (var i = 1; i <= installmentsCount; i++)
+        {
+            var installmentDate = startDate.AddMonths(i - 1);
+            var installmentAmount = i == installmentsCount ? lastAmount : amountPerInstallment;
+
+            var req = new CreateTransactionRequestDto
+            {
+                AccountId = baseRequest.AccountId,
+                CategoryId = baseRequest.CategoryId,
+                Type = baseRequest.Type,
+                Amount = installmentAmount,
+                Date = installmentDate,
+                Description = $"{baseRequest.Description} ({i}/{installmentsCount})",
+                Tags = baseRequest.Tags,
+                ToAccountId = baseRequest.ToAccountId,
+                Status = baseRequest.Status
+            };
+
+            await TransactionService.CreateAsync(req);
+        }
     }
 }

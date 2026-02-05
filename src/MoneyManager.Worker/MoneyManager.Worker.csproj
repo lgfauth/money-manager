@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>MoneyManager.Worker</AssemblyName>
+    <RootNamespace>MoneyManager.Worker</RootNamespace>
+    <UserSecretsId>dotnet-MoneyManager.Worker-b84ef402-a34e-458b-8eed-dc0787a15f8a</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MoneyManager.Application\MoneyManager.Application.csproj" />
+    <ProjectReference Include="..\MoneyManager.Infrastructure\MoneyManager.Infrastructure.csproj" />
+    <ProjectReference Include="..\MoneyManager.Domain\MoneyManager.Domain.csproj" />
+  </ItemGroup>
+</Project>
