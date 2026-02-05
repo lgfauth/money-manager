@@ -41,16 +41,43 @@
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="row align-items-end">
-                            <div class="col-md-3">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label">Período</label>
-                                <select class="form-select" @bind="selectedPeriod" @bind:after="LoadReportsWithPeriod">
-                                    <option value="1">Último mês</option>
-                                    <option value="3">Últimos 3 meses</option>
-                                    <option value="6">Últimos 6 meses</option>
-                                    <option value="12">Último ano</option>
+                                <select class="form-select" @bind="PeriodPreset">
+                                    <option value="current_month">Mês atual</option>
+                                    <option value="last_month">Mês anterior</option>
+                                    <option value="last_3_months">Últimos 3 meses</option>
+                                    <option value="last_6_months">Últimos 6 meses</option>
+                                    <option value="last_year">Último ano</option>
+                                    <option value="custom">Personalizado</option>
                                 </select>
                             </div>
+
+                            <div class="col-6 col-md-3">
+                                <label class="form-label">De</label>
+                                <input type="date" class="form-control" @bind="filterStart" disabled="@(periodPreset != "custom")" />
+                            </div>
+
+                            <div class="col-6 col-md-3">
+                                <label class="form-label">Até</label>
+                                <input type="date" class="form-control" @bind="filterEnd" disabled="@(periodPreset != "custom")" />
+                            </div>
+
+                            <div class="col-12 col-md-2 d-grid">
+                                <button class="btn btn-primary" @onclick="ApplyPeriodFilter">
+                                    Aplicar
+                                </button>
+                            </div>
+
+                            @if (periodPreset != "custom")
+                            {
+                                <div class="col-12">
+                                    <small class="text-muted">
+                                        Visualizando: <strong>@filterStart:dd/MM/yyyy</strong> a <strong>@filterEnd:dd/MM/yyyy</strong>
+                                    </small>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -135,7 +162,7 @@
             </div>
         </div>
 
-        <!-- Lista Detalhada de Despesas por Categoria -->
+        <!-- Detalhamento de Despesas por Categoria (Cards) -->
         <div class="row g-4">
             <div class="col-12">
                 <div class="card shadow-sm">
@@ -145,24 +172,31 @@
                     <div class="card-body">
                         @if (reportSummary.ExpensesByCategory.Any())
                         {
-                            <div class="list-group">
+                            <div class="row g-3">
                                 @foreach (var expense in reportSummary.ExpensesByCategory)
                                 {
-                                    <div class="list-group-item">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <div>
-                                                <h6 class="mb-1">@expense.CategoryName</h6>
-                                                <small class="text-muted">@expense.Percentage.ToString("N1")% do total</small>
-                                            </div>
-                                            <span class="badge bg-primary fs-6">R$ @expense.Amount.ToString("N2")</span>
-                                        </div>
-                                        <div class="progress" style="height: 8px;">
-                                            <div class="progress-bar" 
-                                                 role="progressbar" 
-                                                 style="width: @expense.Percentage.ToString("N1")" 
-                                                 aria-valuenow="@expense.Percentage" 
-                                                 aria-valuemin="0" 
-                                                 aria-valuemax="100">
+                                    <div class="col-12 col-md-6 col-lg-4">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between gap-2">
+                                                    <div class="min-w-0">
+                                                        <div class="fw-semibold text-truncate" title="@expense.CategoryName">@expense.CategoryName</div>
+                                                        <small class="text-muted">@expense.Percentage.ToString("N1")% do total</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <div class="fw-bold">R$ @expense.Amount.ToString("N2")</div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="progress mt-3" style="height: 8px;">
+                                                    <div class="progress-bar"
+                                                         role="progressbar"
+                                                         style="width: @expense.Percentage.ToString("N1")%"
+                                                         aria-valuenow="@expense.Percentage"
+                                                         aria-valuemin="0"
+                                                         aria-valuemax="100">
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -187,11 +221,30 @@
     private bool isLoading = true;
     private string? errorMessage;
     private ReportSummary reportSummary = new();
-    private int selectedPeriod = 1;
     private bool chartsRendered = false;
+
+    private string periodPreset = "current_month";
+    private DateTime filterStart = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime filterEnd = new(DateTime.Today.Year, DateTime.Today.Month, DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month));
+
+    private string PeriodPreset
+    {
+        get => periodPreset;
+        set
+        {
+            if (periodPreset == value) return;
+
+            periodPreset = value;
+            if (periodPreset != "custom")
+            {
+                ApplyPresetToDates();
+            }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        ApplyPresetToDates();
         await LoadReports();
     }
 
@@ -204,20 +257,60 @@
         }
     }
 
-    private async Task LoadReportsWithPeriod()
+    private void ApplyPresetToDates()
+    {
+        var today = DateTime.Today;
+
+        switch (periodPreset)
+        {
+            case "current_month":
+                filterStart = new DateTime(today.Year, today.Month, 1);
+                filterEnd = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+                break;
+
+            case "last_month":
+                var lastMonth = today.AddMonths(-1);
+                filterStart = new DateTime(lastMonth.Year, lastMonth.Month, 1);
+                filterEnd = new DateTime(lastMonth.Year, lastMonth.Month, DateTime.DaysInMonth(lastMonth.Year, lastMonth.Month));
+                break;
+
+            case "last_3_months":
+                filterEnd = today;
+                filterStart = today.AddMonths(-3);
+                break;
+
+            case "last_6_months":
+                filterEnd = today;
+                filterStart = today.AddMonths(-6);
+                break;
+
+            case "last_year":
+                filterEnd = today;
+                filterStart = today.AddYears(-1);
+                break;
+
+            case "custom":
+            default:
+                // leave as is
+                break;
+        }
+    }
+
+    private async Task ApplyPeriodFilter()
     {
         chartsRendered = false;
         await LoadReports();
+        StateHasChanged();
     }
 
     private async Task LoadReports()
     {
         isLoading = true;
         errorMessage = null;
-        
+
         try
         {
-            reportSummary = await ReportService.GetReportSummaryAsync(selectedPeriod);
+            reportSummary = await ReportService.GetReportSummaryAsync(filterStart, filterEnd);
         }
         catch (Exception ex)
         {
@@ -284,9 +377,10 @@
             var incomeData = reportSummary.MonthlyTrends.Select(t => (double)t.Income).ToArray();
             var expensesData = reportSummary.MonthlyTrends.Select(t => (double)t.Expenses).ToArray();
 
-            await JSRuntime.InvokeVoidAsync("chartInterop.createLineChart", 
-                "monthlyTrendChart", 
-                labels, 
+            await JSRuntime.InvokeVoidAsync(
+                "chartInterop.createLineChart",
+                "monthlyTrendChart",
+                labels,
                 new { income = incomeData, expenses = expensesData });
 
             Console.WriteLine("Monthly trend chart renderizado com sucesso");
@@ -317,12 +411,18 @@
 
     private string GetPeriodLabel()
     {
-        return selectedPeriod switch
+        if (periodPreset == "custom")
         {
-            1 => "30 dias",
-            3 => "90 dias",
-            6 => "6 meses",
-            12 => "12 meses",
+            return "personalizado";
+        }
+
+        return periodPreset switch
+        {
+            "current_month" => "mês atual",
+            "last_month" => "mês anterior",
+            "last_3_months" => "3 meses",
+            "last_6_months" => "6 meses",
+            "last_year" => "1 ano",
             _ => "período"
         };
     }
@@ -333,6 +433,10 @@
         {
             await JSRuntime.InvokeVoidAsync("chartInterop.destroyAllCharts");
         }
-        catch { }
+        catch
+        {
+            // ignore
+        }
     }
 }
+

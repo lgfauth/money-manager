@@ -21,6 +21,13 @@ public class ReportService : IReportService
 
     public async Task<ReportSummary> GetReportSummaryAsync(int months = 1)
     {
+        // Data de referência (últimos X meses)
+        var referenceDate = DateTime.Now.AddMonths(-months);
+        return await GetReportSummaryAsync(referenceDate, DateTime.Now);
+    }
+
+    public async Task<ReportSummary> GetReportSummaryAsync(DateTime start, DateTime end)
+    {
         var summary = new ReportSummary();
 
         try
@@ -33,11 +40,16 @@ public class ReportService : IReportService
             var categoriesDict = categories.ToDictionary(c => c.Id, c => c.Name);
             var accountsList = accounts.ToList();
 
-            // Data de referência (últimos X meses)
-            var referenceDate = DateTime.Now.AddMonths(-months);
+            // Normaliza período
+            var startDate = start.Date;
+            var endDate = end.Date;
+            if (endDate < startDate)
+            {
+                (startDate, endDate) = (endDate, startDate);
+            }
 
             var periodTransactions = transactionsList
-                .Where(t => t.Date >= referenceDate)
+                .Where(t => t.Date.Date >= startDate && t.Date.Date <= endDate)
                 .ToList();
 
             // Calcular totais
@@ -75,17 +87,17 @@ public class ReportService : IReportService
                 .Select(x => new CategoryExpenseDto
                 {
                     CategoryId = x.CategoryId,
-                    CategoryName = categoriesDict.ContainsKey(x.CategoryId) 
-                        ? categoriesDict[x.CategoryId] 
+                    CategoryName = categoriesDict.ContainsKey(x.CategoryId)
+                        ? categoriesDict[x.CategoryId]
                         : "Sem categoria",
                     Amount = x.Amount,
                     Percentage = totalExpenses > 0 ? (x.Amount / totalExpenses) * 100 : 0
                 })
                 .ToList();
 
-            // Tendências mensais (últimos 6 meses)
+            // Tendências mensais (últimos 6 meses a partir do fim do período)
             var last6Months = Enumerable.Range(0, 6)
-                .Select(i => DateTime.Now.AddMonths(-i))
+                .Select(i => endDate.AddMonths(-i))
                 .OrderBy(d => d)
                 .ToList();
 
@@ -122,3 +134,4 @@ public class ReportService : IReportService
         return summary;
     }
 }
+

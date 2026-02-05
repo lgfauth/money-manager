@@ -329,7 +329,7 @@
     private bool showAdd;
     private Transaction newTransaction = new Transaction { Date = DateTime.Today };
     private string? addError;
-    private CreateTransactionRequestDto newRequest = new CreateTransactionRequestDto { Date = DateTime.Today };
+    private CreateTransactionRequestDto newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
     private string? editingTransactionId;
     private bool isBusy;
 
@@ -418,7 +418,7 @@
                 }
             }
 
-            newRequest = new CreateTransactionRequestDto { Date = DateTime.Today };
+            newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
             showAdd = false;
             await LoadTransactions();
         }
