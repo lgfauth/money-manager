@@ -28,6 +28,13 @@ public class Account
     [BsonElement("creditLimit")]
     public decimal? CreditLimit { get; set; }
 
+    /// <summary>
+    /// For credit card accounts, defines the invoice closing day (1..31).
+    /// Installment purchases should post to the invoice as of (closing day + 1).
+    /// </summary>
+    [BsonElement("invoiceClosingDay")]
+    public int? InvoiceClosingDay { get; set; } = 1;
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

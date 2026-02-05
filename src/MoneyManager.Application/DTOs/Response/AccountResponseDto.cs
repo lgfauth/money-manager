@@ -7,5 +7,6 @@ public class AccountResponseDto
     public int Type { get; set; }
     public decimal Balance { get; set; }
     public decimal InitialBalance { get; set; }
+    public int? InvoiceClosingDay { get; set; }
     public DateTime CreatedAt { get; set; }
 }

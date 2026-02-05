@@ -27,13 +27,17 @@ public class AccountService : IAccountService
 
     public async Task<AccountResponseDto> CreateAsync(string userId, CreateAccountRequestDto request)
     {
+        var type = (AccountType)request.Type;
+        int? invoiceClosingDay = type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
+
         var account = new Account
         {
             UserId = userId,
             Name = request.Name,
-            Type = (AccountType)request.Type,
+            Type = type,
             Balance = request.InitialBalance,
-            InitialBalance = request.InitialBalance
+            InitialBalance = request.InitialBalance,
+            InvoiceClosingDay = invoiceClosingDay
         };
 
         await _unitOfWork.Accounts.AddAsync(account);
@@ -67,6 +71,7 @@ public class AccountService : IAccountService
 
         account.Name = request.Name;
         account.Type = (AccountType)request.Type;
+        account.InvoiceClosingDay = account.Type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
         account.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Accounts.UpdateAsync(account);
@@ -110,6 +115,7 @@ public class AccountService : IAccountService
             Type = (int)account.Type,
             Balance = account.Balance,
             InitialBalance = account.InitialBalance,
+            InvoiceClosingDay = account.InvoiceClosingDay,
             CreatedAt = account.CreatedAt
         };
     }

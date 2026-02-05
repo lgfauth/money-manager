@@ -584,35 +584,64 @@
         // no backend não tem suporte a "última com valor diferente", mantemos o valor fixo.
         // (Se isso for um requisito, precisamos estender a modelagem.)
 
-        // 1) Cria a 1ª parcela imediatamente (se marcado)
-        if (firstInstallmentInCurrentInvoice)
+        var selectedCard = accountsList?.FirstOrDefault(a => a.Id == baseRequest.AccountId);
+        if (selectedCard?.Type != AccountType.CreditCard)
         {
-            var firstReq = new CreateTransactionRequestDto
-            {
-                AccountId = baseRequest.AccountId,
-                CategoryId = baseRequest.CategoryId,
-                Type = baseRequest.Type,
-                Amount = installmentAmount,
-                Date = baseRequest.Date.Date,
-                Description = $"{baseRequest.Description} (1/{installmentsCount})",
-                Tags = baseRequest.Tags,
-                ToAccountId = baseRequest.ToAccountId,
-                Status = baseRequest.Status
-            };
-
-            await TransactionService.CreateAsync(firstReq);
+            throw new InvalidOperationException("Conta selecionada não é um cartão de crédito.");
         }
 
+        var closingDay = selectedCard.InvoiceClosingDay.GetValueOrDefault(1);
+        if (closingDay < 1 || closingDay > 31) closingDay = 1;
+
+        // Parcela entra na fatura no dia seguinte ao fechamento.
+        var postingDay = closingDay + 1;
+        if (postingDay > 31) postingDay = 1;
+
+        var purchaseDate = baseRequest.Date.Date;
+
+        // Regra automática:
+        // - Se a compra foi após o fechamento, a 1ª parcela NÃO pode entrar na fatura corrente.
+        // - Se a compra foi até o fechamento (inclusive), pode entrar na fatura corrente se o checkbox estiver marcado.
+        var canBeCurrentInvoice = purchaseDate.Day <= closingDay;
+        var firstGoesToCurrentInvoice = firstInstallmentInCurrentInvoice && canBeCurrentInvoice;
+
+        // Data de lançamento da 1ª parcela:
+        // - fatura corrente: (mês da compra) no dia (closing+1)
+        // - próxima fatura: (mês seguinte) no dia (closing+1)
+        var firstInstallmentBaseMonth = firstGoesToCurrentInvoice ? purchaseDate : purchaseDate.AddMonths(1);
+        var daysInFirstMonth = DateTime.DaysInMonth(firstInstallmentBaseMonth.Year, firstInstallmentBaseMonth.Month);
+        var firstInstallmentDate = new DateTime(
+            firstInstallmentBaseMonth.Year,
+            firstInstallmentBaseMonth.Month,
+            Math.Min(postingDay, daysInFirstMonth));
+
+        // 1) Cria a 1ª parcela (sempre) na data de lançamento da fatura definida acima
+        var firstReq = new CreateTransactionRequestDto
+        {
+            AccountId = baseRequest.AccountId,
+            CategoryId = baseRequest.CategoryId,
+            Type = baseRequest.Type,
+            Amount = installmentAmount,
+            Date = firstInstallmentDate,
+            Description = $"{baseRequest.Description} (1/{installmentsCount})",
+            Tags = baseRequest.Tags,
+            ToAccountId = baseRequest.ToAccountId,
+            Status = baseRequest.Status
+        };
+
+        await TransactionService.CreateAsync(firstReq);
+
         // 2) Demais parcelas viram uma recorrência mensal com data fim conforme parcelas restantes
-        var remaining = firstInstallmentInCurrentInvoice ? installmentsCount - 1 : installmentsCount;
+        var remaining = installmentsCount - 1;
         if (remaining <= 0)
         {
             return;
         }
 
-        var startDate = firstInstallmentInCurrentInvoice
-            ? baseRequest.Date.Date.AddMonths(1)
-            : baseRequest.Date.Date.AddMonths(1); // próxima fatura => começa no mês seguinte
+        // Próximas parcelas entram sempre nos meses seguintes ao da 1ª parcela (no mesmo postingDay).
+        var startDateBase = firstInstallmentDate.AddMonths(1);
+        var daysInStartMonth = DateTime.DaysInMonth(startDateBase.Year, startDateBase.Month);
+        var startDate = new DateTime(startDateBase.Year, startDateBase.Month, Math.Min(postingDay, daysInStartMonth));
 
         var endDate = startDate.AddMonths(remaining - 1);
 
@@ -626,7 +655,7 @@
             Frequency = RecurrenceFrequency.Monthly,
             StartDate = startDate,
             EndDate = endDate,
-            DayOfMonth = baseRequest.Date.Day,
+            DayOfMonth = startDate.Day,
             Tags = baseRequest.Tags
         };
 
