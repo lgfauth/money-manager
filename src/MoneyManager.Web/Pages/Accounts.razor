@@ -50,10 +50,10 @@
                     <div class="alert alert-danger">@addError</div>
                 }
                 <div class="row g-2">
-                    <div class="col-md-4">
+                    <div class="col-12 col-md-4">
                         <input class="form-control" placeholder="Nome da conta" @bind="newAccount.Name" />
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-12 col-md-3">
                         <select class="form-select text-dark" @bind="newAccount.Type">
                             <option value="@AccountType.Checking">Conta Corrente</option>
                             <option value="@AccountType.Savings">Poupança</option>
@@ -64,18 +64,20 @@
                     </div>
                     @if (newAccount.Type == AccountType.CreditCard)
                     {
-                        <div class="col-md-3">
+                        <div class="col-12 col-md-3">
                             <label class="form-label">Fechamento da fatura (dia)</label>
                             <input type="number" class="form-control" min="1" max="31" @bind="newAccount.InvoiceClosingDay" />
                             <small class="text-muted">Ex.: 9 (as parcelas entram no dia 10).</small>
                         </div>
                     }
-                    <div class="col-md-3">
+                    <div class="col-12 col-md-@(newAccount.Type == AccountType.CreditCard ? "2" : "3")">
                         <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" Disabled="@(!string.IsNullOrEmpty(editingAccountId))" />
                     </div>
-                    <div class="col-md-2 d-grid">
-                        <button class="btn btn-success" @onclick="CreateAccount">Salvar</button>
-                        <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
+                    <div class="col-12 col-md-@(newAccount.Type == AccountType.CreditCard ? "12" : "2")">
+                        <div class="d-flex flex-column flex-md-row gap-2 justify-content-end">
+                            <button class="btn btn-success" @onclick="CreateAccount">Salvar</button>
+                            <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
+                        </div>
                     </div>
                 </div>
             </div>

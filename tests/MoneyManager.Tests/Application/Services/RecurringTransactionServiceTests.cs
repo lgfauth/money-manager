@@ -5,6 +5,7 @@ using MoneyManager.Application.Services;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace MoneyManager.Tests.Application.Services;
 
@@ -12,13 +13,15 @@ public class RecurringTransactionServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly ITransactionService _transactionServiceMock;
+    private readonly ILogger<RecurringTransactionService> _loggerMock;
     private readonly IRecurringTransactionService _recurringTransactionService;
 
     public RecurringTransactionServiceTests()
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _transactionServiceMock = Substitute.For<ITransactionService>();
-        _recurringTransactionService = new RecurringTransactionService(_unitOfWorkMock, _transactionServiceMock);
+        _loggerMock = Substitute.For<ILogger<RecurringTransactionService>>();
+        _recurringTransactionService = new RecurringTransactionService(_unitOfWorkMock, _transactionServiceMock, _loggerMock);
     }
 
     [Fact]

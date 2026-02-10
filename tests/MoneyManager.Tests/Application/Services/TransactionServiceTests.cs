@@ -5,6 +5,7 @@ using MoneyManager.Application.Services;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace MoneyManager.Tests.Application.Services;
 
@@ -12,13 +13,15 @@ public class TransactionServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly IAccountService _accountServiceMock;
+    private readonly ILogger<TransactionService> _loggerMock;
     private readonly ITransactionService _transactionService;
 
     public TransactionServiceTests()
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _accountServiceMock = Substitute.For<IAccountService>();
-        _transactionService = new TransactionService(_unitOfWorkMock, _accountServiceMock);
+        _loggerMock = Substitute.For<ILogger<TransactionService>>();
+        _transactionService = new TransactionService(_unitOfWorkMock, _accountServiceMock, _loggerMock);
     }
 
     [Fact]

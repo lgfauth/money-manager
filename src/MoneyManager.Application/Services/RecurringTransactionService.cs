@@ -2,6 +2,7 @@ using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace MoneyManager.Application.Services;
 
@@ -20,15 +21,23 @@ public class RecurringTransactionService : IRecurringTransactionService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITransactionService _transactionService;
+    private readonly ILogger<RecurringTransactionService> _logger;
 
-    public RecurringTransactionService(IUnitOfWork unitOfWork, ITransactionService transactionService)
+    public RecurringTransactionService(
+        IUnitOfWork unitOfWork,
+        ITransactionService transactionService,
+        ILogger<RecurringTransactionService> logger)
     {
         _unitOfWork = unitOfWork;
         _transactionService = transactionService;
+        _logger = logger;
     }
 
     public async Task<RecurringTransaction> CreateAsync(string userId, CreateRecurringTransactionRequestDto request)
     {
+        _logger.LogInformation("Creating recurring transaction for user {UserId}, frequency: {Frequency}",
+            userId, request.Frequency);
+
         var account = await _unitOfWork.Accounts.GetByIdAsync(request.AccountId);
         if (account == null || account.UserId != userId)
             throw new KeyNotFoundException("Account not found");
@@ -56,6 +65,9 @@ public class RecurringTransactionService : IRecurringTransactionService
 
         await _unitOfWork.RecurringTransactions.AddAsync(recurring);
         await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation("Recurring transaction {RecurringId} created for user {UserId}, next occurrence: {NextDate}",
+            recurring.Id, userId, recurring.NextOccurrenceDate);
 
         return recurring;
     }
@@ -120,6 +132,8 @@ public class RecurringTransactionService : IRecurringTransactionService
     public async Task ProcessDueRecurrencesAsync()
     {
         var today = DateTime.UtcNow.Date;
+        _logger.LogInformation("Starting recurring transactions processing for date: {Date}", today);
+
         var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
 
         var dueRecurrences = recurrences
@@ -129,10 +143,15 @@ public class RecurringTransactionService : IRecurringTransactionService
                      && (!r.EndDate.HasValue || r.EndDate.Value.Date >= today))
             .ToList();
 
+        _logger.LogInformation("Found {Count} due recurring transactions to process", dueRecurrences.Count);
+
         foreach (var recurrence in dueRecurrences)
         {
             try
             {
+                _logger.LogDebug("Processing recurring transaction {RecurringId} for user {UserId}",
+                    recurrence.Id, recurrence.UserId);
+
                 var transactionRequest = new CreateTransactionRequestDto
                 {
                     AccountId = recurrence.AccountId,
@@ -147,6 +166,9 @@ public class RecurringTransactionService : IRecurringTransactionService
 
                 await _transactionService.CreateAsync(recurrence.UserId, transactionRequest);
 
+                _logger.LogInformation("Transaction created from recurring {RecurringId}, next occurrence: {NextDate}",
+                    recurrence.Id, recurrence.NextOccurrenceDate);
+
                 recurrence.LastProcessedDate = recurrence.NextOccurrenceDate;
                 recurrence.NextOccurrenceDate = await CalculateNextOccurrence(
                     recurrence.NextOccurrenceDate,
@@ -157,17 +179,21 @@ public class RecurringTransactionService : IRecurringTransactionService
                 if (recurrence.EndDate.HasValue && recurrence.NextOccurrenceDate > recurrence.EndDate.Value)
                 {
                     recurrence.IsActive = false;
+                    _logger.LogInformation("Recurring transaction {RecurringId} reached end date and was deactivated",
+                        recurrence.Id);
                 }
 
                 await _unitOfWork.RecurringTransactions.UpdateAsync(recurrence);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao processar recorrência {recurrence.Id}: {ex.Message}");
+                _logger.LogError(ex, "Error processing recurring transaction {RecurringId} for user {UserId}",
+                    recurrence.Id, recurrence.UserId);
             }
         }
 
         await _unitOfWork.SaveChangesAsync();
+        _logger.LogInformation("Recurring transactions processing completed");
     }
 
     public Task<DateTime> CalculateNextOccurrence(DateTime currentDate, RecurrenceFrequency frequency, int? dayOfMonth = null)

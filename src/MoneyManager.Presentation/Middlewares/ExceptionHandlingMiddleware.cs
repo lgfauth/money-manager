@@ -19,12 +19,28 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred");
+            var statusCode = DetermineStatusCode(ex);
+            _logger.LogError(ex,
+                "Unhandled exception: {ExceptionType} | Path: {Path} | Method: {Method} | StatusCode: {StatusCode} | User: {User}",
+                ex.GetType().Name,
+                context.Request.Path,
+                context.Request.Method,
+                statusCode,
+                context.User?.Identity?.Name ?? "Anonymous");
+
             await HandleExceptionAsync(context, ex);
         }
     }
 
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static int DetermineStatusCode(Exception exception) => exception switch
+    {
+        KeyNotFoundException => StatusCodes.Status404NotFound,
+        InvalidOperationException => StatusCodes.Status400BadRequest,
+        UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+        _ => StatusCodes.Status500InternalServerError
+    };
+
+    private Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
 
@@ -34,13 +50,7 @@ public class ExceptionHandlingMiddleware
             details = exception.InnerException?.Message
         };
 
-        context.Response.StatusCode = exception switch
-        {
-            KeyNotFoundException => StatusCodes.Status404NotFound,
-            InvalidOperationException => StatusCodes.Status400BadRequest,
-            UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-            _ => StatusCodes.Status500InternalServerError
-        };
+        context.Response.StatusCode = DetermineStatusCode(exception);
 
         return context.Response.WriteAsJsonAsync(response);
     }
