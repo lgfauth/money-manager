@@ -152,29 +152,39 @@ public class RecurringTransactionService : IRecurringTransactionService
                 _logger.LogDebug("Processing recurring transaction {RecurringId} for user {UserId}",
                     recurrence.Id, recurrence.UserId);
 
-                var transactionRequest = new CreateTransactionRequestDto
+                // Process all overdue occurrences (backlog support)
+                var processedCount = 0;
+                while (recurrence.NextOccurrenceDate.Date <= today 
+                       && (!recurrence.EndDate.HasValue || recurrence.NextOccurrenceDate.Date <= recurrence.EndDate.Value.Date))
                 {
-                    AccountId = recurrence.AccountId,
-                    CategoryId = recurrence.CategoryId,
-                    Type = (int)recurrence.Type,
-                    Amount = recurrence.Amount,
-                    Date = recurrence.NextOccurrenceDate,
-                    Description = $"{recurrence.Description} (Recorrente)",
-                    Tags = recurrence.Tags,
-                    Status = 0
-                };
+                    var transactionRequest = new CreateTransactionRequestDto
+                    {
+                        AccountId = recurrence.AccountId,
+                        CategoryId = recurrence.CategoryId,
+                        Type = (int)recurrence.Type,
+                        Amount = recurrence.Amount,
+                        Date = recurrence.NextOccurrenceDate,
+                        Description = $"{recurrence.Description} (Recorrente)",
+                        Tags = recurrence.Tags,
+                        Status = 0
+                    };
 
-                await _transactionService.CreateAsync(recurrence.UserId, transactionRequest);
+                    await _transactionService.CreateAsync(recurrence.UserId, transactionRequest);
+                    processedCount++;
 
-                _logger.LogInformation("Transaction created from recurring {RecurringId}, next occurrence: {NextDate}",
-                    recurrence.Id, recurrence.NextOccurrenceDate);
+                    _logger.LogDebug("Transaction created from recurring {RecurringId} for date: {Date}",
+                        recurrence.Id, recurrence.NextOccurrenceDate);
 
-                recurrence.LastProcessedDate = recurrence.NextOccurrenceDate;
-                recurrence.NextOccurrenceDate = await CalculateNextOccurrence(
-                    recurrence.NextOccurrenceDate,
-                    recurrence.Frequency,
-                    recurrence.DayOfMonth);
-                recurrence.UpdatedAt = DateTime.UtcNow;
+                    recurrence.LastProcessedDate = recurrence.NextOccurrenceDate;
+                    recurrence.NextOccurrenceDate = await CalculateNextOccurrence(
+                        recurrence.NextOccurrenceDate,
+                        recurrence.Frequency,
+                        recurrence.DayOfMonth);
+                    recurrence.UpdatedAt = DateTime.UtcNow;
+                }
+
+                _logger.LogInformation("Processed {Count} transaction(s) from recurring {RecurringId}, next occurrence: {NextDate}",
+                    processedCount, recurrence.Id, recurrence.NextOccurrenceDate);
 
                 if (recurrence.EndDate.HasValue && recurrence.NextOccurrenceDate > recurrence.EndDate.Value)
                 {

@@ -12,10 +12,14 @@ namespace MoneyManager.Presentation.Controllers;
 public class RecurringTransactionsController : ControllerBase
 {
     private readonly IRecurringTransactionService _recurringTransactionService;
+    private readonly ILogger<RecurringTransactionsController> _logger;
 
-    public RecurringTransactionsController(IRecurringTransactionService recurringTransactionService)
+    public RecurringTransactionsController(
+        IRecurringTransactionService recurringTransactionService,
+        ILogger<RecurringTransactionsController> logger)
     {
         _recurringTransactionService = recurringTransactionService;
+        _logger = logger;
     }
 
     [HttpPost]
