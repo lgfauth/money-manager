@@ -27,9 +27,31 @@ internal sealed class ScheduledTransactionWorker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation(
-            "TransactionSchedulerWorker iniciado. Agendado para {Hour:00}:{Minute:00}.",
+            "========================================");
+        logger.LogInformation(
+            "TransactionSchedulerWorker INICIADO");
+        logger.LogInformation(
+            "Agendado para {Hour:00}:{Minute:00} (TimeZone: {TimeZone})",
             _schedule.Hour,
-            _schedule.Minute);
+            _schedule.Minute,
+            _schedule.TimeZoneId ?? "Local");
+        logger.LogInformation(
+            "Loop delay: {LoopDelay}s | Timeout: {Timeout}min",
+            _schedule.LoopDelaySeconds,
+            _options.ExecutionTimeoutMinutes);
+        logger.LogInformation("========================================");
+
+        // Execute immediately on startup to process any backlog and validate everything works
+        logger.LogInformation("STARTUP EXECUTION: Processando recorrências vencidas imediatamente...");
+        try
+        {
+            await RunOnceAsync(timeProvider.GetUtcNow(), stoppingToken);
+            logger.LogInformation("STARTUP EXECUTION: Concluída com sucesso. Aguardando próximo horário agendado.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "STARTUP EXECUTION: Falhou. Worker continuará tentando no horário agendado.");
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -42,12 +64,22 @@ internal sealed class ScheduledTransactionWorker(
                 var nextRunLocal = GetNextRunLocal(nowLocal, _schedule);
                 var nextRunUtc = TimeZoneInfo.ConvertTime(nextRunLocal, TimeZoneInfo.Utc);
 
+                // Log scheduling info every loop iteration (for debugging)
+                logger.LogDebug(
+                    "Schedule check: Now={NowLocal:yyyy-MM-dd HH:mm:ss} | NextRun={NextRun:yyyy-MM-dd HH:mm:ss} | AlreadyRan={AlreadyRan}",
+                    nowLocal,
+                    nextRunLocal,
+                    AlreadyRanForSlot(nextRunUtc));
 
                 // If it's time (or we're late) and we didn't run for this slot yet
                 if (nowUtc >= nextRunUtc && !AlreadyRanForSlot(nextRunUtc))
                 {
+                    logger.LogInformation(
+                        "TRIGGER: Executando processamento agendado (Now >= NextRun and not already ran)");
                     await RunOnceAsync(nowUtc, stoppingToken);
                     _lastRunAt = nextRunUtc;
+                    logger.LogInformation("Processamento agendado concluído. Próxima execução: {NextRun:yyyy-MM-dd HH:mm:ss}",
+                        GetNextRunLocal(TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), tz), _schedule));
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

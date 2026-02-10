@@ -234,4 +234,81 @@ public class RecurringTransactionServiceTests
         await _transactionServiceMock.Received(1).CreateAsync(Arg.Is<string>(u => u == userId), Arg.Any<CreateTransactionRequestDto>());
         await recurringRepo.Received(1).UpdateAsync(Arg.Any<RecurringTransaction>());
     }
+
+    [Fact]
+    public async Task ProcessDueRecurrencesAsync_WithBacklog_ShouldCreateMultipleTransactions()
+    {
+        // Arrange
+        var userId = "user123";
+        var today = DateTime.UtcNow.Date;
+        
+        // Recurrence with 3 months of backlog
+        var dueRecurrence = new RecurringTransaction
+        {
+            Id = "rec123",
+            UserId = userId,
+            AccountId = "acc123",
+            CategoryId = "cat123",
+            Type = TransactionType.Expense,
+            Amount = 1000m,
+            Description = "Monthly rent",
+            Frequency = RecurrenceFrequency.Monthly,
+            DayOfMonth = 10,
+            NextOccurrenceDate = today.AddMonths(-3), // 3 months overdue
+            IsActive = true,
+            IsDeleted = false
+        };
+
+        var recurringList = new List<RecurringTransaction> { dueRecurrence };
+        var recurringRepo = Substitute.For<IRepository<RecurringTransaction>>();
+        recurringRepo.GetAllAsync().Returns(recurringList);
+        _unitOfWorkMock.RecurringTransactions.Returns(recurringRepo);
+
+        // Act
+        await _recurringTransactionService.ProcessDueRecurrencesAsync();
+
+        // Assert - Should create multiple transactions (backlog)
+        var calls = _transactionServiceMock.ReceivedCalls()
+            .Count(c => c.GetMethodInfo().Name == "CreateAsync");
+        Assert.True(calls >= 3, $"Expected at least 3 CreateAsync calls, but got {calls}");
+        await recurringRepo.Received(1).UpdateAsync(Arg.Any<RecurringTransaction>());
+    }
+
+    [Fact]
+    public async Task ProcessDueRecurrencesAsync_ShouldRespectEndDate()
+    {
+        // Arrange
+        var userId = "user123";
+        var today = DateTime.UtcNow.Date;
+        
+        // Recurrence where nextOccurrence is past the endDate
+        var dueRecurrence = new RecurringTransaction
+        {
+            Id = "rec123",
+            UserId = userId,
+            AccountId = "acc123",
+            CategoryId = "cat123",
+            Type = TransactionType.Expense,
+            Amount = 500m,
+            Description = "Installment",
+            Frequency = RecurrenceFrequency.Monthly,
+            DayOfMonth = 10,
+            NextOccurrenceDate = today.AddMonths(1), // Next month (in the future)
+            EndDate = today.AddDays(-10), // End date already passed
+            IsActive = true,
+            IsDeleted = false
+        };
+
+        var recurringList = new List<RecurringTransaction> { dueRecurrence };
+        var recurringRepo = Substitute.For<IRepository<RecurringTransaction>>();
+        recurringRepo.GetAllAsync().Returns(recurringList);
+        _unitOfWorkMock.RecurringTransactions.Returns(recurringRepo);
+
+        // Act
+        await _recurringTransactionService.ProcessDueRecurrencesAsync();
+
+        // Assert - Should NOT process (already past end date, not in due list)
+        await _transactionServiceMock.DidNotReceive().CreateAsync(Arg.Any<string>(), Arg.Any<CreateTransactionRequestDto>());
+        await recurringRepo.DidNotReceive().UpdateAsync(Arg.Any<RecurringTransaction>());
+    }
 }
