@@ -1,6 +1,9 @@
 [build]
 builder = "NIXPACKS"
 
+# This config is for the WORKER service
+# Make sure Railway Worker service is configured to use Dockerfile.worker
+
 [build.nixpacksPlan]
 providers = ["dotnet"]
 

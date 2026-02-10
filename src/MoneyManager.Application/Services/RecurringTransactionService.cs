@@ -42,9 +42,9 @@ public class RecurringTransactionService : IRecurringTransactionService
         if (account == null || account.UserId != userId)
             throw new KeyNotFoundException("Account not found");
 
-        // For a new schedule we want the first due occurrence to be the StartDate itself.
-        // This is important for parcelamento where StartDate = next month on day X.
-        var firstOccurrence = request.StartDate;
+        // Normalize dates to remove time component (only date matters for scheduling)
+        // For a new schedule, first due occurrence = StartDate (date only, no time)
+        var firstOccurrence = request.StartDate.Date;
 
         var recurring = new RecurringTransaction
         {
@@ -55,8 +55,8 @@ public class RecurringTransactionService : IRecurringTransactionService
             Amount = request.Amount,
             Description = request.Description,
             Frequency = request.Frequency,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
+            StartDate = request.StartDate.Date,
+            EndDate = request.EndDate?.Date,
             DayOfMonth = request.DayOfMonth,
             NextOccurrenceDate = firstOccurrence,
             Tags = request.Tags,
@@ -99,14 +99,14 @@ public class RecurringTransactionService : IRecurringTransactionService
         recurring.Amount = request.Amount;
         recurring.Description = request.Description;
         recurring.Frequency = request.Frequency;
-        recurring.StartDate = request.StartDate;
-        recurring.EndDate = request.EndDate;
+        recurring.StartDate = request.StartDate.Date;
+        recurring.EndDate = request.EndDate?.Date;
         recurring.DayOfMonth = request.DayOfMonth;
         recurring.Tags = request.Tags;
         recurring.UpdatedAt = DateTime.UtcNow;
 
         // When updating, reset next occurrence to the start date (or today if start is in the past)
-        var resetFrom = request.StartDate.Date < DateTime.UtcNow.Date ? DateTime.UtcNow : request.StartDate;
+        var resetFrom = request.StartDate.Date < DateTime.UtcNow.Date ? DateTime.UtcNow.Date : request.StartDate.Date;
         recurring.NextOccurrenceDate = resetFrom;
 
         await _unitOfWork.RecurringTransactions.UpdateAsync(recurring);
@@ -163,7 +163,7 @@ public class RecurringTransactionService : IRecurringTransactionService
                         CategoryId = recurrence.CategoryId,
                         Type = (int)recurrence.Type,
                         Amount = recurrence.Amount,
-                        Date = recurrence.NextOccurrenceDate,
+                        Date = recurrence.NextOccurrenceDate.Date, // Ensure transaction date has no time component
                         Description = $"{recurrence.Description} (Recorrente)",
                         Tags = recurrence.Tags,
                         Status = 0
@@ -208,16 +208,19 @@ public class RecurringTransactionService : IRecurringTransactionService
 
     public Task<DateTime> CalculateNextOccurrence(DateTime currentDate, RecurrenceFrequency frequency, int? dayOfMonth = null)
     {
+        // Always work with dates only (no time component)
+        var current = currentDate.Date;
+
         DateTime nextDate = frequency switch
         {
-            RecurrenceFrequency.Daily => currentDate.AddDays(1),
-            RecurrenceFrequency.Weekly => currentDate.AddDays(7),
-            RecurrenceFrequency.Biweekly => currentDate.AddDays(14),
-            RecurrenceFrequency.Monthly => GetNextMonthlyDate(currentDate, dayOfMonth),
-            RecurrenceFrequency.Quarterly => currentDate.AddMonths(3),
-            RecurrenceFrequency.Semiannual => currentDate.AddMonths(6),
-            RecurrenceFrequency.Annual => currentDate.AddYears(1),
-            _ => currentDate.AddMonths(1)
+            RecurrenceFrequency.Daily => current.AddDays(1),
+            RecurrenceFrequency.Weekly => current.AddDays(7),
+            RecurrenceFrequency.Biweekly => current.AddDays(14),
+            RecurrenceFrequency.Monthly => GetNextMonthlyDate(current, dayOfMonth),
+            RecurrenceFrequency.Quarterly => current.AddMonths(3),
+            RecurrenceFrequency.Semiannual => current.AddMonths(6),
+            RecurrenceFrequency.Annual => current.AddYears(1),
+            _ => current.AddMonths(1)
         };
 
         return Task.FromResult(nextDate);
