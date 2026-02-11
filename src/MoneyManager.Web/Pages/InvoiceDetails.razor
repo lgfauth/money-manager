@@ -1,0 +1,539 @@
+@page "/invoices/{InvoiceId}"
+@using MoneyManager.Domain.Entities
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Application.DTOs.Response
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
+@inject MoneyManager.Application.Services.ICreditCardInvoiceService InvoiceService
+@inject MoneyManager.Web.Services.IAccountService AccountService
+@inject MoneyManager.Web.Services.ICategoryService CategoryService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Detalhes da Fatura - MoneyManager</PageTitle>
+
+<BusyOverlay IsBusy="@isBusy" Message="Processando..." />
+
+<div class="container-fluid py-4">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando detalhes da fatura...</p>
+        </div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> @errorMessage
+        </div>
+        <button class="btn btn-secondary" @onclick="GoBack">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </button>
+    }
+    else if (invoiceSummary != null)
+    {
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-outline-secondary mb-2" @onclick="GoBack">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                        <h1 class="mb-0">
+                            <i class="fas fa-file-invoice-dollar"></i> Fatura @invoiceSummary.Invoice.ReferenceMonth
+                        </h1>
+                        <p class="text-muted">@invoiceSummary.Invoice.AccountName</p>
+                    </div>
+                    <div>
+                        <span class="badge @GetStatusBadgeClass() fs-5">
+                            @GetStatusLabel()
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards de Resumo -->
+        <div class="row g-4 mb-4">
+            <!-- Card Valor Total -->
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Valor Total</p>
+                        <h3 class="text-danger mb-0">R$ @invoiceSummary.Invoice.TotalAmount.ToString("F2")</h3>
+                        <small class="text-muted">@invoiceSummary.TotalTransactions transações</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Valor Pago -->
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Valor Pago</p>
+                        <h3 class="text-success mb-0">R$ @invoiceSummary.Invoice.PaidAmount.ToString("F2")</h3>
+                        @if (invoiceSummary.Invoice.PaidAmount > 0)
+                        {
+                            var percentPaid = (invoiceSummary.Invoice.PaidAmount / invoiceSummary.Invoice.TotalAmount) * 100;
+                            <small class="text-muted">@percentPaid.ToString("F0")% pago</small>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Valor Restante -->
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Valor Restante</p>
+                        <h3 class="@(invoiceSummary.Invoice.RemainingAmount > 0 ? "text-warning" : "text-success") mb-0">
+                            R$ @invoiceSummary.Invoice.RemainingAmount.ToString("F2")
+                        </h3>
+                        @if (invoiceSummary.Invoice.RemainingAmount > 0 && invoiceSummary.Invoice.Status != InvoiceStatus.Paid)
+                        {
+                            <button class="btn btn-sm btn-primary mt-2" @onclick="ShowPaymentForm">
+                                <i class="fas fa-credit-card"></i> Pagar
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Vencimento -->
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <p class="text-muted mb-1">Vencimento</p>
+                        <h5 class="mb-1">@invoiceSummary.Invoice.DueDate.ToString("dd/MM/yyyy")</h5>
+                        @if (invoiceSummary.Invoice.IsOverdue)
+                        {
+                            <small class="text-danger">
+                                <i class="fas fa-exclamation-triangle"></i> Vencida há @Math.Abs(invoiceSummary.Invoice.DaysUntilDue) dias
+                            </small>
+                        }
+                        else if (invoiceSummary.Invoice.DaysUntilDue >= 0 && invoiceSummary.Invoice.Status != InvoiceStatus.Paid)
+                        {
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> Vence em @invoiceSummary.Invoice.DaysUntilDue dias
+                            </small>
+                        }
+                        else
+                        {
+                            <small class="text-success">
+                                <i class="fas fa-check-circle"></i> Paga
+                            </small>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Período da Fatura -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="fas fa-calendar-alt"></i> Período da Fatura</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <strong>Início:</strong> @invoiceSummary.Invoice.PeriodStart.ToString("dd/MM/yyyy")
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Fechamento:</strong> @invoiceSummary.Invoice.PeriodEnd.ToString("dd/MM/yyyy")
+                            </div>
+                            <div class="col-md-4">
+                                @if (invoiceSummary.Invoice.ClosedAt.HasValue)
+                                {
+                                    <strong>Fechada em:</strong> @invoiceSummary.Invoice.ClosedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gastos por Categoria -->
+        @if (invoiceSummary.AmountByCategory.Any())
+        {
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="mb-3"><i class="fas fa-chart-pie"></i> Gastos por Categoria</h6>
+                            <div class="row">
+                                @foreach (var category in invoiceSummary.AmountByCategory.OrderByDescending(c => c.Value))
+                                {
+                                    var percent = (category.Value / invoiceSummary.Invoice.TotalAmount) * 100;
+                                    <div class="col-md-6 mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span>@category.Key</span>
+                                            <strong>R$ @category.Value.ToString("F2")</strong>
+                                        </div>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" style="width: @percent%" aria-valuenow="@percent" aria-valuemin="0" aria-valuemax="100">
+                                                @percent.ToString("F0")%
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Lista de Transações -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-receipt"></i> Transações da Fatura (@invoiceSummary.Transactions.Count)
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (invoiceSummary.Transactions.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Data</th>
+                                            <th>Descrição</th>
+                                            <th>Categoria</th>
+                                            <th class="text-end">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var transaction in invoiceSummary.Transactions.OrderBy(t => t.Date))
+                                        {
+                                            <tr>
+                                                <td>@transaction.Date.ToString("dd/MM/yyyy")</td>
+                                                <td>
+                                                    <strong>@transaction.Description</strong>
+                                                    @if (transaction.Tags?.Any() == true)
+                                                    {
+                                                        <br />
+                                                        <small class="text-muted">
+                                                            @foreach (var tag in transaction.Tags)
+                                                            {
+                                                                <span class="badge bg-secondary me-1">@tag</span>
+                                                            }
+                                                        </small>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (!string.IsNullOrEmpty(transaction.CategoryId))
+                                                    {
+                                                        <span class="badge bg-info">@GetCategoryName(transaction.CategoryId)</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">Sem categoria</span>
+                                                    }
+                                                </td>
+                                                <td class="text-end">
+                                                    <strong class="text-danger">R$ @transaction.Amount.ToString("F2")</strong>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr>
+                                            <td colspan="3"><strong>Total</strong></td>
+                                            <td class="text-end"><strong class="text-danger">R$ @invoiceSummary.Invoice.TotalAmount.ToString("F2")</strong></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="p-4 text-center text-muted">
+                                <i class="fas fa-inbox fa-3x mb-3"></i>
+                                <p>Nenhuma transação nesta fatura</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Pagamento (se showPaymentForm) -->
+        @if (showPaymentForm && invoiceSummary.Invoice.RemainingAmount > 0)
+        {
+            <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-credit-card"></i> Pagar Fatura
+                            </h5>
+                            <button type="button" class="btn-close" @onclick="() => showPaymentForm = false" disabled="@isBusy"></button>
+                        </div>
+                        <div class="modal-body">
+                            @if (!string.IsNullOrEmpty(paymentError))
+                            {
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-exclamation-triangle"></i> @paymentError
+                                </div>
+                            }
+
+                            <div class="mb-3">
+                                <label class="form-label">Data do Pagamento</label>
+                                <input type="date" class="form-control" @bind="paymentDate" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Conta Pagadora</label>
+                                <select class="form-select" @bind="selectedPaymentAccountId">
+                                    <option value="">-- Selecione --</option>
+                                    @foreach (var account in paymentAccounts)
+                                    {
+                                        <option value="@account.Id">@account.Name (@GetAccountTypeLabel(account.Type))</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Valor do Pagamento</label>
+                                <input type="number" step="0.01" class="form-control" @bind="paymentAmount" />
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> Restante: R$ @invoiceSummary.Invoice.RemainingAmount.ToString("F2")
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="() => showPaymentForm = false" disabled="@isBusy">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                            <button type="button" class="btn btn-success" @onclick="ProcessPayment" disabled="@isBusy">
+                                <i class="fas fa-check"></i> 
+                                @if (paymentAmount >= invoiceSummary.Invoice.RemainingAmount)
+                                {
+                                    <text>Pagar Totalmente</text>
+                                }
+                                else
+                                {
+                                    <text>Pagar Parcialmente</text>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string InvoiceId { get; set; } = string.Empty;
+
+    private string userId = string.Empty;
+    private InvoiceSummaryDto? invoiceSummary;
+    private List<Account> paymentAccounts = new();
+    private Dictionary<string, string> categoryNames = new();
+    
+    private bool isLoading = true;
+    private bool isBusy;
+    private string? errorMessage;
+    
+    // Payment form
+    private bool showPaymentForm;
+    private string? selectedPaymentAccountId;
+    private decimal paymentAmount;
+    private DateTime paymentDate = DateTime.Today;
+    private string? paymentError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+        await LoadInvoiceDetails();
+        await LoadPaymentAccounts();
+        await LoadCategories();
+    }
+
+    private async Task LoadInvoiceDetails()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            invoiceSummary = await InvoiceService.GetInvoiceSummaryAsync(userId, InvoiceId);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar fatura: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadPaymentAccounts()
+    {
+        try
+        {
+            var accounts = await AccountService.GetAllAsync();
+            paymentAccounts = accounts.Where(a => a.Type != AccountType.CreditCard).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar contas: {ex.Message}");
+        }
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            var categories = await CategoryService.GetAllAsync();
+            categoryNames = categories.ToDictionary(c => c.Id, c => c.Name);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao carregar categorias: {ex.Message}");
+        }
+    }
+
+    private void ShowPaymentForm()
+    {
+        showPaymentForm = true;
+        paymentAmount = invoiceSummary?.Invoice.RemainingAmount ?? 0;
+        paymentDate = DateTime.Today;
+        selectedPaymentAccountId = string.Empty;
+        paymentError = null;
+    }
+
+    private async Task ProcessPayment()
+    {
+        if (invoiceSummary == null) return;
+
+        paymentError = null;
+        if (isBusy) return;
+        isBusy = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(selectedPaymentAccountId))
+            {
+                paymentError = "Selecione a conta pagadora";
+                return;
+            }
+
+            if (paymentAmount <= 0)
+            {
+                paymentError = "Informe um valor maior que zero";
+                return;
+            }
+
+            if (paymentAmount > invoiceSummary.Invoice.RemainingAmount)
+            {
+                paymentError = $"Valor não pode exceder o restante (R$ {invoiceSummary.Invoice.RemainingAmount:F2})";
+                return;
+            }
+
+            var request = new Application.DTOs.Request.PayInvoiceRequestDto
+            {
+                InvoiceId = InvoiceId,
+                PayFromAccountId = selectedPaymentAccountId,
+                Amount = paymentAmount,
+                PaymentDate = paymentDate,
+                Description = $"Pagamento fatura {invoiceSummary.Invoice.ReferenceMonth}"
+            };
+
+            if (paymentAmount >= invoiceSummary.Invoice.RemainingAmount)
+            {
+                await InvoiceService.PayInvoiceAsync(userId, request);
+            }
+            else
+            {
+                await InvoiceService.PayPartialInvoiceAsync(userId, request);
+            }
+
+            // Recarregar dados
+            await LoadInvoiceDetails();
+            showPaymentForm = false;
+        }
+        catch (Exception ex)
+        {
+            paymentError = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/accounts");
+    }
+
+    private string GetStatusBadgeClass()
+    {
+        if (invoiceSummary == null) return "bg-secondary";
+        
+        if (invoiceSummary.Invoice.IsOverdue)
+            return "bg-danger";
+
+        return invoiceSummary.Invoice.Status switch
+        {
+            InvoiceStatus.Open => "bg-info",
+            InvoiceStatus.Closed => "bg-warning text-dark",
+            InvoiceStatus.Paid => "bg-success",
+            InvoiceStatus.PartiallyPaid => "bg-warning text-dark",
+            InvoiceStatus.Overdue => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetStatusLabel()
+    {
+        if (invoiceSummary == null) return "";
+
+        if (invoiceSummary.Invoice.IsOverdue)
+            return "VENCIDA";
+
+        return invoiceSummary.Invoice.Status switch
+        {
+            InvoiceStatus.Open => "Aberta",
+            InvoiceStatus.Closed => "Fechada",
+            InvoiceStatus.Paid => "Paga",
+            InvoiceStatus.PartiallyPaid => "Parcialmente Paga",
+            InvoiceStatus.Overdue => "Vencida",
+            _ => invoiceSummary.Invoice.Status.ToString()
+        };
+    }
+
+    private string GetCategoryName(string categoryId)
+    {
+        return categoryNames.TryGetValue(categoryId, out var name) ? name : "Sem categoria";
+    }
+
+    private static string GetAccountTypeLabel(AccountType type)
+    {
+        return type switch
+        {
+            AccountType.Checking => "Conta Corrente",
+            AccountType.Savings => "Poupança",
+            AccountType.Cash => "Dinheiro",
+            AccountType.CreditCard => "Cartão de Crédito",
+            AccountType.Investment => "Investimento",
+            _ => type.ToString()
+        };
+    }
+}

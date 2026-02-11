@@ -1,0 +1,307 @@
+@page "/admin/migration"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Migração de Dados - MoneyManager</PageTitle>
+
+<BusyOverlay IsBusy="@isBusy" Message="@busyMessage" />
+
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <button class="btn btn-outline-secondary mb-2" @onclick="GoBack">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </button>
+            <h1 class="mb-0">
+                <i class="fas fa-tools"></i> Ferramentas de Administração
+            </h1>
+            <p class="text-muted">Migração e manutenção de dados</p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="fas fa-check-circle"></i> @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="fas fa-exclamation-triangle"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    @if (migrationResult != null)
+    {
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> Resultado da Migração</h5>
+            <ul class="mb-0">
+                <li><strong>Cartões processados:</strong> @migrationResult.CardsProcessed</li>
+                <li><strong>Faturas criadas:</strong> @migrationResult.InvoicesCreated</li>
+                <li><strong>Transações vinculadas:</strong> @migrationResult.TransactionsLinked</li>
+                @if (migrationResult.Errors.Any())
+                {
+                    <li class="text-danger">
+                        <strong>Erros:</strong>
+                        <ul>
+                            @foreach (var error in migrationResult.Errors)
+                            {
+                                <li>@error</li>
+                            }
+                        </ul>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    <!-- Cards de Ações -->
+    <div class="row g-4">
+        <!-- Card Migração de Faturas -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database"></i> Migração de Faturas Históricas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Cria faturas históricas para transações antigas de cartões de crédito que ainda não estão vinculadas a nenhuma fatura.
+                    </p>
+                    <ul>
+                        <li>Busca todos os seus cartões de crédito</li>
+                        <li>Identifica transações sem vínculo com fatura</li>
+                        <li>Cria fatura "HISTORY" com status "Paga"</li>
+                        <li>Vincula todas as transações antigas</li>
+                    </ul>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        <strong>Atenção:</strong> Esta operação só deve ser executada uma vez por cartão.
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary w-100" @onclick="ExecuteMigration" disabled="@isBusy">
+                        <i class="fas fa-play"></i> Executar Migração
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Recalcular Faturas -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calculator"></i> Recalcular Totais das Faturas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Recalcula o valor total de todas as faturas não pagas baseado nas transações vinculadas.
+                    </p>
+                    <ul>
+                        <li>Soma todas as transações de cada fatura</li>
+                        <li>Atualiza TotalAmount e RemainingAmount</li>
+                        <li>Útil após correções manuais no banco</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        Seguro executar múltiplas vezes.
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-success w-100" @onclick="RecalculateInvoices" disabled="@isBusy">
+                        <i class="fas fa-sync"></i> Recalcular Faturas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Criar Faturas Abertas -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-folder-open"></i> Criar Faturas Abertas Faltantes
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Garante que todos os cartões de crédito tenham uma fatura aberta para o período atual.
+                    </p>
+                    <ul>
+                        <li>Verifica cada cartão de crédito</li>
+                        <li>Cria fatura aberta se não existir</li>
+                        <li>Atualiza CurrentOpenInvoiceId</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        Seguro executar múltiplas vezes.
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-info w-100" @onclick="CreateOpenInvoices" disabled="@isBusy">
+                        <i class="fas fa-plus"></i> Criar Faturas Abertas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isBusy;
+    private string busyMessage = "Processando...";
+    private string? successMessage;
+    private string? errorMessage;
+    private MigrationResult? migrationResult;
+
+    private async Task ExecuteMigration()
+    {
+        if (!await ConfirmAction("Tem certeza que deseja executar a migração? Esta operação pode demorar alguns minutos."))
+            return;
+
+        isBusy = true;
+        busyMessage = "Executando migração... Isso pode demorar alguns minutos.";
+        errorMessage = null;
+        successMessage = null;
+        migrationResult = null;
+
+        try
+        {
+            var response = await Http.PostAsync("api/admin/migrate-credit-card-invoices", null);
+            var result = await response.Content.ReadFromJsonAsync<MigrationResponse>();
+
+            if (result?.Success == true)
+            {
+                migrationResult = result.Result;
+                successMessage = result.Message ?? "Migração concluída com sucesso!";
+            }
+            else
+            {
+                errorMessage = result?.Message ?? "Erro desconhecido durante a migração";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao executar migração: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task RecalculateInvoices()
+    {
+        if (!await ConfirmAction("Tem certeza que deseja recalcular todas as faturas?"))
+            return;
+
+        isBusy = true;
+        busyMessage = "Recalculando faturas...";
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsync("api/admin/recalculate-invoices", null);
+            var result = await response.Content.ReadFromJsonAsync<SimpleResponse>();
+
+            if (result?.Success == true)
+            {
+                successMessage = result.Message ?? "Faturas recalculadas com sucesso!";
+            }
+            else
+            {
+                errorMessage = result?.Message ?? "Erro ao recalcular faturas";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task CreateOpenInvoices()
+    {
+        isBusy = true;
+        busyMessage = "Criando faturas abertas...";
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsync("api/admin/create-missing-open-invoices", null);
+            var result = await response.Content.ReadFromJsonAsync<CreateInvoicesResponse>();
+
+            if (result?.Success == true)
+            {
+                successMessage = $"{result.Message} ({result.TotalCards} cartões verificados)";
+            }
+            else
+            {
+                errorMessage = result?.Message ?? "Erro ao criar faturas abertas";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/accounts");
+    }
+
+    private async Task<bool> ConfirmAction(string message)
+    {
+        // Em produção, usar um modal de confirmação
+        // Por enquanto, retorna true
+        return await Task.FromResult(true);
+    }
+
+    // DTOs
+    private class MigrationResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public MigrationResult? Result { get; set; }
+    }
+
+    private class MigrationResult
+    {
+        public int CardsProcessed { get; set; }
+        public int InvoicesCreated { get; set; }
+        public int TransactionsLinked { get; set; }
+        public List<string> Errors { get; set; } = new();
+    }
+
+    private class SimpleResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+    }
+
+    private class CreateInvoicesResponse
+    {
+        public bool Success { get; set; }
+        public string? Message { get; set; }
+        public int TotalCards { get; set; }
+    }
+}

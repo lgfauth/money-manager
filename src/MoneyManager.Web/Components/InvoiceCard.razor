@@ -1,0 +1,143 @@
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Application.DTOs.Response
+
+<div class="card @(IsOverdue ? "border-danger" : "") h-100">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-3">
+                <h6 class="mb-1">
+                    <i class="fas fa-calendar"></i> Fatura @Invoice.ReferenceMonth
+                </h6>
+                <small class="text-muted">
+                    Período: @Invoice.PeriodStart.ToString("dd/MM") a @Invoice.PeriodEnd.ToString("dd/MM/yyyy")
+                </small>
+                <br />
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> Vencimento: @Invoice.DueDate.ToString("dd/MM/yyyy")
+                </small>
+            </div>
+            <div class="col-md-3">
+                <p class="mb-1 text-muted small">Valor Total</p>
+                <h5 class="mb-0 text-danger">R$ @Invoice.TotalAmount.ToString("F2")</h5>
+                @if (Invoice.PaidAmount > 0)
+                {
+                    <small class="text-success">
+                        <i class="fas fa-check"></i> Pago: R$ @Invoice.PaidAmount.ToString("F2")
+                    </small>
+                    <br />
+                    <small class="text-danger">
+                        <i class="fas fa-exclamation-circle"></i> Restante: R$ @Invoice.RemainingAmount.ToString("F2")
+                    </small>
+                }
+            </div>
+            <div class="col-md-2">
+                <span class="badge @StatusBadgeClass">
+                    @StatusLabel
+                </span>
+                <br />
+                @if (!IsOverdue && Invoice.DaysUntilDue >= 0)
+                {
+                    <small class="text-muted">
+                        <i class="fas fa-hourglass-half"></i> Vence em @Invoice.DaysUntilDue dias
+                    </small>
+                }
+                else if (IsOverdue)
+                {
+                    <small class="text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Vencida há @Math.Abs(Invoice.DaysUntilDue) dias
+                    </small>
+                }
+            </div>
+            <div class="col-md-2 text-center">
+                <small class="text-muted">Transações</small>
+                <br />
+                <strong><i class="fas fa-receipt"></i> @Invoice.TransactionCount</strong>
+            </div>
+            <div class="col-md-2 d-grid gap-2">
+                @if (ShowDetailsButton)
+                {
+                    <button class="btn btn-primary btn-sm" @onclick="OnViewDetails">
+                        <i class="fas fa-eye"></i> Ver Detalhes
+                    </button>
+                }
+                @if (ShowPayButton && Invoice.RemainingAmount > 0)
+                {
+                    <button class="btn btn-success btn-sm" @onclick="OnPay">
+                        <i class="fas fa-money-bill-wave"></i> Pagar
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public CreditCardInvoiceResponseDto Invoice { get; set; } = default!;
+
+    [Parameter]
+    public bool ShowDetailsButton { get; set; } = true;
+
+    [Parameter]
+    public bool ShowPayButton { get; set; } = true;
+
+    [Parameter]
+    public EventCallback<string> OnViewDetailsClicked { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnPayClicked { get; set; }
+
+    private bool IsOverdue => Invoice.DueDate < DateTime.Today && Invoice.Status != InvoiceStatus.Paid;
+
+    private string StatusBadgeClass
+    {
+        get
+        {
+            if (IsOverdue) return "bg-danger";
+
+            return Invoice.Status switch
+            {
+                InvoiceStatus.Open => "bg-info",
+                InvoiceStatus.Closed => "bg-warning text-dark",
+                InvoiceStatus.Paid => "bg-success",
+                InvoiceStatus.PartiallyPaid => "bg-warning text-dark",
+                InvoiceStatus.Overdue => "bg-danger",
+                _ => "bg-secondary"
+            };
+        }
+    }
+
+    private string StatusLabel
+    {
+        get
+        {
+            if (IsOverdue) return "VENCIDA";
+
+            return Invoice.Status switch
+            {
+                InvoiceStatus.Open => "Aberta",
+                InvoiceStatus.Closed => "Fechada",
+                InvoiceStatus.Paid => "Paga",
+                InvoiceStatus.PartiallyPaid => "Parc. Paga",
+                InvoiceStatus.Overdue => "Vencida",
+                _ => Invoice.Status.ToString()
+            };
+        }
+    }
+
+    private async Task OnViewDetails()
+    {
+        if (OnViewDetailsClicked.HasDelegate)
+        {
+            await OnViewDetailsClicked.InvokeAsync(Invoice.Id);
+        }
+    }
+
+    private async Task OnPay()
+    {
+        if (OnPayClicked.HasDelegate)
+        {
+            await OnPayClicked.InvokeAsync(Invoice.Id);
+        }
+    }
+}

@@ -1,0 +1,75 @@
+@using MoneyManager.Domain.Enums
+
+<span class="badge @BadgeClass @(CustomClass ?? "")">
+    @Label
+</span>
+
+@code {
+    [Parameter]
+    public InvoiceStatus Status { get; set; }
+
+    [Parameter]
+    public bool IsOverdue { get; set; }
+
+    [Parameter]
+    public string? CustomClass { get; set; }
+
+    [Parameter]
+    public bool ShowIcon { get; set; } = true;
+
+    private string BadgeClass
+    {
+        get
+        {
+            if (IsOverdue) return "bg-danger";
+
+            return Status switch
+            {
+                InvoiceStatus.Open => "bg-info",
+                InvoiceStatus.Closed => "bg-warning text-dark",
+                InvoiceStatus.Paid => "bg-success",
+                InvoiceStatus.PartiallyPaid => "bg-warning text-dark",
+                InvoiceStatus.Overdue => "bg-danger",
+                _ => "bg-secondary"
+            };
+        }
+    }
+
+    private string Label
+    {
+        get
+        {
+            var icon = ShowIcon ? GetIcon() + " " : "";
+            var text = IsOverdue ? "VENCIDA" : GetStatusText();
+            return icon + text;
+        }
+    }
+
+    private string GetIcon()
+    {
+        if (IsOverdue) return "<i class=\"fas fa-exclamation-triangle\"></i>";
+
+        return Status switch
+        {
+            InvoiceStatus.Open => "<i class=\"fas fa-folder-open\"></i>",
+            InvoiceStatus.Closed => "<i class=\"fas fa-file-invoice\"></i>",
+            InvoiceStatus.Paid => "<i class=\"fas fa-check-circle\"></i>",
+            InvoiceStatus.PartiallyPaid => "<i class=\"fas fa-file-invoice-dollar\"></i>",
+            InvoiceStatus.Overdue => "<i class=\"fas fa-exclamation-triangle\"></i>",
+            _ => "<i class=\"fas fa-question-circle\"></i>"
+        };
+    }
+
+    private string GetStatusText()
+    {
+        return Status switch
+        {
+            InvoiceStatus.Open => "Aberta",
+            InvoiceStatus.Closed => "Fechada",
+            InvoiceStatus.Paid => "Paga",
+            InvoiceStatus.PartiallyPaid => "Parc. Paga",
+            InvoiceStatus.Overdue => "Vencida",
+            _ => Status.ToString()
+        };
+    }
+}
