@@ -599,38 +599,14 @@
 
         var purchaseDate = baseRequest.Date.Date;
 
-        // Lógica de data de lançamento:
-        // 1. Calcular posting day do mês da compra
-        // 2. Se checkbox marcado E posting day ainda não passou → usa mês da compra
-        // 3. Caso contrário → usa próximo mês
-
-        var currentMonthPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(purchaseDate.Year, purchaseDate.Month));
-        var postingDateCurrentMonth = new DateTime(purchaseDate.Year, purchaseDate.Month, currentMonthPostingDay);
-        
-        DateTime firstInstallmentDate;
-        
-        // Se checkbox marcado e posting day ainda vai acontecer neste mês
-        if (firstInstallmentInCurrentInvoice && purchaseDate <= postingDateCurrentMonth)
-        {
-            // Usa o posting day do mês da compra (fatura corrente)
-            firstInstallmentDate = postingDateCurrentMonth;
-        }
-        else
-        {
-            // Usa o posting day do próximo mês
-            var nextMonth = purchaseDate.AddMonths(1);
-            var nextMonthPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month));
-            firstInstallmentDate = new DateTime(nextMonth.Year, nextMonth.Month, nextMonthPostingDay);
-        }
-
-        // 1) Cria a 1ª parcela (sempre) na data de lançamento da fatura definida acima
+        // 1) PRIMEIRA PARCELA: Sempre criada IMEDIATAMENTE na data da compra
         var firstReq = new CreateTransactionRequestDto
         {
             AccountId = baseRequest.AccountId,
             CategoryId = baseRequest.CategoryId,
             Type = baseRequest.Type,
             Amount = installmentAmount,
-            Date = firstInstallmentDate,
+            Date = purchaseDate, // Data da compra (imediata)
             Description = $"{baseRequest.Description} (1/{installmentsCount})",
             Tags = baseRequest.Tags,
             ToAccountId = baseRequest.ToAccountId,
@@ -639,19 +615,33 @@
 
         await TransactionService.CreateAsync(firstReq);
 
-        // 2) Demais parcelas viram uma recorrência mensal com data fim conforme parcelas restantes
+        // 2) DEMAIS PARCELAS: Recorrência mensal começando no posting day
+        // A lógica de "fatura corrente" vs "próxima fatura" se aplica AQUI
         var remaining = installmentsCount - 1;
         if (remaining <= 0)
         {
             return;
         }
 
-        // Próximas parcelas entram sempre nos meses seguintes ao da 1ª parcela (no mesmo postingDay).
-        var startDateBase = firstInstallmentDate.AddMonths(1);
-        var daysInStartMonth = DateTime.DaysInMonth(startDateBase.Year, startDateBase.Month);
-        var startDate = new DateTime(startDateBase.Year, startDateBase.Month, Math.Min(postingDay, daysInStartMonth));
+        // Calcular data de início da recorrência (2ª parcela)
+        DateTime secondInstallmentDate;
+        
+        if (firstInstallmentInCurrentInvoice)
+        {
+            // Checkbox marcado: próxima parcela no posting day do mês seguinte ao da compra
+            var nextMonth = purchaseDate.AddMonths(1);
+            var nextMonthPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month));
+            secondInstallmentDate = new DateTime(nextMonth.Year, nextMonth.Month, nextMonthPostingDay);
+        }
+        else
+        {
+            // Checkbox desmarcado: próxima parcela pula 2 meses (mês seguinte ao seguinte)
+            var twoMonthsAhead = purchaseDate.AddMonths(2);
+            var twoMonthsPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(twoMonthsAhead.Year, twoMonthsAhead.Month));
+            secondInstallmentDate = new DateTime(twoMonthsAhead.Year, twoMonthsAhead.Month, twoMonthsPostingDay);
+        }
 
-        var endDate = startDate.AddMonths(remaining - 1);
+        var endDate = secondInstallmentDate.AddMonths(remaining - 1);
 
         var recurringRequest = new MoneyManager.Application.DTOs.Request.CreateRecurringTransactionRequestDto
         {
@@ -661,9 +651,9 @@
             Amount = installmentAmount,
             Description = $"{baseRequest.Description} (Parcela)",
             Frequency = RecurrenceFrequency.Monthly,
-            StartDate = startDate,
+            StartDate = secondInstallmentDate,
             EndDate = endDate,
-            DayOfMonth = startDate.Day,
+            DayOfMonth = secondInstallmentDate.Day,
             Tags = baseRequest.Tags
         };
 
