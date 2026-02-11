@@ -16,7 +16,7 @@ Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
 // Register AuthorizationMessageHandler
 builder.Services.AddScoped<AuthorizationMessageHandler>();
 
-// Configure HttpClient with AuthorizationMessageHandler
+// Configure HttpClient with AuthorizationMessageHandler for API calls
 builder.Services.AddScoped(sp =>
 {
     var authHandler = sp.GetRequiredService<AuthorizationMessageHandler>();

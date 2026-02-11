@@ -1,11 +1,12 @@
 ﻿using System.Net.Http.Json;
 using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 namespace MoneyManager.Web.Services.Localization;
 
 public sealed class LocalizationService : ILocalizationService
 {
-    private readonly HttpClient _httpClient;
+    private readonly IWebAssemblyHostEnvironment _hostEnvironment;
     private readonly ILocalStorageService _localStorage;
     private const string LANGUAGE_KEY = "preferred_language";
 
@@ -15,9 +16,9 @@ public sealed class LocalizationService : ILocalizationService
 
     public event Action? OnLanguageChanged;
 
-    public LocalizationService(HttpClient httpClient, ILocalStorageService localStorage)
+    public LocalizationService(IWebAssemblyHostEnvironment hostEnvironment, ILocalStorageService localStorage)
     {
-        _httpClient = httpClient;
+        _hostEnvironment = hostEnvironment;
         _localStorage = localStorage;
     }
 
@@ -100,21 +101,30 @@ public sealed class LocalizationService : ILocalizationService
 
     private async Task LoadAsync(string culture)
     {
-        // BaseAddress is the API URL; use absolute-path to read static files from same origin when hosted.
-        // This works in development and in hosted scenarios where the WASM is served from the web host.
-        var path = $"i18n/{culture}.json";
+        var path = $"{_hostEnvironment.BaseAddress}i18n/{culture}.json";
 
         Dictionary<string, object>? dict = null;
         try
         {
-            dict = await _httpClient.GetFromJsonAsync<Dictionary<string, object>>(path);
+            using var httpClient = new HttpClient();
+            dict = await httpClient.GetFromJsonAsync<Dictionary<string, object>>(path);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[LocalizationService] Erro ao carregar {path}: {ex.Message}");
             // Fallback: keep empty dictionary
         }
 
         _resources = dict ?? new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        
+        if (_resources.Any())
+        {
+            Console.WriteLine($"[LocalizationService] Carregado {_resources.Count} seções de {culture}");
+        }
+        else
+        {
+            Console.WriteLine($"[LocalizationService] AVISO: Nenhum recurso carregado de {culture}");
+        }
     }
 
     private bool TryGetValue(string key, out object? value)
