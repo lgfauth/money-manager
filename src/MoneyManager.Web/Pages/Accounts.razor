@@ -9,7 +9,7 @@
 @attribute [Authorize]
 @inject IAccountService AccountService
 @inject ITransactionService TransactionService
-@inject MoneyManager.Application.Services.ICreditCardInvoiceService InvoiceService
+@inject MoneyManager.Web.Services.ICreditCardInvoiceService InvoiceService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
@@ -631,7 +631,7 @@
         isLoadingInvoices = true;
         try
         {
-            var allInvoices = await InvoiceService.GetInvoicesByAccountAsync(userId, selectedCard.Id);
+            var allInvoices = await InvoiceService.GetInvoicesByAccountAsync(selectedCard.Id);
             pendingInvoices = allInvoices
                 .Where(i => i.Status != InvoiceStatus.Paid)
                 .OrderBy(i => i.DueDate)
@@ -697,12 +697,12 @@
             if (invoicePaymentAmount >= selectedInvoiceToPay.RemainingAmount)
             {
                 // 1. Primeiro atualiza a fatura
-                await InvoiceService.PayInvoiceAsync(userId, request);
+                await InvoiceService.PayInvoiceAsync(request);
             }
             else
             {
                 // 1. Primeiro atualiza a fatura
-                await InvoiceService.PayPartialInvoiceAsync(userId, request);
+                await InvoiceService.PayPartialInvoiceAsync(request);
             }
 
             // 2. Depois cria a transação de pagamento

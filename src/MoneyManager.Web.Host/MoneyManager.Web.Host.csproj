@@ -10,4 +10,44 @@
     <ProjectReference Include="..\MoneyManager.Web\MoneyManager.Web.csproj" />
   </ItemGroup>
 
+  <!-- Copiar wwwroot do MoneyManager.Web após o build do Blazor -->
+  <Target Name="CopyBlazorWwwroot" AfterTargets="Build">
+    <PropertyGroup>
+      <BlazorWwwrootPath>..\MoneyManager.Web\bin\$(Configuration)\$(TargetFramework)\wwwroot</BlazorWwwrootPath>
+      <HostWwwrootPath>$(OutputPath)wwwroot</HostWwwrootPath>
+    </PropertyGroup>
+    
+    <Message Importance="high" Text="Copiando Blazor wwwroot de: $(BlazorWwwrootPath)" />
+    <Message Importance="high" Text="Para: $(HostWwwrootPath)" />
+    
+    <ItemGroup>
+      <BlazorFiles Include="$(BlazorWwwrootPath)\**\*.*" />
+    </ItemGroup>
+    
+    <Copy SourceFiles="@(BlazorFiles)" 
+          DestinationFolder="$(HostWwwrootPath)\%(RecursiveDir)" 
+          SkipUnchangedFiles="true" 
+          OverwriteReadOnlyFiles="true" />
+  </Target>
+
+  <!-- Copiar para o publish também -->
+  <Target Name="CopyBlazorWwwrootOnPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <BlazorWwwrootPath>..\MoneyManager.Web\bin\$(Configuration)\$(TargetFramework)\publish\wwwroot</BlazorWwwrootPath>
+      <PublishWwwrootPath>$(PublishDir)wwwroot</PublishWwwrootPath>
+    </PropertyGroup>
+    
+    <Message Importance="high" Text="[PUBLISH] Copiando Blazor wwwroot de: $(BlazorWwwrootPath)" />
+    <Message Importance="high" Text="[PUBLISH] Para: $(PublishWwwrootPath)" />
+    
+    <ItemGroup>
+      <BlazorPublishFiles Include="$(BlazorWwwrootPath)\**\*.*" />
+    </ItemGroup>
+    
+    <Copy SourceFiles="@(BlazorPublishFiles)" 
+          DestinationFolder="$(PublishWwwrootPath)\%(RecursiveDir)" 
+          SkipUnchangedFiles="false" 
+          OverwriteReadOnlyFiles="true" />
+  </Target>
+
 </Project>

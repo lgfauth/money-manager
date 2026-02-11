@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize]
-@inject MoneyManager.Application.Services.ICreditCardInvoiceService InvoiceService
+@inject MoneyManager.Web.Services.ICreditCardInvoiceService InvoiceService
 @inject MoneyManager.Web.Services.IAccountService AccountService
 @inject MoneyManager.Web.Services.ICategoryService CategoryService
 @inject MoneyManager.Web.Services.ITransactionService TransactionService
@@ -372,7 +372,7 @@
 
         try
         {
-            invoiceSummary = await InvoiceService.GetInvoiceSummaryAsync(userId, InvoiceId);
+            invoiceSummary = await InvoiceService.GetInvoiceSummaryAsync(InvoiceId);
         }
         catch (Exception ex)
         {
@@ -459,12 +459,12 @@
             if (paymentAmount >= invoiceSummary.Invoice.RemainingAmount)
             {
                 // 1. Atualiza a fatura
-                await InvoiceService.PayInvoiceAsync(userId, request);
+                await InvoiceService.PayInvoiceAsync(request);
             }
             else
             {
                 // 1. Atualiza a fatura
-                await InvoiceService.PayPartialInvoiceAsync(userId, request);
+                await InvoiceService.PayPartialInvoiceAsync(request);
             }
 
             // 2. Cria a transação de pagamento
