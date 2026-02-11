@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using System.Text.Json;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -105,51 +106,62 @@ public sealed class LocalizationService : ILocalizationService
 
     private async Task LoadAsync(string culture)
     {
-        // Usar caminho relativo para garantir que carrega do servidor local
         var path = $"i18n/{culture}.json";
         
-        Console.WriteLine($"[LocalizationService] BaseAddress original: {_hostEnvironment.BaseAddress}");
-        Console.WriteLine($"[LocalizationService] Tentando carregar: {path} (relativo)");
+        Console.WriteLine($"[LocalizationService] BaseAddress: {_hostEnvironment.BaseAddress}");
+        Console.WriteLine($"[LocalizationService] Carregando: {path}");
 
-        Dictionary<string, object>? dict = null;
         try
         {
-            // Usar HttpClient sem BaseAddress para forçar caminho relativo
             using var httpClient = new HttpClient { BaseAddress = new Uri(_hostEnvironment.BaseAddress) };
-            dict = await httpClient.GetFromJsonAsync<Dictionary<string, object>>(path);
-            Console.WriteLine($"[LocalizationService] ✅ Arquivo carregado com sucesso!");
+            var jsonString = await httpClient.GetStringAsync(path);
+            
+            // Parsear como JsonDocument primeiro
+            using var doc = JsonDocument.Parse(jsonString);
+            _resources = ParseJsonElement(doc.RootElement);
+            
+            Console.WriteLine($"[LocalizationService] ✅ Carregado {_resources.Count} seções");
+            Console.WriteLine($"[LocalizationService] Seções: {string.Join(", ", _resources.Keys)}");
+            
+            // Testar acesso a Login.Title
+            if (TryGetValue("Login.Title", out var testValue))
+            {
+                Console.WriteLine($"[LocalizationService] ✅ Teste Login.Title = {testValue}");
+            }
+            else
+            {
+                Console.WriteLine($"[LocalizationService] ❌ Login.Title não encontrado!");
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[LocalizationService] ❌ Erro ao carregar: {ex.Message}");
-            
-            // Tentar caminho absoluto como fallback
-            try
+            Console.WriteLine($"[LocalizationService] ❌ Erro: {ex.Message}");
+            _resources = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private Dictionary<string, object> ParseJsonElement(JsonElement element)
+    {
+        var dict = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in element.EnumerateObject())
+        {
+            dict[property.Name] = property.Value.ValueKind switch
             {
-                Console.WriteLine($"[LocalizationService] Tentando caminho absoluto...");
-                var absolutePath = $"{_hostEnvironment.BaseAddress}{path}";
-                using var httpClient2 = new HttpClient();
-                dict = await httpClient2.GetFromJsonAsync<Dictionary<string, object>>(absolutePath);
-                Console.WriteLine($"[LocalizationService] ✅ Carregado via caminho absoluto!");
-            }
-            catch (Exception ex2)
-            {
-                Console.WriteLine($"[LocalizationService] ❌ Falhou também: {ex2.Message}");
-            }
+                JsonValueKind.Object => ParseJsonElement(property.Value),
+                JsonValueKind.Array => property.Value.EnumerateArray()
+                    .Select(e => e.ValueKind == JsonValueKind.Object ? ParseJsonElement(e) : (object)e.ToString())
+                    .ToArray(),
+                JsonValueKind.String => property.Value.GetString() ?? "",
+                JsonValueKind.Number => property.Value.GetDouble(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null => null!,
+                _ => property.Value.ToString()
+            };
         }
 
-        _resources = dict ?? new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        
-        if (_resources.Any())
-        {
-            Console.WriteLine($"[LocalizationService] ✅ Carregado {_resources.Count} seções");
-            // Mostrar as primeiras chaves para debug
-            Console.WriteLine($"[LocalizationService] Seções disponíveis: {string.Join(", ", _resources.Keys.Take(5))}");
-        }
-        else
-        {
-            Console.WriteLine($"[LocalizationService] ⚠️ AVISO: Nenhum recurso carregado!");
-        }
+        return dict;
     }
 
     private bool TryGetValue(string key, out object? value)
@@ -157,12 +169,15 @@ public sealed class LocalizationService : ILocalizationService
         var parts = key.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         object current = _resources;
 
-        foreach (var part in parts)
+        for (int i = 0; i < parts.Length; i++)
         {
+            var part = parts[i];
+            
             if (current is Dictionary<string, object> d)
             {
                 if (!d.TryGetValue(part, out var next) || next is null)
                 {
+                    Console.WriteLine($"[LocalizationService] ❌ Chave '{part}' não encontrada em '{string.Join(".", parts.Take(i))}'");
                     value = null;
                     return false;
                 }
@@ -171,6 +186,7 @@ public sealed class LocalizationService : ILocalizationService
                 continue;
             }
 
+            Console.WriteLine($"[LocalizationService] ❌ '{string.Join(".", parts.Take(i))}' não é um dicionário");
             value = null;
             return false;
         }
