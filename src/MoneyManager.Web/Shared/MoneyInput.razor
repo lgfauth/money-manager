@@ -30,8 +30,8 @@
 
     protected override void OnParametersSet()
     {
-        // Se o usuário não está editando, mantenha a máscara no display.
-        // Durante edição (focus), o displayValue é controlado por OnInput/OnFocus.
+        // Se o usuÃ¡rio nÃ£o estÃ¡ editando, mantenha a mÃ¡scara no display.
+        // Durante ediÃ§Ã£o (focus), o displayValue Ã© controlado por OnInput/OnFocus.
         if (string.IsNullOrWhiteSpace(rawValue))
         {
             displayValue = Format(Value);
@@ -41,14 +41,14 @@
     private async Task OnInput(ChangeEventArgs e)
     {
         var s = e?.Value?.ToString() ?? string.Empty;
-        // Enquanto digita, não aplica máscara. Apenas guarda o texto cru.
+        // Enquanto digita, nÃ£o aplica mÃ¡scara. Apenas guarda o texto cru.
         rawValue = s;
         displayValue = s;
     }
 
     private async Task OnBlur(FocusEventArgs e)
     {
-        // Ao sair do campo (TAB/click), aplica a máscara e atualiza o Value.
+        // Ao sair do campo (TAB/click), aplica a mÃ¡scara e atualiza o Value.
         var parsed = ParseDecimal(rawValue);
         if (parsed.HasValue)
         {
@@ -63,7 +63,7 @@
 
     private void OnFocus(FocusEventArgs e)
     {
-        // Durante edição, mostra valor "cru" e não formatado.
+        // Durante ediÃ§Ã£o, mostra valor "cru" e nÃ£o formatado.
         rawValue = Value == 0m ? string.Empty : Value.ToString("0.##", CultureInfo.CurrentCulture);
         displayValue = rawValue;
     }
@@ -86,7 +86,7 @@
         if (string.IsNullOrWhiteSpace(s)) return 0m;
 
         // Aceita tanto "," quanto "." como separador decimal.
-        // Estratégia: manter apenas dígitos/sinal/.,, e tratar o ÚLTIMO separador como decimal.
+        // EstratÃ©gia: manter apenas dÃ­gitos/sinal/.,, e tratar o ÃšLTIMO separador como decimal.
         var ci = CultureInfo.CurrentCulture;
         var symbol = ci.NumberFormat.CurrencySymbol;
 
@@ -97,7 +97,7 @@
         var filtered = new string(cleaned.Where(c => char.IsDigit(c) || c == '-' || c == '.' || c == ',').ToArray());
         if (string.IsNullOrWhiteSpace(filtered)) return 0m;
 
-        // Detecta o último separador decimal digitado.
+        // Detecta o Ãºltimo separador decimal digitado.
         var lastDot = filtered.LastIndexOf('.');
         var lastComma = filtered.LastIndexOf(',');
         var decPos = Math.Max(lastDot, lastComma);
@@ -108,7 +108,7 @@
             var intPart = new string(filtered[..decPos].Where(char.IsDigit).ToArray());
             var fracPart = new string(filtered[(decPos + 1)..].Where(char.IsDigit).ToArray());
 
-            // Mantém apenas 2 casas como padrão monetário (se o usuário digitar mais, corta)
+            // MantÃ©m apenas 2 casas como padrÃ£o monetÃ¡rio (se o usuÃ¡rio digitar mais, corta)
             if (fracPart.Length > 2)
                 fracPart = fracPart[..2];
 
@@ -118,7 +118,7 @@
         }
         else
         {
-            // Sem separador decimal: remove possíveis separadores de milhar
+            // Sem separador decimal: remove possÃ­veis separadores de milhar
             var digits = new string(filtered.Where(c => char.IsDigit(c) || c == '-').ToArray());
             normalized = digits;
         }

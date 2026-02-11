@@ -2,19 +2,19 @@ window.chartInterop = {
     charts: {},
 
     createPieChart: function (canvasId, labels, data, colors) {
-        console.log('Tentando criar gráfico de pizza:', canvasId);
+        console.log('Tentando criar grÃ¡fico de pizza:', canvasId);
         const ctx = document.getElementById(canvasId);
         if (!ctx) {
-            console.error('Canvas não encontrado:', canvasId);
+            console.error('Canvas nÃ£o encontrado:', canvasId);
             return;
         }
 
         if (this.charts[canvasId]) {
-            console.log('Destruindo gráfico anterior:', canvasId);
+            console.log('Destruindo grÃ¡fico anterior:', canvasId);
             this.charts[canvasId].destroy();
         }
 
-        console.log('Criando novo gráfico:', canvasId, 'Labels:', labels, 'Data:', data);
+        console.log('Criando novo grÃ¡fico:', canvasId, 'Labels:', labels, 'Data:', data);
         this.charts[canvasId] = new Chart(ctx, {
             type: 'pie',
             data: {
@@ -60,19 +60,19 @@ window.chartInterop = {
     },
 
     createBarChart: function (canvasId, labels, data, colors) {
-        console.log('Tentando criar gráfico de barras:', canvasId);
+        console.log('Tentando criar grÃ¡fico de barras:', canvasId);
         const ctx = document.getElementById(canvasId);
         if (!ctx) {
-            console.error('Canvas não encontrado:', canvasId);
+            console.error('Canvas nÃ£o encontrado:', canvasId);
             return;
         }
 
         if (this.charts[canvasId]) {
-            console.log('Destruindo gráfico anterior:', canvasId);
+            console.log('Destruindo grÃ¡fico anterior:', canvasId);
             this.charts[canvasId].destroy();
         }
 
-        console.log('Criando novo gráfico:', canvasId, 'Labels:', labels, 'Data:', data);
+        console.log('Criando novo grÃ¡fico:', canvasId, 'Labels:', labels, 'Data:', data);
         this.charts[canvasId] = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -120,19 +120,19 @@ window.chartInterop = {
     },
 
     createLineChart: function (canvasId, labels, datasets) {
-        console.log('Tentando criar gráfico de linhas:', canvasId);
+        console.log('Tentando criar grÃ¡fico de linhas:', canvasId);
         const ctx = document.getElementById(canvasId);
         if (!ctx) {
-            console.error('Canvas não encontrado:', canvasId);
+            console.error('Canvas nÃ£o encontrado:', canvasId);
             return;
         }
 
         if (this.charts[canvasId]) {
-            console.log('Destruindo gráfico anterior:', canvasId);
+            console.log('Destruindo grÃ¡fico anterior:', canvasId);
             this.charts[canvasId].destroy();
         }
 
-        console.log('Criando novo gráfico:', canvasId, 'Labels:', labels, 'Datasets:', datasets);
+        console.log('Criando novo grÃ¡fico:', canvasId, 'Labels:', labels, 'Datasets:', datasets);
         this.charts[canvasId] = new Chart(ctx, {
             type: 'line',
             data: {

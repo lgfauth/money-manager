@@ -12,15 +12,15 @@
 @inject IJSRuntime JSRuntime
 @inject ILocalizationService Localization
 
-<PageTitle>ConfiguraÃ§Ãµes - MoneyManager</PageTitle>
+<PageTitle>ConfiguraÃƒÂ§ÃƒÂµes - MoneyManager</PageTitle>
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <h1 class="mb-2">
-                <i class="fas fa-cog text-primary"></i> ConfiguraÃ§Ãµes
+                <i class="fas fa-cog text-primary"></i> ConfiguraÃƒÂ§ÃƒÂµes
             </h1>
-            <p class="text-muted">Personalize sua experiÃªncia no MoneyManager</p>
+            <p class="text-muted">Personalize sua experiÃƒÂªncia no MoneyManager</p>
         </div>
     </div>
 
@@ -30,7 +30,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando configuraÃ§Ãµes...</p>
+            <p class="mt-3 text-muted">Carregando configuraÃƒÂ§ÃƒÂµes...</p>
         </div>
     }
     else
@@ -52,19 +52,19 @@
         }
 
         <div class="row g-4">
-            <!-- PreferÃªncias Financeiras -->
+            <!-- PreferÃƒÂªncias Financeiras -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> PreferÃªncias Financeiras</h5>
+                        <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> PreferÃƒÂªncias Financeiras</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
                             <label class="form-label">Moeda</label>
                             <select class="form-select" @bind="settings.Currency">
                                 <option value="BRL">Real Brasileiro (R$)</option>
-                                <option value="USD">DÃ³lar Americano (US$)</option>
-                                <option value="EUR">Euro (â‚¬)</option>
+                                <option value="USD">DÃƒÂ³lar Americano (US$)</option>
+                                <option value="EUR">Euro (Ã¢â€šÂ¬)</option>
                             </select>
                         </div>
 
@@ -78,32 +78,32 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Dia de Fechamento do MÃªs</label>
+                            <label class="form-label">Dia de Fechamento do MÃƒÂªs</label>
                             <input type="number" class="form-control" min="1" max="31" @bind="settings.MonthClosingDay" />
-                            <small class="text-muted">Dia em que o mÃªs financeiro fecha para relatÃ³rios</small>
+                            <small class="text-muted">Dia em que o mÃƒÂªs financeiro fecha para relatÃƒÂ³rios</small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">OrÃ§amento Mensal PadrÃ£o (Opcional)</label>
+                            <label class="form-label">OrÃƒÂ§amento Mensal PadrÃƒÂ£o (Opcional)</label>
                             <MoneyInput @bind-Value="defaultBudgetValue" Placeholder="0,00" />
-                            <small class="text-muted">Usado ao criar novos orÃ§amentos</small>
+                            <small class="text-muted">Usado ao criar novos orÃƒÂ§amentos</small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- NotificaÃ§Ãµes -->
+            <!-- NotificaÃƒÂ§ÃƒÂµes -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-bell"></i> NotificaÃ§Ãµes</h5>
+                        <h5 class="mb-0"><i class="fas fa-bell"></i> NotificaÃƒÂ§ÃƒÂµes</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="emailNotifications" @bind="settings.EmailNotifications">
                                 <label class="form-check-label" for="emailNotifications">
-                                    Receber notificaÃ§Ãµes por email
+                                    Receber notificaÃƒÂ§ÃƒÂµes por email
                                 </label>
                             </div>
                         </div>
@@ -114,7 +114,7 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notifyRecurring" @bind="settings.NotifyRecurringProcessed" disabled="@(!settings.EmailNotifications)">
                                 <label class="form-check-label" for="notifyRecurring">
-                                    TransaÃ§Ã£o recorrente processada
+                                    TransaÃƒÂ§ÃƒÂ£o recorrente processada
                                 </label>
                             </div>
                         </div>
@@ -123,7 +123,7 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notifyBudget" @bind="settings.NotifyBudgetAlert" disabled="@(!settings.EmailNotifications)">
                                 <label class="form-check-label" for="notifyBudget">
-                                    Alerta de orÃ§amento
+                                    Alerta de orÃƒÂ§amento
                                 </label>
                             </div>
                             @if (settings.NotifyBudgetAlert && settings.EmailNotifications)
@@ -142,7 +142,7 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notifyCreditLimit" @bind="settings.NotifyCreditLimitAlert" disabled="@(!settings.EmailNotifications)">
                                 <label class="form-check-label" for="notifyCreditLimit">
-                                    Alerta de limite de cartÃ£o
+                                    Alerta de limite de cartÃƒÂ£o
                                 </label>
                             </div>
                             @if (settings.NotifyCreditLimitAlert && settings.EmailNotifications)
@@ -169,11 +169,11 @@
                 </div>
             </div>
 
-            <!-- AparÃªncia -->
+            <!-- AparÃƒÂªncia -->
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-palette"></i> AparÃªncia</h5>
+                        <h5 class="mb-0"><i class="fas fa-palette"></i> AparÃƒÂªncia</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -182,13 +182,13 @@
                                 <select class="form-select" @bind="settings.Theme">
                                     <option value="light">Claro</option>
                                     <option value="dark">Escuro</option>
-                                    <option value="auto">AutomÃ¡tico (Sistema)</option>
+                                    <option value="auto">AutomÃƒÂ¡tico (Sistema)</option>
                                 </select>
-                                <small class="text-muted">O tema escuro serÃ¡ implementado em versÃµes futuras</small>
+                                <small class="text-muted">O tema escuro serÃƒÂ¡ implementado em versÃƒÂµes futuras</small>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Cor PrimÃ¡ria</label>
+                                <label class="form-label">Cor PrimÃƒÂ¡ria</label>
                                 <ColorPicker @bind-SelectedColor="settings.PrimaryColor" />
                             </div>
                         </div>
@@ -196,7 +196,7 @@
                 </div>
             </div>
 
-            <!-- BotÃµes de AÃ§Ã£o -->
+            <!-- BotÃƒÂµes de AÃƒÂ§ÃƒÂ£o -->
             <div class="col-12">
                 <div class="d-flex gap-2 justify-content-end">
                     <button class="btn btn-outline-secondary" @onclick="LoadSettings">
@@ -210,7 +210,7 @@
                         }
                         else
                         {
-                            <span><i class="fas fa-save"></i> Salvar ConfiguraÃ§Ãµes</span>
+                            <span><i class="fas fa-save"></i> Salvar ConfiguraÃƒÂ§ÃƒÂµes</span>
                         }
                     </button>
                 </div>
@@ -245,7 +245,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar configuraÃ§Ãµes: {ex.Message}";
+            errorMessage = $"Erro ao carregar configuraÃƒÂ§ÃƒÂµes: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -268,11 +268,11 @@
             // Apply theme
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", settings.Theme);
 
-            successMessage = "ConfiguraÃ§Ãµes salvas com sucesso!";
+            successMessage = "ConfiguraÃƒÂ§ÃƒÂµes salvas com sucesso!";
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao salvar configuraÃ§Ãµes: {ex.Message}";
+            errorMessage = $"Erro ao salvar configuraÃƒÂ§ÃƒÂµes: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally

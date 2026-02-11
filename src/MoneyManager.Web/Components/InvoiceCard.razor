@@ -9,7 +9,7 @@
                     <i class="fas fa-calendar"></i> Fatura @Invoice.ReferenceMonth
                 </h6>
                 <small class="text-muted">
-                    Período: @Invoice.PeriodStart.ToString("dd/MM") a @Invoice.PeriodEnd.ToString("dd/MM/yyyy")
+                    PerÃ­odo: @Invoice.PeriodStart.ToString("dd/MM") a @Invoice.PeriodEnd.ToString("dd/MM/yyyy")
                 </small>
                 <br />
                 <small class="text-muted">
@@ -44,12 +44,12 @@
                 else if (IsOverdue)
                 {
                     <small class="text-danger">
-                        <i class="fas fa-exclamation-triangle"></i> Vencida há @Math.Abs(Invoice.DaysUntilDue) dias
+                        <i class="fas fa-exclamation-triangle"></i> Vencida hÃ¡ @Math.Abs(Invoice.DaysUntilDue) dias
                     </small>
                 }
             </div>
             <div class="col-md-2 text-center">
-                <small class="text-muted">Transações</small>
+                <small class="text-muted">TransaÃ§Ãµes</small>
                 <br />
                 <strong><i class="fas fa-receipt"></i> @Invoice.TransactionCount</strong>
             </div>
