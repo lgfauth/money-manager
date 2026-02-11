@@ -11,5 +11,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<Budget> Budgets { get; }
     IRepository<RecurringTransaction> RecurringTransactions { get; }
     IRepository<UserSettings> UserSettings { get; }
+    ICreditCardInvoiceRepository CreditCardInvoices { get; }
     Task<int> SaveChangesAsync();
 }

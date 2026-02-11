@@ -21,6 +21,7 @@ internal static class ApplicationServicesExtensions
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
+        services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
 
         return services;
     }

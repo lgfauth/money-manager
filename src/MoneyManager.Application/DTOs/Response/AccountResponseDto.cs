@@ -7,6 +7,10 @@ public class AccountResponseDto
     public int Type { get; set; }
     public decimal Balance { get; set; }
     public decimal InitialBalance { get; set; }
+    public decimal? CreditLimit { get; set; }
     public int? InvoiceClosingDay { get; set; }
+    public int InvoiceDueDayOffset { get; set; }
+    public DateTime? LastInvoiceClosedAt { get; set; }
+    public string? CurrentOpenInvoiceId { get; set; }
     public DateTime CreatedAt { get; set; }
 }

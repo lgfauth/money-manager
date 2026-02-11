@@ -15,6 +15,7 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<Budget>? _budgetRepository;
     private IRepository<RecurringTransaction>? _recurringTransactionRepository;
     private IRepository<UserSettings>? _userSettingsRepository;
+    private ICreditCardInvoiceRepository? _creditCardInvoiceRepository;
 
     public UnitOfWork(MongoContext context)
     {
@@ -28,6 +29,7 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<Budget> Budgets => _budgetRepository ??= new Repository<Budget>(_context, "budgets");
     public IRepository<RecurringTransaction> RecurringTransactions => _recurringTransactionRepository ??= new Repository<RecurringTransaction>(_context, "recurring_transactions");
     public IRepository<UserSettings> UserSettings => _userSettingsRepository ??= new Repository<UserSettings>(_context, "user_settings");
+    public ICreditCardInvoiceRepository CreditCardInvoices => _creditCardInvoiceRepository ??= new CreditCardInvoiceRepository(_context);
 
     public async Task<int> SaveChangesAsync()
     {

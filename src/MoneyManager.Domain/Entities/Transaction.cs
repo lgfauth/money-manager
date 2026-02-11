@@ -37,6 +37,12 @@ public class Transaction
     [BsonElement("toAccountId")]
     public string? ToAccountId { get; set; }
 
+    /// <summary>
+    /// ID da fatura de cartão de crédito à qual esta transação pertence (apenas para transações em cartões)
+    /// </summary>
+    [BsonElement("invoiceId")]
+    public string? InvoiceId { get; set; }
+
     [BsonElement("status")]
     public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
 

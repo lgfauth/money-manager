@@ -29,6 +29,8 @@ public class AccountService : IAccountService
     {
         var type = (AccountType)request.Type;
         int? invoiceClosingDay = type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
+        int invoiceDueDayOffset = type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
+        decimal? creditLimit = type == AccountType.CreditCard ? request.CreditLimit : null;
 
         var account = new Account
         {
@@ -37,7 +39,9 @@ public class AccountService : IAccountService
             Type = type,
             Balance = request.InitialBalance,
             InitialBalance = request.InitialBalance,
-            InvoiceClosingDay = invoiceClosingDay
+            InvoiceClosingDay = invoiceClosingDay,
+            InvoiceDueDayOffset = invoiceDueDayOffset,
+            CreditLimit = creditLimit
         };
 
         await _unitOfWork.Accounts.AddAsync(account);
@@ -72,6 +76,8 @@ public class AccountService : IAccountService
         account.Name = request.Name;
         account.Type = (AccountType)request.Type;
         account.InvoiceClosingDay = account.Type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
+        account.InvoiceDueDayOffset = account.Type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
+        account.CreditLimit = account.Type == AccountType.CreditCard ? request.CreditLimit : null;
         account.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Accounts.UpdateAsync(account);
@@ -115,7 +121,11 @@ public class AccountService : IAccountService
             Type = (int)account.Type,
             Balance = account.Balance,
             InitialBalance = account.InitialBalance,
+            CreditLimit = account.CreditLimit,
             InvoiceClosingDay = account.InvoiceClosingDay,
+            InvoiceDueDayOffset = account.InvoiceDueDayOffset,
+            LastInvoiceClosedAt = account.LastInvoiceClosedAt,
+            CurrentOpenInvoiceId = account.CurrentOpenInvoiceId,
             CreatedAt = account.CreatedAt
         };
     }

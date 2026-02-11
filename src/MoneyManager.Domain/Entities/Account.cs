@@ -35,6 +35,24 @@ public class Account
     [BsonElement("invoiceClosingDay")]
     public int? InvoiceClosingDay { get; set; } = 1;
 
+    /// <summary>
+    /// Dias entre o fechamento da fatura e o vencimento (padrão: 7 dias)
+    /// </summary>
+    [BsonElement("invoiceDueDayOffset")]
+    public int InvoiceDueDayOffset { get; set; } = 7;
+
+    /// <summary>
+    /// Data/hora do último fechamento de fatura deste cartão
+    /// </summary>
+    [BsonElement("lastInvoiceClosedAt")]
+    public DateTime? LastInvoiceClosedAt { get; set; }
+
+    /// <summary>
+    /// ID da fatura atualmente aberta (que está aceitando transações)
+    /// </summary>
+    [BsonElement("currentOpenInvoiceId")]
+    public string? CurrentOpenInvoiceId { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
