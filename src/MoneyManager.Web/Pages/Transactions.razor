@@ -599,21 +599,29 @@
 
         var purchaseDate = baseRequest.Date.Date;
 
-        // Regra automática:
-        // - Se a compra foi após o fechamento, a 1ª parcela NÃO pode entrar na fatura corrente.
-        // - Se a compra foi até o fechamento (inclusive), pode entrar na fatura corrente se o checkbox estiver marcado.
-        var canBeCurrentInvoice = purchaseDate.Day <= closingDay;
-        var firstGoesToCurrentInvoice = firstInstallmentInCurrentInvoice && canBeCurrentInvoice;
+        // Lógica de data de lançamento:
+        // 1. Calcular posting day do mês da compra
+        // 2. Se checkbox marcado E posting day ainda não passou → usa mês da compra
+        // 3. Caso contrário → usa próximo mês
 
-        // Data de lançamento da 1ª parcela:
-        // - fatura corrente: (mês da compra) no dia (closing+1)
-        // - próxima fatura: (mês seguinte) no dia (closing+1)
-        var firstInstallmentBaseMonth = firstGoesToCurrentInvoice ? purchaseDate : purchaseDate.AddMonths(1);
-        var daysInFirstMonth = DateTime.DaysInMonth(firstInstallmentBaseMonth.Year, firstInstallmentBaseMonth.Month);
-        var firstInstallmentDate = new DateTime(
-            firstInstallmentBaseMonth.Year,
-            firstInstallmentBaseMonth.Month,
-            Math.Min(postingDay, daysInFirstMonth));
+        var currentMonthPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(purchaseDate.Year, purchaseDate.Month));
+        var postingDateCurrentMonth = new DateTime(purchaseDate.Year, purchaseDate.Month, currentMonthPostingDay);
+        
+        DateTime firstInstallmentDate;
+        
+        // Se checkbox marcado e posting day ainda vai acontecer neste mês
+        if (firstInstallmentInCurrentInvoice && purchaseDate <= postingDateCurrentMonth)
+        {
+            // Usa o posting day do mês da compra (fatura corrente)
+            firstInstallmentDate = postingDateCurrentMonth;
+        }
+        else
+        {
+            // Usa o posting day do próximo mês
+            var nextMonth = purchaseDate.AddMonths(1);
+            var nextMonthPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month));
+            firstInstallmentDate = new DateTime(nextMonth.Year, nextMonth.Month, nextMonthPostingDay);
+        }
 
         // 1) Cria a 1ª parcela (sempre) na data de lançamento da fatura definida acima
         var firstReq = new CreateTransactionRequestDto
