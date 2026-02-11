@@ -24,17 +24,21 @@ public sealed class LocalizationService : ILocalizationService
 
     public async Task InitializeAsync()
     {
+        Console.WriteLine($"[LocalizationService] Inicializando... BaseAddress: {_hostEnvironment.BaseAddress}");
+        
         // Tentar carregar idioma salvo no localStorage
         var savedLanguage = await _localStorage.GetItemAsync<string>(LANGUAGE_KEY);
         
         if (!string.IsNullOrEmpty(savedLanguage))
         {
             CurrentCulture = savedLanguage;
+            Console.WriteLine($"[LocalizationService] Idioma salvo encontrado: {savedLanguage}");
         }
         else
         {
             // Detectar idioma do navegador como fallback
             CurrentCulture = DetectBrowserLanguage();
+            Console.WriteLine($"[LocalizationService] Usando idioma padrão: {CurrentCulture}");
         }
 
         await LoadAsync(CurrentCulture);
@@ -102,28 +106,30 @@ public sealed class LocalizationService : ILocalizationService
     private async Task LoadAsync(string culture)
     {
         var path = $"{_hostEnvironment.BaseAddress}i18n/{culture}.json";
+        Console.WriteLine($"[LocalizationService] Tentando carregar: {path}");
 
         Dictionary<string, object>? dict = null;
         try
         {
             using var httpClient = new HttpClient();
             dict = await httpClient.GetFromJsonAsync<Dictionary<string, object>>(path);
+            Console.WriteLine($"[LocalizationService] ✅ Arquivo carregado com sucesso!");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[LocalizationService] Erro ao carregar {path}: {ex.Message}");
-            // Fallback: keep empty dictionary
+            Console.WriteLine($"[LocalizationService] ❌ Erro ao carregar: {ex.Message}");
+            Console.WriteLine($"[LocalizationService] Stack: {ex.StackTrace}");
         }
 
         _resources = dict ?? new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         
         if (_resources.Any())
         {
-            Console.WriteLine($"[LocalizationService] Carregado {_resources.Count} seções de {culture}");
+            Console.WriteLine($"[LocalizationService] ✅ Carregado {_resources.Count} seções");
         }
         else
         {
-            Console.WriteLine($"[LocalizationService] AVISO: Nenhum recurso carregado de {culture}");
+            Console.WriteLine($"[LocalizationService] ⚠️ AVISO: Nenhum recurso carregado!");
         }
     }
 
