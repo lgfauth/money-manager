@@ -80,7 +80,7 @@
                         </div>
                         <div class="col-12 col-md-3">
                             <label class="form-label">Limite de crédito (R$)</label>
-                            <input type="number" step="0.01" class="form-control" @bind="creditLimitInput" placeholder="0,00" />
+                            <MoneyInput @bind-Value="creditLimitAmount" Placeholder="0,00" />
                             <small class="text-muted">Deixe em branco se não quiser limite.</small>
                         </div>
                         <div class="col-12 col-md-3">
@@ -435,6 +435,7 @@
         showAdd = true;
         newAccount = new Account { InvoiceDueDayOffset = 7 };
         creditLimitInput = null;
+        creditLimitAmount = 0m;
         await Task.Yield();
         StateHasChanged();
     }
@@ -442,6 +443,7 @@
     private bool showAdd;
     private Account newAccount = new Account { InvoiceDueDayOffset = 7 };
     private decimal? creditLimitInput;
+    private decimal creditLimitAmount = 0m;
     private string? addError;
     private string? editingAccountId;
     private decimal? editingOriginalInitialBalance;
@@ -470,6 +472,7 @@
                 editingAccountId = id;
                 editingOriginalInitialBalance = acc.InitialBalance;
                 creditLimitInput = acc.CreditLimit;
+                creditLimitAmount = acc.CreditLimit ?? 0m;
                 showAdd = true;
                 await Task.Yield();
                 StateHasChanged();
@@ -569,8 +572,15 @@
         isBusy = true;
         try
         {
-            // Sincronizar creditLimitInput com newAccount
-            newAccount.CreditLimit = creditLimitInput;
+            // Sincronizar creditLimitAmount com creditLimitInput
+            if (creditLimitAmount > 0)
+            {
+                newAccount.CreditLimit = creditLimitAmount;
+            }
+            else
+            {
+                newAccount.CreditLimit = null;
+            }
 
             if (!string.IsNullOrEmpty(editingAccountId))
             {
@@ -590,6 +600,7 @@
             }
             newAccount = new Account { InvoiceDueDayOffset = 7 };
             creditLimitInput = null;
+            creditLimitAmount = 0m;
             showAdd = false;
             await LoadAccounts();
         }
@@ -609,6 +620,7 @@
         showAdd = false;
         newAccount = new Account { InvoiceDueDayOffset = 7 };
         creditLimitInput = null;
+        creditLimitAmount = 0m;
         addError = null;
         editingAccountId = null;
         editingOriginalInitialBalance = null;
