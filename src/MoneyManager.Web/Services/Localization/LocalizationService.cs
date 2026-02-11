@@ -1,22 +1,41 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
+using Blazored.LocalStorage;
 
 namespace MoneyManager.Web.Services.Localization;
 
 public sealed class LocalizationService : ILocalizationService
 {
     private readonly HttpClient _httpClient;
+    private readonly ILocalStorageService _localStorage;
+    private const string LANGUAGE_KEY = "preferred_language";
 
     private Dictionary<string, object> _resources = new(StringComparer.OrdinalIgnoreCase);
 
     public string CurrentCulture { get; private set; } = "pt-BR";
 
-    public LocalizationService(HttpClient httpClient)
+    public event Action? OnLanguageChanged;
+
+    public LocalizationService(HttpClient httpClient, ILocalStorageService localStorage)
     {
         _httpClient = httpClient;
+        _localStorage = localStorage;
     }
 
     public async Task InitializeAsync()
     {
+        // Tentar carregar idioma salvo no localStorage
+        var savedLanguage = await _localStorage.GetItemAsync<string>(LANGUAGE_KEY);
+        
+        if (!string.IsNullOrEmpty(savedLanguage))
+        {
+            CurrentCulture = savedLanguage;
+        }
+        else
+        {
+            // Detectar idioma do navegador como fallback
+            CurrentCulture = DetectBrowserLanguage();
+        }
+
         await LoadAsync(CurrentCulture);
     }
 
@@ -28,7 +47,22 @@ public sealed class LocalizationService : ILocalizationService
         }
 
         CurrentCulture = culture;
+        
+        // Salvar no localStorage
+        await _localStorage.SetItemAsync(LANGUAGE_KEY, culture);
+        
+        // Recarregar recursos
         await LoadAsync(culture);
+        
+        // Notificar mudança
+        OnLanguageChanged?.Invoke();
+    }
+
+    private string DetectBrowserLanguage()
+    {
+        // Por padrão, retorna pt-BR
+        // TODO: Implementar detecção via JavaScript Interop se necessário
+        return "pt-BR";
     }
 
     public string Get(string key)

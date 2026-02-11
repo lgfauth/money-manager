@@ -1,4 +1,4 @@
-using MoneyManager.Application.DTOs.Request;
+﻿using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Interfaces;
 
@@ -35,6 +35,7 @@ public class UserProfileService : IUserProfileService
             FullName = user.FullName,
             Phone = user.Phone,
             ProfilePicture = user.ProfilePicture,
+            PreferredLanguage = user.PreferredLanguage,
             CreatedAt = user.CreatedAt
         };
     }
@@ -48,6 +49,7 @@ public class UserProfileService : IUserProfileService
         user.FullName = request.FullName;
         user.Phone = request.Phone;
         user.ProfilePicture = request.ProfilePicture;
+        user.PreferredLanguage = request.PreferredLanguage ?? user.PreferredLanguage;
         user.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Users.UpdateAsync(user);
@@ -60,6 +62,7 @@ public class UserProfileService : IUserProfileService
             FullName = user.FullName,
             Phone = user.Phone,
             ProfilePicture = user.ProfilePicture,
+            PreferredLanguage = user.PreferredLanguage,
             CreatedAt = user.CreatedAt
         };
     }
@@ -99,7 +102,7 @@ public class UserProfileService : IUserProfileService
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedAccessException("Password is incorrect");
 
-        // Verificar se email j� existe
+        // Verificar se email já existe
         var existingUser = await _unitOfWork.Users.GetByEmailAsync(request.NewEmail);
         if (existingUser != null && existingUser.Id != userId)
             throw new InvalidOperationException("Email already in use");
@@ -117,6 +120,7 @@ public class UserProfileService : IUserProfileService
             FullName = user.FullName,
             Phone = user.Phone,
             ProfilePicture = user.ProfilePicture,
+            PreferredLanguage = user.PreferredLanguage,
             CreatedAt = user.CreatedAt
         };
     }

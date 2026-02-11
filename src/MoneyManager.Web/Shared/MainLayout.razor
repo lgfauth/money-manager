@@ -1,5 +1,6 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using MoneyManager.Web.Services
+@using MoneyManager.Web.Services.Localization
 @using MoneyManager.Application.DTOs.Response
 @using System.Security.Claims
 @inherits LayoutComponentBase
@@ -7,6 +8,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
 @inject IUserProfileService ProfileService
+@inject ILocalizationService Localization
 @inject IJSRuntime JS
 
 <CascadingAuthenticationState>
@@ -27,38 +29,41 @@
                         <ul class="navbar-nav ms-auto align-items-lg-center">
                             <li class="nav-item">
                                 <a class="nav-link" href="/">
-                                    <i class="fas fa-home"></i> Dashboard
+                                    <i class="fas fa-home"></i> @Localization.Get("Navigation.Dashboard")
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/categories">
-                                    <i class="fas fa-tags"></i> Categorias
+                                    <i class="fas fa-tags"></i> @Localization.Get("Navigation.Categories")
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/accounts">
-                                    <i class="fas fa-wallet"></i> Contas
+                                    <i class="fas fa-wallet"></i> @Localization.Get("Navigation.Accounts")
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/transactions">
-                                    <i class="fas fa-exchange-alt"></i> Transações
+                                    <i class="fas fa-exchange-alt"></i> @Localization.Get("Navigation.Transactions")
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/recurring-transactions">
-                                    <i class="fas fa-repeat"></i> Recorrentes
+                                    <i class="fas fa-repeat"></i> @Localization.Get("Navigation.RecurringTransactions")
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/budgets">
-                                    <i class="fas fa-calculator"></i> Orçamentos
+                                    <i class="fas fa-calculator"></i> @Localization.Get("Navigation.Budgets")
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/reports">
-                                    <i class="fas fa-chart-pie"></i> Relatórios
+                                    <i class="fas fa-chart-pie"></i> @Localization.Get("Navigation.Reports")
                                 </a>
+                            </li>
+                            <li class="nav-item">
+                                <LanguageSelector />
                             </li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle d-flex align-items-center user-menu-toggle"
@@ -101,18 +106,18 @@
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <a class="dropdown-item" href="/profile">
-                                            <i class="fas fa-user me-2"></i> Meu Perfil
+                                            <i class="fas fa-user me-2"></i> @Localization.Get("Navigation.Profile")
                                         </a>
                                     </li>
                                     <li>
                                         <a class="dropdown-item" href="/settings">
-                                            <i class="fas fa-cog me-2"></i> Configurações
+                                            <i class="fas fa-cog me-2"></i> @Localization.Get("Navigation.Settings")
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
                                         <button class="dropdown-item text-danger" @onclick="Logout">
-                                            <i class="fas fa-sign-out-alt me-2"></i> Sair
+                                            <i class="fas fa-sign-out-alt me-2"></i> @Localization.Get("Navigation.Logout")
                                         </button>
                                     </li>
                                 </ul>
@@ -188,6 +193,13 @@
             if (authState?.User?.Identity?.IsAuthenticated == true)
             {
                 userProfile = await ProfileService.GetProfileAsync();
+                
+                // Sincronizar idioma preferido do usuário
+                if (!string.IsNullOrEmpty(userProfile?.PreferredLanguage) && 
+                    userProfile.PreferredLanguage != Localization.CurrentCulture)
+                {
+                    await Localization.SetCultureAsync(userProfile.PreferredLanguage);
+                }
             }
         }
         catch (Exception ex)

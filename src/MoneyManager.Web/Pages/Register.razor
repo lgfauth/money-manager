@@ -1,20 +1,22 @@
 @page "/register"
 @using MoneyManager.Application.DTOs.Request
 @using MoneyManager.Web.Services
+@using MoneyManager.Web.Services.Localization
 @using Microsoft.AspNetCore.Authorization
 @attribute [AllowAnonymous]
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
+@inject ILocalizationService Localization
 
-<PageTitle>Registrar - MoneyManager</PageTitle>
+<PageTitle>@Localization.Get("Register.PageTitle")</PageTitle>
 
 <div class="auth-container">
     <div class="auth-card">
         <div class="text-center mb-4">
             <h2 class="mb-2">
-                <i class="fas fa-user-plus text-primary"></i> Criar Conta
+                <i class="fas fa-user-plus text-primary"></i> @Localization.Get("Register.Title")
             </h2>
-            <p class="text-muted">Registre-se no MoneyManager</p>
+            <p class="text-muted">@Localization.Get("Register.Subtitle")</p>
         </div>
 
         @if (!string.IsNullOrEmpty(errorMessage))
@@ -36,42 +38,42 @@
         <form @onsubmit="HandleRegister">
             <div class="mb-3">
                 <label for="name" class="form-label">
-                    <i class="fas fa-user"></i> Nome Completo
+                    <i class="fas fa-user"></i> @Localization.Get("Register.Name")
                 </label>
-                <input type="text" class="form-control" id="name" @bind="registerRequest.Name" placeholder="Seu nome completo" required />
+                <input type="text" class="form-control" id="name" @bind="registerRequest.Name" placeholder="@Localization.Get("Register.NamePlaceholder")" required />
             </div>
 
             <div class="mb-3">
                 <label for="email" class="form-label">
-                    <i class="fas fa-envelope"></i> Email
+                    <i class="fas fa-envelope"></i> @Localization.Get("Register.Email")
                 </label>
-                <input type="email" class="form-control" id="email" @bind="registerRequest.Email" placeholder="seu@email.com" required />
+                <input type="email" class="form-control" id="email" @bind="registerRequest.Email" placeholder="@Localization.Get("Register.EmailPlaceholder")" required />
             </div>
 
             <div class="mb-3">
                 <label for="password" class="form-label">
-                    <i class="fas fa-lock"></i> Senha
+                    <i class="fas fa-lock"></i> @Localization.Get("Register.Password")
                 </label>
-                <input type="password" class="form-control" id="password" @bind="registerRequest.Password" placeholder="Crie uma senha forte" required />
-                <small class="text-muted d-block mt-1">MÃ­nimo 6 caracteres</small>
+                <input type="password" class="form-control" id="password" @bind="registerRequest.Password" placeholder="@Localization.Get("Register.PasswordPlaceholder")" required />
+                <small class="text-muted d-block mt-1">Mínimo 6 caracteres</small>
             </div>
 
             <div class="mb-4">
                 <label for="passwordConfirm" class="form-label">
-                    <i class="fas fa-lock"></i> Confirmar Senha
+                    <i class="fas fa-lock"></i> @Localization.Get("Register.ConfirmPassword")
                 </label>
-                <input type="password" class="form-control" id="passwordConfirm" placeholder="Confirme sua senha" required />
+                <input type="password" class="form-control" id="passwordConfirm" placeholder="@Localization.Get("Register.ConfirmPasswordPlaceholder")" required />
             </div>
 
             <button type="submit" class="btn btn-success w-100 btn-lg mb-3" disabled="@isLoading">
                 @if (isLoading)
                 {
                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <span>Criando conta...</span>
+                    <span>@Localization.Get("Register.Registering")</span>
                 }
                 else
                 {
-                    <span><i class="fas fa-user-plus"></i> Registrar</span>
+                    <span><i class="fas fa-user-plus"></i> @Localization.Get("Register.RegisterButton")</span>
                 }
             </button>
         </form>
@@ -79,7 +81,7 @@
         <hr />
 
         <p class="text-center text-muted mb-0">
-            JÃ¡ tem conta? <a href="/login" class="text-primary fw-bold">FaÃ§a login</a>
+            @Localization.Get("Register.AlreadyHaveAccount") <a href="/login" class="text-primary fw-bold">@Localization.Get("Register.LoginHere")</a>
         </p>
     </div>
 </div>
@@ -135,7 +137,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = "Falha ao registrar. Tente novamente.";
+            errorMessage = Localization.Get("Register.ErrorMessage");
         }
         finally
         {

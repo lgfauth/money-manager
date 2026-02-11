@@ -1,10 +1,11 @@
-namespace MoneyManager.Application.DTOs.Request;
+﻿namespace MoneyManager.Application.DTOs.Request;
 
 public class UpdateProfileRequestDto
 {
     public string? FullName { get; set; }
     public string? Phone { get; set; }
     public string? ProfilePicture { get; set; }
+    public string? PreferredLanguage { get; set; }
 }
 
 public class ChangePasswordRequestDto

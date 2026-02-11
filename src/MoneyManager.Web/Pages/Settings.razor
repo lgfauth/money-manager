@@ -1,12 +1,16 @@
-@page "/settings"
+﻿@page "/settings"
+@using MoneyManager.Web.Services.Localization
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.JSInterop
 @attribute [Authorize]
 @inject IUserSettingsService SettingsService
+@inject ILocalizationService Localization
 @inject NavigationManager Navigation
+@inject ILocalizationService Localization
 @inject IJSRuntime JSRuntime
+@inject ILocalizationService Localization
 
 <PageTitle>ConfiguraÃ§Ãµes - MoneyManager</PageTitle>
 

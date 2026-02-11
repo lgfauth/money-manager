@@ -1,13 +1,15 @@
 @page "/categories"
+@using MoneyManager.Web.Services.Localization
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject ICategoryService CategoryService
+@inject ILocalizationService Localization
 @inject NavigationManager Navigation
 
-<PageTitle>Categorias - MoneyManager</PageTitle>
+<PageTitle>@Localization.Get("Categories.PageTitle")</PageTitle>
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
@@ -17,7 +19,7 @@
                     <i class="fas fa-tags text-primary"></i> Categorias
                 </h1>
                 <button class="btn btn-primary" @onclick="ShowAddModal">
-                    <i class="fas fa-plus"></i> Nova Categoria
+                    <i class="fas fa-plus"></i> @Localization.Get("Categories.NewCategory")
                 </button>
             </div>
         </div>
@@ -27,7 +29,7 @@
     {
         <div class="card mb-4">
             <div class="card-body">
-                <h5>@(isEditingCategory ? "Editar Categoria" : "Nova Categoria")</h5>
+                <h5>@(isEditingCategory ? "Editar Categoria" : Localization.Get("Categories.NewCategory"))</h5>
                 @if (!string.IsNullOrEmpty(addError))
                 {
                     <div class="alert alert-danger">@addError</div>
@@ -69,7 +71,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando categorias...</p>
+            <p class="mt-3 text-muted">@Localization.Get("Categories.Loading")</p>
         </div>
     }
     else if (errorMessage != null)
@@ -113,7 +115,7 @@
     else
     {
         <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle"></i> Nenhuma categoria encontrada. <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
+            <i class="fas fa-info-circle"></i> @Localization.Get("Categories.NoCategories"). <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
         </div>
     }
 </div>

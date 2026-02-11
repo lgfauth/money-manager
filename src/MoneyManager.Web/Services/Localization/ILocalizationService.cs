@@ -1,8 +1,9 @@
-namespace MoneyManager.Web.Services.Localization;
+﻿namespace MoneyManager.Web.Services.Localization;
 
 public interface ILocalizationService
 {
     string CurrentCulture { get; }
+    event Action? OnLanguageChanged;
 
     Task InitializeAsync();
     Task SetCultureAsync(string culture);

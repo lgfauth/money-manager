@@ -1,4 +1,4 @@
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MoneyManager.Domain.Enums;
 
@@ -27,6 +27,9 @@ public class User
 
     [BsonElement("profilePicture")]
     public string? ProfilePicture { get; set; }
+
+    [BsonElement("preferredLanguage")]
+    public string? PreferredLanguage { get; set; } = "pt-BR";
 
     [BsonElement("status")]
     public UserStatus Status { get; set; } = UserStatus.Active;

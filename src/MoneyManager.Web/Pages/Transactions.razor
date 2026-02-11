@@ -1,4 +1,5 @@
-@page "/transactions"
+﻿@page "/transactions"
+@using MoneyManager.Web.Services.Localization
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Web.Services
@@ -6,10 +7,15 @@
 @using Microsoft.JSInterop
 @attribute [Authorize]
 @inject ITransactionService TransactionService
+@inject ILocalizationService Localization
 @inject IRecurringTransactionService RecurringTransactionService
+@inject ILocalizationService Localization
 @inject IAccountService AccountService
+@inject ILocalizationService Localization
 @inject ICategoryService CategoryService
+@inject ILocalizationService Localization
 @inject IJSRuntime JSRuntime
+@inject ILocalizationService Localization
 
 <PageTitle>TransaÃ§Ãµes - MoneyManager</PageTitle>
 

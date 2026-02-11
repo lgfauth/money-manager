@@ -1,0 +1,139 @@
+@using MoneyManager.Web.Services.Localization
+@using MoneyManager.Web.Services
+@inject ILocalizationService Localization
+@inject IUserProfileService ProfileService
+@inject AuthenticationStateProvider AuthStateProvider
+@implements IDisposable
+
+<div class="language-selector">
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" 
+                type="button" 
+                id="languageDropdown" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false">
+            <span class="flag-icon">@GetFlag(Localization.CurrentCulture)</span>
+            <span class="d-none d-md-inline">@GetLanguageName(Localization.CurrentCulture)</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+            <li>
+                <button class="dropdown-item @(Localization.CurrentCulture == "pt-BR" ? "active" : "")" 
+                        @onclick='() => ChangeLanguage("pt-BR")'>
+                    <span class="flag-icon me-2">🇧🇷</span> Português
+                </button>
+            </li>
+            <li>
+                <button class="dropdown-item @(Localization.CurrentCulture == "en-US" ? "active" : "")" 
+                        @onclick='() => ChangeLanguage("en-US")'>
+                    <span class="flag-icon me-2">🇺🇸</span> English
+                </button>
+            </li>
+            <li>
+                <button class="dropdown-item @(Localization.CurrentCulture == "es-ES" ? "active" : "")" 
+                        @onclick='() => ChangeLanguage("es-ES")'>
+                    <span class="flag-icon me-2">🇪🇸</span> Español
+                </button>
+            </li>
+            <li>
+                <button class="dropdown-item @(Localization.CurrentCulture == "fr-FR" ? "active" : "")" 
+                        @onclick='() => ChangeLanguage("fr-FR")'>
+                    <span class="flag-icon me-2">🇫🇷</span> Français
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<style>
+    .language-selector .flag-icon {
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    .language-selector .dropdown-item {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+    }
+
+    .language-selector .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .language-selector .dropdown-item.active {
+        background-color: #667eea;
+        color: white;
+    }
+
+    .language-selector .dropdown-item.active:hover {
+        background-color: #5568d3;
+    }
+
+    .language-selector .btn {
+        min-width: 120px;
+    }
+</style>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Localization.OnLanguageChanged += OnLanguageChangedHandler;
+    }
+
+    private async Task ChangeLanguage(string culture)
+    {
+        await Localization.SetCultureAsync(culture);
+        
+        // Tentar sincronizar com o servidor (se estiver autenticado)
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (authState?.User?.Identity?.IsAuthenticated == true)
+            {
+                await ProfileService.UpdateProfileAsync(new Application.DTOs.Request.UpdateProfileRequestDto
+                {
+                    PreferredLanguage = culture
+                });
+            }
+        }
+        catch
+        {
+            // Ignorar erros de sincronização - já salvou no localStorage
+        }
+    }
+
+    private string GetFlag(string culture)
+    {
+        return culture switch
+        {
+            "pt-BR" => "🇧🇷",
+            "en-US" => "🇺🇸",
+            "es-ES" => "🇪🇸",
+            "fr-FR" => "🇫🇷",
+            _ => "🌐"
+        };
+    }
+
+    private string GetLanguageName(string culture)
+    {
+        return culture switch
+        {
+            "pt-BR" => "Português",
+            "en-US" => "English",
+            "es-ES" => "Español",
+            "fr-FR" => "Français",
+            _ => "Language"
+        };
+    }
+
+    private void OnLanguageChangedHandler()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChangedHandler;
+    }
+}
