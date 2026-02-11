@@ -7,13 +7,13 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<PageTitle>RelatÃ³rios - MoneyManager</PageTitle>
+<PageTitle>RelatÃƒÂ³rios - MoneyManager</PageTitle>
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <h1 class="mb-0">
-                <i class="fas fa-chart-pie text-primary"></i> RelatÃ³rios Financeiros
+                <i class="fas fa-chart-pie text-primary"></i> RelatÃƒÂ³rios Financeiros
             </h1>
         </div>
     </div>
@@ -24,7 +24,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando relatÃ³rios...</p>
+            <p class="mt-3 text-muted">Carregando relatÃƒÂ³rios...</p>
         </div>
     }
     else if (errorMessage != null)
@@ -36,20 +36,20 @@
     }
     else
     {
-        <!-- Filtro de PerÃ­odo -->
+        <!-- Filtro de PerÃƒÂ­odo -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-4">
-                                <label class="form-label">PerÃ­odo</label>
+                                <label class="form-label">PerÃƒÂ­odo</label>
                                 <select class="form-select" @bind="PeriodPreset">
-                                    <option value="current_month">MÃªs atual</option>
-                                    <option value="last_month">MÃªs anterior</option>
-                                    <option value="last_3_months">Ãšltimos 3 meses</option>
-                                    <option value="last_6_months">Ãšltimos 6 meses</option>
-                                    <option value="last_year">Ãšltimo ano</option>
+                                    <option value="current_month">MÃƒÂªs atual</option>
+                                    <option value="last_month">MÃƒÂªs anterior</option>
+                                    <option value="last_3_months">ÃƒÅ¡ltimos 3 meses</option>
+                                    <option value="last_6_months">ÃƒÅ¡ltimos 6 meses</option>
+                                    <option value="last_year">ÃƒÅ¡ltimo ano</option>
                                     <option value="custom">Personalizado</option>
                                 </select>
                             </div>
@@ -60,7 +60,7 @@
                             </div>
 
                             <div class="col-6 col-md-3">
-                                <label class="form-label">AtÃ©</label>
+                                <label class="form-label">AtÃƒÂ©</label>
                                 <input type="date" class="form-control" @bind="filterEnd" disabled="@(periodPreset != "custom")" />
                             </div>
 
@@ -74,7 +74,7 @@
                             {
                                 <div class="col-12">
                                     <small class="text-muted">
-                                        Visualizando: <strong>@filterStart.ToString("dd/MM/yyyy")</strong> atÃ© <strong>@filterEnd.ToString("dd/MM/yyyy")</strong>
+                                        Visualizando: <strong>@filterStart.ToString("dd/MM/yyyy")</strong> atÃƒÂ© <strong>@filterEnd.ToString("dd/MM/yyyy")</strong>
                                     </small>
                                 </div>
                             }
@@ -114,7 +114,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <div class="stat-value text-primary">R$ @reportSummary.NetBalance.ToString("N2")</div>
-                            <div class="stat-label">Saldo LÃ­quido</div>
+                            <div class="stat-label">Saldo LÃƒÂ­quido</div>
                         </div>
                         <i class="fas fa-chart-line fa-3x text-muted opacity-50"></i>
                     </div>
@@ -137,7 +137,7 @@
         </div>
 
         <div class="row g-4 mb-4">
-            <!-- GrÃ¡fico de Pizza - Despesas por Categoria -->
+            <!-- GrÃƒÂ¡fico de Pizza - Despesas por Categoria -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -149,11 +149,11 @@
                 </div>
             </div>
 
-            <!-- GrÃ¡fico de Linhas - EvoluÃ§Ã£o Mensal -->
+            <!-- GrÃƒÂ¡fico de Linhas - EvoluÃƒÂ§ÃƒÂ£o Mensal -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> EvoluÃ§Ã£o Mensal</h5>
+                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> EvoluÃƒÂ§ÃƒÂ£o Mensal</h5>
                     </div>
                     <div class="card-body">
                         <canvas id="monthlyTrendChart" style="max-height: 300px;"></canvas>
@@ -207,7 +207,7 @@
                         {
                             <div class="text-center py-4">
                                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Nenhuma despesa registrada no perÃ­odo</p>
+                                <p class="text-muted">Nenhuma despesa registrada no perÃƒÂ­odo</p>
                             </div>
                         }
                     </div>
@@ -314,7 +314,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar relatÃ³rios: {ex.Message}";
+            errorMessage = $"Erro ao carregar relatÃƒÂ³rios: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -334,7 +334,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao renderizar grÃ¡ficos: {ex.Message}");
+            Console.WriteLine($"Erro ao renderizar grÃƒÂ¡ficos: {ex.Message}");
         }
     }
 
@@ -418,12 +418,12 @@
 
         return periodPreset switch
         {
-            "current_month" => "mÃªs atual",
-            "last_month" => "mÃªs anterior",
+            "current_month" => "mÃƒÂªs atual",
+            "last_month" => "mÃƒÂªs anterior",
             "last_3_months" => "3 meses",
             "last_6_months" => "6 meses",
             "last_year" => "1 ano",
-            _ => "perÃ­odo"
+            _ => "perÃƒÂ­odo"
         };
     }
 

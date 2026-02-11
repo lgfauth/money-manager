@@ -42,7 +42,7 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/transactions">
-                                    <i class="fas fa-exchange-alt"></i> Transações
+                                    <i class="fas fa-exchange-alt"></i> TransaÃ§Ãµes
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -52,12 +52,12 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/budgets">
-                                    <i class="fas fa-calculator"></i> Orçamentos
+                                    <i class="fas fa-calculator"></i> OrÃ§amentos
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/reports">
-                                    <i class="fas fa-chart-pie"></i> Relatórios
+                                    <i class="fas fa-chart-pie"></i> RelatÃ³rios
                                 </a>
                             </li>
                             <li class="nav-item dropdown">
@@ -77,7 +77,7 @@
                                             <i class="fas fa-user"></i>
                                         </div>
                                     }
-                                    <span class="d-none d-lg-inline">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "Usuário")</span>
+                                    <span class="d-none d-lg-inline">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "UsuÃ¡rio")</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end modern-dropdown" aria-labelledby="userDropdown">
                                     <li class="dropdown-header-modern">
@@ -93,7 +93,7 @@
                                                 </div>
                                             }
                                             <div>
-                                                <div class="fw-bold">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "Usuário")</div>
+                                                <div class="fw-bold">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "UsuÃ¡rio")</div>
                                                 <small class="text-muted">@userProfile?.Email</small>
                                             </div>
                                         </div>
@@ -106,7 +106,7 @@
                                     </li>
                                     <li>
                                         <a class="dropdown-item" href="/settings">
-                                            <i class="fas fa-cog me-2"></i> Configurações
+                                            <i class="fas fa-cog me-2"></i> ConfiguraÃ§Ãµes
                                         </a>
                                     </li>
                                     <li><hr class="dropdown-divider"></li>
@@ -193,7 +193,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Erro ao carregar perfil: {ex.Message}");
-            // Se falhar, o menu vai exibir o nome do usuário do token
+            // Se falhar, o menu vai exibir o nome do usuÃ¡rio do token
         }
     }
 

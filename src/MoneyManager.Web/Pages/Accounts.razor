@@ -23,11 +23,11 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-wallet text-primary"></i> Contas BancÃ¡rias
+                    <i class="fas fa-wallet text-primary"></i> Contas BancÃƒÂ¡rias
                 </h1>
                 <div class="d-flex gap-2">
                     <button class="btn btn-outline-secondary" @onclick="GoToMigration">
-                        <i class="fas fa-tools"></i> MigraÃ§Ã£o
+                        <i class="fas fa-tools"></i> MigraÃƒÂ§ÃƒÂ£o
                     </button>
                     <button class="btn btn-primary" @onclick="ShowAddModal">
                         <i class="fas fa-plus"></i> Nova Conta
@@ -65,9 +65,9 @@
                     <div class="col-12 col-md-3">
                         <select class="form-select text-dark" @bind="newAccount.Type">
                             <option value="@AccountType.Checking">Conta Corrente</option>
-                            <option value="@AccountType.Savings">PoupanÃ§a</option>
+                            <option value="@AccountType.Savings">PoupanÃƒÂ§a</option>
                             <option value="@AccountType.Cash">Dinheiro</option>
-                            <option value="@AccountType.CreditCard">CartÃ£o de CrÃ©dito</option>
+                            <option value="@AccountType.CreditCard">CartÃƒÂ£o de CrÃƒÂ©dito</option>
                             <option value="@AccountType.Investment">Investimento</option>
                         </select>
                     </div>
@@ -79,14 +79,14 @@
                             <small class="text-muted">Ex.: 9 (as parcelas entram no dia 10).</small>
                         </div>
                         <div class="col-12 col-md-3">
-                            <label class="form-label">Limite de crÃ©dito (R$)</label>
+                            <label class="form-label">Limite de crÃƒÂ©dito (R$)</label>
                             <MoneyInput @bind-Value="creditLimitAmount" Placeholder="0,00" />
-                            <small class="text-muted">Deixe em branco se nÃ£o quiser limite.</small>
+                            <small class="text-muted">Deixe em branco se nÃƒÂ£o quiser limite.</small>
                         </div>
                         <div class="col-12 col-md-3">
-                            <label class="form-label">Dias atÃ© vencimento</label>
+                            <label class="form-label">Dias atÃƒÂ© vencimento</label>
                             <input type="number" class="form-control" min="1" max="30" @bind="newAccount.InvoiceDueDayOffset" />
-                            <small class="text-muted">Dias entre fechamento e vencimento (padrÃ£o: 7).</small>
+                            <small class="text-muted">Dias entre fechamento e vencimento (padrÃƒÂ£o: 7).</small>
                         </div>
                     }
                     <div class="col-12 col-md-@(newAccount.Type == AccountType.CreditCard ? "12" : "3")">
@@ -140,7 +140,7 @@
                                     <br />
                                     <small class="text-muted">Fechamento: dia @account.InvoiceClosingDay</small>
                                     <br />
-                                    <small class="text-muted">Vencimento: @account.InvoiceDueDayOffset dias apÃ³s fechamento</small>
+                                    <small class="text-muted">Vencimento: @account.InvoiceDueDayOffset dias apÃƒÂ³s fechamento</small>
                                     @if (account.CreditLimit.HasValue)
                                     {
                                         var used = Math.Abs(account.Balance);
@@ -148,7 +148,7 @@
                                         <br />
                                         <small class="text-muted">Limite: R$ @account.CreditLimit.Value.ToString("F2")</small>
                                         <br />
-                                        <small class="text-muted">DisponÃ­vel: R$ @available.ToString("F2")</small>
+                                        <small class="text-muted">DisponÃƒÂ­vel: R$ @available.ToString("F2")</small>
                                     }
                                 }
                             </div>
@@ -206,7 +206,7 @@
                         else if (pendingInvoices == null || !pendingInvoices.Any())
                         {
                             <div class="alert alert-success">
-                                <i class="fas fa-check-circle"></i> Nenhuma fatura pendente! Todas as faturas estÃ£o pagas.
+                                <i class="fas fa-check-circle"></i> Nenhuma fatura pendente! Todas as faturas estÃƒÂ£o pagas.
                             </div>
                         }
                         else
@@ -226,7 +226,7 @@
                                                             <i class="fas fa-calendar"></i> Fatura @invoice.ReferenceMonth
                                                         </h6>
                                                         <small class="text-muted">
-                                                            PerÃ­odo: @invoice.PeriodStart.ToString("dd/MM") a @invoice.PeriodEnd.ToString("dd/MM/yyyy")
+                                                            PerÃƒÂ­odo: @invoice.PeriodStart.ToString("dd/MM") a @invoice.PeriodEnd.ToString("dd/MM/yyyy")
                                                         </small>
                                                         <br />
                                                         <small class="text-muted">
@@ -261,12 +261,12 @@
                                                         else if (isOverdue)
                                                         {
                                                             <small class="text-danger">
-                                                                <i class="fas fa-exclamation-triangle"></i> Vencida hÃ¡ @Math.Abs(invoice.DaysUntilDue) dias
+                                                                <i class="fas fa-exclamation-triangle"></i> Vencida hÃƒÂ¡ @Math.Abs(invoice.DaysUntilDue) dias
                                                             </small>
                                                         }
                                                     </div>
                                                     <div class="col-md-2 text-center">
-                                                        <small class="text-muted">TransaÃ§Ãµes</small>
+                                                        <small class="text-muted">TransaÃƒÂ§ÃƒÂµes</small>
                                                         <br />
                                                         <strong><i class="fas fa-receipt"></i> @invoice.TransactionCount</strong>
                                                     </div>
@@ -416,7 +416,7 @@
             accountsListForPay = (accounts ?? Enumerable.Empty<Account>()).ToList();
             if (accounts == null || !accounts.Any())
             {
-                errorMessage = "Nenhuma conta disponÃ­vel.";
+                errorMessage = "Nenhuma conta disponÃƒÂ­vel.";
             }
         }
         catch (Exception ex)
@@ -512,9 +512,9 @@
         return type switch
         {
             AccountType.Checking => "Conta Corrente",
-            AccountType.Savings => "PoupanÃ§a",
+            AccountType.Savings => "PoupanÃƒÂ§a",
             AccountType.Cash => "Dinheiro",
-            AccountType.CreditCard => "CartÃ£o de CrÃ©dito",
+            AccountType.CreditCard => "CartÃƒÂ£o de CrÃƒÂ©dito",
             AccountType.Investment => "Investimento",
             _ => type.ToString()
         };
@@ -680,7 +680,7 @@
         {
             if (string.IsNullOrWhiteSpace(payFromAccountId))
             {
-                invoiceError = "Selecione a conta que realizarÃ¡ o pagamento";
+                invoiceError = "Selecione a conta que realizarÃƒÂ¡ o pagamento";
                 return;
             }
 
@@ -692,7 +692,7 @@
 
             if (invoicePaymentAmount > selectedInvoiceToPay.RemainingAmount)
             {
-                invoiceError = $"Valor do pagamento nÃ£o pode exceder o valor restante (R$ {selectedInvoiceToPay.RemainingAmount:F2})";
+                invoiceError = $"Valor do pagamento nÃƒÂ£o pode exceder o valor restante (R$ {selectedInvoiceToPay.RemainingAmount:F2})";
                 return;
             }
 
@@ -705,7 +705,7 @@
                 Description = $"Pagamento fatura {selectedInvoiceToPay.ReferenceMonth}"
             };
 
-            // Determinar se Ã© pagamento total ou parcial
+            // Determinar se ÃƒÂ© pagamento total ou parcial
             if (invoicePaymentAmount >= selectedInvoiceToPay.RemainingAmount)
             {
                 // 1. Primeiro atualiza a fatura
@@ -717,7 +717,7 @@
                 await InvoiceService.PayPartialInvoiceAsync(request);
             }
 
-            // 2. Depois cria a transaÃ§Ã£o de pagamento
+            // 2. Depois cria a transaÃƒÂ§ÃƒÂ£o de pagamento
             var creditCardAccount = await AccountService.GetByIdAsync(selectedInvoiceToPay.AccountId);
             var description = $"Pagamento fatura {selectedInvoiceToPay.ReferenceMonth}";
             if (invoicePaymentAmount < selectedInvoiceToPay.RemainingAmount)
@@ -742,7 +742,7 @@
             
             selectedInvoiceToPay = null;
             
-            // Se nÃ£o hÃ¡ mais faturas pendentes, fechar modal
+            // Se nÃƒÂ£o hÃƒÂ¡ mais faturas pendentes, fechar modal
             if (pendingInvoices == null || !pendingInvoices.Any())
             {
                 showPayInvoice = false;

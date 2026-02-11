@@ -4,7 +4,7 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
-<PageTitle>MigraÃ§Ã£o de Dados - MoneyManager</PageTitle>
+<PageTitle>MigraÃƒÂ§ÃƒÂ£o de Dados - MoneyManager</PageTitle>
 
 <BusyOverlay IsBusy="@isBusy" Message="@busyMessage" />
 
@@ -15,9 +15,9 @@
                 <i class="fas fa-arrow-left"></i> Voltar
             </button>
             <h1 class="mb-0">
-                <i class="fas fa-tools"></i> Ferramentas de AdministraÃ§Ã£o
+                <i class="fas fa-tools"></i> Ferramentas de AdministraÃƒÂ§ÃƒÂ£o
             </h1>
-            <p class="text-muted">MigraÃ§Ã£o e manutenÃ§Ã£o de dados</p>
+            <p class="text-muted">MigraÃƒÂ§ÃƒÂ£o e manutenÃƒÂ§ÃƒÂ£o de dados</p>
         </div>
     </div>
 
@@ -40,11 +40,11 @@
     @if (migrationResult != null)
     {
         <div class="alert alert-info">
-            <h5><i class="fas fa-info-circle"></i> Resultado da MigraÃ§Ã£o</h5>
+            <h5><i class="fas fa-info-circle"></i> Resultado da MigraÃƒÂ§ÃƒÂ£o</h5>
             <ul class="mb-0">
-                <li><strong>CartÃµes processados:</strong> @migrationResult.CardsProcessed</li>
+                <li><strong>CartÃƒÂµes processados:</strong> @migrationResult.CardsProcessed</li>
                 <li><strong>Faturas criadas:</strong> @migrationResult.InvoicesCreated</li>
-                <li><strong>TransaÃ§Ãµes vinculadas:</strong> @migrationResult.TransactionsLinked</li>
+                <li><strong>TransaÃƒÂ§ÃƒÂµes vinculadas:</strong> @migrationResult.TransactionsLinked</li>
                 @if (migrationResult.Errors.Any())
                 {
                     <li class="text-danger">
@@ -61,34 +61,34 @@
         </div>
     }
 
-    <!-- Cards de AÃ§Ãµes -->
+    <!-- Cards de AÃƒÂ§ÃƒÂµes -->
     <div class="row g-4">
-        <!-- Card MigraÃ§Ã£o de Faturas -->
+        <!-- Card MigraÃƒÂ§ÃƒÂ£o de Faturas -->
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-database"></i> MigraÃ§Ã£o de Faturas HistÃ³ricas
+                        <i class="fas fa-database"></i> MigraÃƒÂ§ÃƒÂ£o de Faturas HistÃƒÂ³ricas
                     </h5>
                 </div>
                 <div class="card-body">
                     <p class="card-text">
-                        Cria faturas histÃ³ricas para transaÃ§Ãµes antigas de cartÃµes de crÃ©dito que ainda nÃ£o estÃ£o vinculadas a nenhuma fatura.
+                        Cria faturas histÃƒÂ³ricas para transaÃƒÂ§ÃƒÂµes antigas de cartÃƒÂµes de crÃƒÂ©dito que ainda nÃƒÂ£o estÃƒÂ£o vinculadas a nenhuma fatura.
                     </p>
                     <ul>
-                        <li>Busca todos os seus cartÃµes de crÃ©dito</li>
-                        <li>Identifica transaÃ§Ãµes sem vÃ­nculo com fatura</li>
+                        <li>Busca todos os seus cartÃƒÂµes de crÃƒÂ©dito</li>
+                        <li>Identifica transaÃƒÂ§ÃƒÂµes sem vÃƒÂ­nculo com fatura</li>
                         <li>Cria fatura "HISTORY" com status "Paga"</li>
-                        <li>Vincula todas as transaÃ§Ãµes antigas</li>
+                        <li>Vincula todas as transaÃƒÂ§ÃƒÂµes antigas</li>
                     </ul>
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i> 
-                        <strong>AtenÃ§Ã£o:</strong> Esta operaÃ§Ã£o sÃ³ deve ser executada uma vez por cartÃ£o.
+                        <strong>AtenÃƒÂ§ÃƒÂ£o:</strong> Esta operaÃƒÂ§ÃƒÂ£o sÃƒÂ³ deve ser executada uma vez por cartÃƒÂ£o.
                     </div>
                 </div>
                 <div class="card-footer">
                     <button class="btn btn-primary w-100" @onclick="ExecuteMigration" disabled="@isBusy">
-                        <i class="fas fa-play"></i> Executar MigraÃ§Ã£o
+                        <i class="fas fa-play"></i> Executar MigraÃƒÂ§ÃƒÂ£o
                     </button>
                 </div>
             </div>
@@ -104,16 +104,16 @@
                 </div>
                 <div class="card-body">
                     <p class="card-text">
-                        Recalcula o valor total de todas as faturas nÃ£o pagas baseado nas transaÃ§Ãµes vinculadas.
+                        Recalcula o valor total de todas as faturas nÃƒÂ£o pagas baseado nas transaÃƒÂ§ÃƒÂµes vinculadas.
                     </p>
                     <ul>
-                        <li>Soma todas as transaÃ§Ãµes de cada fatura</li>
+                        <li>Soma todas as transaÃƒÂ§ÃƒÂµes de cada fatura</li>
                         <li>Atualiza TotalAmount e RemainingAmount</li>
-                        <li>Ãštil apÃ³s correÃ§Ãµes manuais no banco</li>
+                        <li>ÃƒÅ¡til apÃƒÂ³s correÃƒÂ§ÃƒÂµes manuais no banco</li>
                     </ul>
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> 
-                        Seguro executar mÃºltiplas vezes.
+                        Seguro executar mÃƒÂºltiplas vezes.
                     </div>
                 </div>
                 <div class="card-footer">
@@ -134,16 +134,16 @@
                 </div>
                 <div class="card-body">
                     <p class="card-text">
-                        Garante que todos os cartÃµes de crÃ©dito tenham uma fatura aberta para o perÃ­odo atual.
+                        Garante que todos os cartÃƒÂµes de crÃƒÂ©dito tenham uma fatura aberta para o perÃƒÂ­odo atual.
                     </p>
                     <ul>
-                        <li>Verifica cada cartÃ£o de crÃ©dito</li>
-                        <li>Cria fatura aberta se nÃ£o existir</li>
+                        <li>Verifica cada cartÃƒÂ£o de crÃƒÂ©dito</li>
+                        <li>Cria fatura aberta se nÃƒÂ£o existir</li>
                         <li>Atualiza CurrentOpenInvoiceId</li>
                     </ul>
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i> 
-                        Seguro executar mÃºltiplas vezes.
+                        Seguro executar mÃƒÂºltiplas vezes.
                     </div>
                 </div>
                 <div class="card-footer">
@@ -165,11 +165,11 @@
 
     private async Task ExecuteMigration()
     {
-        if (!await ConfirmAction("Tem certeza que deseja executar a migraÃ§Ã£o? Esta operaÃ§Ã£o pode demorar alguns minutos."))
+        if (!await ConfirmAction("Tem certeza que deseja executar a migraÃƒÂ§ÃƒÂ£o? Esta operaÃƒÂ§ÃƒÂ£o pode demorar alguns minutos."))
             return;
 
         isBusy = true;
-        busyMessage = "Executando migraÃ§Ã£o... Isso pode demorar alguns minutos.";
+        busyMessage = "Executando migraÃƒÂ§ÃƒÂ£o... Isso pode demorar alguns minutos.";
         errorMessage = null;
         successMessage = null;
         migrationResult = null;
@@ -182,16 +182,16 @@
             if (result?.Success == true)
             {
                 migrationResult = result.Result;
-                successMessage = result.Message ?? "MigraÃ§Ã£o concluÃ­da com sucesso!";
+                successMessage = result.Message ?? "MigraÃƒÂ§ÃƒÂ£o concluÃƒÂ­da com sucesso!";
             }
             else
             {
-                errorMessage = result?.Message ?? "Erro desconhecido durante a migraÃ§Ã£o";
+                errorMessage = result?.Message ?? "Erro desconhecido durante a migraÃƒÂ§ÃƒÂ£o";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao executar migraÃ§Ã£o: {ex.Message}";
+            errorMessage = $"Erro ao executar migraÃƒÂ§ÃƒÂ£o: {ex.Message}";
         }
         finally
         {
@@ -247,7 +247,7 @@
 
             if (result?.Success == true)
             {
-                successMessage = $"{result.Message} ({result.TotalCards} cartÃµes verificados)";
+                successMessage = $"{result.Message} ({result.TotalCards} cartÃƒÂµes verificados)";
             }
             else
             {
@@ -271,7 +271,7 @@
 
     private async Task<bool> ConfirmAction(string message)
     {
-        // Em produÃ§Ã£o, usar um modal de confirmaÃ§Ã£o
+        // Em produÃƒÂ§ÃƒÂ£o, usar um modal de confirmaÃƒÂ§ÃƒÂ£o
         // Por enquanto, retorna true
         return await Task.FromResult(true);
     }

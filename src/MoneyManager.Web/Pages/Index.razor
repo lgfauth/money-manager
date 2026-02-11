@@ -17,7 +17,7 @@
             <h1 class="mb-2">
                 <i class="fas fa-chart-line text-primary"></i> Dashboard Financeiro
             </h1>
-            <p class="text-muted">VisÃ£o geral das suas finanÃ§as</p>
+            <p class="text-muted">VisÃƒÂ£o geral das suas finanÃƒÂ§as</p>
         </div>
     </div>
 
@@ -45,31 +45,31 @@
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0">
                 <div class="card-body text-center py-4">
-                    <h6 class="text-muted mb-2">SALDO LÃQUIDO</h6>
+                    <h6 class="text-muted mb-2">SALDO LÃƒÂQUIDO</h6>
                     <h2 class="display-5 fw-bold text-primary mb-0">R$ @liquidBalance.ToString("N2")</h2>
-                    <small class="text-muted">Corrente + PoupanÃ§a + Dinheiro</small>
+                    <small class="text-muted">Corrente + PoupanÃƒÂ§a + Dinheiro</small>
                 </div>
             </div>
         </div>
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0">
                 <div class="card-body text-center py-4">
-                    <h6 class="text-muted mb-2">PATRIMÃ”NIO TOTAL</h6>
+                    <h6 class="text-muted mb-2">PATRIMÃƒâ€NIO TOTAL</h6>
                     <h2 class="display-5 fw-bold text-success mb-0">R$ @totalBalance.ToString("N2")</h2>
-                    <small class="text-muted">LÃ­quido + Investimentos</small>
+                    <small class="text-muted">LÃƒÂ­quido + Investimentos</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Cards de MÃ©tricas -->
+    <!-- Cards de MÃƒÂ©tricas -->
     <div class="row g-4 mb-4">
         <div class="col-12 col-sm-6 col-lg-4">
             <div class="stat-card success">
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-value text-success">R$ @monthlyIncome.ToString("N2")</div>
-                        <div class="stat-label">Receitas do MÃªs</div>
+                        <div class="stat-label">Receitas do MÃƒÂªs</div>
                     </div>
                     <i class="fas fa-arrow-up fa-3x text-muted opacity-50"></i>
                 </div>
@@ -81,7 +81,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-value text-danger">R$ @monthlyExpenses.ToString("N2")</div>
-                        <div class="stat-label">Despesas do MÃªs</div>
+                        <div class="stat-label">Despesas do MÃƒÂªs</div>
                     </div>
                     <i class="fas fa-arrow-down fa-3x text-muted opacity-50"></i>
                 </div>
@@ -93,7 +93,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-value text-warning">@budgetUsedPercentage.ToString("N1")%</div>
-                        <div class="stat-label">OrÃ§amento Utilizado</div>
+                        <div class="stat-label">OrÃƒÂ§amento Utilizado</div>
                     </div>
                     <i class="fas fa-calculator fa-3x text-muted opacity-50"></i>
                 </div>
@@ -101,13 +101,13 @@
         </div>
     </div>
 
-    <!-- GrÃ¡ficos -->
+    <!-- GrÃƒÂ¡ficos -->
     <div class="row g-4 mb-4">
-        <!-- GrÃ¡fico: OrÃ§amento Utilizado vs Planejado -->
+        <!-- GrÃƒÂ¡fico: OrÃƒÂ§amento Utilizado vs Planejado -->
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> OrÃ§amento do MÃªs</h5>
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> OrÃƒÂ§amento do MÃƒÂªs</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="budgetChart" style="max-height: 300px;"></canvas>
@@ -115,7 +115,7 @@
             </div>
         </div>
 
-        <!-- GrÃ¡fico: Receitas vs Despesas -->
+        <!-- GrÃƒÂ¡fico: Receitas vs Despesas -->
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header">
@@ -128,13 +128,13 @@
         </div>
     </div>
 
-    <!-- GrÃ¡ficos de Contas -->
+    <!-- GrÃƒÂ¡ficos de Contas -->
     <div class="row g-4 mb-4">
-        <!-- Saldo por Conta LÃ­quida -->
+        <!-- Saldo por Conta LÃƒÂ­quida -->
         <div class="col-12 col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Contas LÃ­quidas</h5>
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Contas LÃƒÂ­quidas</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="liquidAccountsChart" style="max-height: 250px;"></canvas>
@@ -142,11 +142,11 @@
             </div>
         </div>
 
-        <!-- CartÃµes de CrÃ©dito -->
+        <!-- CartÃƒÂµes de CrÃƒÂ©dito -->
         <div class="col-12 col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-credit-card"></i> CartÃµes de CrÃ©dito</h5>
+                    <h5 class="mb-0"><i class="fas fa-credit-card"></i> CartÃƒÂµes de CrÃƒÂ©dito</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="creditCardsChart" style="max-height: 250px;"></canvas>
@@ -167,14 +167,14 @@
         </div>
     </div>
 
-    <!-- Limite de CrÃ©dito -->
+    <!-- Limite de CrÃƒÂ©dito -->
     @if (creditCardLimits.Any())
     {
         <div class="row g-4 mb-4">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Limite DisponÃ­vel - CartÃµes de CrÃ©dito</h5>
+                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Limite DisponÃƒÂ­vel - CartÃƒÂµes de CrÃƒÂ©dito</h5>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
@@ -192,7 +192,7 @@
                                             <span class="text-danger">R$ @card.UsedAmount.ToString("N2")</span>
                                         </div>
                                         <div class="d-flex justify-content-between mb-3">
-                                            <small class="text-muted">DisponÃ­vel:</small>
+                                            <small class="text-muted">DisponÃƒÂ­vel:</small>
                                             <span class="text-success fw-bold">R$ @card.AvailableAmount.ToString("N2")</span>
                                         </div>
                                         <div class="progress" style="height: 20px;">
@@ -215,12 +215,12 @@
         </div>
     }
 
-    <!-- TransaÃ§Ãµes Recentes -->
+    <!-- TransaÃƒÂ§ÃƒÂµes Recentes -->
     <div class="row g-4">
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-history"></i> TransaÃ§Ãµes Recentes</h5>
+                    <h5 class="mb-0"><i class="fas fa-history"></i> TransaÃƒÂ§ÃƒÂµes Recentes</h5>
                     <a href="/transactions" class="btn btn-primary btn-sm">
                         <i class="fas fa-eye"></i> Ver todas
                     </a>
@@ -233,7 +233,7 @@
                                 <thead>
                                     <tr>
                                         <th>Data</th>
-                                        <th>DescriÃ§Ã£o</th>
+                                        <th>DescriÃƒÂ§ÃƒÂ£o</th>
                                         <th>Categoria</th>
                                         <th>Conta</th>
                                         <th class="text-end">Valor</th>
@@ -263,7 +263,7 @@
                     {
                         <div class="text-center py-4">
                             <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Nenhuma transaÃ§Ã£o encontrada</p>
+                            <p class="text-muted">Nenhuma transaÃƒÂ§ÃƒÂ£o encontrada</p>
                         </div>
                     }
                 </div>
@@ -341,7 +341,7 @@ private async Task LoadDashboardData()
     {
         try
         {
-            // Pequeno delay para garantir que o DOM estÃ¡ pronto
+            // Pequeno delay para garantir que o DOM estÃƒÂ¡ pronto
             await Task.Delay(100);
             
             await RenderBudgetChart();
@@ -352,7 +352,7 @@ private async Task LoadDashboardData()
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao renderizar grÃ¡ficos: {ex.Message}");
+            Console.WriteLine($"Erro ao renderizar grÃƒÂ¡ficos: {ex.Message}");
         }
     }
 
@@ -366,7 +366,7 @@ private async Task LoadDashboardData()
 
             if (plannedBudget == 0)
             {
-                chartLabels = new[] { "Sem orÃ§amento definido" };
+                chartLabels = new[] { "Sem orÃƒÂ§amento definido" };
                 chartData = new[] { 1.0 };
                 chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
             }
@@ -376,7 +376,7 @@ private async Task LoadDashboardData()
                 var remainingBudget = plannedBudget - usedBudget;
                 if (remainingBudget < 0) remainingBudget = 0;
 
-                chartLabels = new[] { "Utilizado", "DisponÃ­vel" };
+                chartLabels = new[] { "Utilizado", "DisponÃƒÂ­vel" };
                 chartData = new[] { (double)usedBudget, (double)remainingBudget };
                 chartColors = new[] { "rgba(220, 53, 69, 0.7)", "rgba(40, 167, 69, 0.7)" };
             }
@@ -400,7 +400,7 @@ private async Task LoadDashboardData()
 
             if (monthlyIncome == 0 && monthlyExpenses == 0)
             {
-                chartLabels = new[] { "Sem movimentaÃ§Ãµes" };
+                chartLabels = new[] { "Sem movimentaÃƒÂ§ÃƒÂµes" };
                 chartData = new[] { 1.0 };
                 chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
             }
@@ -460,7 +460,7 @@ private async Task LoadDashboardData()
 
             if (!creditCardBalances.Any())
             {
-                chartLabels = new[] { "Sem cartÃµes" };
+                chartLabels = new[] { "Sem cartÃƒÂµes" };
                 chartData = new[] { 0.0 };
                 chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
             }
