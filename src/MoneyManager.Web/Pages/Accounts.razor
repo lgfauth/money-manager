@@ -67,9 +67,9 @@
                     <div class="col-12 col-md-3">
                         <select class="form-select text-dark" @bind="newAccount.Type">
                             <option value="@AccountType.Checking">Conta Corrente</option>
-                            <option value="@AccountType.Savings">PoupanÃƒÂ§a</option>
+                            <option value="@AccountType.Savings">Poupança</option>
                             <option value="@AccountType.Cash">Dinheiro</option>
-                            <option value="@AccountType.CreditCard">CartÃƒÂ£o de CrÃƒÂ©dito</option>
+                            <option value="@AccountType.CreditCard">Cartão de Crédito</option>
                             <option value="@AccountType.Investment">Investimento</option>
                         </select>
                     </div>
@@ -81,7 +81,7 @@
                             <small class="text-muted">Ex.: 9 (as parcelas entram no dia 10).</small>
                         </div>
                         <div class="col-12 col-md-3">
-                            <label class="form-label">Limite de crÃƒÂ©dito (R$)</label>
+                            <label class="form-label">Limite de Crédito (R$)</label>
                             <MoneyInput @bind-Value="creditLimitAmount" Placeholder="0,00" />
                             <small class="text-muted">Deixe em branco se nÃƒÂ£o quiser limite.</small>
                         </div>
@@ -142,7 +142,7 @@
                                     <br />
                                     <small class="text-muted">Fechamento: dia @account.InvoiceClosingDay</small>
                                     <br />
-                                    <small class="text-muted">Vencimento: @account.InvoiceDueDayOffset dias apÃƒÂ³s fechamento</small>
+                                    <small class="text-muted">Vencimento: @account.InvoiceDueDayOffset dias após fechamento</small>
                                     @if (account.CreditLimit.HasValue)
                                     {
                                         var used = Math.Abs(account.Balance);
@@ -150,7 +150,7 @@
                                         <br />
                                         <small class="text-muted">Limite: R$ @account.CreditLimit.Value.ToString("F2")</small>
                                         <br />
-                                        <small class="text-muted">DisponÃƒÂ­vel: R$ @available.ToString("F2")</small>
+                                        <small class="text-muted">Disponível: R$ @available.ToString("F2")</small>
                                     }
                                 }
                             </div>
@@ -418,7 +418,7 @@
             accountsListForPay = (accounts ?? Enumerable.Empty<Account>()).ToList();
             if (accounts == null || !accounts.Any())
             {
-                errorMessage = "Nenhuma conta disponÃƒÂ­vel.";
+                errorMessage = "Nenhuma conta disponível.";
             }
         }
         catch (Exception ex)
@@ -514,9 +514,9 @@
         return type switch
         {
             AccountType.Checking => "Conta Corrente",
-            AccountType.Savings => "PoupanÃƒÂ§a",
+            AccountType.Savings => "Poupança",
             AccountType.Cash => "Dinheiro",
-            AccountType.CreditCard => "CartÃƒÂ£o de CrÃƒÂ©dito",
+            AccountType.CreditCard => "Cartão de Crédito",
             AccountType.Investment => "Investimento",
             _ => type.ToString()
         };
