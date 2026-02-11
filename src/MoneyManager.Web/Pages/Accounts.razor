@@ -27,14 +27,9 @@
                 <h1 class="mb-0">
                     <i class="fas fa-wallet text-primary"></i> @Localization.Get("Accounts.Title")
                 </h1>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-secondary" @onclick="GoToMigration">
-                        <i class="fas fa-tools"></i> Migração
-                    </button>
-                    <button class="btn btn-primary" @onclick="ShowAddModal">
-                        <i class="fas fa-plus"></i> @Localization.Get("Accounts.NewAccount")
-                    </button>
-                </div>
+                <button class="btn btn-primary" @onclick="ShowAddModal">
+                    <i class="fas fa-plus"></i> @Localization.Get("Accounts.NewAccount")
+                </button>
             </div>
         </div>
     </div>
@@ -631,11 +626,6 @@
     private void GoToDashboard(string accountId)
     {
         Navigation.NavigateTo($"/credit-cards/{accountId}");
-    }
-
-    private void GoToMigration()
-    {
-        Navigation.NavigateTo("/admin/migration");
     }
 
     private async Task LoadPendingInvoices()
