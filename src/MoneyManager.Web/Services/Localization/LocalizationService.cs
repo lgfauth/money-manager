@@ -105,20 +105,37 @@ public sealed class LocalizationService : ILocalizationService
 
     private async Task LoadAsync(string culture)
     {
-        var path = $"{_hostEnvironment.BaseAddress}i18n/{culture}.json";
-        Console.WriteLine($"[LocalizationService] Tentando carregar: {path}");
+        // Usar caminho relativo para garantir que carrega do servidor local
+        var path = $"i18n/{culture}.json";
+        
+        Console.WriteLine($"[LocalizationService] BaseAddress original: {_hostEnvironment.BaseAddress}");
+        Console.WriteLine($"[LocalizationService] Tentando carregar: {path} (relativo)");
 
         Dictionary<string, object>? dict = null;
         try
         {
-            using var httpClient = new HttpClient();
+            // Usar HttpClient sem BaseAddress para forçar caminho relativo
+            using var httpClient = new HttpClient { BaseAddress = new Uri(_hostEnvironment.BaseAddress) };
             dict = await httpClient.GetFromJsonAsync<Dictionary<string, object>>(path);
             Console.WriteLine($"[LocalizationService] ✅ Arquivo carregado com sucesso!");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[LocalizationService] ❌ Erro ao carregar: {ex.Message}");
-            Console.WriteLine($"[LocalizationService] Stack: {ex.StackTrace}");
+            
+            // Tentar caminho absoluto como fallback
+            try
+            {
+                Console.WriteLine($"[LocalizationService] Tentando caminho absoluto...");
+                var absolutePath = $"{_hostEnvironment.BaseAddress}{path}";
+                using var httpClient2 = new HttpClient();
+                dict = await httpClient2.GetFromJsonAsync<Dictionary<string, object>>(absolutePath);
+                Console.WriteLine($"[LocalizationService] ✅ Carregado via caminho absoluto!");
+            }
+            catch (Exception ex2)
+            {
+                Console.WriteLine($"[LocalizationService] ❌ Falhou também: {ex2.Message}");
+            }
         }
 
         _resources = dict ?? new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -126,6 +143,8 @@ public sealed class LocalizationService : ILocalizationService
         if (_resources.Any())
         {
             Console.WriteLine($"[LocalizationService] ✅ Carregado {_resources.Count} seções");
+            // Mostrar as primeiras chaves para debug
+            Console.WriteLine($"[LocalizationService] Seções disponíveis: {string.Join(", ", _resources.Keys.Take(5))}");
         }
         else
         {
