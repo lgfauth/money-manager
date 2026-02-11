@@ -82,7 +82,7 @@
                                             <i class="fas fa-user"></i>
                                         </div>
                                     }
-                                    <span class="d-none d-lg-inline">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "Usuário")</span>
+                                    <span class="d-none d-lg-inline">@(userProfile?.FullName ?? context.User.Identity?.Name ?? Localization.Get("Navigation.User"))</span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end modern-dropdown" aria-labelledby="userDropdown">
                                     <li class="dropdown-header-modern">
@@ -98,7 +98,7 @@
                                                 </div>
                                             }
                                             <div>
-                                                <div class="fw-bold">@(userProfile?.FullName ?? context.User.Identity?.Name ?? "Usuário")</div>
+                                                <div class="fw-bold">@(userProfile?.FullName ?? context.User.Identity?.Name ?? Localization.Get("Navigation.User"))</div>
                                                 <small class="text-muted">@userProfile?.Email</small>
                                             </div>
                                         </div>

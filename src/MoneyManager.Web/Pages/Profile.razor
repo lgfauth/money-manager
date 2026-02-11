@@ -18,7 +18,7 @@
             <h1 class="mb-2">
                 <i class="fas fa-user text-primary"></i> @Localization.Get("Profile.Title")
             </h1>
-            <p class="text-muted">Gerencie suas informaÃƒÂ§ÃƒÂµes pessoais e seguranÃƒÂ§a</p>
+            <p class="text-muted">@Localization.Get("Profile.Subtitle")</p>
         </div>
     </div>
 
@@ -50,7 +50,7 @@
         }
 
         <div class="row g-4">
-            <!-- InformaÃƒÂ§ÃƒÂµes do Perfil -->
+        <!-- Informações do Perfil -->
             <div class="col-12 col-lg-4">
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
@@ -75,23 +75,23 @@
                 </div>
             </div>
 
-            <!-- Editar InformaÃƒÂ§ÃƒÂµes Pessoais -->
+            <!-- Editar Informações Pessoais -->
             <div class="col-12 col-lg-8">
                 <div class="card shadow-sm mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-id-card"></i> InformaÃƒÂ§ÃƒÂµes Pessoais</h5>
+                        <h5 class="mb-0"><i class="fas fa-id-card"></i> @Localization.Get("Profile.PersonalInfo")</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Nome de UsuÃƒÂ¡rio</label>
+                                <label class="form-label">@Localization.Get("Profile.Username")</label>
                                 <input type="text" class="form-control" value="@profile.Name" disabled />
-                                <small class="text-muted">Nome de usuÃƒÂ¡rio nÃƒÂ£o pode ser alterado</small>
+                                <small class="text-muted">@Localization.Get("Profile.UsernameHelp")</small>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Nome Completo</label>
-                                <input type="text" class="form-control" @bind="updateProfileRequest.FullName" placeholder="Digite seu nome completo" />
+                                <label class="form-label">@Localization.Get("Profile.FullName")</label>
+                                <input type="text" class="form-control" @bind="updateProfileRequest.FullName" placeholder="@Localization.Get("Profile.FullNamePlaceholder")" />
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -105,14 +105,14 @@
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Telefone</label>
-                                <input type="tel" class="form-control" @bind="updateProfileRequest.Phone" placeholder="(00) 00000-0000" />
+                                <label class="form-label">@Localization.Get("Profile.Phone")</label>
+                                <input type="tel" class="form-control" @bind="updateProfileRequest.Phone" placeholder="@Localization.Get("Profile.PhonePlaceholder")" />
                             </div>
 
                             <div class="col-12 mb-3">
-                                <label class="form-label">URL da Foto de Perfil</label>
-                                <input type="url" class="form-control" @bind="updateProfileRequest.ProfilePicture" placeholder="https://..." />
-                                <small class="text-muted">Cole a URL de uma imagem pÃƒÂºblica</small>
+                                <label class="form-label">@Localization.Get("Profile.ProfilePictureLabel")</label>
+                                <input type="url" class="form-control" @bind="updateProfileRequest.ProfilePicture" placeholder="@Localization.Get("Profile.ProfilePicturePlaceholder")" />
+                                <small class="text-muted">@Localization.Get("Profile.ProfilePictureHelp")</small>
                             </div>
                         </div>
 
@@ -125,7 +125,7 @@
                                 }
                                 else
                                 {
-                                    <span><i class="fas fa-save"></i> Salvar AlteraÃƒÂ§ÃƒÂµes</span>
+                                    <span><i class="fas fa-save"></i> @Localization.Get("Profile.SaveChanges")</span>
                                 }
                             </button>
                         </div>
@@ -135,31 +135,31 @@
                 <!-- Alterar Senha -->
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-lock"></i> SeguranÃƒÂ§a</h5>
+                        <h5 class="mb-0"><i class="fas fa-lock"></i> @Localization.Get("Profile.Security")</h5>
                     </div>
                     <div class="card-body">
                         @if (!showChangePassword)
                         {
-                            <p class="text-muted mb-3">Mantenha sua conta segura com uma senha forte</p>
+                            <p class="text-muted mb-3">@Localization.Get("Profile.SecurityDescription")</p>
                             <button class="btn btn-warning" @onclick="@(() => showChangePassword = true)">
-                                <i class="fas fa-key"></i> Alterar Senha
+                                <i class="fas fa-key"></i> @Localization.Get("Profile.ChangePassword")
                             </button>
                         }
                         else
                         {
                             <div class="row">
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Senha Atual</label>
+                                    <label class="form-label">@Localization.Get("Profile.CurrentPassword")</label>
                                     <input type="password" class="form-control" @bind="changePasswordRequest.CurrentPassword" />
                                 </div>
 
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Nova Senha</label>
+                                    <label class="form-label">@Localization.Get("Profile.NewPassword")</label>
                                     <input type="password" class="form-control" @bind="changePasswordRequest.NewPassword" />
                                 </div>
 
                                 <div class="col-md-4 mb-3">
-                                    <label class="form-label">Confirmar Nova Senha</label>
+                                    <label class="form-label">@Localization.Get("Profile.ConfirmNewPassword")</label>
                                     <input type="password" class="form-control" @bind="changePasswordRequest.ConfirmPassword" />
                                 </div>
                             </div>
@@ -173,11 +173,11 @@
                                     }
                                     else
                                     {
-                                        <span><i class="fas fa-check"></i> Confirmar AlteraÃƒÂ§ÃƒÂ£o</span>
+                                        <span><i class="fas fa-check"></i> @Localization.Get("Profile.ConfirmPasswordChange")</span>
                                     }
                                 </button>
                                 <button class="btn btn-outline-secondary" @onclick="@(() => { showChangePassword = false; ClearPasswordFields(); })">
-                                    <i class="fas fa-times"></i> Cancelar
+                                    <i class="fas fa-times"></i> @Localization.Get("Profile.Cancel")
                                 </button>
                             </div>
                         }
@@ -193,30 +193,30 @@
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title"><i class="fas fa-envelope"></i> Alterar Email</h5>
+                            <h5 class="modal-title"><i class="fas fa-envelope"></i> @Localization.Get("Profile.ChangeEmail")</h5>
                             <button type="button" class="btn-close" @onclick="@(() => showChangeEmail = false)"></button>
                         </div>
                         <div class="modal-body">
                             <div class="mb-3">
-                                <label class="form-label">Novo Email</label>
-                                <input type="email" class="form-control" @bind="updateEmailRequest.NewEmail" placeholder="novo@email.com" />
+                                <label class="form-label">@Localization.Get("Profile.NewEmail")</label>
+                                <input type="email" class="form-control" @bind="updateEmailRequest.NewEmail" placeholder="@Localization.Get("Profile.NewEmailPlaceholder")" />
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Senha Atual (para confirmar)</label>
+                                <label class="form-label">@Localization.Get("Profile.PasswordToConfirm")</label>
                                 <input type="password" class="form-control" @bind="updateEmailRequest.Password" />
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" @onclick="@(() => showChangeEmail = false)">Cancelar</button>
+                            <button type="button" class="btn btn-secondary" @onclick="@(() => showChangeEmail = false)">@Localization.Get("Profile.Cancel")</button>
                             <button type="button" class="btn btn-primary" @onclick="UpdateEmail" disabled="@isUpdatingEmail">
                                 @if (isUpdatingEmail)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
-                                    <span>Atualizando...</span>
+                                    <span>@Localization.Get("Profile.Updating")</span>
                                 }
                                 else
                                 {
-                                    <span>Confirmar</span>
+                                    <span>@Localization.Get("Profile.Confirm")</span>
                                 }
                             </button>
                         </div>
@@ -225,13 +225,13 @@
             </div>
         }
 
-        <!-- SeÃƒÂ§ÃƒÂ£o PERIGOSA: ExclusÃƒÂ£o de Conta (LGPD) -->
+        <!-- Seção PERIGOSA: Exclusão de Conta (LGPD) -->
         <div class="row mt-5">
             <div class="col-12">
                 <div class="card shadow-sm border-danger">
                     <div class="card-header bg-danger text-white">
                         <h5 class="mb-0">
-                            <i class="fas fa-exclamation-triangle"></i> Zona de Perigo
+                            <i class="fas fa-exclamation-triangle"></i> @Localization.Get("Profile.DangerZone")
                         </h5>
                     </div>
                     <div class="card-body">
@@ -240,18 +240,18 @@
                             Esta aÃƒÂ§ÃƒÂ£o ÃƒÂ© <strong>IRREVERSÃƒÂVEL</strong>. Todos os seus dados serÃƒÂ£o permanentemente excluÃƒÂ­dos, incluindo:
                         </p>
                         <ul class="text-muted mb-4">
-                            <li>Todas as suas contas e saldos</li>
-                            <li>Todas as transaÃƒÂ§ÃƒÂµes registradas</li>
-                            <li>Todas as categorias personalizadas</li>
-                            <li>Todos os orÃƒÂ§amentos criados</li>
-                            <li>Todas as transaÃƒÂ§ÃƒÂµes recorrentes</li>
-                            <li>Seu perfil e configuraÃƒÂ§ÃƒÂµes</li>
+                            <li>@Localization.Get("Profile.DeleteItem1")</li>
+                            <li>@Localization.Get("Profile.DeleteItem2")</li>
+                            <li>@Localization.Get("Profile.DeleteItem3")</li>
+                            <li>@Localization.Get("Profile.DeleteItem4")</li>
+                            <li>@Localization.Get("Profile.DeleteItem5")</li>
+                            <li>@Localization.Get("Profile.DeleteItem6")</li>
                         </ul>
 
                         @if (!showDeleteConfirmation)
                         {
                             <button class="btn btn-outline-danger" @onclick="ShowDeleteConfirmation">
-                                <i class="fas fa-trash-alt"></i> Quero Excluir Minha Conta
+                                <i class="fas fa-trash-alt"></i> @Localization.Get("Profile.WantToDelete")
                             </button>
                         }
                         else
@@ -264,36 +264,36 @@
                                 <p class="mb-3">VocÃƒÂª possui <strong class="fs-5">@dataCount</strong> registros que serÃƒÂ£o permanentemente excluÃƒÂ­dos.</p>
 
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Digite sua senha para continuar:</label>
-                                    <input type="password" class="form-control" @bind="deletePassword" placeholder="Sua senha" />
+                                    <label class="form-label fw-bold">@Localization.Get("Profile.EnterPassword")</label>
+                                    <input type="password" class="form-control" @bind="deletePassword" placeholder="@Localization.Get("Profile.PasswordPlaceholder")" />
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold">Digite exatamente "DELETAR MINHA CONTA" para confirmar:</label>
-                                    <input type="text" class="form-control" @bind="deleteConfirmationText" placeholder="DELETAR MINHA CONTA" />
+                                    <label class="form-label fw-bold">@Localization.Get("Profile.TypeToConfirm")</label>
+                                    <input type="text" class="form-control" @bind="deleteConfirmationText" placeholder="@Localization.Get("Profile.DeleteConfirmText")" />
                                 </div>
 
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" @bind="understandConsequences" id="understandCheck" />
                                     <label class="form-check-label" for="understandCheck">
-                                        Eu entendo que esta aÃƒÂ§ÃƒÂ£o ÃƒÂ© permanente e todos os meus dados serÃƒÂ£o excluÃƒÂ­dos
+                                        @Localization.Get("Profile.UnderstandConsequences")
                                     </label>
                                 </div>
 
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-danger" @onclick="DeleteAccount" disabled="@(!CanDeleteAccount() || isDeletingAccount)">
-                                        @if (isDeletingAccount)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-2"></span>
-                                            <span>Excluindo...</span>
-                                        }
-                                        else
-                                        {
-                                            <span><i class="fas fa-trash-alt"></i> Confirmar ExclusÃƒÂ£o Permanente</span>
-                                        }
+                                    @if (isDeletingAccount)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                        <span>@Localization.Get("Profile.Deleting")</span>
+                                    }
+                                    else
+                                    {
+                                        <span><i class="fas fa-trash-alt"></i> @Localization.Get("Profile.ConfirmDeletion")</span>
+                                    }
                                     </button>
                                     <button class="btn btn-secondary" @onclick="@(() => { showDeleteConfirmation = false; ClearDeleteFields(); })">
-                                        <i class="fas fa-times"></i> Cancelar
+                                        <i class="fas fa-times"></i> @Localization.Get("Profile.Cancel")
                                     </button>
                                 </div>
                             </div>
@@ -405,7 +405,7 @@
 
             if (changePasswordRequest.NewPassword != changePasswordRequest.ConfirmPassword)
             {
-                errorMessage = "As senhas nÃƒÂ£o coincidem";
+            errorMessage = "As senhas não coincidem";
                 return;
             }
 
@@ -499,7 +499,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar informaÃƒÂ§ÃƒÂµes: {ex.Message}";
+            errorMessage = $"Erro ao carregar informações: {ex.Message}";
         }
     }
 

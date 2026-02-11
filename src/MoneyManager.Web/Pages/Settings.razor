@@ -1,4 +1,4 @@
-﻿@page "/settings"
+@page "/settings"
 @using MoneyManager.Web.Services.Localization
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Web.Services
@@ -8,19 +8,17 @@
 @inject IUserSettingsService SettingsService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject ILocalizationService Localization
 @inject IJSRuntime JSRuntime
-@inject ILocalizationService Localization
 
-<PageTitle>ConfiguraÃƒÂ§ÃƒÂµes - MoneyManager</PageTitle>
+<PageTitle>@Localization.Get("Settings.PageTitle")</PageTitle>
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <h1 class="mb-2">
-                <i class="fas fa-cog text-primary"></i> ConfiguraÃƒÂ§ÃƒÂµes
+                <i class="fas fa-cog text-primary"></i> @Localization.Get("Settings.Title")
             </h1>
-            <p class="text-muted">Personalize sua experiÃƒÂªncia no MoneyManager</p>
+            <p class="text-muted">@Localization.Get("Settings.Subtitle")</p>
         </div>
     </div>
 
@@ -28,9 +26,9 @@
     {
         <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Carregando...</span>
+                <span class="visually-hidden">@Localization.Get("Common.Loading")</span>
             </div>
-            <p class="mt-3 text-muted">Carregando configuraÃƒÂ§ÃƒÂµes...</p>
+            <p class="mt-3 text-muted">@Localization.Get("Settings.Loading")</p>
         </div>
     }
     else
@@ -52,58 +50,58 @@
         }
 
         <div class="row g-4">
-            <!-- PreferÃƒÂªncias Financeiras -->
+            <!-- Prefer�ncias Financeiras -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> PreferÃƒÂªncias Financeiras</h5>
+                        <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> @Localization.Get("Settings.FinancialPreferences")</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label">Moeda</label>
+                            <label class="form-label">@Localization.Get("Settings.Currency")</label>
                             <select class="form-select" @bind="settings.Currency">
-                                <option value="BRL">Real Brasileiro (R$)</option>
-                                <option value="USD">DÃƒÂ³lar Americano (US$)</option>
-                                <option value="EUR">Euro (Ã¢â€šÂ¬)</option>
+                                <option value="BRL">@Localization.Get("Settings.CurrencyBRL")</option>
+                                <option value="USD">@Localization.Get("Settings.CurrencyUSD")</option>
+                                <option value="EUR">@Localization.Get("Settings.CurrencyEUR")</option>
                             </select>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Formato de Data</label>
+                            <label class="form-label">@Localization.Get("Settings.DateFormat")</label>
                             <select class="form-select" @bind="settings.DateFormat">
-                                <option value="dd/MM/yyyy">DD/MM/AAAA</option>
-                                <option value="MM/dd/yyyy">MM/DD/AAAA</option>
-                                <option value="yyyy-MM-dd">AAAA-MM-DD</option>
+                                <option value="dd/MM/yyyy">@Localization.Get("Settings.DateFormatDDMMYYYY")</option>
+                                <option value="MM/dd/yyyy">@Localization.Get("Settings.DateFormatMMDDYYYY")</option>
+                                <option value="yyyy-MM-dd">@Localization.Get("Settings.DateFormatYYYYMMDD")</option>
                             </select>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Dia de Fechamento do MÃƒÂªs</label>
+                            <label class="form-label">@Localization.Get("Settings.MonthClosingDay")</label>
                             <input type="number" class="form-control" min="1" max="31" @bind="settings.MonthClosingDay" />
-                            <small class="text-muted">Dia em que o mÃƒÂªs financeiro fecha para relatÃƒÂ³rios</small>
+                            <small class="text-muted">@Localization.Get("Settings.MonthClosingDayHelp")</small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">OrÃƒÂ§amento Mensal PadrÃƒÂ£o (Opcional)</label>
+                            <label class="form-label">@Localization.Get("Settings.DefaultBudget")</label>
                             <MoneyInput @bind-Value="defaultBudgetValue" Placeholder="0,00" />
-                            <small class="text-muted">Usado ao criar novos orÃƒÂ§amentos</small>
+                            <small class="text-muted">@Localization.Get("Settings.DefaultBudgetHelp")</small>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- NotificaÃƒÂ§ÃƒÂµes -->
+            <!-- Notifica��es -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-bell"></i> NotificaÃƒÂ§ÃƒÂµes</h5>
+                        <h5 class="mb-0"><i class="fas fa-bell"></i> @Localization.Get("Settings.Notifications")</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="emailNotifications" @bind="settings.EmailNotifications">
                                 <label class="form-check-label" for="emailNotifications">
-                                    Receber notificaÃƒÂ§ÃƒÂµes por email
+                                    @Localization.Get("Settings.ReceiveEmailNotifications")
                                 </label>
                             </div>
                         </div>
@@ -114,7 +112,7 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notifyRecurring" @bind="settings.NotifyRecurringProcessed" disabled="@(!settings.EmailNotifications)">
                                 <label class="form-check-label" for="notifyRecurring">
-                                    TransaÃƒÂ§ÃƒÂ£o recorrente processada
+                                    @Localization.Get("Settings.RecurringProcessed")
                                 </label>
                             </div>
                         </div>
@@ -123,13 +121,13 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notifyBudget" @bind="settings.NotifyBudgetAlert" disabled="@(!settings.EmailNotifications)">
                                 <label class="form-check-label" for="notifyBudget">
-                                    Alerta de orÃƒÂ§amento
+                                    @Localization.Get("Settings.BudgetAlert")
                                 </label>
                             </div>
                             @if (settings.NotifyBudgetAlert && settings.EmailNotifications)
                             {
                                 <div class="mt-2">
-                                    <label class="form-label small">Alertar quando atingir:</label>
+                                    <label class="form-label small">@Localization.Get("Settings.AlertWhenReaching")</label>
                                     <div class="input-group input-group-sm">
                                         <input type="number" class="form-control" min="50" max="100" @bind="settings.BudgetAlertThreshold" />
                                         <span class="input-group-text">%</span>
@@ -142,13 +140,13 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="notifyCreditLimit" @bind="settings.NotifyCreditLimitAlert" disabled="@(!settings.EmailNotifications)">
                                 <label class="form-check-label" for="notifyCreditLimit">
-                                    Alerta de limite de cartÃƒÂ£o
+                                    @Localization.Get("Settings.CreditLimitAlert")
                                 </label>
                             </div>
                             @if (settings.NotifyCreditLimitAlert && settings.EmailNotifications)
                             {
                                 <div class="mt-2">
-                                    <label class="form-label small">Alertar quando atingir:</label>
+                                    <label class="form-label small">@Localization.Get("Settings.AlertWhenReaching")</label>
                                     <div class="input-group input-group-sm">
                                         <input type="number" class="form-control" min="50" max="100" @bind="settings.CreditLimitAlertThreshold" />
                                         <span class="input-group-text">%</span>
@@ -161,7 +159,7 @@
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="monthlySummary" @bind="settings.MonthlySummaryEmail" disabled="@(!settings.EmailNotifications)">
                                 <label class="form-check-label" for="monthlySummary">
-                                    Resumo mensal por email
+                                    @Localization.Get("Settings.MonthlySummary")
                                 </label>
                             </div>
                         </div>
@@ -169,26 +167,26 @@
                 </div>
             </div>
 
-            <!-- AparÃƒÂªncia -->
+            <!-- Apar�ncia -->
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-palette"></i> AparÃƒÂªncia</h5>
+                        <h5 class="mb-0"><i class="fas fa-palette"></i> @Localization.Get("Settings.Appearance")</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Tema</label>
+                                <label class="form-label">@Localization.Get("Settings.Theme")</label>
                                 <select class="form-select" @bind="settings.Theme">
-                                    <option value="light">Claro</option>
-                                    <option value="dark">Escuro</option>
-                                    <option value="auto">AutomÃƒÂ¡tico (Sistema)</option>
+                                    <option value="light">@Localization.Get("Settings.Light")</option>
+                                    <option value="dark">@Localization.Get("Settings.Dark")</option>
+                                    <option value="auto">@Localization.Get("Settings.Auto")</option>
                                 </select>
-                                <small class="text-muted">O tema escuro serÃƒÂ¡ implementado em versÃƒÂµes futuras</small>
+                                <small class="text-muted">@Localization.Get("Settings.ThemeHelp")</small>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Cor PrimÃƒÂ¡ria</label>
+                                <label class="form-label">@Localization.Get("Settings.PrimaryColor")</label>
                                 <ColorPicker @bind-SelectedColor="settings.PrimaryColor" />
                             </div>
                         </div>
@@ -196,21 +194,21 @@
                 </div>
             </div>
 
-            <!-- BotÃƒÂµes de AÃƒÂ§ÃƒÂ£o -->
+            <!-- Bot�es de A��o -->
             <div class="col-12">
                 <div class="d-flex gap-2 justify-content-end">
                     <button class="btn btn-outline-secondary" @onclick="LoadSettings">
-                        <i class="fas fa-undo"></i> Resetar
+                        <i class="fas fa-undo"></i> @Localization.Get("Settings.Reset")
                     </button>
                     <button class="btn btn-success" @onclick="SaveSettings" disabled="@isSaving">
                         @if (isSaving)
                         {
                             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                            <span>Salvando...</span>
+                            <span>@Localization.Get("Settings.Saving")</span>
                         }
                         else
                         {
-                            <span><i class="fas fa-save"></i> Salvar ConfiguraÃƒÂ§ÃƒÂµes</span>
+                            <span><i class="fas fa-save"></i> @Localization.Get("Settings.SaveSettings")</span>
                         }
                     </button>
                 </div>
@@ -245,7 +243,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar configuraÃƒÂ§ÃƒÂµes: {ex.Message}";
+            errorMessage = $"Erro ao carregar configura��es: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -268,11 +266,11 @@
             // Apply theme
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", settings.Theme);
 
-            successMessage = "ConfiguraÃƒÂ§ÃƒÂµes salvas com sucesso!";
+            successMessage = "Configura��es salvas com sucesso!";
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao salvar configuraÃƒÂ§ÃƒÂµes: {ex.Message}";
+            errorMessage = $"Erro ao salvar configura��es: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -296,4 +294,3 @@
         }
     }
 }
-
