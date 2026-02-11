@@ -15,7 +15,7 @@
             <h1 class="mb-2">
                 <i class="fas fa-user text-primary"></i> Meu Perfil
             </h1>
-            <p class="text-muted">Gerencie suas informações pessoais e segurança</p>
+            <p class="text-muted">Gerencie suas informaÃ§Ãµes pessoais e seguranÃ§a</p>
         </div>
     </div>
 
@@ -47,7 +47,7 @@
         }
 
         <div class="row g-4">
-            <!-- Informações do Perfil -->
+            <!-- InformaÃ§Ãµes do Perfil -->
             <div class="col-12 col-lg-4">
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
@@ -72,18 +72,18 @@
                 </div>
             </div>
 
-            <!-- Editar Informações Pessoais -->
+            <!-- Editar InformaÃ§Ãµes Pessoais -->
             <div class="col-12 col-lg-8">
                 <div class="card shadow-sm mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-id-card"></i> Informações Pessoais</h5>
+                        <h5 class="mb-0"><i class="fas fa-id-card"></i> InformaÃ§Ãµes Pessoais</h5>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Nome de Usuário</label>
+                                <label class="form-label">Nome de UsuÃ¡rio</label>
                                 <input type="text" class="form-control" value="@profile.Name" disabled />
-                                <small class="text-muted">Nome de usuário não pode ser alterado</small>
+                                <small class="text-muted">Nome de usuÃ¡rio nÃ£o pode ser alterado</small>
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -109,7 +109,7 @@
                             <div class="col-12 mb-3">
                                 <label class="form-label">URL da Foto de Perfil</label>
                                 <input type="url" class="form-control" @bind="updateProfileRequest.ProfilePicture" placeholder="https://..." />
-                                <small class="text-muted">Cole a URL de uma imagem pública</small>
+                                <small class="text-muted">Cole a URL de uma imagem pÃºblica</small>
                             </div>
                         </div>
 
@@ -122,7 +122,7 @@
                                 }
                                 else
                                 {
-                                    <span><i class="fas fa-save"></i> Salvar Alterações</span>
+                                    <span><i class="fas fa-save"></i> Salvar AlteraÃ§Ãµes</span>
                                 }
                             </button>
                         </div>
@@ -132,7 +132,7 @@
                 <!-- Alterar Senha -->
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-lock"></i> Segurança</h5>
+                        <h5 class="mb-0"><i class="fas fa-lock"></i> SeguranÃ§a</h5>
                     </div>
                     <div class="card-body">
                         @if (!showChangePassword)
@@ -170,7 +170,7 @@
                                     }
                                     else
                                     {
-                                        <span><i class="fas fa-check"></i> Confirmar Alteração</span>
+                                        <span><i class="fas fa-check"></i> Confirmar AlteraÃ§Ã£o</span>
                                     }
                                 </button>
                                 <button class="btn btn-outline-secondary" @onclick="@(() => { showChangePassword = false; ClearPasswordFields(); })">
@@ -222,7 +222,7 @@
             </div>
         }
 
-        <!-- Seção PERIGOSA: Exclusão de Conta (LGPD) -->
+        <!-- SeÃ§Ã£o PERIGOSA: ExclusÃ£o de Conta (LGPD) -->
         <div class="row mt-5">
             <div class="col-12">
                 <div class="card shadow-sm border-danger">
@@ -234,15 +234,15 @@
                     <div class="card-body">
                         <h6 class="text-danger fw-bold">Excluir Conta Permanentemente</h6>
                         <p class="text-muted mb-3">
-                            Esta ação é <strong>IRREVERSÍVEL</strong>. Todos os seus dados serão permanentemente excluídos, incluindo:
+                            Esta aÃ§Ã£o Ã© <strong>IRREVERSÃVEL</strong>. Todos os seus dados serÃ£o permanentemente excluÃ­dos, incluindo:
                         </p>
                         <ul class="text-muted mb-4">
                             <li>Todas as suas contas e saldos</li>
-                            <li>Todas as transações registradas</li>
+                            <li>Todas as transaÃ§Ãµes registradas</li>
                             <li>Todas as categorias personalizadas</li>
-                            <li>Todos os orçamentos criados</li>
-                            <li>Todas as transações recorrentes</li>
-                            <li>Seu perfil e configurações</li>
+                            <li>Todos os orÃ§amentos criados</li>
+                            <li>Todas as transaÃ§Ãµes recorrentes</li>
+                            <li>Seu perfil e configuraÃ§Ãµes</li>
                         </ul>
 
                         @if (!showDeleteConfirmation)
@@ -255,10 +255,10 @@
                         {
                             <div class="alert alert-danger">
                                 <h6 class="alert-heading">
-                                    <i class="fas fa-exclamation-circle"></i> Confirmação de Exclusão
+                                    <i class="fas fa-exclamation-circle"></i> ConfirmaÃ§Ã£o de ExclusÃ£o
                                 </h6>
-                                <p><strong>Esta ação NÃO pode ser desfeita!</strong></p>
-                                <p class="mb-3">Você possui <strong class="fs-5">@dataCount</strong> registros que serão permanentemente excluídos.</p>
+                                <p><strong>Esta aÃ§Ã£o NÃƒO pode ser desfeita!</strong></p>
+                                <p class="mb-3">VocÃª possui <strong class="fs-5">@dataCount</strong> registros que serÃ£o permanentemente excluÃ­dos.</p>
 
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Digite sua senha para continuar:</label>
@@ -273,7 +273,7 @@
                                 <div class="form-check mb-3">
                                     <input class="form-check-input" type="checkbox" @bind="understandConsequences" id="understandCheck" />
                                     <label class="form-check-label" for="understandCheck">
-                                        Eu entendo que esta ação é permanente e todos os meus dados serão excluídos
+                                        Eu entendo que esta aÃ§Ã£o Ã© permanente e todos os meus dados serÃ£o excluÃ­dos
                                     </label>
                                 </div>
 
@@ -286,7 +286,7 @@
                                         }
                                         else
                                         {
-                                            <span><i class="fas fa-trash-alt"></i> Confirmar Exclusão Permanente</span>
+                                            <span><i class="fas fa-trash-alt"></i> Confirmar ExclusÃ£o Permanente</span>
                                         }
                                     </button>
                                     <button class="btn btn-secondary" @onclick="@(() => { showDeleteConfirmation = false; ClearDeleteFields(); })">
@@ -402,7 +402,7 @@
 
             if (changePasswordRequest.NewPassword != changePasswordRequest.ConfirmPassword)
             {
-                errorMessage = "As senhas não coincidem";
+                errorMessage = "As senhas nÃ£o coincidem";
                 return;
             }
 
@@ -496,7 +496,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar informações: {ex.Message}";
+            errorMessage = $"Erro ao carregar informaÃ§Ãµes: {ex.Message}";
         }
     }
 
@@ -538,7 +538,7 @@
                     await customAuthProvider.MarkUserAsLoggedOut();
                 }
 
-                // Redireciona para página de confirmação
+                // Redireciona para pÃ¡gina de confirmaÃ§Ã£o
                 Nav.NavigateTo("/account-deleted", true);
             }
             else

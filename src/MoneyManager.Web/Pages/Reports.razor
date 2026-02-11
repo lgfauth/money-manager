@@ -7,13 +7,13 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<PageTitle>Relatórios - MoneyManager</PageTitle>
+<PageTitle>RelatÃ³rios - MoneyManager</PageTitle>
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <h1 class="mb-0">
-                <i class="fas fa-chart-pie text-primary"></i> Relatórios Financeiros
+                <i class="fas fa-chart-pie text-primary"></i> RelatÃ³rios Financeiros
             </h1>
         </div>
     </div>
@@ -24,7 +24,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando relatórios...</p>
+            <p class="mt-3 text-muted">Carregando relatÃ³rios...</p>
         </div>
     }
     else if (errorMessage != null)
@@ -36,20 +36,20 @@
     }
     else
     {
-        <!-- Filtro de Período -->
+        <!-- Filtro de PerÃ­odo -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="row g-3 align-items-end">
                             <div class="col-12 col-md-4">
-                                <label class="form-label">Período</label>
+                                <label class="form-label">PerÃ­odo</label>
                                 <select class="form-select" @bind="PeriodPreset">
-                                    <option value="current_month">Mês atual</option>
-                                    <option value="last_month">Mês anterior</option>
-                                    <option value="last_3_months">Últimos 3 meses</option>
-                                    <option value="last_6_months">Últimos 6 meses</option>
-                                    <option value="last_year">Último ano</option>
+                                    <option value="current_month">MÃªs atual</option>
+                                    <option value="last_month">MÃªs anterior</option>
+                                    <option value="last_3_months">Ãšltimos 3 meses</option>
+                                    <option value="last_6_months">Ãšltimos 6 meses</option>
+                                    <option value="last_year">Ãšltimo ano</option>
                                     <option value="custom">Personalizado</option>
                                 </select>
                             </div>
@@ -60,7 +60,7 @@
                             </div>
 
                             <div class="col-6 col-md-3">
-                                <label class="form-label">Até</label>
+                                <label class="form-label">AtÃ©</label>
                                 <input type="date" class="form-control" @bind="filterEnd" disabled="@(periodPreset != "custom")" />
                             </div>
 
@@ -74,7 +74,7 @@
                             {
                                 <div class="col-12">
                                     <small class="text-muted">
-                                        Visualizando: <strong>@filterStart.ToString("dd/MM/yyyy")</strong> até <strong>@filterEnd.ToString("dd/MM/yyyy")</strong>
+                                        Visualizando: <strong>@filterStart.ToString("dd/MM/yyyy")</strong> atÃ© <strong>@filterEnd.ToString("dd/MM/yyyy")</strong>
                                     </small>
                                 </div>
                             }
@@ -114,7 +114,7 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <div class="stat-value text-primary">R$ @reportSummary.NetBalance.ToString("N2")</div>
-                            <div class="stat-label">Saldo Líquido</div>
+                            <div class="stat-label">Saldo LÃ­quido</div>
                         </div>
                         <i class="fas fa-chart-line fa-3x text-muted opacity-50"></i>
                     </div>
@@ -137,7 +137,7 @@
         </div>
 
         <div class="row g-4 mb-4">
-            <!-- Gráfico de Pizza - Despesas por Categoria -->
+            <!-- GrÃ¡fico de Pizza - Despesas por Categoria -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -149,11 +149,11 @@
                 </div>
             </div>
 
-            <!-- Gráfico de Linhas - Evolução Mensal -->
+            <!-- GrÃ¡fico de Linhas - EvoluÃ§Ã£o Mensal -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> Evolução Mensal</h5>
+                        <h5 class="mb-0"><i class="fas fa-chart-line"></i> EvoluÃ§Ã£o Mensal</h5>
                     </div>
                     <div class="card-body">
                         <canvas id="monthlyTrendChart" style="max-height: 300px;"></canvas>
@@ -207,7 +207,7 @@
                         {
                             <div class="text-center py-4">
                                 <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Nenhuma despesa registrada no período</p>
+                                <p class="text-muted">Nenhuma despesa registrada no perÃ­odo</p>
                             </div>
                         }
                     </div>
@@ -314,7 +314,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar relatórios: {ex.Message}";
+            errorMessage = $"Erro ao carregar relatÃ³rios: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -334,7 +334,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao renderizar gráficos: {ex.Message}");
+            Console.WriteLine($"Erro ao renderizar grÃ¡ficos: {ex.Message}");
         }
     }
 
@@ -418,12 +418,12 @@
 
         return periodPreset switch
         {
-            "current_month" => "mês atual",
-            "last_month" => "mês anterior",
+            "current_month" => "mÃªs atual",
+            "last_month" => "mÃªs anterior",
             "last_3_months" => "3 meses",
             "last_6_months" => "6 meses",
             "last_year" => "1 ano",
-            _ => "período"
+            _ => "perÃ­odo"
         };
     }
 

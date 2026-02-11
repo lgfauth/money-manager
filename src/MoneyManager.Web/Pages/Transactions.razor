@@ -11,7 +11,7 @@
 @inject ICategoryService CategoryService
 @inject IJSRuntime JSRuntime
 
-<PageTitle>Transações - MoneyManager</PageTitle>
+<PageTitle>TransaÃ§Ãµes - MoneyManager</PageTitle>
 
 <BusyOverlay IsBusy="@isBusy" Message="Processando..." />
 
@@ -20,10 +20,10 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-exchange-alt text-primary"></i> Transações
+                    <i class="fas fa-exchange-alt text-primary"></i> TransaÃ§Ãµes
                 </h1>
                 <button class="btn btn-primary" @onclick="ShowAddModal">
-                    <i class="fas fa-plus"></i> Nova Transação
+                    <i class="fas fa-plus"></i> Nova TransaÃ§Ã£o
                 </button>
             </div>
         </div>
@@ -42,9 +42,9 @@
         </div>
 
         <div class="col-12 col-md-4">
-            <label class="form-label">Período</label>
+            <label class="form-label">PerÃ­odo</label>
             <select class="form-select" @bind="PeriodPreset">
-                <option value="current_month">Mês atual</option>
+                <option value="current_month">MÃªs atual</option>
                 <option value="custom">Personalizado</option>
             </select>
         </div>
@@ -54,16 +54,16 @@
             <input type="date" class="form-control" @bind="filterStart" disabled="@(periodPreset != "custom")" />
         </div>
         <div class="col-6 col-md-2">
-            <label class="form-label">Até</label>
+            <label class="form-label">AtÃ©</label>
             <input type="date" class="form-control" @bind="filterEnd" disabled="@(periodPreset != "custom")" />
         </div>
 
         <div class="col-12 col-md-4 mt-3 mt-md-0">
             <label class="form-label">Mostrar</label>
             <select class="form-select" @bind="transactionTypeFilter">
-                <option value="all">Entradas e Saídas</option>
+                <option value="all">Entradas e SaÃ­das</option>
                 <option value="income">Somente Entradas</option>
-                <option value="expense">Somente Saídas</option>
+                <option value="expense">Somente SaÃ­das</option>
             </select>
         </div>
     </div>
@@ -72,7 +72,7 @@
     {
         <div class="card mb-4">
             <div class="card-body">
-                <h5>Nova Transação</h5>
+                <h5>Nova TransaÃ§Ã£o</h5>
                 @if (!string.IsNullOrEmpty(addError))
                 {
                     <div class="alert alert-danger">@addError</div>
@@ -106,7 +106,7 @@
                         </div>
                     }
                     <div class="col-md-3">
-                        <input class="form-control" placeholder="Descrição" @bind="newRequest.Description" />
+                        <input class="form-control" placeholder="DescriÃ§Ã£o" @bind="newRequest.Description" />
                     </div>
                     <div class="col-md-2">
                         <MoneyInput @bind-Value="newRequest.Amount" Placeholder="Valor" />
@@ -115,7 +115,7 @@
                         <select class="form-select" @bind="newRequest.Type">
                             <option value="0">Receita</option>
                             <option value="1">Despesa</option>
-                            <option value="2">Transferência</option>
+                            <option value="2">TransferÃªncia</option>
                         </select>
                     </div>
 
@@ -144,7 +144,7 @@
                                 @if (installmentsCount > 1)
                                 {
                                     <small class="text-muted d-block mt-2">
-                                        O valor informado é o total. O sistema lançará a 1ª parcela agora (se marcado) e criará uma recorrência mensal para as demais.
+                                        O valor informado Ã© o total. O sistema lanÃ§arÃ¡ a 1Âª parcela agora (se marcado) e criarÃ¡ uma recorrÃªncia mensal para as demais.
                                     </small>
                                 }
                             </div>
@@ -181,7 +181,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando transações...</p>
+            <p class="mt-3 text-muted">Carregando transaÃ§Ãµes...</p>
         </div>
     }
     else if (errorMessage != null)
@@ -200,10 +200,10 @@
                     <thead class="table-light">
                         <tr>
                             <th><i class="fas fa-calendar"></i> Data</th>
-                            <th><i class="fas fa-file-alt"></i> Descrição</th>
+                            <th><i class="fas fa-file-alt"></i> DescriÃ§Ã£o</th>
                             <th><i class="fas fa-tag"></i> Categoria</th>
                             <th class="text-end"><i class="fas fa-money-bill"></i> Valor</th>
-                            <th class="text-center">Ações</th>
+                            <th class="text-center">AÃ§Ãµes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -247,7 +247,7 @@
     else
     {
         <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle"></i> Nenhuma transação encontrada. <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
+            <i class="fas fa-info-circle"></i> Nenhuma transaÃ§Ã£o encontrada. <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
         </div>
     }
 </div>
@@ -307,12 +307,12 @@
             transactions = await TransactionService.GetAllAsync();
             if (transactions == null || !transactions.Any())
             {
-                errorMessage = "Nenhuma transação disponível.";
+                errorMessage = "Nenhuma transaÃ§Ã£o disponÃ­vel.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar transações: {ex.Message}";
+            errorMessage = $"Erro ao carregar transaÃ§Ãµes: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -391,7 +391,7 @@
                     return;
                 }
 
-                // Categoria não se aplica a Transferências
+                // Categoria nÃ£o se aplica a TransferÃªncias
                 newRequest.CategoryId = null;
             }
 
@@ -446,7 +446,7 @@
         isBusy = true;
         try
         {
-            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transação?");
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transaÃ§Ã£o?");
             if (!confirmed)
                 return;
 
@@ -455,7 +455,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao deletar transação: {ex.Message}";
+            errorMessage = $"Erro ao deletar transaÃ§Ã£o: {ex.Message}";
         }
         finally
         {
@@ -494,8 +494,8 @@
 
         var query = list.Where(t => t.Date.Date >= start && t.Date.Date <= end);
 
-        // Separar corretamente transações de despesa das de receita.
-        // Transferências não entram em entradas/saídas.
+        // Separar corretamente transaÃ§Ãµes de despesa das de receita.
+        // TransferÃªncias nÃ£o entram em entradas/saÃ­das.
         query = transactionTypeFilter switch
         {
             "income" => query.Where(t => t.Type == TransactionType.Income),
@@ -534,8 +534,8 @@
         {
             AccountType.Cash => "Dinheiro",
             AccountType.Checking => "Conta Corrente",
-            AccountType.Savings => "Poupança",
-            AccountType.CreditCard => "Cartão de crédito",
+            AccountType.Savings => "PoupanÃ§a",
+            AccountType.CreditCard => "CartÃ£o de crÃ©dito",
             AccountType.Investment => "Investimento",
             _ => type.ToString()
         };
@@ -560,10 +560,10 @@
 
     private async Task<bool> ConfirmInstallmentStartAsync()
     {
-        var startText = firstInstallmentInCurrentInvoice ? "fatura corrente" : "próxima fatura";
+        var startText = firstInstallmentInCurrentInvoice ? "fatura corrente" : "prÃ³xima fatura";
         return await JSRuntime.InvokeAsync<bool>(
             "confirm",
-            $"Confirma cadastrar compra parcelada em {installmentsCount}x, com a 1ª parcela na {startText}?"
+            $"Confirma cadastrar compra parcelada em {installmentsCount}x, com a 1Âª parcela na {startText}?"
 
         );
     }
@@ -576,18 +576,18 @@
             return;
         }
 
-        // Assumimos que o valor digitado é o TOTAL da compra.
+        // Assumimos que o valor digitado Ã© o TOTAL da compra.
         var installmentAmount = Math.Round(baseRequest.Amount / installmentsCount, 2, MidpointRounding.AwayFromZero);
 
         // Ajuste simples para manter a soma (caso haja arredondamento):
-        // deixamos a última parcela como "restante" dentro da recorrência, mas como a recorrência
-        // no backend não tem suporte a "última com valor diferente", mantemos o valor fixo.
+        // deixamos a Ãºltima parcela como "restante" dentro da recorrÃªncia, mas como a recorrÃªncia
+        // no backend nÃ£o tem suporte a "Ãºltima com valor diferente", mantemos o valor fixo.
         // (Se isso for um requisito, precisamos estender a modelagem.)
 
         var selectedCard = accountsList?.FirstOrDefault(a => a.Id == baseRequest.AccountId);
         if (selectedCard?.Type != AccountType.CreditCard)
         {
-            throw new InvalidOperationException("Conta selecionada não é um cartão de crédito.");
+            throw new InvalidOperationException("Conta selecionada nÃ£o Ã© um cartÃ£o de crÃ©dito.");
         }
 
         var closingDay = selectedCard.InvoiceClosingDay.GetValueOrDefault(1);
@@ -615,27 +615,27 @@
 
         await TransactionService.CreateAsync(firstReq);
 
-        // 2) DEMAIS PARCELAS: Recorrência mensal começando no posting day
-        // A lógica de "fatura corrente" vs "próxima fatura" se aplica AQUI
+        // 2) DEMAIS PARCELAS: RecorrÃªncia mensal comeÃ§ando no posting day
+        // A lÃ³gica de "fatura corrente" vs "prÃ³xima fatura" se aplica AQUI
         var remaining = installmentsCount - 1;
         if (remaining <= 0)
         {
             return;
         }
 
-        // Calcular data de início da recorrência (2ª parcela)
+        // Calcular data de inÃ­cio da recorrÃªncia (2Âª parcela)
         DateTime secondInstallmentDate;
         
         if (firstInstallmentInCurrentInvoice)
         {
-            // Checkbox marcado: próxima parcela no posting day do mês seguinte ao da compra
+            // Checkbox marcado: prÃ³xima parcela no posting day do mÃªs seguinte ao da compra
             var nextMonth = purchaseDate.AddMonths(1);
             var nextMonthPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month));
             secondInstallmentDate = new DateTime(nextMonth.Year, nextMonth.Month, nextMonthPostingDay);
         }
         else
         {
-            // Checkbox desmarcado: próxima parcela pula 2 meses (mês seguinte ao seguinte)
+            // Checkbox desmarcado: prÃ³xima parcela pula 2 meses (mÃªs seguinte ao seguinte)
             var twoMonthsAhead = purchaseDate.AddMonths(2);
             var twoMonthsPostingDay = Math.Min(postingDay, DateTime.DaysInMonth(twoMonthsAhead.Year, twoMonthsAhead.Month));
             secondInstallmentDate = new DateTime(twoMonthsAhead.Year, twoMonthsAhead.Month, twoMonthsPostingDay);
