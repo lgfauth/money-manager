@@ -1,6 +1,7 @@
 ﻿{
   "Common": {
     "Loading": "Carregando...",
+    "Processing": "Processando...",
     "Cancel": "Cancelar",
     "Save": "Salvar",
     "Create": "Criar",

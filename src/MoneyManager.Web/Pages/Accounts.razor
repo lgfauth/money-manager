@@ -11,29 +11,25 @@
 @inject IAccountService AccountService
 @inject ILocalizationService Localization
 @inject ITransactionService TransactionService
-@inject ILocalizationService Localization
 @inject MoneyManager.Web.Services.ICreditCardInvoiceService InvoiceService
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject ILocalizationService Localization
 @inject IJSRuntime JSRuntime
-@inject ILocalizationService Localization
 
 <PageTitle>@Localization.Get("Accounts.PageTitle")</PageTitle>
 
-<BusyOverlay IsBusy="@isBusy" Message="Processando..." />
+<BusyOverlay IsBusy="@isBusy" Message="@Localization.Get("Common.Processing")" />
 
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-wallet text-primary"></i> Contas BancÃƒÂ¡rias
+                    <i class="fas fa-wallet text-primary"></i> @Localization.Get("Accounts.Title")
                 </h1>
                 <div class="d-flex gap-2">
                     <button class="btn btn-outline-secondary" @onclick="GoToMigration">
-                        <i class="fas fa-tools"></i> MigraÃƒÂ§ÃƒÂ£o
+                        <i class="fas fa-tools"></i> Migração
                     </button>
                     <button class="btn btn-primary" @onclick="ShowAddModal">
                         <i class="fas fa-plus"></i> @Localization.Get("Accounts.NewAccount")
