@@ -49,7 +49,7 @@
                 <div class="card-body text-center py-4">
                     <h6 class="text-muted mb-2">SALDO LÃQUIDO</h6>
                     <h2 class="display-5 fw-bold text-primary mb-0">R$ @liquidBalance.ToString("N2")</h2>
-                    <small class="text-muted">Corrente + Poupança + Dinheiro</small>
+                    <small class="text-muted">@Localization.Get("Dashboard.LiquidBalanceDesc")</small>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                 <div class="card-body text-center py-4">
                     <h6 class="text-muted mb-2">PATRIMÃ”NIO TOTAL</h6>
                     <h2 class="display-5 fw-bold text-success mb-0">R$ @totalBalance.ToString("N2")</h2>
-                    <small class="text-muted">Líquido + Investimentos</small>
+                    <small class="text-muted">@Localization.Get("Dashboard.TotalAssetsDesc")</small>
                 </div>
             </div>
         </div>
@@ -71,7 +71,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-value text-success">R$ @monthlyIncome.ToString("N2")</div>
-                        <div class="stat-label">Receitas do Mês</div>
+                        <div class="stat-label">@Localization.Get("Dashboard.MonthlyIncome")</div>
                     </div>
                     <i class="fas fa-arrow-up fa-3x text-muted opacity-50"></i>
                 </div>
@@ -83,7 +83,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-value text-danger">R$ @monthlyExpenses.ToString("N2")</div>
-                        <div class="stat-label">Despesas do Mês</div>
+                        <div class="stat-label">@Localization.Get("Dashboard.MonthlyExpenses")</div>
                     </div>
                     <i class="fas fa-arrow-down fa-3x text-muted opacity-50"></i>
                 </div>
@@ -95,7 +95,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <div class="stat-value text-warning">@budgetUsedPercentage.ToString("N1")%</div>
-                        <div class="stat-label">Orçamento Utilizado</div>
+                        <div class="stat-label">@Localization.Get("Dashboard.BudgetUsed")</div>
                     </div>
                     <i class="fas fa-calculator fa-3x text-muted opacity-50"></i>
                 </div>
@@ -103,13 +103,13 @@
         </div>
     </div>
 
-    <!-- GrÃ¡ficos -->
+    <!-- Gráficos -->
     <div class="row g-4 mb-4">
-        <!-- GrÃ¡fico: Orçamento Utilizado vs Planejado -->
+        <!-- Gráfico: Orçamento Utilizado vs Planejado -->
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Orçamento do Mês</h5>
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> @Localization.Get("Dashboard.BudgetChart")</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="budgetChart" style="max-height: 300px;"></canvas>
@@ -117,7 +117,7 @@
             </div>
         </div>
 
-        <!-- GrÃ¡fico: @Localization.Get("Dashboard.IncomeExpenseChart") -->
+        <!-- Gráfico: Receitas vs Despesas -->
         <div class="col-12 col-lg-6">
             <div class="card shadow-sm">
                 <div class="card-header">
@@ -130,13 +130,13 @@
         </div>
     </div>
 
-    <!-- GrÃ¡ficos de Contas -->
+    <!-- Gráficos de Contas -->
     <div class="row g-4 mb-4">
         <!-- Saldo por Conta Líquida -->
         <div class="col-12 col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Contas Líquidas</h5>
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> @Localization.Get("Dashboard.LiquidAccounts")</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="liquidAccountsChart" style="max-height: 250px;"></canvas>
@@ -144,11 +144,11 @@
             </div>
         </div>
 
-        <!-- CartÃµes de Crédito -->
+        <!-- Cartões de Crédito -->
         <div class="col-12 col-lg-4">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-credit-card"></i> CartÃµes de Crédito</h5>
+                    <h5 class="mb-0"><i class="fas fa-credit-card"></i> @Localization.Get("Dashboard.CreditCards")</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="creditCardsChart" style="max-height: 250px;"></canvas>
@@ -176,7 +176,7 @@
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> Limite Disponível - CartÃµes de Crédito</h5>
+                        <h5 class="mb-0"><i class="fas fa-credit-card"></i> @Localization.Get("Dashboard.CreditLimit")</h5>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
@@ -194,7 +194,7 @@
                                             <span class="text-danger">R$ @card.UsedAmount.ToString("N2")</span>
                                         </div>
                                         <div class="d-flex justify-content-between mb-3">
-                                            <small class="text-muted">Disponível:</small>
+                                            <small class="text-muted">@Localization.Get("Dashboard.Available"):</small>
                                             <span class="text-success fw-bold">R$ @card.AvailableAmount.ToString("N2")</span>
                                         </div>
                                         <div class="progress" style="height: 20px;">
@@ -217,14 +217,14 @@
         </div>
     }
 
-    <!-- Transaçõeses Recentes -->
+    <!-- Transações Recentes -->
     <div class="row g-4">
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-history"></i> Transaçõeses Recentes</h5>
+                    <h5 class="mb-0"><i class="fas fa-history"></i> @Localization.Get("Dashboard.RecentTransactions")</h5>
                     <a href="/transactions" class="btn btn-primary btn-sm">
-                        <i class="fas fa-eye"></i> Ver todas
+                        <i class="fas fa-eye"></i> @Localization.Get("Common.ViewAll")
                     </a>
                 </div>
                 <div class="card-body">
@@ -235,7 +235,7 @@
                                 <thead>
                                     <tr>
                                         <th>@Localization.Get("Dashboard.Date")</th>
-                                        <th>Descriçãoo</th>
+                                        <th>@Localization.Get("Dashboard.Description")</th>
                                         <th>@Localization.Get("Dashboard.Category")</th>
                                         <th>@Localization.Get("Dashboard.Account")</th>
                                         <th class="text-end">@Localization.Get("Dashboard.Value")</th>
@@ -265,7 +265,7 @@
                     {
                         <div class="text-center py-4">
                             <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Nenhuma transaçãoo encontrada</p>
+                            <p class="text-muted">@Localization.Get("Dashboard.NoTransactions")</p>
                         </div>
                     }
                 </div>
@@ -343,7 +343,7 @@ private async Task LoadDashboardData()
     {
         try
         {
-            // Pequeno delay para garantir que o DOM estÃ¡ pronto
+            // Pequeno delay para garantir que o DOM está pronto
             await Task.Delay(100);
             
             await RenderBudgetChart();
@@ -354,7 +354,7 @@ private async Task LoadDashboardData()
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao renderizar grÃ¡ficos: {ex.Message}");
+            Console.WriteLine($"Erro ao renderizar gráficos: {ex.Message}");
         }
     }
 
@@ -368,7 +368,7 @@ private async Task LoadDashboardData()
 
             if (plannedBudget == 0)
             {
-                chartLabels = new[] { "Sem orçamento definido" };
+                chartLabels = new[] { Localization.Get("Dashboard.NoBudget") };
                 chartData = new[] { 1.0 };
                 chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
             }
@@ -378,7 +378,7 @@ private async Task LoadDashboardData()
                 var remainingBudget = plannedBudget - usedBudget;
                 if (remainingBudget < 0) remainingBudget = 0;
 
-                chartLabels = new[] { "Utilizado", "Disponível" };
+                chartLabels = new[] { Localization.Get("Dashboard.Used"), Localization.Get("Dashboard.Available") };
                 chartData = new[] { (double)usedBudget, (double)remainingBudget };
                 chartColors = new[] { "rgba(220, 53, 69, 0.7)", "rgba(40, 167, 69, 0.7)" };
             }
@@ -402,13 +402,13 @@ private async Task LoadDashboardData()
 
             if (monthlyIncome == 0 && monthlyExpenses == 0)
             {
-                chartLabels = new[] { "Sem movimentaçõeses" };
+                chartLabels = new[] { Localization.Get("Dashboard.NoMovements") };
                 chartData = new[] { 1.0 };
                 chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
             }
             else
             {
-                chartLabels = new[] { "Receitas", "Despesas" };
+                chartLabels = new[] { Localization.Get("Dashboard.MonthlyIncome"), Localization.Get("Dashboard.MonthlyExpenses") };
                 chartData = new[] { (double)monthlyIncome, (double)monthlyExpenses };
                 chartColors = new[] { "rgba(40, 167, 69, 0.7)", "rgba(220, 53, 69, 0.7)" };
             }
@@ -462,7 +462,7 @@ private async Task LoadDashboardData()
 
             if (!creditCardBalances.Any())
             {
-                chartLabels = new[] { "Sem cartÃµes" };
+                chartLabels = new[] { Localization.Get("Dashboard.NoCreditCards") };
                 chartData = new[] { 0.0 };
                 chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
             }
