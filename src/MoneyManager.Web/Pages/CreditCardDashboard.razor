@@ -5,7 +5,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @attribute [Authorize]
-@inject MoneyManager.Application.Services.ICreditCardInvoiceService InvoiceService
+@inject MoneyManager.Web.Services.ICreditCardInvoiceService InvoiceService
 @inject MoneyManager.Web.Services.IAccountService AccountService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -341,7 +341,7 @@
             }
 
             // Carregar faturas
-            var allInvoices = await InvoiceService.GetInvoicesByAccountAsync(userId, AccountId);
+            var allInvoices = await InvoiceService.GetInvoicesByAccountAsync(AccountId);
             invoiceHistory = allInvoices.ToList();
 
             // Fatura aberta
