@@ -114,7 +114,7 @@
                         @if (invoiceSummary.Invoice.IsOverdue)
                         {
                             <small class="text-danger">
-                                <i class="fas fa-exclamation-triangle"></i> Vencida hÃ¡ @Math.Abs(invoiceSummary.Invoice.DaysUntilDue) dias
+                                <i class="fas fa-exclamation-triangle"></i> Vencida há @Math.Abs(invoiceSummary.Invoice.DaysUntilDue) dias
                             </small>
                         }
                         else if (invoiceSummary.Invoice.DaysUntilDue >= 0 && invoiceSummary.Invoice.Status != InvoiceStatus.Paid)
@@ -267,7 +267,7 @@
             </div>
         </div>
 
-        <!-- FormulÃ¡rio de Pagamento (se showPaymentForm) -->
+        <!-- Formulário de Pagamento (se showPaymentForm) -->
         @if (showPaymentForm && invoiceSummary.Invoice.RemainingAmount > 0)
         {
             <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
