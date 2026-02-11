@@ -13,16 +13,13 @@ namespace MoneyManager.Application.Services;
 public class CreditCardInvoiceService : ICreditCardInvoiceService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ITransactionService _transactionService;
     private readonly ILogger<CreditCardInvoiceService> _logger;
 
     public CreditCardInvoiceService(
         IUnitOfWork unitOfWork,
-        ITransactionService transactionService,
         ILogger<CreditCardInvoiceService> logger)
     {
         _unitOfWork = unitOfWork;
-        _transactionService = transactionService;
         _logger = logger;
     }
 
@@ -221,7 +218,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
     // ==================== PAGAMENTO DE FATURAS ====================
 
-    public async Task<Transaction> PayInvoiceAsync(string userId, PayInvoiceRequestDto request)
+    public async Task PayInvoiceAsync(string userId, PayInvoiceRequestDto request)
     {
         _logger.LogInformation("Processing full payment for invoice {InvoiceId}", request.InvoiceId);
 
@@ -236,10 +233,10 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (request.Amount != invoice.RemainingAmount)
             throw new InvalidOperationException($"Payment amount must be equal to remaining amount (R$ {invoice.RemainingAmount:F2})");
 
-        return await ProcessPaymentAsync(invoice, request, true);
+        await ProcessPaymentAsync(invoice, request, true);
     }
 
-    public async Task<Transaction> PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request)
+    public async Task PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request)
     {
         _logger.LogInformation("Processing partial payment for invoice {InvoiceId}", request.InvoiceId);
 
@@ -256,7 +253,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (request.Amount > invoice.RemainingAmount)
             throw new InvalidOperationException($"Payment amount cannot exceed remaining amount (R$ {invoice.RemainingAmount:F2})");
 
-        return await ProcessPaymentAsync(invoice, request, false);
+        await ProcessPaymentAsync(invoice, request, false);
     }
 
     // ==================== RELATÓRIOS ====================
@@ -516,43 +513,15 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         return invoice;
     }
 
-    private async Task<Transaction> ProcessPaymentAsync(CreditCardInvoice invoice, PayInvoiceRequestDto request, bool isFullPayment)
+    private async Task ProcessPaymentAsync(CreditCardInvoice invoice, PayInvoiceRequestDto request, bool isFullPayment)
     {
-        // Buscar conta pagadora
+        // Validar conta pagadora existe
         var payFromAccount = await _unitOfWork.Accounts.GetByIdAsync(request.PayFromAccountId);
         if (payFromAccount == null)
             throw new KeyNotFoundException("Payment account not found");
 
         if (payFromAccount.Type == AccountType.CreditCard)
             throw new InvalidOperationException("Cannot pay invoice from a credit card");
-
-        // Buscar cartão (conta destino)
-        var creditCardAccount = await _unitOfWork.Accounts.GetByIdAsync(invoice.AccountId);
-        if (creditCardAccount == null)
-            throw new KeyNotFoundException("Credit card account not found");
-
-        // Criar transação de pagamento (transferência)
-        var description = request.Description ?? $"Pagamento de fatura - {creditCardAccount.Name}";
-        if (!isFullPayment)
-            description += $" (Parcial: R$ {request.Amount:F2})";
-
-        var transactionRequest = new CreateTransactionRequestDto
-        {
-            AccountId = request.PayFromAccountId,
-            ToAccountId = invoice.AccountId,
-            Type = (int)TransactionType.Transfer,
-            Amount = request.Amount,
-            Date = request.PaymentDate,
-            Description = description,
-            Status = 0
-        };
-
-        var transactionDto = await _transactionService.CreateAsync(invoice.UserId, transactionRequest);
-
-        // Buscar a transação criada
-        var transaction = await _unitOfWork.Transactions.GetByIdAsync(transactionDto.Id);
-        if (transaction == null)
-            throw new InvalidOperationException("Failed to create payment transaction");
 
         // Atualizar fatura
         invoice.PaidAmount += request.Amount;
@@ -574,8 +543,8 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
         _logger.LogInformation("Payment processed for invoice {InvoiceId}: R$ {Amount} (Remaining: R$ {Remaining})",
             invoice.Id, request.Amount, invoice.RemainingAmount);
-
-        return transaction;
+        
+        _logger.LogInformation("?? Note: Payment transaction must be created separately by calling TransactionService.CreateAsync()");
     }
 
     private async Task<CreditCardInvoiceResponseDto> MapToDtoAsync(CreditCardInvoice invoice)

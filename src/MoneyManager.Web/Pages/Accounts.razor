@@ -696,12 +696,33 @@
             // Determinar se é pagamento total ou parcial
             if (invoicePaymentAmount >= selectedInvoiceToPay.RemainingAmount)
             {
+                // 1. Primeiro atualiza a fatura
                 await InvoiceService.PayInvoiceAsync(userId, request);
             }
             else
             {
+                // 1. Primeiro atualiza a fatura
                 await InvoiceService.PayPartialInvoiceAsync(userId, request);
             }
+
+            // 2. Depois cria a transação de pagamento
+            var creditCardAccount = await AccountService.GetByIdAsync(selectedInvoiceToPay.AccountId);
+            var description = $"Pagamento fatura {selectedInvoiceToPay.ReferenceMonth}";
+            if (invoicePaymentAmount < selectedInvoiceToPay.RemainingAmount)
+                description += $" (Parcial: R$ {invoicePaymentAmount:F2})";
+
+            var transactionRequest = new CreateTransactionRequestDto
+            {
+                AccountId = payFromAccountId,
+                ToAccountId = selectedInvoiceToPay.AccountId,
+                Type = (int)TransactionType.Transfer,
+                Amount = invoicePaymentAmount,
+                Date = invoicePaymentDate,
+                Description = description,
+                Status = 0
+            };
+
+            await TransactionService.CreateAsync(transactionRequest); // SEM userId - API pega do token
 
             // Recarregar dados
             await LoadPendingInvoices();

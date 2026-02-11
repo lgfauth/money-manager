@@ -51,14 +51,16 @@ public interface ICreditCardInvoiceService
     // ==================== PAGAMENTO DE FATURAS ====================
     
     /// <summary>
-    /// Paga uma fatura totalmente
+    /// Paga uma fatura totalmente (atualiza apenas o status da fatura, não cria transação)
+    /// A transação de pagamento deve ser criada separadamente via TransactionService
     /// </summary>
-    Task<Transaction> PayInvoiceAsync(string userId, PayInvoiceRequestDto request);
+    Task PayInvoiceAsync(string userId, PayInvoiceRequestDto request);
 
     /// <summary>
-    /// Paga uma fatura parcialmente
+    /// Paga uma fatura parcialmente (atualiza apenas o status da fatura, não cria transação)
+    /// A transação de pagamento deve ser criada separadamente via TransactionService
     /// </summary>
-    Task<Transaction> PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request);
+    Task PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request);
 
     // ==================== RELATÓRIOS ====================
     

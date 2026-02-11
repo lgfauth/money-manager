@@ -8,6 +8,7 @@
 @inject MoneyManager.Application.Services.ICreditCardInvoiceService InvoiceService
 @inject MoneyManager.Web.Services.IAccountService AccountService
 @inject MoneyManager.Web.Services.ICategoryService CategoryService
+@inject MoneyManager.Web.Services.ITransactionService TransactionService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -457,12 +458,33 @@
 
             if (paymentAmount >= invoiceSummary.Invoice.RemainingAmount)
             {
+                // 1. Atualiza a fatura
                 await InvoiceService.PayInvoiceAsync(userId, request);
             }
             else
             {
+                // 1. Atualiza a fatura
                 await InvoiceService.PayPartialInvoiceAsync(userId, request);
             }
+
+            // 2. Cria a transação de pagamento
+            var creditCardAccount = await AccountService.GetByIdAsync(invoiceSummary.Invoice.AccountId);
+            var description = $"Pagamento fatura {invoiceSummary.Invoice.ReferenceMonth}";
+            if (paymentAmount < invoiceSummary.Invoice.RemainingAmount)
+                description += $" (Parcial: R$ {paymentAmount:F2})";
+
+            var transactionRequest = new MoneyManager.Application.DTOs.Request.CreateTransactionRequestDto
+            {
+                AccountId = selectedPaymentAccountId,
+                ToAccountId = invoiceSummary.Invoice.AccountId,
+                Type = (int)MoneyManager.Domain.Enums.TransactionType.Transfer,
+                Amount = paymentAmount,
+                Date = paymentDate,
+                Description = description,
+                Status = 0
+            };
+
+            await TransactionService.CreateAsync(transactionRequest); // SEM userId - API pega do token
 
             // Recarregar dados
             await LoadInvoiceDetails();
