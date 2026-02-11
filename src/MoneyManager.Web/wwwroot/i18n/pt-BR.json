@@ -23,7 +23,8 @@
     "Error": "Erro",
     "Success": "Sucesso",
     "Warning": "Aviso",
-    "Info": "Informação"
+    "Info": "Informação",
+    "SortBy": "Ordenar por"
   },
   "Login": {
     "PageTitle": "Login - MoneyManager",
@@ -134,6 +135,7 @@
     "Description": "Descrição",
     "Category": "Categoria",
     "Account": "Conta",
+    "ToAccount": "Conta destino",
     "Value": "Valor",
     "Type": "Tipo",
     "Income": "Receita",
@@ -147,9 +149,22 @@
     "Delete": "Deletar",
     "ConfirmDelete": "Tem certeza que deseja deletar esta transação?",
     "NoTransactions": "Nenhuma transação encontrada",
-    "ErrorLoading": "Erro ao carregar transações: {0}",
-    "ErrorSaving": "Erro ao salvar: {0}",
-    "ErrorDeleting": "Erro ao deletar: {0}"
+    "ErrorLoading": "Erro ao carregar transações",
+    "ErrorSaving": "Erro ao salvar",
+    "ErrorDeleting": "Erro ao deletar",
+    "Period": "Período",
+    "CurrentMonth": "Mês atual",
+    "Custom": "Personalizado",
+    "Show": "Mostrar",
+    "AllTypes": "Entradas e Saídas",
+    "IncomeOnly": "Somente Entradas",
+    "ExpenseOnly": "Somente Saídas",
+    "DateNewest": "Data (mais recente)",
+    "DateOldest": "Data (mais antiga)",
+    "AmountHighest": "Valor (maior)",
+    "AmountLowest": "Valor (menor)",
+    "NoCategory": "Sem categoria",
+    "UnknownCategory": "Categoria desconhecida"
   },
   "Accounts": {
     "PageTitle": "Contas - MoneyManager",
