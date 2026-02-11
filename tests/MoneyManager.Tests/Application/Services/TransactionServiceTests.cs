@@ -13,6 +13,7 @@ public class TransactionServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly IAccountService _accountServiceMock;
+    private readonly ICreditCardInvoiceService _invoiceServiceMock;
     private readonly ILogger<TransactionService> _loggerMock;
     private readonly ITransactionService _transactionService;
 
@@ -20,8 +21,9 @@ public class TransactionServiceTests
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _accountServiceMock = Substitute.For<IAccountService>();
+        _invoiceServiceMock = Substitute.For<ICreditCardInvoiceService>();
         _loggerMock = Substitute.For<ILogger<TransactionService>>();
-        _transactionService = new TransactionService(_unitOfWorkMock, _accountServiceMock, _loggerMock);
+        _transactionService = new TransactionService(_unitOfWorkMock, _accountServiceMock, _invoiceServiceMock, _loggerMock);
     }
 
     [Fact]

@@ -5,7 +5,8 @@ namespace TransactionSchedulerWorker.WorkerHost.Services;
 
 internal sealed class RecurringTransactionsProcessor(
     ILogger<RecurringTransactionsProcessor> logger,
-    IRecurringTransactionService recurringTransactionService) : ITransactionScheduleProcessor
+    IRecurringTransactionService recurringTransactionService,
+    ICreditCardInvoiceService invoiceService) : ITransactionScheduleProcessor
 {
     public async Task ProcessAsync(CancellationToken cancellationToken)
     {
@@ -16,6 +17,12 @@ internal sealed class RecurringTransactionsProcessor(
         logger.LogInformation("Processando recorrências vencidas...");
         await recurringTransactionService.ProcessDueRecurrencesAsync();
         logger.LogInformation("Processamento de recorrências finalizado.");
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        logger.LogInformation("Processando fechamento de faturas de cartão de crédito...");
+        await invoiceService.ProcessMonthlyInvoiceClosuresAsync();
+        logger.LogInformation("Processamento de fechamento de faturas finalizado.");
 
         cancellationToken.ThrowIfCancellationRequested();
     }

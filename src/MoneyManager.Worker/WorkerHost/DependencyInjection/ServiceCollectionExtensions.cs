@@ -22,12 +22,19 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(ScheduleOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<InvoiceClosureScheduleOptions>()
+            .Bind(configuration.GetSection(InvoiceClosureScheduleOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddSingleton<ITimeProvider>(sp => new SystemTimeProvider(TimeProvider.System));
 
         // Only recurring transactions are processed by the worker.
         services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();
+        services.AddScoped<InvoiceClosureProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
+        services.AddHostedService<InvoiceClosureWorker>();
 
         return services;
     }

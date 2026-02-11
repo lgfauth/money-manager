@@ -2,12 +2,15 @@
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Application.DTOs.Response
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.JSInterop
 @attribute [Authorize]
 @inject IAccountService AccountService
 @inject ITransactionService TransactionService
+@inject MoneyManager.Application.Services.ICreditCardInvoiceService InvoiceService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Contas - MoneyManager</PageTitle>
@@ -69,11 +72,21 @@
                             <input type="number" class="form-control" min="1" max="31" @bind="newAccount.InvoiceClosingDay" />
                             <small class="text-muted">Ex.: 9 (as parcelas entram no dia 10).</small>
                         </div>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label">Limite de crédito (R$)</label>
+                            <input type="number" step="0.01" class="form-control" @bind="creditLimitInput" placeholder="0,00" />
+                            <small class="text-muted">Deixe em branco se não quiser limite.</small>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label">Dias até vencimento</label>
+                            <input type="number" class="form-control" min="1" max="30" @bind="newAccount.InvoiceDueDayOffset" />
+                            <small class="text-muted">Dias entre fechamento e vencimento (padrão: 7).</small>
+                        </div>
                     }
-                    <div class="col-12 col-md-@(newAccount.Type == AccountType.CreditCard ? "2" : "3")">
+                    <div class="col-12 col-md-@(newAccount.Type == AccountType.CreditCard ? "12" : "3")">
                         <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" Disabled="@(!string.IsNullOrEmpty(editingAccountId))" />
                     </div>
-                    <div class="col-12 col-md-@(newAccount.Type == AccountType.CreditCard ? "12" : "2")">
+                    <div class="col-12 col-md-12">
                         <div class="d-flex flex-column flex-md-row gap-2 justify-content-end">
                             <button class="btn btn-success" @onclick="CreateAccount">Salvar</button>
                             <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
@@ -120,6 +133,17 @@
                                 {
                                     <br />
                                     <small class="text-muted">Fechamento: dia @account.InvoiceClosingDay</small>
+                                    <br />
+                                    <small class="text-muted">Vencimento: @account.InvoiceDueDayOffset dias após fechamento</small>
+                                    @if (account.CreditLimit.HasValue)
+                                    {
+                                        var used = Math.Abs(account.Balance);
+                                        var available = account.CreditLimit.Value - used;
+                                        <br />
+                                        <small class="text-muted">Limite: R$ @account.CreditLimit.Value.ToString("F2")</small>
+                                        <br />
+                                        <small class="text-muted">Disponível: R$ @available.ToString("F2")</small>
+                                    }
                                 }
                             </div>
                             <div class="d-grid gap-2">
@@ -143,39 +167,170 @@
 
     @if (showPayInvoice)
     {
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5>Pagamento de fatura - @selectedCard?.Name</h5>
-                @if (!string.IsNullOrEmpty(invoiceError))
-                {
-                    <div class="alert alert-danger">@invoiceError</div>
-                }
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-file-invoice-dollar"></i> Faturas Pendentes - @selectedCard?.Name
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CancelPayInvoice" disabled="@isBusy"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(invoiceError))
+                        {
+                            <div class="alert alert-danger alert-dismissible">
+                                <i class="fas fa-exclamation-triangle"></i> @invoiceError
+                                <button type="button" class="btn-close" @onclick="() => invoiceError = null"></button>
+                            </div>
+                        }
 
-                <div class="row g-2">
-                    <div class="col-md-3">
-                        <label class="form-label">Data</label>
-                        <input type="date" class="form-control" @bind="invoicePaymentDate" />
+                        @if (isLoadingInvoices)
+                        {
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando faturas...</span>
+                                </div>
+                                <p class="mt-3 text-muted">Carregando faturas pendentes...</p>
+                            </div>
+                        }
+                        else if (pendingInvoices == null || !pendingInvoices.Any())
+                        {
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle"></i> Nenhuma fatura pendente! Todas as faturas estão pagas.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row g-3">
+                                @foreach (var invoice in pendingInvoices.OrderBy(i => i.DueDate))
+                                {
+                                    var isOverdue = invoice.DueDate < DateTime.Today && invoice.Status != InvoiceStatus.Paid;
+                                    var statusClass = GetInvoiceStatusBadgeClass(invoice.Status, isOverdue);
+                                    
+                                    <div class="col-12">
+                                        <div class="card @(isOverdue ? "border-danger" : "")">
+                                            <div class="card-body">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-3">
+                                                        <h6 class="mb-1">
+                                                            <i class="fas fa-calendar"></i> Fatura @invoice.ReferenceMonth
+                                                        </h6>
+                                                        <small class="text-muted">
+                                                            Período: @invoice.PeriodStart.ToString("dd/MM") a @invoice.PeriodEnd.ToString("dd/MM/yyyy")
+                                                        </small>
+                                                        <br />
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-clock"></i> Vencimento: @invoice.DueDate.ToString("dd/MM/yyyy")
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <p class="mb-1 text-muted small">Valor Total</p>
+                                                        <h5 class="mb-0 text-danger">R$ @invoice.TotalAmount.ToString("F2")</h5>
+                                                        @if (invoice.PaidAmount > 0)
+                                                        {
+                                                            <small class="text-success">
+                                                                <i class="fas fa-check"></i> Pago: R$ @invoice.PaidAmount.ToString("F2")
+                                                            </small>
+                                                            <br />
+                                                            <small class="text-danger">
+                                                                <i class="fas fa-exclamation-circle"></i> Restante: R$ @invoice.RemainingAmount.ToString("F2")
+                                                            </small>
+                                                        }
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <span class="badge @statusClass">
+                                                            @GetInvoiceStatusLabel(invoice.Status, isOverdue)
+                                                        </span>
+                                                        <br />
+                                                        @if (!isOverdue && invoice.DaysUntilDue >= 0)
+                                                        {
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-hourglass-half"></i> Vence em @invoice.DaysUntilDue dias
+                                                            </small>
+                                                        }
+                                                        else if (isOverdue)
+                                                        {
+                                                            <small class="text-danger">
+                                                                <i class="fas fa-exclamation-triangle"></i> Vencida há @Math.Abs(invoice.DaysUntilDue) dias
+                                                            </small>
+                                                        }
+                                                    </div>
+                                                    <div class="col-md-2 text-center">
+                                                        <small class="text-muted">Transações</small>
+                                                        <br />
+                                                        <strong><i class="fas fa-receipt"></i> @invoice.TransactionCount</strong>
+                                                    </div>
+                                                    <div class="col-md-2 d-grid gap-2">
+                                                        <button class="btn btn-primary btn-sm" @onclick="() => SelectInvoiceToPay(invoice)" disabled="@isBusy">
+                                                            <i class="fas fa-money-bill-wave"></i> Pagar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @if (selectedInvoiceToPay != null)
+                        {
+                            <hr class="my-4" />
+                            <div class="card bg-light border-primary">
+                                <div class="card-body">
+                                    <h6 class="mb-3">
+                                        <i class="fas fa-credit-card"></i> Pagamento da Fatura @selectedInvoiceToPay.ReferenceMonth
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Data do Pagamento</label>
+                                            <input type="date" class="form-control" @bind="invoicePaymentDate" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Conta que vai pagar</label>
+                                            <select class="form-select" @bind="payFromAccountId">
+                                                <option value="">-- Selecione --</option>
+                                                @foreach (var a in accountsListForPay.Where(a => a.Type != AccountType.CreditCard))
+                                                {
+                                                    <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Valor do Pagamento</label>
+                                            <MoneyInput @bind-Value="invoicePaymentAmount" Placeholder="0,00" />
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle"></i> Restante: R$ @selectedInvoiceToPay.RemainingAmount.ToString("F2")
+                                            </small>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex gap-2 justify-content-end">
+                                                <button class="btn btn-success" @onclick="ConfirmInvoicePayment" disabled="@isBusy">
+                                                    <i class="fas fa-check"></i> 
+                                                    @if (invoicePaymentAmount >= selectedInvoiceToPay.RemainingAmount)
+                                                    {
+                                                        <text>Pagar Totalmente</text>
+                                                    }
+                                                    else
+                                                    {
+                                                        <text>Pagar Parcialmente</text>
+                                                    }
+                                                </button>
+                                                <button class="btn btn-secondary" @onclick="() => selectedInvoiceToPay = null" disabled="@isBusy">
+                                                    <i class="fas fa-times"></i> Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Conta que vai pagar</label>
-                        <select class="form-select" @bind="payFromAccountId">
-                            <option value="">-- Selecione --</option>
-                            @foreach (var a in accountsListForPay)
-                            {
-                                <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Valor do pagamento</label>
-                        <MoneyInput @bind-Value="invoicePaymentAmount" Placeholder="0,00" />
-                        <small class="text-muted">Dívida atual: R$ @Math.Abs(selectedCard?.Balance ?? 0).ToString("F2")</small>
-                    </div>
-                    <div class="col-md-2 d-grid">
-                        <button class="btn btn-success" @onclick="PayInvoice" disabled="@isBusy">
-                            <i class="fas fa-check"></i> Confirmar
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelPayInvoice" disabled="@isBusy">
+                            <i class="fas fa-times"></i> Fechar
                         </button>
-                        <button class="btn btn-link text-danger" @onclick="CancelPayInvoice" disabled="@isBusy">Cancelar</button>
                     </div>
                 </div>
             </div>
@@ -192,6 +347,7 @@
 </div>
 
 @code {
+    private string userId = string.Empty;
     private IEnumerable<Account>? accounts;
     private bool isLoading = true;
     private string? errorMessage;
@@ -203,6 +359,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        
         await LoadAccountsSortPreference();
         await LoadAccounts();
     }
@@ -264,13 +424,15 @@
     private async Task ShowAddModal()
     {
         showAdd = true;
-        newAccount = new Account();
+        newAccount = new Account { InvoiceDueDayOffset = 7 };
+        creditLimitInput = null;
         await Task.Yield();
         StateHasChanged();
     }
 
     private bool showAdd;
-    private Account newAccount = new Account();
+    private Account newAccount = new Account { InvoiceDueDayOffset = 7 };
+    private decimal? creditLimitInput;
     private string? addError;
     private string? editingAccountId;
     private decimal? editingOriginalInitialBalance;
@@ -282,6 +444,11 @@
     private decimal invoicePaymentAmount;
     private DateTime invoicePaymentDate = DateTime.Today;
     private string? invoiceError;
+    
+    // Invoice payment variables
+    private bool isLoadingInvoices;
+    private List<CreditCardInvoiceResponseDto>? pendingInvoices;
+    private CreditCardInvoiceResponseDto? selectedInvoiceToPay;
 
     private async Task BeginEditAccount(string id)
     {
@@ -293,6 +460,7 @@
                 newAccount = acc;
                 editingAccountId = id;
                 editingOriginalInitialBalance = acc.InitialBalance;
+                creditLimitInput = acc.CreditLimit;
                 showAdd = true;
                 await Task.Yield();
                 StateHasChanged();
@@ -304,14 +472,16 @@
         }
     }
 
-    private void ShowPayInvoice(Account creditCard)
+    private async Task ShowPayInvoice(Account creditCard)
     {
         selectedCard = creditCard;
         showPayInvoice = true;
         invoiceError = null;
         payFromAccountId = string.Empty;
-        invoicePaymentAmount = Math.Abs(creditCard.Balance);
         invoicePaymentDate = DateTime.Today;
+        selectedInvoiceToPay = null;
+        
+        await LoadPendingInvoices();
     }
 
     private void CancelPayInvoice()
@@ -320,77 +490,9 @@
         showPayInvoice = false;
         selectedCard = null;
         payFromAccountId = null;
-        invoicePaymentAmount = 0;
         invoiceError = null;
-    }
-
-    private async Task PayInvoice()
-    {
-        invoiceError = null;
-        if (isBusy) return;
-        isBusy = true;
-
-        try
-        {
-            if (selectedCard is null)
-            {
-                invoiceError = "Cartão não selecionado";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(payFromAccountId))
-            {
-                invoiceError = "Selecione a conta que realizará o pagamento";
-                return;
-            }
-
-            var fromAcc = accountsListForPay.FirstOrDefault(a => a.Id == payFromAccountId);
-            if (fromAcc is null)
-            {
-                invoiceError = "Conta pagadora inválida";
-                return;
-            }
-
-            if (fromAcc.Type == AccountType.CreditCard)
-            {
-                invoiceError = "A conta pagadora deve ser uma conta não-cartão";
-                return;
-            }
-
-            if (invoicePaymentAmount <= 0)
-            {
-                invoiceError = "Informe um valor maior que zero";
-                return;
-            }
-
-            var request = new CreateTransactionRequestDto
-            {
-                AccountId = payFromAccountId,
-                ToAccountId = selectedCard.Id,
-                Type = (int)TransactionType.Transfer,
-                Amount = invoicePaymentAmount,
-                Date = invoicePaymentDate,
-                Description = $"Pagamento de fatura - {selectedCard.Name}",
-                Status = 0
-            };
-
-            await TransactionService.CreateAsync(request);
-
-            showPayInvoice = false;
-            selectedCard = null;
-            payFromAccountId = null;
-            invoicePaymentAmount = 0;
-
-            await LoadAccounts();
-        }
-        catch (Exception ex)
-        {
-            invoiceError = ex.Message;
-        }
-        finally
-        {
-            isBusy = false;
-        }
+        selectedInvoiceToPay = null;
+        pendingInvoices = null;
     }
 
     private static string GetAccountTypeLabel(AccountType type)
@@ -458,6 +560,9 @@
         isBusy = true;
         try
         {
+            // Sincronizar creditLimitInput com newAccount
+            newAccount.CreditLimit = creditLimitInput;
+
             if (!string.IsNullOrEmpty(editingAccountId))
             {
                 // Editing: do not allow changing initial balance/balance here.
@@ -474,7 +579,8 @@
                 newAccount.Balance = newAccount.InitialBalance;
                 var created = await AccountService.CreateAsync(newAccount);
             }
-            newAccount = new Account();
+            newAccount = new Account { InvoiceDueDayOffset = 7 };
+            creditLimitInput = null;
             showAdd = false;
             await LoadAccounts();
         }
@@ -492,9 +598,141 @@
     {
         if (isBusy) return;
         showAdd = false;
-        newAccount = new Account();
+        newAccount = new Account { InvoiceDueDayOffset = 7 };
+        creditLimitInput = null;
         addError = null;
         editingAccountId = null;
         editingOriginalInitialBalance = null;
+    }
+
+    private async Task LoadPendingInvoices()
+    {
+        if (selectedCard == null) return;
+        
+        isLoadingInvoices = true;
+        try
+        {
+            var allInvoices = await InvoiceService.GetInvoicesByAccountAsync(userId, selectedCard.Id);
+            pendingInvoices = allInvoices
+                .Where(i => i.Status != InvoiceStatus.Paid)
+                .OrderBy(i => i.DueDate)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            invoiceError = $"Erro ao carregar faturas: {ex.Message}";
+            pendingInvoices = new List<CreditCardInvoiceResponseDto>();
+        }
+        finally
+        {
+            isLoadingInvoices = false;
+        }
+    }
+
+    private void SelectInvoiceToPay(CreditCardInvoiceResponseDto invoice)
+    {
+        selectedInvoiceToPay = invoice;
+        invoicePaymentAmount = invoice.RemainingAmount;
+        payFromAccountId = string.Empty;
+        invoicePaymentDate = DateTime.Today;
+    }
+
+    private async Task ConfirmInvoicePayment()
+    {
+        if (selectedInvoiceToPay == null) return;
+        
+        invoiceError = null;
+        if (isBusy) return;
+        isBusy = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(payFromAccountId))
+            {
+                invoiceError = "Selecione a conta que realizará o pagamento";
+                return;
+            }
+
+            if (invoicePaymentAmount <= 0)
+            {
+                invoiceError = "Informe um valor maior que zero";
+                return;
+            }
+
+            if (invoicePaymentAmount > selectedInvoiceToPay.RemainingAmount)
+            {
+                invoiceError = $"Valor do pagamento não pode exceder o valor restante (R$ {selectedInvoiceToPay.RemainingAmount:F2})";
+                return;
+            }
+
+            var request = new PayInvoiceRequestDto
+            {
+                InvoiceId = selectedInvoiceToPay.Id,
+                PayFromAccountId = payFromAccountId,
+                Amount = invoicePaymentAmount,
+                PaymentDate = invoicePaymentDate,
+                Description = $"Pagamento fatura {selectedInvoiceToPay.ReferenceMonth}"
+            };
+
+            // Determinar se é pagamento total ou parcial
+            if (invoicePaymentAmount >= selectedInvoiceToPay.RemainingAmount)
+            {
+                await InvoiceService.PayInvoiceAsync(userId, request);
+            }
+            else
+            {
+                await InvoiceService.PayPartialInvoiceAsync(userId, request);
+            }
+
+            // Recarregar dados
+            await LoadPendingInvoices();
+            await LoadAccounts();
+            
+            selectedInvoiceToPay = null;
+            
+            // Se não há mais faturas pendentes, fechar modal
+            if (pendingInvoices == null || !pendingInvoices.Any())
+            {
+                showPayInvoice = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            invoiceError = ex.Message;
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private static string GetInvoiceStatusBadgeClass(InvoiceStatus status, bool isOverdue)
+    {
+        if (isOverdue) return "bg-danger";
+        
+        return status switch
+        {
+            InvoiceStatus.Open => "bg-info",
+            InvoiceStatus.Closed => "bg-warning text-dark",
+            InvoiceStatus.Paid => "bg-success",
+            InvoiceStatus.PartiallyPaid => "bg-warning text-dark",
+            InvoiceStatus.Overdue => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private static string GetInvoiceStatusLabel(InvoiceStatus status, bool isOverdue)
+    {
+        if (isOverdue) return "VENCIDA";
+        
+        return status switch
+        {
+            InvoiceStatus.Open => "Aberta",
+            InvoiceStatus.Closed => "Fechada",
+            InvoiceStatus.Paid => "Paga",
+            InvoiceStatus.PartiallyPaid => "Parc. Paga",
+            InvoiceStatus.Overdue => "Vencida",
+            _ => status.ToString()
+        };
     }
 }

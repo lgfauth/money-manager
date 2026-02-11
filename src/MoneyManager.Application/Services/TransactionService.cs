@@ -20,15 +20,18 @@ public class TransactionService : ITransactionService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAccountService _accountService;
+    private readonly ICreditCardInvoiceService _invoiceService;
     private readonly ILogger<TransactionService> _logger;
 
     public TransactionService(
         IUnitOfWork unitOfWork,
         IAccountService accountService,
+        ICreditCardInvoiceService invoiceService,
         ILogger<TransactionService> logger)
     {
         _unitOfWork = unitOfWork;
         _accountService = accountService;
+        _invoiceService = invoiceService;
         _logger = logger;
     }
 
@@ -74,6 +77,24 @@ public class TransactionService : ITransactionService
         }
         else
         {
+            // Para despesas em cartão de crédito, validar limite antes de criar
+            if (account.Type == AccountType.CreditCard && 
+                transactionType == TransactionType.Expense &&
+                account.CreditLimit.HasValue)
+            {
+                var currentDebt = Math.Abs(account.Balance);
+                var newDebt = currentDebt + request.Amount;
+                
+                if (newDebt > account.CreditLimit.Value)
+                {
+                    var available = account.CreditLimit.Value - currentDebt;
+                    _logger.LogWarning("Credit limit exceeded for account {AccountId}: limit={Limit}, current={Current}, attempt={Attempt}",
+                        account.Id, account.CreditLimit.Value, currentDebt, request.Amount);
+                    throw new InvalidOperationException(
+                        $"Limite de crédito excedido. Disponível: R$ {available:F2} | Tentando usar: R$ {request.Amount:F2}");
+                }
+            }
+
             var impactAmount = transactionType == TransactionType.Income ? request.Amount : -request.Amount;
 
             // Credit card balance represents debt (invoice amount).
@@ -101,6 +122,33 @@ public class TransactionService : ITransactionService
             ToAccountId = request.ToAccountId,
             Status = (TransactionStatus)request.Status
         };
+
+        // Se for despesa em cartão de crédito, vincular à fatura apropriada
+        if (account.Type == AccountType.CreditCard && transactionType == TransactionType.Expense)
+        {
+            _logger.LogDebug("Determining invoice for credit card transaction on account {AccountId}, date {Date}",
+                account.Id, request.Date);
+
+            try
+            {
+                var invoice = await _invoiceService.DetermineInvoiceForTransactionAsync(userId, request.AccountId, request.Date);
+                transaction.InvoiceId = invoice.Id;
+
+                // Atualizar total da fatura
+                invoice.TotalAmount += request.Amount;
+                invoice.RemainingAmount = invoice.TotalAmount - invoice.PaidAmount;
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
+
+                _logger.LogInformation("Transaction linked to invoice {InvoiceId} (Reference: {RefMonth})",
+                    invoice.Id, invoice.ReferenceMonth);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to link transaction to invoice for account {AccountId}", account.Id);
+                // Continuar mesmo se falhar (não bloqueante)
+            }
+        }
 
         await _unitOfWork.Transactions.AddAsync(transaction);
         await _unitOfWork.SaveChangesAsync();
@@ -136,6 +184,11 @@ public class TransactionService : ITransactionService
         if (transaction == null || transaction.UserId != userId || transaction.IsDeleted)
             throw new KeyNotFoundException("Transaction not found");
 
+        var oldInvoiceId = transaction.InvoiceId;
+        var oldAccountId = transaction.AccountId;
+        var oldDate = transaction.Date;
+        var oldAmount = transaction.Amount;
+
         // Revert previous impact
         _logger.LogDebug("Reverting previous transaction impact for {TransactionId}", id);
         await RevertTransactionImpact(userId, transaction);
@@ -151,9 +204,58 @@ public class TransactionService : ITransactionService
         transaction.Status = (TransactionStatus)request.Status;
         transaction.UpdatedAt = DateTime.UtcNow;
 
+        // Buscar nova conta
+        var newAccount = await _unitOfWork.Accounts.GetByIdAsync(request.AccountId);
+        if (newAccount == null || newAccount.UserId != userId)
+            throw new KeyNotFoundException("Account not found");
+
         // Apply new impact
         _logger.LogDebug("Applying new transaction impact for {TransactionId}", id);
         await ApplyTransactionImpact(userId, transaction);
+
+        // Gerenciar faturas se for cartão de crédito
+        if (newAccount.Type == AccountType.CreditCard && transaction.Type == TransactionType.Expense)
+        {
+            try
+            {
+                // Determinar nova fatura baseado na nova data
+                var newInvoice = await _invoiceService.DetermineInvoiceForTransactionAsync(userId, request.AccountId, request.Date);
+                transaction.InvoiceId = newInvoice.Id;
+
+                // Se mudou de fatura, recalcular ambas
+                if (!string.IsNullOrEmpty(oldInvoiceId) && oldInvoiceId != newInvoice.Id)
+                {
+                    _logger.LogInformation("Transaction moved from invoice {OldInvoice} to {NewInvoice}",
+                        oldInvoiceId, newInvoice.Id);
+
+                    // Recalcular fatura antiga
+                    await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
+                }
+
+                // Recalcular fatura nova/atual
+                await _invoiceService.RecalculateInvoiceTotalAsync(userId, newInvoice.Id);
+
+                _logger.LogDebug("Invoice totals recalculated after transaction update");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update invoice for transaction {TransactionId}", id);
+            }
+        }
+        else if (!string.IsNullOrEmpty(oldInvoiceId))
+        {
+            // Se a transação estava em uma fatura mas agora não é mais cartão de crédito (mudou conta)
+            try
+            {
+                transaction.InvoiceId = null;
+                await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
+                _logger.LogDebug("Transaction removed from invoice {InvoiceId}", oldInvoiceId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to remove transaction from invoice {InvoiceId}", oldInvoiceId);
+            }
+        }
 
         await _unitOfWork.Transactions.UpdateAsync(transaction);
         await _unitOfWork.SaveChangesAsync();
@@ -170,6 +272,8 @@ public class TransactionService : ITransactionService
         if (transaction == null || transaction.UserId != userId || transaction.IsDeleted)
             throw new KeyNotFoundException("Transaction not found");
 
+        var invoiceId = transaction.InvoiceId;
+
         // Revert impact
         _logger.LogDebug("Reverting transaction impact before deletion for {TransactionId}", id);
         await RevertTransactionImpact(userId, transaction);
@@ -178,6 +282,21 @@ public class TransactionService : ITransactionService
         transaction.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Transactions.UpdateAsync(transaction);
+
+        // Se a transação estava vinculada a uma fatura, recalcular o total
+        if (!string.IsNullOrEmpty(invoiceId))
+        {
+            try
+            {
+                await _invoiceService.RecalculateInvoiceTotalAsync(userId, invoiceId);
+                _logger.LogInformation("Invoice {InvoiceId} recalculated after transaction deletion", invoiceId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to recalculate invoice {InvoiceId} after deleting transaction", invoiceId);
+            }
+        }
+
         await _unitOfWork.SaveChangesAsync();
 
         _logger.LogInformation("Transaction {TransactionId} deleted (soft delete) successfully", id);
