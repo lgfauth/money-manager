@@ -1,4 +1,4 @@
-@page "/invoices/{InvoiceId}"
+﻿@page "/invoices/{InvoiceId}"
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Application.DTOs.Response
@@ -67,7 +67,7 @@
                     <div class="card-body">
                         <p class="text-muted mb-1">Valor Total</p>
                         <h3 class="text-danger mb-0">R$ @invoiceSummary.Invoice.TotalAmount.ToString("F2")</h3>
-                        <small class="text-muted">@invoiceSummary.TotalTransactions transaÃ§Ãµes</small>
+                        <small class="text-muted">@invoiceSummary.TotalTransactions transaçõeses</small>
                     </div>
                 </div>
             </div>
@@ -134,15 +134,15 @@
             </div>
         </div>
 
-        <!-- PerÃ­odo da Fatura -->
+        <!-- Período da Fatura -->
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <h6 class="mb-3"><i class="fas fa-calendar-alt"></i> PerÃ­odo da Fatura</h6>
+                        <h6 class="mb-3"><i class="fas fa-calendar-alt"></i> Período da Fatura</h6>
                         <div class="row">
                             <div class="col-md-4">
-                                <strong>InÃ­cio:</strong> @invoiceSummary.Invoice.PeriodStart.ToString("dd/MM/yyyy")
+                                <strong>Início:</strong> @invoiceSummary.Invoice.PeriodStart.ToString("dd/MM/yyyy")
                             </div>
                             <div class="col-md-4">
                                 <strong>Fechamento:</strong> @invoiceSummary.Invoice.PeriodEnd.ToString("dd/MM/yyyy")
@@ -190,13 +190,13 @@
             </div>
         }
 
-        <!-- Lista de TransaÃ§Ãµes -->
+        <!-- Lista de Transaçõeses -->
         <div class="row">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <h6 class="mb-0">
-                            <i class="fas fa-receipt"></i> TransaÃ§Ãµes da Fatura (@invoiceSummary.Transactions.Count)
+                            <i class="fas fa-receipt"></i> Transaçõeses da Fatura (@invoiceSummary.Transactions.Count)
                         </h6>
                     </div>
                     <div class="card-body p-0">
@@ -207,7 +207,7 @@
                                     <thead class="table-light">
                                         <tr>
                                             <th>Data</th>
-                                            <th>DescriÃ§Ã£o</th>
+                                            <th>Descriçãoo</th>
                                             <th>Categoria</th>
                                             <th class="text-end">Valor</th>
                                         </tr>
@@ -259,7 +259,7 @@
                         {
                             <div class="p-4 text-center text-muted">
                                 <i class="fas fa-inbox fa-3x mb-3"></i>
-                                <p>Nenhuma transaÃ§Ã£o nesta fatura</p>
+                                <p>Nenhuma transaçãoo nesta fatura</p>
                             </div>
                         }
                     </div>
@@ -443,7 +443,7 @@
 
             if (paymentAmount > invoiceSummary.Invoice.RemainingAmount)
             {
-                paymentError = $"Valor nÃ£o pode exceder o restante (R$ {invoiceSummary.Invoice.RemainingAmount:F2})";
+                paymentError = $"Valor não pode exceder o restante (R$ {invoiceSummary.Invoice.RemainingAmount:F2})";
                 return;
             }
 
@@ -467,7 +467,7 @@
                 await InvoiceService.PayPartialInvoiceAsync(request);
             }
 
-            // 2. Cria a transaÃ§Ã£o de pagamento
+            // 2. Cria a transaçãoo de pagamento
             var creditCardAccount = await AccountService.GetByIdAsync(invoiceSummary.Invoice.AccountId);
             var description = $"Pagamento fatura {invoiceSummary.Invoice.ReferenceMonth}";
             if (paymentAmount < invoiceSummary.Invoice.RemainingAmount)
@@ -551,9 +551,9 @@
         return type switch
         {
             AccountType.Checking => "Conta Corrente",
-            AccountType.Savings => "PoupanÃ§a",
+            AccountType.Savings => "Poupança",
             AccountType.Cash => "Dinheiro",
-            AccountType.CreditCard => "CartÃ£o de CrÃ©dito",
+            AccountType.CreditCard => "Cartão de Crédito",
             AccountType.Investment => "Investimento",
             _ => type.ToString()
         };

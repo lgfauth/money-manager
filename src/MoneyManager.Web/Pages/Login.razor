@@ -1,4 +1,4 @@
-@page "/login"
+ï»¿@page "/login"
 @using MoneyManager.Application.DTOs.Request
 @using MoneyManager.Web.Services
 @using MoneyManager.Web.Services.Localization
@@ -103,7 +103,7 @@ private bool isLocalizationReady = false;
 
 protected override async Task OnInitializedAsync()
 {
-    // Garantir que o LocalizationService está inicializado
+    // Garantir que o LocalizationService estï¿½ inicializado
     if (string.IsNullOrEmpty(Localization.CurrentCulture) || Localization.CurrentCulture == "pt-BR")
     {
         try
