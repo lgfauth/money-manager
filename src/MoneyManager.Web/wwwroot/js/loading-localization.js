@@ -5,11 +5,11 @@
     const translations = {
         'pt-BR': {
             appName: 'MoneyManager',
-            loading: 'Carregando aplicação...',
-            errorTitle: 'Uma exceção não tratada ocorreu.',
+            loading: 'Carregando aplica\u00E7\u00E3o...',
+            errorTitle: 'Uma exce\u00E7\u00E3o n\u00E3o tratada ocorreu.',
             errorDetails: 'Veja o navegador dev tools para detalhes.',
             reload: 'Recarregar',
-            dismiss: '?'
+            dismiss: '\u2716'
         },
         'en-US': {
             appName: 'MoneyManager',
@@ -17,23 +17,23 @@
             errorTitle: 'An unhandled exception occurred.',
             errorDetails: 'See browser dev tools for details.',
             reload: 'Reload',
-            dismiss: '?'
+            dismiss: '\u2716'
         },
         'es-ES': {
             appName: 'MoneyManager',
-            loading: 'Cargando aplicación...',
-            errorTitle: 'Ocurrió una excepción no controlada.',
-            errorDetails: 'Consulte las herramientas de desarrollo del navegador para obtener más detalles.',
+            loading: 'Cargando aplicaci\u00F3n...',
+            errorTitle: 'Ocurri\u00F3 una excepci\u00F3n no controlada.',
+            errorDetails: 'Consulte las herramientas de desarrollo del navegador para obtener m\u00E1s detalles.',
             reload: 'Recargar',
-            dismiss: '?'
+            dismiss: '\u2716'
         },
         'fr-FR': {
             appName: 'MoneyManager',
             loading: 'Chargement de l\'application...',
-            errorTitle: 'Une exception non gérée s\'est produite.',
-            errorDetails: 'Voir les outils de développement du navigateur pour plus de détails.',
+            errorTitle: 'Une exception non g\u00E9r\u00E9e s\'est produite.',
+            errorDetails: 'Voir les outils de d\u00E9veloppement du navigateur pour plus de d\u00E9tails.',
             reload: 'Recharger',
-            dismiss: '?'
+            dismiss: '\u2716'
         }
     };
 
