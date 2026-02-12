@@ -27,89 +27,128 @@
 
     @if (showAdd)
     {
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5>@(isEditing ? "Editar" : "Nova") Transação Recorrente</h5>
-                @if (!string.IsNullOrEmpty(addError))
-                {
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        @addError
-                        <button type="button" class="btn-close" @onclick="@(() => addError = null)"></button>
+        <!-- Modal de Nova/Editar Recorrência -->
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-@(isEditing ? "edit" : "plus-circle")"></i> 
+                            @(isEditing ? "Editar" : "Nova") Transação Recorrente
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CancelAdd"></button>
                     </div>
-                }
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Descrição</label>
-                        <input class="form-control" placeholder="Ex: Aluguel, Netflix, Imprevistos" @bind="newRecurring.Description" />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Tipo</label>
-                        <select class="form-select" @bind="transactionType">
-                            <option value="Income">Receita</option>
-                            <option value="Expense">Despesa</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Valor</label>
-                        <MoneyInput @bind-Value="newRecurring.Amount" Placeholder="0,00" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Conta</label>
-                        <select class="form-select" @bind="newRecurring.AccountId">
-                            <option value="">Selecione uma conta</option>
-                            @foreach (var account in accountsList)
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(addError))
+                        {
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> @addError
+                            </div>
+                        }
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Descrição</label>
+                                <input class="form-control" placeholder="Ex: Aluguel, Netflix, Salário" @bind="newRecurring.Description" />
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" @bind="transactionType">
+                                    <option value="Income">Receita</option>
+                                    <option value="Expense">Despesa</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Valor</label>
+                                <MoneyInput @bind-Value="newRecurring.Amount" Placeholder="R$ 0,00" />
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Frequência</label>
+                                <select class="form-select" @bind="recurringFrequency">
+                                    <option value="3">Mensal</option>
+                                    <option value="1">Semanal</option>
+                                    <option value="2">Quinzenal</option>
+                                    <option value="4">Trimestral</option>
+                                    <option value="5">Semestral</option>
+                                    <option value="6">Anual</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Conta</label>
+                                <select class="form-select" @bind="newRecurring.AccountId">
+                                    <option value="">-- Selecione uma conta --</option>
+                                    @foreach (var account in accountsList)
+                                    {
+                                        <option value="@account.Id">@account.Name (@GetAccountTypeLabel(account.Type))</option>
+                                    }
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Categoria</label>
+                                <select class="form-select" @bind="newRecurring.CategoryId">
+                                    <option value="">-- Selecione uma categoria --</option>
+                                    @foreach (var category in categoriesList)
+                                    {
+                                        <option value="@category.Id">@category.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            
+                            @if (recurringFrequency == "3")
                             {
-                                <option value="@account.Id">@account.Name</option>
+                                <div class="col-md-4">
+                                    <label class="form-label">Dia do Mês</label>
+                                    <input type="number" class="form-control" min="1" max="31" @bind="newRecurring.DayOfMonth" placeholder="Ex: 5" />
+                                    <small class="text-muted">Dia em que ocorre todo mês</small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Data de Início</label>
+                                    <input type="date" class="form-control" @bind="startDateInput" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Data de Término (opcional)</label>
+                                    <input type="date" class="form-control" @bind="endDateInput" />
+                                    <small class="text-muted">Deixe vazio para indefinida</small>
+                                </div>
                             }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Categoria</label>
-                        <select class="form-select" @bind="newRecurring.CategoryId">
-                            <option value="">Selecione uma categoria</option>
-                            @foreach (var category in categoriesList)
+                            else
                             {
-                                <option value="@category.Id">@category.Name</option>
+                                <div class="col-md-6">
+                                    <label class="form-label">Data de Início</label>
+                                    <input type="date" class="form-control" @bind="startDateInput" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Data de Término (opcional)</label>
+                                    <input type="date" class="form-control" @bind="endDateInput" />
+                                    <small class="text-muted">Deixe vazio para indefinida</small>
+                                </div>
                             }
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Frequência</label>
-                        <select class="form-select" @bind="recurringFrequency">
-                            <option value="3">Mensal</option>
-                            <option value="1">Semanal</option>
-                            <option value="2">Quinzenal</option>
-                            <option value="4">Trimestral</option>
-                            <option value="5">Semestral</option>
-                            <option value="6">Anual</option>
-                        </select>
-                    </div>
-                    @if (recurringFrequency == "3")
-                    {
-                        <div class="col-md-3">
-                            <label class="form-label">Dia do Mês</label>
-                            <input type="number" class="form-control" min="1" max="31" @bind="newRecurring.DayOfMonth" placeholder="Ex: 5" />
-                            <small class="text-muted">Dia em que ocorre todo mês</small>
                         </div>
-                    }
-                    <div class="col-md-@(recurringFrequency == "3" ? "4" : "6")">
-                        <label class="form-label">Data de Início</label>
-                        <input type="date" class="form-control" @bind="startDateInput" />
                     </div>
-                    <div class="col-md-@(recurringFrequency == "3" ? "5" : "6")">
-                        <label class="form-label">Data de Término (opcional)</label>
-                        <input type="date" class="form-control" @bind="endDateInput" />
-                        <small class="text-muted">Deixe vazio para recorrência indefinida</small>
-                    </div>
-                    <div class="col-12">
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-success" @onclick="CreateRecurring">
-                                <i class="fas fa-save"></i> @(isEditing ? "Atualizar" : "Criar")
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelAdd">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        @if (!isEditing)
+                        {
+                            <button type="button" class="btn btn-primary" @onclick="() => CreateRecurring(false)">
+                                <i class="fas fa-save"></i> Salvar
                             </button>
-                            <button class="btn btn-outline-secondary" @onclick="CancelAdd">
-                                <i class="fas fa-times"></i> Cancelar
+                            <button type="button" class="btn btn-success" @onclick="() => CreateRecurring(true)">
+                                <i class="fas fa-plus"></i> Salvar e Adicionar Outra
                             </button>
-                        </div>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-primary" @onclick="() => CreateRecurring(false)">
+                                <i class="fas fa-save"></i> Atualizar
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
@@ -323,7 +362,7 @@
         }
     }
 
-    private async Task CreateRecurring()
+    private async Task CreateRecurring(bool addAnother = false)
     {
         addError = null;
 
@@ -331,7 +370,7 @@
         {
             if (string.IsNullOrEmpty(newRecurring.Description))
             {
-                addError = "Descriçãoo é obrigatória";
+                addError = "Descrição é obrigatória";
                 return;
             }
 
@@ -349,13 +388,35 @@
             if (isEditing && !string.IsNullOrEmpty(editingId))
             {
                 await RecurringTransactionService.UpdateAsync(editingId, newRecurring);
+                showAdd = false;
+                isEditing = false;
+                editingId = null;
             }
             else
             {
                 await RecurringTransactionService.CreateAsync(newRecurring);
+                
+                // Se "Salvar e adicionar outra", limpa o formulário mas mantém aberto
+                if (addAnother)
+                {
+                    var previousAccountId = newRecurring.AccountId;
+                    newRecurring = new CreateRecurringTransactionRequestDto
+                    {
+                        StartDate = DateTime.Today,
+                        Frequency = RecurrenceFrequency.Monthly,
+                        AccountId = previousAccountId // Mantém a conta selecionada
+                    };
+                    transactionType = "Expense";
+                    recurringFrequency = "3";
+                    startDateInput = DateTime.Today;
+                    endDateInput = null;
+                }
+                else
+                {
+                    showAdd = false;
+                }
             }
 
-            showAdd = false;
             await LoadData();
         }
         catch (Exception ex)

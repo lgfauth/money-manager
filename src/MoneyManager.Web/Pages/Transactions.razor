@@ -457,7 +457,7 @@
     {
         addError = null;
         if (isBusy) return;
-        isBusy = true;
+        
         try
         {
             if (string.IsNullOrEmpty(newRequest.AccountId))
@@ -484,47 +484,50 @@
                 newRequest.CategoryId = null;
             }
 
+            // Purchase installment flow (credit card expense)
+            // Verificar ANTES de ativar isBusy se precisa confirmar parcelamento
             if (!string.IsNullOrEmpty(editingTransactionId))
             {
+                isBusy = true;
                 await TransactionService.UpdateAsync(editingTransactionId, newRequest);
                 showAdd = false;
                 editingTransactionId = null;
             }
-            else
+            else if (ShouldCreateInstallments())
             {
-                // Purchase installment flow (credit card expense)
-                if (ShouldCreateInstallments())
+                // NÃO ativa isBusy aqui - deixa o modal de confirmação aparecer
+                var confirmed = await ConfirmInstallmentStartAsync();
+                if (!confirmed)
                 {
-                    var confirmed = await ConfirmInstallmentStartAsync();
-                    if (!confirmed)
-                    {
-                        return;
-                    }
-
-                    await CreateInstallmentPurchaseAsync(newRequest);
-                }
-                else
-                {
-                    await TransactionService.CreateAsync(newRequest);
+                    return;
                 }
                 
-                // Se "Salvar e adicionar outra", limpa o formulário mas mantém aberto
-                if (addAnother)
-                {
-                    newRequest = new CreateTransactionRequestDto 
-                    { 
-                        Date = DateTime.Today, 
-                        Type = (int)TransactionType.Expense,
-                        AccountId = newRequest.AccountId // Mantém a conta selecionada
-                    };
-                    installmentsCount = 1;
-                    firstInstallmentInCurrentInvoice = true;
-                }
-                else
-                {
-                    showAdd = false;
-                    newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
-                }
+                // SÓ AGORA ativa o isBusy, após a confirmação
+                isBusy = true;
+                await CreateInstallmentPurchaseAsync(newRequest);
+            }
+            else
+            {
+                isBusy = true;
+                await TransactionService.CreateAsync(newRequest);
+            }
+            
+            // Se "Salvar e adicionar outra", limpa o formulário mas mantém aberto
+            if (addAnother)
+            {
+                newRequest = new CreateTransactionRequestDto 
+                { 
+                    Date = DateTime.Today, 
+                    Type = (int)TransactionType.Expense,
+                    AccountId = newRequest.AccountId // Mantém a conta selecionada
+                };
+                installmentsCount = 1;
+                firstInstallmentInCurrentInvoice = true;
+            }
+            else
+            {
+                showAdd = false;
+                newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
             }
 
             await LoadTransactions();
