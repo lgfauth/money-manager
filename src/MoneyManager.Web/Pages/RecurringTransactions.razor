@@ -29,7 +29,7 @@
     {
         <div class="card mb-4">
             <div class="card-body">
-                <h5>@(isEditing ? "Editar" : "Nova") Transaçãoo Recorrente</h5>
+                <h5>@(isEditing ? "Editar" : "Nova") Transação Recorrente</h5>
                 @if (!string.IsNullOrEmpty(addError))
                 {
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -39,8 +39,8 @@
                 }
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Descriçãoo</label>
-                        <input class="form-control" placeholder="Ex: Aluguel, SalÃ¡rio, Netflix" @bind="newRecurring.Description" />
+                        <label class="form-label">Descrição</label>
+                        <input class="form-control" placeholder="Ex: Aluguel, Netflix, Imprevistos" @bind="newRecurring.Description" />
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Tipo</label>

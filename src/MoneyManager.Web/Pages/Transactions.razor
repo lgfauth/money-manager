@@ -223,6 +223,47 @@
         </div>
     }
 
+    <!-- Modal de Confirmação de Parcelamento -->
+    @if (showInstallmentConfirmModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-credit-card"></i> Confirmar Compra Parcelada
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="() => ConfirmInstallment(false)"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center mb-3">
+                            <i class="fas fa-question-circle fa-3x text-primary"></i>
+                        </div>
+                        <p class="text-center mb-3">
+                            @installmentConfirmMessage
+                        </p>
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle"></i> <strong>Como funciona:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>A 1ª parcela será lançada imediatamente</li>
+                                <li>As demais parcelas serão criadas automaticamente como recorrência mensal</li>
+                                <li>Você poderá gerenciar as parcelas futuras na aba "Recorrentes"</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="() => ConfirmInstallment(false)">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="button" class="btn btn-primary" @onclick="() => ConfirmInstallment(true)">
+                            <i class="fas fa-check"></i> Confirmar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     @if (isLoading)
     {
         <div class="text-center py-5">
@@ -613,6 +654,11 @@
 
     private int installmentsCount = 1;
     private bool firstInstallmentInCurrentInvoice = true;
+    
+    // Modal de confirmação de parcelamento
+    private bool showInstallmentConfirmModal = false;
+    private string installmentConfirmMessage = string.Empty;
+    private TaskCompletionSource<bool>? installmentConfirmTcs;
 
     private bool IsSelectedAccountCreditCard()
     {
@@ -631,11 +677,20 @@
     private async Task<bool> ConfirmInstallmentStartAsync()
     {
         var startText = firstInstallmentInCurrentInvoice ? "fatura corrente" : "próxima fatura";
-        return await JSRuntime.InvokeAsync<bool>(
-            "confirm",
-            $"Confirma cadastrar compra parcelada em {installmentsCount}x, com a 1ª parcela na {startText}?"
-
-        );
+        installmentConfirmMessage = $"Confirma cadastrar compra parcelada em {installmentsCount}x, com a 1ª parcela na {startText}?";
+        
+        installmentConfirmTcs = new TaskCompletionSource<bool>();
+        showInstallmentConfirmModal = true;
+        StateHasChanged();
+        
+        return await installmentConfirmTcs.Task;
+    }
+    
+    private void ConfirmInstallment(bool confirmed)
+    {
+        showInstallmentConfirmModal = false;
+        installmentConfirmTcs?.SetResult(confirmed);
+        StateHasChanged();
     }
 
     private async Task CreateInstallmentPurchaseAsync(CreateTransactionRequestDto baseRequest)
