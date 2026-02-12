@@ -76,105 +76,147 @@
 
     @if (showAdd)
     {
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5>@Localization.Get("Transactions.NewTransaction")</h5>
-                @if (!string.IsNullOrEmpty(addError))
-                {
-                    <div class="alert alert-danger">@addError</div>
-                }
-                <div class="row g-2">
-                    <div class="col-md-2">
-                        <input type="date" class="form-control" @bind="newTransaction.Date" />
+        <!-- Modal de Nova Transação -->
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-plus-circle"></i> 
+                            @(string.IsNullOrEmpty(editingTransactionId) ? Localization.Get("Transactions.NewTransaction") : "Editar Transação")
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CancelAdd" disabled="@isBusy"></button>
                     </div>
-                    <div class="col-md-3">
-                        <select class="form-select" @bind="newRequest.AccountId">
-                            <option value="">-- Conta --</option>
-                            @foreach (var a in GetAccountsOrdered(accountsList))
-                            {
-                                <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
-                            }
-                        </select>
-                    </div>
-                    @if (newRequest.Type == 2)
-                    {
-                        <div class="col-md-3">
-                            <select class="form-select" @bind="newRequest.ToAccountId">
-                                <option value="">-- Conta destino --</option>
-                                @foreach (var a in GetAccountsOrdered(accountsList))
-                                {
-                                    if (a.Id != newRequest.AccountId)
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(addError))
+                        {
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> @addError
+                            </div>
+                        }
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Data</label>
+                                <input type="date" class="form-control" @bind="newRequest.Date" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo</label>
+                                <select class="form-select" @bind="newRequest.Type">
+                                    <option value="0">@Localization.Get("Transactions.Income")</option>
+                                    <option value="1">@Localization.Get("Transactions.Expense")</option>
+                                    <option value="2">@Localization.Get("Transactions.Transfer")</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Conta @(newRequest.Type == 2 ? "Origem" : "")</label>
+                                <select class="form-select" @bind="newRequest.AccountId">
+                                    <option value="">-- Selecione uma conta --</option>
+                                    @foreach (var a in GetAccountsOrdered(accountsList))
                                     {
                                         <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
                                     }
-                                }
-                            </select>
-                        </div>
-                    }
-                    <div class="col-md-3">
-                        <input class="form-control" placeholder="@Localization.Get("Transactions.Description")" @bind="newRequest.Description" />
-                    </div>
-                    <div class="col-md-2">
-                        <MoneyInput @bind-Value="newRequest.Amount" Placeholder="Valor" />
-                    </div>
-                    <div class="col-md-2">
-                        <select class="form-select" @bind="newRequest.Type">
-                            <option value="0">Receita</option>
-                            <option value="1">Despesa</option>
-                            <option value="2">@Localization.Get("Transactions.Transfer")</option>
-                        </select>
-                    </div>
-
-                    @if (IsSelectedAccountCreditCard() && newRequest.Type == 1)
-                    {
-                        <div class="col-12">
-                            <div class="alert alert-secondary py-2 mb-0">
-                                <div class="d-flex flex-wrap gap-3 align-items-center">
-                                    <div>
-                                        <label class="form-label mb-0">Parcelamento</label>
-                                        <select class="form-select" style="min-width: 110px" @bind="installmentsCount">
-                                            @for (var i = 1; i <= 12; i++)
+                                </select>
+                            </div>
+                            
+                            @if (newRequest.Type == 2)
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">Conta Destino</label>
+                                    <select class="form-select" @bind="newRequest.ToAccountId">
+                                        <option value="">-- Selecione a conta destino --</option>
+                                        @foreach (var a in GetAccountsOrdered(accountsList))
+                                        {
+                                            if (a.Id != newRequest.AccountId)
                                             {
-                                                <option value="@i">@i x</option>
+                                                <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
                                             }
-                                        </select>
-                                    </div>
+                                        }
+                                    </select>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-6">
+                                    <label class="form-label">@Localization.Get("Transactions.Category")</label>
+                                    <select class="form-select" @bind="newRequest.CategoryId">
+                                        <option value="">-- Selecione uma categoria --</option>
+                                        @if (categoriesList != null)
+                                        {
+                                            @foreach (var c in categoriesList)
+                                            {
+                                                <option value="@c.Id">@c.Name</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            }
+                            
+                            <div class="col-12">
+                                <label class="form-label">@Localization.Get("Transactions.Description")</label>
+                                <input class="form-control" placeholder="Digite a descrição" @bind="newRequest.Description" />
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Valor</label>
+                                <MoneyInput @bind-Value="newRequest.Amount" Placeholder="R$ 0,00" />
+                            </div>
 
-                                    <div class="form-check mt-4">
-                                        <input class="form-check-input" type="checkbox" id="firstInCurrent" @bind="firstInstallmentInCurrentInvoice" />
-                                        <label class="form-check-label" for="firstInCurrent">
-                                            Primeira parcela entra na fatura atual
-                                        </label>
+                            @if (IsSelectedAccountCreditCard() && newRequest.Type == 1)
+                            {
+                                <div class="col-12">
+                                    <div class="alert alert-info py-2">
+                                        <div class="row g-3 align-items-end">
+                                            <div class="col-md-4">
+                                                <label class="form-label mb-1">Parcelamento</label>
+                                                <select class="form-select" @bind="installmentsCount">
+                                                    @for (var i = 1; i <= 12; i++)
+                                                    {
+                                                        <option value="@i">@i x</option>
+                                                    }
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-8">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="firstInCurrent" @bind="firstInstallmentInCurrentInvoice" />
+                                                    <label class="form-check-label" for="firstInCurrent">
+                                                        Primeira parcela entra na fatura atual
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if (installmentsCount > 1)
+                                        {
+                                            <small class="text-muted d-block mt-2">
+                                                <i class="fas fa-info-circle"></i> O valor informado é o total. O sistema lançará a 1ª parcela agora (se marcado) e criará uma recorrência mensal para as demais.
+                                            </small>
+                                        }
                                     </div>
                                 </div>
-                                @if (installmentsCount > 1)
-                                {
-                                    <small class="text-muted d-block mt-2">
-                                        O valor informado é o total. O sistema lançará a 1ª parcela agora (se marcado) e criará uma recorrência mensal para as demais.
-                                    </small>
-                                }
-                            </div>
+                            }
                         </div>
-                    }
-
-                    @if (newRequest.Type != 2)
-                    {
-                        <div class="col-md-3">
-                            <select class="form-select" @bind="newRequest.CategoryId">
-                                <option value="">-- Categoria --</option>
-                                @if (categoriesList != null)
-                                {
-                                    @foreach (var c in categoriesList)
-                                    {
-                                        <option value="@c.Id">@c.Name</option>
-                                    }
-                                }
-                            </select>
-                        </div>
-                    }
-                    <div class="col-md-2 d-grid">
-                        <button class="btn btn-success" @onclick="CreateTransaction">Salvar</button>
-                        <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelAdd" disabled="@isBusy">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        @if (string.IsNullOrEmpty(editingTransactionId))
+                        {
+                            <button type="button" class="btn btn-primary" @onclick="() => CreateTransaction(false)" disabled="@isBusy">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-success" @onclick="() => CreateTransaction(true)" disabled="@isBusy">
+                                <i class="fas fa-plus"></i> Salvar e Adicionar Outra
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-primary" @onclick="() => CreateTransaction(false)" disabled="@isBusy">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
@@ -370,7 +412,7 @@
         }
     }
 
-    private async Task CreateTransaction()
+    private async Task CreateTransaction(bool addAnother = false)
     {
         addError = null;
         if (isBusy) return;
@@ -397,13 +439,15 @@
                     return;
                 }
 
-                // Categoria nÃƒÂ£o se aplica a TransferÃƒÂªncias
+                // Categoria não se aplica a Transferências
                 newRequest.CategoryId = null;
             }
 
             if (!string.IsNullOrEmpty(editingTransactionId))
             {
                 await TransactionService.UpdateAsync(editingTransactionId, newRequest);
+                showAdd = false;
+                editingTransactionId = null;
             }
             else
             {
@@ -422,10 +466,26 @@
                 {
                     await TransactionService.CreateAsync(newRequest);
                 }
+                
+                // Se "Salvar e adicionar outra", limpa o formulário mas mantém aberto
+                if (addAnother)
+                {
+                    newRequest = new CreateTransactionRequestDto 
+                    { 
+                        Date = DateTime.Today, 
+                        Type = (int)TransactionType.Expense,
+                        AccountId = newRequest.AccountId // Mantém a conta selecionada
+                    };
+                    installmentsCount = 1;
+                    firstInstallmentInCurrentInvoice = true;
+                }
+                else
+                {
+                    showAdd = false;
+                    newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
+                }
             }
 
-            newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
-            showAdd = false;
             await LoadTransactions();
         }
         catch (Exception ex)
@@ -443,7 +503,11 @@
         if (isBusy) return;
         showAdd = false;
         newTransaction = new Transaction { Date = DateTime.Today };
+        newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
+        editingTransactionId = null;
         addError = null;
+        installmentsCount = 1;
+        firstInstallmentInCurrentInvoice = true;
     }
 
     private async Task DeleteTransaction(string id)
