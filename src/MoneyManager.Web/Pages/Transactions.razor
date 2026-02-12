@@ -17,7 +17,7 @@
 @inject IJSRuntime JSRuntime
 @inject ILocalizationService Localization
 
-<PageTitle>TransaÃƒÂ§ÃƒÂµes - MoneyManager</PageTitle>
+<PageTitle>@Localization.Get("Transactions.PageTitle")</PageTitle>
 
 <BusyOverlay IsBusy="@isBusy" Message="Processando..." />
 
@@ -26,10 +26,10 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">
-                    <i class="fas fa-exchange-alt text-primary"></i> TransaÃƒÂ§ÃƒÂµes
+                    <i class="fas fa-exchange-alt text-primary"></i> @Localization.Get("Transactions.Title")
                 </h1>
                 <button class="btn btn-primary" @onclick="ShowAddModal">
-                    <i class="fas fa-plus"></i> Nova TransaÃƒÂ§ÃƒÂ£o
+                    <i class="fas fa-plus"></i> @Localization.Get("Transactions.NewTransaction")
                 </button>
             </div>
         </div>
@@ -48,10 +48,10 @@
         </div>
 
         <div class="col-12 col-md-4">
-            <label class="form-label">PerÃƒÂ­odo</label>
+            <label class="form-label">@Localization.Get("Transactions.Period")</label>
             <select class="form-select" @bind="PeriodPreset">
-                <option value="current_month">MÃƒÂªs atual</option>
-                <option value="custom">Personalizado</option>
+                <option value="current_month">@Localization.Get("Transactions.CurrentMonth")</option>
+                <option value="custom">@Localization.Get("Transactions.Custom")</option>
             </select>
         </div>
 
@@ -60,16 +60,16 @@
             <input type="date" class="form-control" @bind="filterStart" disabled="@(periodPreset != "custom")" />
         </div>
         <div class="col-6 col-md-2">
-            <label class="form-label">AtÃƒÂ©</label>
+            <label class="form-label">@Localization.Get("Common.To")</label>
             <input type="date" class="form-control" @bind="filterEnd" disabled="@(periodPreset != "custom")" />
         </div>
 
         <div class="col-12 col-md-4 mt-3 mt-md-0">
             <label class="form-label">Mostrar</label>
             <select class="form-select" @bind="transactionTypeFilter">
-                <option value="all">Entradas e SaÃƒÂ­das</option>
-                <option value="income">Somente Entradas</option>
-                <option value="expense">Somente SaÃƒÂ­das</option>
+                <option value="all">@Localization.Get("Transactions.AllTypes")</option>
+                <option value="income">@Localization.Get("Transactions.IncomeOnly")</option>
+                <option value="expense">@Localization.Get("Transactions.ExpenseOnly")</option>
             </select>
         </div>
     </div>
@@ -78,7 +78,7 @@
     {
         <div class="card mb-4">
             <div class="card-body">
-                <h5>Nova TransaÃƒÂ§ÃƒÂ£o</h5>
+                <h5>@Localization.Get("Transactions.NewTransaction")</h5>
                 @if (!string.IsNullOrEmpty(addError))
                 {
                     <div class="alert alert-danger">@addError</div>
@@ -112,7 +112,7 @@
                         </div>
                     }
                     <div class="col-md-3">
-                        <input class="form-control" placeholder="DescriÃƒÂ§ÃƒÂ£o" @bind="newRequest.Description" />
+                        <input class="form-control" placeholder="@Localization.Get("Transactions.Description")" @bind="newRequest.Description" />
                     </div>
                     <div class="col-md-2">
                         <MoneyInput @bind-Value="newRequest.Amount" Placeholder="Valor" />
@@ -121,7 +121,7 @@
                         <select class="form-select" @bind="newRequest.Type">
                             <option value="0">Receita</option>
                             <option value="1">Despesa</option>
-                            <option value="2">TransferÃƒÂªncia</option>
+                            <option value="2">@Localization.Get("Transactions.Transfer")</option>
                         </select>
                     </div>
 
@@ -150,7 +150,7 @@
                                 @if (installmentsCount > 1)
                                 {
                                     <small class="text-muted d-block mt-2">
-                                        O valor informado ÃƒÂ© o total. O sistema lanÃƒÂ§arÃƒÂ¡ a 1Ã‚Âª parcela agora (se marcado) e criarÃƒÂ¡ uma recorrÃƒÂªncia mensal para as demais.
+                                        O valor informado é o total. O sistema lançará a 1ª parcela agora (se marcado) e criará uma recorrência mensal para as demais.
                                     </small>
                                 }
                             </div>
@@ -187,7 +187,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando transaÃƒÂ§ÃƒÂµes...</p>
+            <p class="mt-3 text-muted">@Localization.Get("Transactions.Loading")</p>
         </div>
     }
     else if (errorMessage != null)
@@ -206,10 +206,10 @@
                     <thead class="table-light">
                         <tr>
                             <th><i class="fas fa-calendar"></i> Data</th>
-                            <th><i class="fas fa-file-alt"></i> DescriÃƒÂ§ÃƒÂ£o</th>
+                            <th><i class="fas fa-file-alt"></i> @Localization.Get("Transactions.Description")</th>
                             <th><i class="fas fa-tag"></i> Categoria</th>
                             <th class="text-end"><i class="fas fa-money-bill"></i> Valor</th>
-                            <th class="text-center">AÃƒÂ§ÃƒÂµes</th>
+                            <th class="text-center">@Localization.Get("Common.Actions")</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -253,7 +253,7 @@
     else
     {
         <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle"></i> Nenhuma transaÃƒÂ§ÃƒÂ£o encontrada. <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
+            <i class="fas fa-info-circle"></i> @Localization.Get("Transactions.NoTransactions") <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
         </div>
     }
 </div>
@@ -313,12 +313,12 @@
             transactions = await TransactionService.GetAllAsync();
             if (transactions == null || !transactions.Any())
             {
-                errorMessage = "Nenhuma transaÃƒÂ§ÃƒÂ£o disponÃƒÂ­vel.";
+                errorMessage = "Nenhuma transação disponível.";
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar transaÃƒÂ§ÃƒÂµes: {ex.Message}";
+            errorMessage = $"Erro ao carregar transações: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -452,7 +452,7 @@
         isBusy = true;
         try
         {
-            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transaÃƒÂ§ÃƒÂ£o?");
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Tem certeza que deseja deletar esta transação?");
             if (!confirmed)
                 return;
 
@@ -461,7 +461,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao deletar transaÃƒÂ§ÃƒÂ£o: {ex.Message}";
+            errorMessage = $"Erro ao deletar transação: {ex.Message}";
         }
         finally
         {
@@ -500,7 +500,7 @@
 
         var query = list.Where(t => t.Date.Date >= start && t.Date.Date <= end);
 
-        // Separar corretamente transaÃƒÂ§ÃƒÂµes de despesa das de receita.
+        // Separar corretamente transaÇões de despesa das de receita.
         // TransferÃƒÂªncias nÃƒÂ£o entram em entradas/saÃƒÂ­das.
         query = transactionTypeFilter switch
         {
@@ -540,8 +540,8 @@
         {
             AccountType.Cash => "Dinheiro",
             AccountType.Checking => "Conta Corrente",
-            AccountType.Savings => "PoupanÃƒÂ§a",
-            AccountType.CreditCard => "CartÃƒÂ£o de crÃƒÂ©dito",
+            AccountType.Savings => "Poupança",
+            AccountType.CreditCard => "Cartão de Crédito",
             AccountType.Investment => "Investimento",
             _ => type.ToString()
         };
@@ -566,10 +566,10 @@
 
     private async Task<bool> ConfirmInstallmentStartAsync()
     {
-        var startText = firstInstallmentInCurrentInvoice ? "fatura corrente" : "prÃƒÂ³xima fatura";
+        var startText = firstInstallmentInCurrentInvoice ? "fatura corrente" : "próxima fatura";
         return await JSRuntime.InvokeAsync<bool>(
             "confirm",
-            $"Confirma cadastrar compra parcelada em {installmentsCount}x, com a 1Ã‚Âª parcela na {startText}?"
+            $"Confirma cadastrar compra parcelada em {installmentsCount}x, com a 1ª parcela na {startText}?"
 
         );
     }
@@ -593,7 +593,7 @@
         var selectedCard = accountsList?.FirstOrDefault(a => a.Id == baseRequest.AccountId);
         if (selectedCard?.Type != AccountType.CreditCard)
         {
-            throw new InvalidOperationException("Conta selecionada nÃƒÂ£o ÃƒÂ© um cartÃƒÂ£o de crÃƒÂ©dito.");
+            throw new InvalidOperationException("Conta selecionada não é um cartão de crédito.");
         }
 
         var closingDay = selectedCard.InvoiceClosingDay.GetValueOrDefault(1);
