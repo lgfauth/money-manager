@@ -173,7 +173,7 @@
                                     var percent = (category.Value / invoiceSummary.Invoice.TotalAmount) * 100;
                                     <div class="col-md-6 mb-3">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span>@category.Key</span>
+                                            <span>@GetCategoryName(category.Key)</span>
                                             <strong>R$ @category.Value.ToString("F2")</strong>
                                         </div>
                                         <div class="progress" style="height: 20px;">
