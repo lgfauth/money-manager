@@ -219,3 +219,49 @@ canvas {
 .category-card i {
     font-size: 1.25rem;
 }
+
+/* ============================================
+   CATEGORY ITEMS - Compact Cards
+   ============================================ */
+
+.category-item-card {
+    transition: all 0.2s ease;
+    border: 1px solid #e0e0e0;
+}
+
+.category-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    border-color: #667eea;
+}
+
+.category-color-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-block;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    border: 2px solid #fff;
+}
+
+.category-item-card .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.category-item-card .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Utility: min-width: 0 para permitir text-truncate funcionar */
+.min-w-0 {
+    min-width: 0;
+}
+
+/* Font monospace para códigos hex */
+.font-monospace {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.7rem;
+}

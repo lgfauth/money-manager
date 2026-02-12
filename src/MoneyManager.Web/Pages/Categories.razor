@@ -95,27 +95,49 @@
     }
     else if (categories != null && categories.Any())
     {
-        <div class="row g-4">
+        <!-- Grid Responsivo: 2 cols (mobile), 3 cols (tablet), 4 cols (desktop), 6 cols (xl) -->
+        <div class="row g-3">
             @foreach (var category in categories)
             {
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="card shadow-sm">
-                        <div class="card-body">
-                            <div class="d-flex align-items-center justify-content-between mb-3">
-                                <h5 class="card-title mb-0">@category.Name</h5>
-                                <span class="badge bg-primary">@category.Type</span>
-                            </div>
-                            <div class="mb-3">
-                                <span class="badge p-2" style="background-color: @category.Color; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center;">
+                var isIncome = category.Type == CategoryType.Income;
+                var typeBadgeClass = isIncome ? "bg-success" : "bg-danger";
+                var typeIcon = isIncome ? "arrow-up" : "arrow-down";
+                
+                <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                    <div class="card shadow-sm h-100 category-item-card">
+                        <div class="card-body p-3">
+                            <!-- Header: Cor + Nome + Tipo -->
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="category-color-badge" 
+                                      style="background-color: @category.Color;"
+                                      title="@category.Color">
                                 </span>
-                                <span class="ms-2 text-muted">@category.Color</span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <h6 class="mb-0 text-truncate fw-semibold" title="@category.Name">
+                                        @category.Name
+                                    </h6>
+                                </div>
                             </div>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-sm btn-warning" @onclick="@(() => EditCategory(category.Id))">
-                                    <i class="fas fa-edit"></i> Editar
+                            
+                            <!-- Info: Badge Tipo + Código Hex -->
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="badge @typeBadgeClass">
+                                    <i class="fas fa-@typeIcon"></i> @GetTypeLabel(category.Type)
+                                </span>
+                                <small class="text-muted font-monospace">@category.Color.ToUpper()</small>
+                            </div>
+                            
+                            <!-- Ações: Botões Inline -->
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-warning flex-fill" 
+                                        @onclick="@(() => EditCategory(category.Id))"
+                                        title="Editar">
+                                    <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger" @onclick="@(() => DeleteCategory(category.Id))">
-                                    <i class="fas fa-trash"></i> Deletar
+                                <button class="btn btn-sm btn-outline-danger flex-fill" 
+                                        @onclick="@(() => DeleteCategory(category.Id))"
+                                        title="Deletar">
+                                    <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
@@ -268,5 +290,12 @@
                 errorMessage = $"Erro ao deletar categoria: {ex.Message}";
             }
         }
+    }
+
+    private string GetTypeLabel(CategoryType type)
+    {
+        return type == CategoryType.Income 
+            ? Localization.Get("Categories.Income") 
+            : Localization.Get("Categories.Expense");
     }
 }
