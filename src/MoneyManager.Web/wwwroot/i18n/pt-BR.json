@@ -369,6 +369,8 @@
     "Auto": "Automático (Sistema)",
     "ThemeHelp": "O tema escuro será implementado em versões futuras",
     "PrimaryColor": "Cor Primária",
+    "ColorPickerHelp": "Clique no quadrado colorido para escolher",
+    "SuggestedColors": "Cores sugeridas:",
     "Appearance": "Aparência",
     "Notifications": "Notificações",
     "EmailNotifications": "Notificações por Email",
@@ -388,6 +390,17 @@
     "ErrorLoading": "Erro ao carregar configurações: {0}",
     "ErrorSaving": "Erro ao salvar: {0}",
     "SaveSuccess": "Configurações salvas com sucesso!"
+  },
+  "UserMenu": {
+    "User": "Usuário",
+    "MyProfile": "Meu Perfil",
+    "Settings": "Configurações",
+    "Logout": "Sair"
+  },
+  "Language": {
+    "Portuguese": "Português",
+    "English": "English",
+    "Spanish": "Español"
   }
 }
 
