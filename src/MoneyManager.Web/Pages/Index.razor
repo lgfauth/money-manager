@@ -47,7 +47,7 @@
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0">
                 <div class="card-body text-center py-4">
-                    <h6 class="text-muted mb-2">SALDO LÃQUIDO</h6>
+                    <h6 class="text-muted mb-2">@Localization.Get("Dashboard.LiquidBalanceLabel")</h6>
                     <h2 class="display-5 fw-bold text-primary mb-0">R$ @liquidBalance.ToString("N2")</h2>
                     <small class="text-muted">@Localization.Get("Dashboard.LiquidBalanceDesc")</small>
                 </div>
@@ -56,7 +56,7 @@
         <div class="col-12 col-md-6">
             <div class="card shadow-sm border-0">
                 <div class="card-body text-center py-4">
-                    <h6 class="text-muted mb-2">PATRIMÃ”NIO TOTAL</h6>
+                    <h6 class="text-muted mb-2">@Localization.Get("Dashboard.TotalAssetsLabel")</h6>
                     <h2 class="display-5 fw-bold text-success mb-0">R$ @totalBalance.ToString("N2")</h2>
                     <small class="text-muted">@Localization.Get("Dashboard.TotalAssetsDesc")</small>
                 </div>
@@ -532,7 +532,7 @@ private async Task LoadDashboardData()
     
     private string GetTransactionTypeLabel(string type)
     {
-        return type == "Income" ? "Receita" : "Despesa";
+        return type == "Income" ? Localization.Get("Dashboard.IncomeLabel") : Localization.Get("Dashboard.ExpenseLabel");
     }
 
     private string GetValueClass(string type)

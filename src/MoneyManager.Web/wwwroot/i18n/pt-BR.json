@@ -59,15 +59,19 @@
     "ErrorMessage": "Erro ao criar conta. Tente novamente.",
     "PasswordMismatch": "As senhas n\u00E3o conferem"
   },
-  "Dashboard": {
+    "Dashboard": {
     "PageTitle": "Dashboard - MoneyManager",
     "Title": "Dashboard Financeiro",
     "Subtitle": "Vis\u00E3o geral das suas finan\u00E7as",
     "Loading": "Carregando dashboard...",
     "LiquidBalance": "SALDO L\u00CDQUIDO",
     "LiquidBalanceDesc": "Corrente + Poupan\u00E7a + Dinheiro",
+    "LiquidBalanceLabel": "SALDO L\u00CDQUIDO",
     "TotalAssets": "PATRIM\u00D4NIO TOTAL",
     "TotalAssetsDesc": "L\u00EDquido + Investimentos",
+    "TotalAssetsLabel": "PATRIM\u00D4NIO TOTAL",
+    "IncomeLabel": "Receita",
+    "ExpenseLabel": "Despesa",
     "MonthlyIncome": "Receitas do M\u00EAs",
     "MonthlyExpenses": "Despesas do M\u00EAs",
     "BudgetUsed": "Or\u00E7amento Utilizado",

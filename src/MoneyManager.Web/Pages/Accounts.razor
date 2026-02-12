@@ -48,52 +48,100 @@
 
     @if (showAdd)
     {
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5>@Localization.Get("Accounts.NewAccount")</h5>
-                @if (!string.IsNullOrEmpty(addError))
-                {
-                    <div class="alert alert-danger">@addError</div>
-                }
-                <div class="row g-2">
-                    <div class="col-12 col-md-4">
-                        <input class="form-control" placeholder="Nome da conta" @bind="newAccount.Name" />
+        <!-- Modal de Nova/Editar Conta -->
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-@(string.IsNullOrEmpty(editingAccountId) ? "plus-circle" : "edit")"></i> 
+                            @(string.IsNullOrEmpty(editingAccountId) ? Localization.Get("Accounts.NewAccount") : "Editar Conta")
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CancelAdd" disabled="@isBusy"></button>
                     </div>
-                    <div class="col-12 col-md-3">
-                        <select class="form-select text-dark" @bind="newAccount.Type">
-                            <option value="@AccountType.Checking">Conta Corrente</option>
-                            <option value="@AccountType.Savings">Poupança</option>
-                            <option value="@AccountType.Cash">Dinheiro</option>
-                            <option value="@AccountType.CreditCard">Cartão de Crédito</option>
-                            <option value="@AccountType.Investment">Investimento</option>
-                        </select>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(addError))
+                        {
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> @addError
+                            </div>
+                        }
+                        
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">@Localization.Get("Accounts.Name")</label>
+                                <input class="form-control" placeholder="Digite o nome da conta" @bind="newAccount.Name" />
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">@Localization.Get("Accounts.Type")</label>
+                                <select class="form-select" @bind="newAccount.Type">
+                                    <option value="@AccountType.Checking">@Localization.Get("Accounts.TypeChecking")</option>
+                                    <option value="@AccountType.Savings">@Localization.Get("Accounts.TypeSavings")</option>
+                                    <option value="@AccountType.Cash">@Localization.Get("Accounts.TypeCash")</option>
+                                    <option value="@AccountType.CreditCard">@Localization.Get("Accounts.TypeCreditCard")</option>
+                                    <option value="@AccountType.Investment">@Localization.Get("Accounts.TypeInvestment")</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label">@Localization.Get("Accounts.InitialBalance")</label>
+                                <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="R$ 0,00" Disabled="@(!string.IsNullOrEmpty(editingAccountId))" />
+                                @if (!string.IsNullOrEmpty(editingAccountId))
+                                {
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> O saldo inicial não pode ser alterado após criar a conta
+                                    </small>
+                                }
+                            </div>
+                            
+                            @if (newAccount.Type == AccountType.CreditCard)
+                            {
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <strong><i class="fas fa-credit-card"></i> Configurações de Cartão de Crédito</strong>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label">Dia de Fechamento da Fatura</label>
+                                    <input type="number" class="form-control" min="1" max="31" @bind="newAccount.InvoiceClosingDay" placeholder="Ex: 9" />
+                                    <small class="text-muted">As parcelas entram no dia seguinte (ex: dia 10)</small>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label">Dias até Vencimento</label>
+                                    <input type="number" class="form-control" min="1" max="30" @bind="newAccount.InvoiceDueDayOffset" placeholder="Ex: 7" />
+                                    <small class="text-muted">Dias entre fechamento e vencimento</small>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label class="form-label">Limite de Crédito (opcional)</label>
+                                    <MoneyInput @bind-Value="creditLimitAmount" Placeholder="R$ 0,00" />
+                                    <small class="text-muted">Deixe zerado se não quiser limite</small>
+                                </div>
+                            }
+                        </div>
                     </div>
-                    @if (newAccount.Type == AccountType.CreditCard)
-                    {
-                        <div class="col-12 col-md-3">
-                            <label class="form-label">Fechamento da fatura (dia)</label>
-                            <input type="number" class="form-control" min="1" max="31" @bind="newAccount.InvoiceClosingDay" />
-                            <small class="text-muted">Ex.: 9 (as parcelas entram no dia 10).</small>
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <label class="form-label">Limite de Crédito (R$)</label>
-                            <MoneyInput @bind-Value="creditLimitAmount" Placeholder="0,00" />
-                            <small class="text-muted">Deixe em branco se nÃƒÂ£o quiser limite.</small>
-                        </div>
-                        <div class="col-12 col-md-3">
-                            <label class="form-label">Dias atÃƒÂ© vencimento</label>
-                            <input type="number" class="form-control" min="1" max="30" @bind="newAccount.InvoiceDueDayOffset" />
-                            <small class="text-muted">Dias entre fechamento e vencimento (padrÃƒÂ£o: 7).</small>
-                        </div>
-                    }
-                    <div class="col-12 col-md-@(newAccount.Type == AccountType.CreditCard ? "12" : "3")">
-                        <MoneyInput @bind-Value="newAccount.InitialBalance" Placeholder="Saldo inicial" Disabled="@(!string.IsNullOrEmpty(editingAccountId))" />
-                    </div>
-                    <div class="col-12 col-md-12">
-                        <div class="d-flex flex-column flex-md-row gap-2 justify-content-end">
-                            <button class="btn btn-success" @onclick="CreateAccount">Salvar</button>
-                            <button class="btn btn-link text-danger" @onclick="CancelAdd">Cancelar</button>
-                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelAdd" disabled="@isBusy">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        @if (string.IsNullOrEmpty(editingAccountId))
+                        {
+                            <button type="button" class="btn btn-primary" @onclick="() => CreateAccount(false)" disabled="@isBusy">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-success" @onclick="() => CreateAccount(true)" disabled="@isBusy">
+                                <i class="fas fa-plus"></i> Salvar e Adicionar Outra
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-primary" @onclick="() => CreateAccount(false)" disabled="@isBusy">
+                                <i class="fas fa-save"></i> Atualizar
+                            </button>
+                        }
                     </div>
                 </div>
             </div>
@@ -562,7 +610,7 @@
         }
     }
 
-    private async Task CreateAccount()
+    private async Task CreateAccount(bool addAnother = false)
     {
         addError = null;
         if (isBusy) return;
@@ -589,16 +637,29 @@
                 await AccountService.UpdateAsync(editingAccountId, newAccount);
                 editingAccountId = null;
                 editingOriginalInitialBalance = null;
+                showAdd = false;
             }
             else
             {
                 newAccount.Balance = newAccount.InitialBalance;
                 var created = await AccountService.CreateAsync(newAccount);
+                
+                // Se "Salvar e adicionar outra", limpa o formulário mas mantém aberto
+                if (addAnother)
+                {
+                    newAccount = new Account { InvoiceDueDayOffset = 7 };
+                    creditLimitInput = null;
+                    creditLimitAmount = 0m;
+                }
+                else
+                {
+                    showAdd = false;
+                    newAccount = new Account { InvoiceDueDayOffset = 7 };
+                    creditLimitInput = null;
+                    creditLimitAmount = 0m;
+                }
             }
-            newAccount = new Account { InvoiceDueDayOffset = 7 };
-            creditLimitInput = null;
-            creditLimitAmount = 0m;
-            showAdd = false;
+            
             await LoadAccounts();
         }
         catch (Exception ex)
