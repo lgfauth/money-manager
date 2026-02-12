@@ -27,9 +27,9 @@
 
     @if (showAdd)
     {
-        <!-- Modal de Novo/Editar Orçamento -->
+        <!-- Modal de Novo/Editar Orçamento - UX Melhorado -->
         <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">
@@ -45,47 +45,129 @@
                                 <i class="fas fa-exclamation-triangle"></i> @addError
                             </div>
                         }
-                        
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
-                                <label class="form-label">@Localization.Get("Budgets.Month")</label>
-                                <input type="month" class="form-control" value="@monthPicker" @onchange="OnMonthChanged" />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">@Localization.Get("Budgets.Category")</label>
-                                <select class="form-select" size="3" multiple @bind="selectedCategoryIds">
-                                    @if (categoriesList != null)
-                                    {
-                                        @foreach (var c in categoriesList)
-                                        {
-                                            <option value="@c.Id">@c.Name</option>
-                                        }
-                                    }
-                                </select>
-                                <small class="text-muted"><i class="fas fa-info-circle"></i> Segure Ctrl para selecionar várias</small>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">@Localization.Get("Budgets.Limit")</label>
-                                <MoneyInput @bind-Value="newItem.LimitAmount" Placeholder="R$ 0,00" />
-                                <button type="button" class="btn btn-sm btn-success mt-2 w-100" @onclick="AddBudgetItem" disabled="@isBusy">
-                                    <i class="fas fa-plus"></i> Adicionar Item(s)
-                                </button>
+
+                        <!-- ETAPA 1: Escolher Mês -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <span class="badge bg-primary me-2">1</span>
+                                    Escolha o mês do orçamento
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">@Localization.Get("Budgets.Month")</label>
+                                        <input type="month" class="form-control form-control-lg" value="@monthPicker" @onchange="OnMonthChanged" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Atalhos</label>
+                                        <div class="d-grid">
+                                            <button type="button" class="btn btn-outline-primary" @onclick="CopyFromPreviousMonth" disabled="@isBusy">
+                                                <i class="fas fa-copy"></i> Copiar do Mês Anterior
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
+                        <!-- ETAPA 2: Adicionar Categorias -->
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title mb-3">
+                                    <span class="badge bg-primary me-2">2</span>
+                                    Adicione limites por categoria
+                                </h6>
+                                
+                                @if (categoriesList != null && categoriesList.Any())
+                                {
+                                    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3 mb-3">
+                                        @foreach (var category in categoriesList)
+                                        {
+                                            var isAdded = newBudget.Items?.Any(i => i.CategoryId == category.Id) ?? false;
+                                            <div class="col">
+                                                <div class="card h-100 @(isAdded ? "border-success" : "border-secondary") category-card" 
+                                                     style="cursor: pointer; @(isAdded ? "background-color: #d1f4e0;" : "")" 
+                                                     @onclick="() => ToggleCategorySelection(category.Id)">
+                                                    <div class="card-body text-center p-2">
+                                                        @if (isAdded)
+                                                        {
+                                                            <i class="fas fa-check-circle text-success"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="fas fa-circle text-muted"></i>
+                                                        }
+                                                        <div class="small mt-1">@category.Name</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> Nenhuma categoria de despesa encontrada. 
+                                        <a href="/categories">Crie categorias primeiro</a>.
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- ETAPA 3: Definir Valores -->
                         @if (newBudget.Items != null && newBudget.Items.Any())
                         {
-                            <div class="alert alert-info">
-                                <h6 class="alert-heading"><i class="fas fa-list"></i> Itens adicionados (@newBudget.Items.Count)</h6>
-                                <hr />
-                                <div class="list-group list-group-flush">
-                                    @foreach (var it in newBudget.Items)
-                                    {
-                                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span><i class="fas fa-tag"></i> @GetCategoryName(it.CategoryId)</span>
-                                            <span class="badge bg-primary rounded-pill">R$ @it.LimitAmount.ToString("F2")</span>
-                                        </div>
-                                    }
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title mb-3">
+                                        <span class="badge bg-primary me-2">3</span>
+                                        Defina os limites de gastos
+                                    </h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th style="width: 50%;">Categoria</th>
+                                                    <th style="width: 35%;">Limite de Gasto</th>
+                                                    <th style="width: 15%;" class="text-center">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @{
+                                                    int itemIndex = 0;
+                                                }
+                                                @foreach (var item in newBudget.Items.ToList())
+                                                {
+                                                    var currentIndex = itemIndex;
+                                                    <tr>
+                                                        <td>
+                                                            <i class="fas fa-tag text-primary"></i>
+                                                            <strong>@GetCategoryName(item.CategoryId)</strong>
+                                                        </td>
+                                                        <td>
+                                                            <MoneyInput @bind-Value="item.LimitAmount" Placeholder="R$ 0,00" />
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                    @onclick="() => RemoveBudgetItem(currentIndex)" 
+                                                                    disabled="@isBusy">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                    itemIndex++;
+                                                }
+                                            </tbody>
+                                            <tfoot class="table-light">
+                                                <tr>
+                                                    <td><strong>Total Planejado</strong></td>
+                                                    <td colspan="2">
+                                                        <strong class="text-primary">R$ @(newBudget.Items?.Sum(i => i.LimitAmount).ToString("N2"))</strong>
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         }
@@ -94,7 +176,8 @@
                         <button type="button" class="btn btn-secondary" @onclick="CancelAdd" disabled="@isBusy">
                             <i class="fas fa-times"></i> @Localization.Get("Common.Cancel")
                         </button>
-                        <button type="button" class="btn btn-primary" @onclick="CreateBudget" disabled="@isBusy || (newBudget.Items == null || !newBudget.Items.Any())">
+                        <button type="button" class="btn btn-primary" @onclick="CreateBudget" 
+                                disabled="@(isBusy || newBudget.Items == null || !newBudget.Items.Any() || newBudget.Items.Any(i => i.LimitAmount <= 0))">
                             <i class="fas fa-save"></i> @(isEditingBudget ? Localization.Get("Common.Update") : Localization.Get("Common.Save"))
                         </button>
                     </div>
@@ -250,26 +333,80 @@
         StateHasChanged();
     }
 
-    private void AddBudgetItem()
+    private void ToggleCategorySelection(string categoryId)
     {
-        addError = null;
-        if (selectedCategoryIds == null || !selectedCategoryIds.Any())
-        {
-            addError = "Selecione ao menos 1 categoria";
-            return;
-        }
-
         if (newBudget.Items == null)
             newBudget.Items = new List<BudgetItem>();
 
-        foreach (var catId in selectedCategoryIds)
+        var existingItem = newBudget.Items.FirstOrDefault(i => i.CategoryId == categoryId);
+        
+        if (existingItem != null)
         {
-            newBudget.Items.Add(new BudgetItem { CategoryId = catId, LimitAmount = newItem.LimitAmount });
+            // Remove se já existe
+            newBudget.Items.Remove(existingItem);
         }
+        else
+        {
+            // Adiciona com valor padrão de R$ 500,00
+            newBudget.Items.Add(new BudgetItem 
+            { 
+                CategoryId = categoryId, 
+                LimitAmount = 500m 
+            });
+        }
+        
+        StateHasChanged();
+    }
 
-        // clear selection
-        selectedCategoryIds = Array.Empty<string>();
-        newItem = new BudgetItem();
+    private void RemoveBudgetItem(int index)
+    {
+        if (newBudget.Items != null && index >= 0 && index < newBudget.Items.Count)
+        {
+            newBudget.Items.RemoveAt(index);
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyFromPreviousMonth()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(monthPicker))
+            {
+                addError = "Selecione um mês primeiro";
+                return;
+            }
+
+            // Calcula o mês anterior
+            if (DateTime.TryParse(monthPicker + "-01", out var selectedDate))
+            {
+                var previousMonth = selectedDate.AddMonths(-1);
+                var previousMonthString = previousMonth.ToString("yyyy-MM");
+
+                // Tenta buscar orçamento do mês anterior
+                var previousBudget = await BudgetService.GetByIdAsync(previousMonthString);
+                
+                if (previousBudget != null && previousBudget.Items != null && previousBudget.Items.Any())
+                {
+                    // Copia os itens do mês anterior
+                    newBudget.Items = previousBudget.Items.Select(i => new BudgetItem
+                    {
+                        CategoryId = i.CategoryId,
+                        LimitAmount = i.LimitAmount
+                    }).ToList();
+                    
+                    StateHasChanged();
+                }
+                else
+                {
+                    addError = $"Nenhum orçamento encontrado para {previousMonth:MMMM/yyyy}";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            addError = $"Erro ao copiar orçamento: {ex.Message}";
+        }
     }
 
     private async Task CreateBudget()

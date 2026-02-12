@@ -193,3 +193,29 @@ canvas {
 .badge.bg-primary {
     color: #fff !important;
 }
+
+/* ============================================
+   BUDGET CATEGORY CARDS
+   ============================================ */
+
+.category-card {
+    transition: all 0.2s ease;
+    border: 2px solid;
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.category-card.border-success {
+    border-color: #28a745 !important;
+}
+
+.category-card.border-secondary {
+    border-color: #dee2e6 !important;
+}
+
+.category-card i {
+    font-size: 1.25rem;
+}
