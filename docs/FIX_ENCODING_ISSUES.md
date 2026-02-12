@@ -72,6 +72,56 @@ Os caracteres especiais em português (acentos, cedilhas) estavam sendo exibidos 
 - `\u00F3` = ó
 - `\u2716` = ?
 
+### 3. Configuração do Servidor (Web.Host/Program.cs)
+
+**Problema**: Arquivos JSON e JavaScript não eram servidos com charset UTF-8 explícito.
+
+**Solução**: Adicionar `; charset=utf-8` aos tipos MIME.
+
+**Mudanças**:
+```csharp
+// ANTES
+provider.Mappings[".json"] = "application/json";
+provider.Mappings[".js"] = "application/javascript";
+provider.Mappings[".css"] = "text/css";
+
+// DEPOIS
+provider.Mappings[".json"] = "application/json; charset=utf-8";
+provider.Mappings[".js"] = "application/javascript; charset=utf-8";
+provider.Mappings[".css"] = "text/css; charset=utf-8";
+```
+
+### 4. LocalizationService.cs
+
+**Problema**: HttpClient pode não estar decodificando corretamente o JSON com UTF-8.
+
+**Solução**: Ler o conteúdo como bytes e decodificar explicitamente com UTF-8.
+
+**Mudanças**:
+```csharp
+// ANTES
+var jsonString = await httpClient.GetStringAsync(path);
+
+// DEPOIS
+using var response = await httpClient.GetAsync(path);
+response.EnsureSuccessStatusCode();
+
+var bytes = await response.Content.ReadAsByteArrayAsync();
+var jsonString = System.Text.Encoding.UTF8.GetString(bytes);
+```
+
+### 5. Arquivo pt-BR.json
+
+**Problema**: Arquivo pode ter sido salvo com encoding incorreto.
+
+**Solução**: Reescrever o arquivo com encoding UTF-8 correto usando PowerShell.
+
+**Comando executado**:
+```powershell
+$content = Get-Content "src\MoneyManager.Web\wwwroot\i18n\pt-BR.json" -Raw -Encoding UTF8
+$content | Out-File "src\MoneyManager.Web\wwwroot\i18n\pt-BR.json" -Encoding UTF8 -NoNewline
+```
+
 ### 3. Idiomas Atualizados
 
 Todos os idiomas foram corrigidos com escape Unicode:
@@ -106,8 +156,11 @@ Após essas mudanças, os caracteres especiais devem ser exibidos corretamente:
 
 ## ?? Arquivos Modificados
 
-1. `src/MoneyManager.Web/wwwroot/index.html`
-2. `src/MoneyManager.Web/wwwroot/js/loading-localization.js`
+1. `src/MoneyManager.Web/wwwroot/index.html` - Entidades HTML
+2. `src/MoneyManager.Web/wwwroot/js/loading-localization.js` - Unicode escapes
+3. `src/MoneyManager.Web.Host/Program.cs` - Content-Type com charset UTF-8
+4. `src/MoneyManager.Web/Services/Localization/LocalizationService.cs` - Decodificação explícita UTF-8
+5. `src/MoneyManager.Web/wwwroot/i18n/pt-BR.json` - Reescrito com encoding correto
 
 ## ?? Como Testar
 

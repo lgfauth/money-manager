@@ -114,7 +114,14 @@ public sealed class LocalizationService : ILocalizationService
         try
         {
             using var httpClient = new HttpClient { BaseAddress = new Uri(_hostEnvironment.BaseAddress) };
-            var jsonString = await httpClient.GetStringAsync(path);
+            
+            // Fazer request com encoding UTF-8 explícito
+            using var response = await httpClient.GetAsync(path);
+            response.EnsureSuccessStatusCode();
+            
+            // Ler como bytes e decodificar com UTF-8
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            var jsonString = System.Text.Encoding.UTF8.GetString(bytes);
             
             // Parsear como JsonDocument primeiro
             using var doc = JsonDocument.Parse(jsonString);

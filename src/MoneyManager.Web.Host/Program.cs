@@ -12,9 +12,9 @@ if (!app.Environment.IsDevelopment())
 // Configurar tipos MIME para WebAssembly
 var provider = new FileExtensionContentTypeProvider();
 provider.Mappings[".wasm"] = "application/wasm";
-provider.Mappings[".json"] = "application/json";
-provider.Mappings[".js"] = "application/javascript";
-provider.Mappings[".css"] = "text/css";
+provider.Mappings[".json"] = "application/json; charset=utf-8";
+provider.Mappings[".js"] = "application/javascript; charset=utf-8";
+provider.Mappings[".css"] = "text/css; charset=utf-8";
 provider.Mappings[".svg"] = "image/svg+xml";
 provider.Mappings[".html"] = "text/html; charset=utf-8";
 provider.Mappings[".dat"] = "application/octet-stream";
