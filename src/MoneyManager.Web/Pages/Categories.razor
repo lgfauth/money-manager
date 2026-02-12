@@ -27,38 +27,50 @@
 
     @if (showAdd)
     {
-        <div class="card mb-4">
-            <div class="card-body">
-                <h5>@(isEditingCategory ? "Editar Categoria" : Localization.Get("Categories.NewCategory"))</h5>
-                @if (!string.IsNullOrEmpty(addError))
-                {
-                    <div class="alert alert-danger">@addError</div>
-                }
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Nome da Categoria</label>
-                        <input class="form-control" placeholder="Digite o nome" @bind="newCategory.Name" />
+        <!-- Modal de Nova/Editar Categoria -->
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-@(isEditingCategory ? "edit" : "plus-circle")"></i>
+                            @(isEditingCategory ? "Editar Categoria" : Localization.Get("Categories.NewCategory"))
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CancelAdd" disabled="@isBusy"></button>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Tipo</label>
-                        <select class="form-select" @bind="categoryType">
-                            <option value="Income">Receita</option>
-                            <option value="Expense">Despesa</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Cor da Categoria</label>
-                        <ColorPicker @bind-SelectedColor="newCategory.Color" />
-                    </div>
-                    <div class="col-12">
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-success" @onclick="CreateCategory">
-                                <i class="fas fa-save"></i> @(isEditingCategory ? "Atualizar" : "Salvar")
-                            </button>
-                            <button class="btn btn-outline-secondary" @onclick="CancelAdd">
-                                <i class="fas fa-times"></i> Cancelar
-                            </button>
+                    <div class="modal-body">
+                        @if (!string.IsNullOrEmpty(addError))
+                        {
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> @addError
+                            </div>
+                        }
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">@Localization.Get("Categories.Name")</label>
+                                <input class="form-control" placeholder="Digite o nome" @bind="newCategory.Name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@Localization.Get("Categories.Type")</label>
+                                <select class="form-select" @bind="categoryType">
+                                    <option value="Income">@Localization.Get("Categories.Income")</option>
+                                    <option value="Expense">@Localization.Get("Categories.Expense")</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">@Localization.Get("Categories.Color")</label>
+                                <ColorPicker @bind-SelectedColor="newCategory.Color" />
+                            </div>
                         </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CancelAdd" disabled="@isBusy">
+                            <i class="fas fa-times"></i> @Localization.Get("Common.Cancel")
+                        </button>
+                        <button type="button" class="btn btn-primary" @onclick="CreateCategory" disabled="@isBusy">
+                            <i class="fas fa-save"></i> @(isEditingCategory ? Localization.Get("Common.Update") : Localization.Get("Common.Save"))
+                        </button>
                     </div>
                 </div>
             </div>
@@ -186,6 +198,7 @@
     }
 
     private bool showAdd;
+    private bool isBusy;
     private Category newCategory = new Category();
     private string? addError;
     private string categoryType
@@ -203,6 +216,9 @@
     private async Task CreateCategory()
     {
         addError = null;
+        if (isBusy) return;
+        isBusy = true;
+        
         try
         {
             if (isEditingCategory && editingCategoryId != null)
@@ -223,10 +239,15 @@
         {
             addError = ex.Message;
         }
+        finally
+        {
+            isBusy = false;
+        }
     }
 
     private void CancelAdd()
     {
+        if (isBusy) return;
         showAdd = false;
         newCategory = new Category { Color = "#667eea" };
         editingCategoryId = null;
