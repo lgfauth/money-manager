@@ -26,20 +26,20 @@
   "Info": "Informa\u00E7\u00E3o",
   "SortBy": "Ordenar por"
 },
-  "Login": {
-    "PageTitle": "Login - MoneyManager",
-    "Title": "MoneyManager",
-    "Subtitle": "Fa\u00E7a login na sua conta",
-    "Email": "Email",
-    "EmailPlaceholder": "seu@email.com",
-    "Password": "Senha",
-    "PasswordPlaceholder": "Sua senha",
-    "LoginButton": "Entrar",
-    "LoggingIn": "Entrando...",
-    "NoAccount": "N\u00E3o tem conta?",
-    "CreateAccount": "Criar nova conta",
-    "ErrorMessage": "Falha ao fazer login. Verifique suas credenciais."
-  },
+"Login": {
+  "PageTitle": "Login - MoneyManager",
+  "Title": "MoneyManager",
+  "Subtitle": "Fa\u00E7a login na sua conta",
+  "Email": "Email",
+  "EmailPlaceholder": "seu@email.com",
+  "Password": "Senha",
+  "PasswordPlaceholder": "Sua senha",
+  "LoginButton": "Entrar",
+  "LoggingIn": "Entrando...",
+  "NoAccount": "N\u00E3o tem conta?",
+  "CreateAccount": "Criar nova conta",
+  "ErrorMessage": "Falha ao fazer login. Verifique suas credenciais."
+},
   "Register": {
     "PageTitle": "Registro - MoneyManager",
     "Title": "MoneyManager",
@@ -390,17 +390,17 @@
     "ErrorLoading": "Erro ao carregar configura\u00E7\u00F5es: {0}",
     "ErrorSaving": "Erro ao salvar: {0}",
     "SaveSuccess": "Configura\u00E7\u00F5es salvas com sucesso!"
-  },
-  "UserMenu": {
-    "User": "Usu\u00E1rio",
-    "MyProfile": "Meu Perfil",
-    "Settings": "Configura\u00E7\u00F5es",
-    "Logout": "Sair"
-  },
-  "Language": {
-    "Portuguese": "Portugu\u00EAs",
-    "English": "English",
-    "Spanish": "Espa\u00F1ol"
+    },
+    "UserMenu": {
+      "User": "Usu\u00E1rio",
+      "MyProfile": "Meu Perfil",
+      "Settings": "Configura\u00E7\u00F5es",
+      "Logout": "Sair"
+    },
+    "Language": {
+      "Portuguese": "Portugu\u00EAs",
+      "English": "English",
+      "Spanish": "Espa\u00F1ol"
+    }
   }
-}
 
