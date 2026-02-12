@@ -18,7 +18,7 @@
                 <h1 class="mb-0">
                     <i class="fas fa-calculator text-primary"></i> Orçamentos
                 </h1>
-                <button type="button" class="btn btn-primary" @onclick="ShowAddModal">
+                <button type="button" class="btn btn-primary d-none d-md-inline-block" @onclick="ShowAddModal">
                     <i class="fas fa-plus"></i> Novo Orçamento
                 </button>
             </div>
@@ -265,6 +265,40 @@
         </div>
     }
 </div>
+
+<!-- Botão Flutuante para Mobile -->
+<button class="btn btn-primary btn-floating-mobile d-md-none" @onclick="ShowAddModal">
+    <i class="fas fa-plus"></i>
+</button>
+
+<style>
+    .btn-floating-mobile {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        padding: 0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .btn-floating-mobile:hover,
+    .btn-floating-mobile:focus {
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+    
+    .btn-floating-mobile:active {
+        transform: scale(0.95);
+    }
+</style>
 
 @code {
     private IEnumerable<Budget>? budgets;
