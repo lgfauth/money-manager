@@ -8,6 +8,7 @@
 @inject IInvestmentAssetService InvestmentAssetService
 @inject IInvestmentTransactionService InvestmentTransactionService
 @inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
 
 <PageTitle>Dashboard de Investimentos</PageTitle>
 
@@ -361,11 +362,34 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && summary != null)
+        if (firstRender && summary != null && assets != null)
         {
             // Aguardar um pouco para garantir que o DOM e scripts estejam prontos
             await Task.Delay(500);
-            await RenderCharts();
+            
+            // Verificar se chartInterop está disponível
+            try
+            {
+                var isAvailable = await JSRuntime.InvokeAsync<bool>("eval", "typeof chartInterop !== 'undefined'");
+                Console.WriteLine($"[InvestmentsDashboard] chartInterop disponível: {isAvailable}");
+                
+                if (isAvailable)
+                {
+                    await RenderCharts();
+                }
+                else
+                {
+                    Console.WriteLine("[InvestmentsDashboard] ERRO: chartInterop não está disponível!");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[InvestmentsDashboard] Erro ao verificar chartInterop: {ex.Message}");
+            }
+        }
+        else
+        {
+            Console.WriteLine($"[InvestmentsDashboard] OnAfterRenderAsync - firstRender: {firstRender}, summary: {summary != null}, assets: {assets != null}");
         }
     }
 
@@ -409,72 +433,96 @@
     {
         try
         {
-            Console.WriteLine("[InvestmentsDashboard] Iniciando renderização de gráficos...");
+            Console.WriteLine("[InvestmentsDashboard] ===== INICIANDO RENDERIZAÇÃO =====");
+            Console.WriteLine($"[InvestmentsDashboard] Summary: {summary != null}");
+            Console.WriteLine($"[InvestmentsDashboard] Assets: {assets != null} ({assets?.Count ?? 0})");
+            Console.WriteLine($"[InvestmentsDashboard] AssetsByType: {summary?.AssetsByType?.Count() ?? 0}");
             
-            if (summary == null)
+            if (summary == null || assets == null)
             {
-                Console.WriteLine("[InvestmentsDashboard] Summary é null, abortando renderização");
+                Console.WriteLine("[InvestmentsDashboard] Dados insuficientes para renderizar");
                 return;
             }
-            
-            if (assets == null)
-            {
-                Console.WriteLine("[InvestmentsDashboard] Assets é null, abortando renderização");
-                return;
-            }
-
-            Console.WriteLine($"[InvestmentsDashboard] AssetsByType: {summary.AssetsByType?.Count() ?? 0} tipos");
-            Console.WriteLine($"[InvestmentsDashboard] Assets: {assets.Count} ativos");
 
             // Gráfico 1: Diversificação por Tipo (Pizza)
-            if (summary.AssetsByType != null && summary.AssetsByType.Any())
+            try
             {
-                Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de diversificação por tipo...");
-                
-                var labels = summary.AssetsByType.Select(dto => GetAssetTypeName(dto.AssetType)).ToArray();
-                var data = summary.AssetsByType.Select(dto => (double)dto.CurrentValue).ToArray();
-                var colors = summary.AssetsByType.Select((dto, i) => GetChartColorByIndex(i)).ToArray();
+                if (summary.AssetsByType != null && summary.AssetsByType.Any())
+                {
+                    Console.WriteLine("[InvestmentsDashboard] === Gráfico 1: Diversificação por Tipo ===");
+                    
+                    var labels = summary.AssetsByType.Select(dto => GetAssetTypeName(dto.AssetType)).ToArray();
+                    var data = summary.AssetsByType.Select(dto => (double)dto.CurrentValue).ToArray();
+                    var colors = summary.AssetsByType.Select((dto, i) => GetChartColorByIndex(i)).ToArray();
 
-                await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "chartDiversificationType", labels, data, colors);
-                Console.WriteLine("[InvestmentsDashboard] Gráfico de diversificação por tipo renderizado");
+                    Console.WriteLine($"[InvestmentsDashboard] Labels: {string.Join(", ", labels)}");
+                    Console.WriteLine($"[InvestmentsDashboard] Data: {string.Join(", ", data)}");
+                    Console.WriteLine($"[InvestmentsDashboard] Chamando chartInterop.createPieChart...");
+
+                    await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "chartDiversificationType", labels, data, colors);
+                    Console.WriteLine("[InvestmentsDashboard] ? Gráfico 1 renderizado");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("[InvestmentsDashboard] Sem dados para gráfico de diversificação por tipo");
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 1: {ex.Message}");
             }
 
             // Gráfico 2: Top 10 Ativos (Barras)
-            if (assets.Any())
+            try
             {
-                Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de top 10 ativos...");
-                
-                var topAssets = assets.OrderByDescending(a => a.CurrentValue).Take(10).ToList();
-                var labels = topAssets.Select(a => a.Name).ToArray();
-                var data = topAssets.Select(a => (double)a.CurrentValue).ToArray();
-                var colors = topAssets.Select((_, i) => GetChartColorByIndex(i)).ToArray();
+                if (assets.Any())
+                {
+                    Console.WriteLine("[InvestmentsDashboard] === Gráfico 2: Top 10 Ativos ===");
+                    
+                    var topAssets = assets.OrderByDescending(a => a.CurrentValue).Take(10).ToList();
+                    var labels = topAssets.Select(a => a.Name).ToArray();
+                    var data = topAssets.Select(a => (double)a.CurrentValue).ToArray();
+                    var colors = topAssets.Select((_, i) => GetChartColorByIndex(i)).ToArray();
 
-                await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "chartTopAssets", labels, data, colors);
-                Console.WriteLine("[InvestmentsDashboard] Gráfico de top 10 ativos renderizado");
+                    Console.WriteLine($"[InvestmentsDashboard] Labels: {string.Join(", ", labels)}");
+                    Console.WriteLine($"[InvestmentsDashboard] Data: {string.Join(", ", data)}");
+                    Console.WriteLine($"[InvestmentsDashboard] Chamando chartInterop.createBarChart...");
+
+                    await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "chartTopAssets", labels, data, colors);
+                    Console.WriteLine("[InvestmentsDashboard] ? Gráfico 2 renderizado");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("[InvestmentsDashboard] Sem ativos para renderizar");
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 2: {ex.Message}");
             }
 
             // Gráfico 3: Evolução (Linha)
-            Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de evolução...");
-            await RenderEvolutionChart();
+            try
+            {
+                Console.WriteLine("[InvestmentsDashboard] === Gráfico 3: Evolução ===");
+                await RenderEvolutionChart();
+                Console.WriteLine("[InvestmentsDashboard] ? Gráfico 3 renderizado");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 3: {ex.Message}");
+            }
 
             // Gráfico 4: Rendimentos Mensais (Barras)
-            Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de rendimentos mensais...");
-            await RenderMonthlyYieldsChart();
+            try
+            {
+                Console.WriteLine("[InvestmentsDashboard] === Gráfico 4: Rendimentos ===");
+                await RenderMonthlyYieldsChart();
+                Console.WriteLine("[InvestmentsDashboard] ? Gráfico 4 renderizado");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 4: {ex.Message}");
+            }
             
-            Console.WriteLine("[InvestmentsDashboard] Todos os gráficos renderizados com sucesso!");
+            Console.WriteLine("[InvestmentsDashboard] ===== RENDERIZAÇÃO CONCLUÍDA =====");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[InvestmentsDashboard] Erro ao renderizar gráficos: {ex.Message}");
-            Console.WriteLine($"[InvestmentsDashboard] StackTrace: {ex.StackTrace}");
+            Console.WriteLine($"[InvestmentsDashboard] ??? ERRO GERAL: {ex.Message}");
+            Console.WriteLine($"[InvestmentsDashboard] Stack: {ex.StackTrace}");
         }
     }
 
@@ -627,4 +675,17 @@
             _ => "bg-secondary"
         };
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("chartInterop.destroyAllCharts");
+        }
+        catch
+        {
+            // ignore
+        }
+    }
 }
+
