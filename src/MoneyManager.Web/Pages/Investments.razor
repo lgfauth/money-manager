@@ -98,6 +98,8 @@
 
         @if (assets != null && assets.Any())
         {
+            var filteredAssets = GetFilteredAndSortedAssets().ToList();
+            
             <!-- Filtros e Ordenação -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
@@ -144,22 +146,24 @@
                 </div>
             </div>
 
-            <!-- Grid de Ativos -->
-            <div class="row g-3">
-                @foreach (var asset in GetFilteredAndSortedAssets())
-                {
-                    <div class="col-12 col-md-6 col-lg-4">
-                        <InvestmentAssetCard 
-                            Asset="@asset"
-                            OnEdit="@HandleEdit"
-                            OnDelete="@HandleDelete"
-                            OnBuy="@HandleBuy"
-                            OnSell="@HandleSell" />
-                    </div>
-                }
-            </div>
-
-            @if (!GetFilteredAndSortedAssets().Any())
+            @if (filteredAssets.Any())
+            {
+                <!-- Grid de Ativos -->
+                <div class="row g-3">
+                    @foreach (var asset in filteredAssets)
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <InvestmentAssetCard 
+                                Asset="@asset"
+                                OnEdit="@HandleEdit"
+                                OnDelete="@HandleDelete"
+                                OnBuy="@HandleBuy"
+                                OnSell="@HandleSell" />
+                        </div>
+                    }
+                </div>
+            }
+            else
             {
                 <div class="alert alert-info text-center">
                     <i class="fas fa-filter"></i> Nenhum ativo encontrado com os filtros aplicados.
@@ -436,8 +440,6 @@
 
         try
         {
-            Console.WriteLine("[Investments] Iniciando carregamento de dados...");
-            
             var assetsTask = InvestmentAssetService.GetAllAsync();
             var summaryTask = InvestmentAssetService.GetSummaryAsync();
             var accountsTask = AccountService.GetAllAsync();
@@ -448,10 +450,6 @@
             summary = await summaryTask;
             accounts = await accountsTask;
 
-            Console.WriteLine($"[Investments] Assets carregados: {assets?.Count ?? 0}");
-            Console.WriteLine($"[Investments] Summary: TotalInvested={summary?.TotalInvested}, CurrentValue={summary?.CurrentValue}");
-            Console.WriteLine($"[Investments] Accounts carregados: {accounts?.Count() ?? 0}");
-
             // Atualizar last price update
             if (assets != null && assets.Any())
             {
@@ -460,30 +458,16 @@
                     .OrderByDescending(a => a.LastPriceUpdate)
                     .Select(a => a.LastPriceUpdate)
                     .FirstOrDefault();
-                
-                Console.WriteLine($"[Investments] Last price update: {lastPriceUpdate}");
-                
-                // Log cada ativo carregado
-                foreach (var asset in assets)
-                {
-                    Console.WriteLine($"[Investments] Asset: {asset.Name}, Tipo: {asset.AssetType}, Quantidade: {asset.Quantity}, Valor: {asset.CurrentValue}");
-                }
-            }
-            else
-            {
-                Console.WriteLine("[Investments] Nenhum ativo encontrado!");
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Erro ao carregar investimentos: {ex.Message}";
             Console.WriteLine($"[Investments] Erro: {ex}");
-            Console.WriteLine($"[Investments] StackTrace: {ex.StackTrace}");
         }
         finally
         {
             isLoading = false;
-            Console.WriteLine("[Investments] Carregamento finalizado");
         }
     }
 
@@ -529,27 +513,16 @@
 
     private IEnumerable<InvestmentAssetResponseDto> GetFilteredAndSortedAssets()
     {
-        Console.WriteLine("[Investments] GetFilteredAndSortedAssets chamado");
-        
-        if (assets == null)
-        {
-            Console.WriteLine("[Investments] assets é null, retornando lista vazia");
-            return Enumerable.Empty<InvestmentAssetResponseDto>();
-        }
+        if (assets == null) return Enumerable.Empty<InvestmentAssetResponseDto>();
 
-        Console.WriteLine($"[Investments] Total de assets: {assets.Count}");
         var filtered = assets.AsEnumerable();
 
-        Console.WriteLine($"[Investments] Filtro tipo: '{filterAssetType}'");
         if (!string.IsNullOrEmpty(filterAssetType) && int.TryParse(filterAssetType, out var typeValue))
         {
             var assetType = (InvestmentAssetType)typeValue;
-            Console.WriteLine($"[Investments] Filtrando por tipo: {assetType}");
             filtered = filtered.Where(a => a.AssetType == assetType);
-            Console.WriteLine($"[Investments] Assets após filtro de tipo: {filtered.Count()}");
         }
 
-        Console.WriteLine($"[Investments] Termo de busca: '{searchTerm}'");
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var search = searchTerm.ToLower();
@@ -557,10 +530,8 @@
                 a.Name.ToLower().Contains(search) ||
                 (!string.IsNullOrEmpty(a.Ticker) && a.Ticker.ToLower().Contains(search))
             );
-            Console.WriteLine($"[Investments] Assets após busca: {filtered.Count()}");
         }
 
-        Console.WriteLine($"[Investments] Ordenação: {sortBy}");
         filtered = sortBy switch
         {
             "type" => filtered.OrderBy(a => a.AssetType).ThenBy(a => a.Name),
@@ -573,10 +544,7 @@
             _ => filtered.OrderBy(a => a.Name)
         };
 
-        var result = filtered.ToList();
-        Console.WriteLine($"[Investments] Total de assets filtrados e ordenados: {result.Count}");
-        
-        return result;
+        return filtered;
     }
 
     private void ShowAddModal()
