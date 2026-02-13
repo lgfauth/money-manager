@@ -12,7 +12,7 @@
 
 @inject NavigationManager Navigation
 
-<PageTitle>Meus Investimentos</PageTitle>
+<PageTitle>@Localization.Get("Investments.PageTitle")</PageTitle>
 
 <BusyOverlay IsBusy="@isBusy" Message="@busyMessage" />
 
@@ -22,17 +22,17 @@
         <div class="col-12">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                 <h1 class="mb-0">
-                    <i class="fas fa-chart-line text-primary"></i> Meus Investimentos
+                    <i class="fas fa-chart-line text-primary"></i> @Localization.Get("Investments.Title")
                 </h1>
                 <div class="d-flex gap-2">
                     <a href="/investments/reports" class="btn btn-outline-secondary">
-                        <i class="fas fa-file-invoice"></i> Relatórios
+                        <i class="fas fa-file-invoice"></i> @Localization.Get("Investments.Reports")
                     </a>
                     <a href="/investments/dashboard" class="btn btn-outline-primary">
-                        <i class="fas fa-chart-pie"></i> Dashboard
+                        <i class="fas fa-chart-pie"></i> @Localization.Get("Investments.Dashboard")
                     </a>
                     <button class="btn btn-primary" @onclick="ShowAddModal">
-                        <i class="fas fa-plus"></i> Adicionar Ativo
+                        <i class="fas fa-plus"></i> @Localization.Get("Investments.AddAsset")
                     </button>
                 </div>
             </div>
@@ -45,7 +45,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando investimentos...</p>
+            <p class="mt-3 text-muted">@Localization.Get("Investments.Loading")</p>
         </div>
     }
     else if (!string.IsNullOrEmpty(errorMessage))
@@ -63,11 +63,11 @@
             <div class="alert alert-info d-flex justify-content-between align-items-center mb-3">
                 <div>
                     <i class="fas fa-sync-alt"></i>
-                    <strong>Atualização Automática de Preços:</strong>
-                    Seus ativos são atualizados automaticamente 3x ao dia (12h, 15h e 18h).
+                    <strong>@Localization.Get("Investments.UpdatePrices"):</strong>
+                    @Localization.Get("Investments.UpdatePricesInfo")
                     @if (lastPriceUpdate.HasValue)
                     {
-                        <span>Última atualização: @lastPriceUpdate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span>@Localization.Get("Investments.LastUpdate") @lastPriceUpdate.Value.ToString("dd/MM/yyyy HH:mm")</span>
                     }
                 </div>
                 <button class="btn btn-sm btn-primary" @onclick="UpdatePricesManually" disabled="@isUpdatingPrices">
@@ -79,7 +79,7 @@
                     {
                         <i class="fas fa-sync-alt me-1"></i>
                     }
-                    Atualizar Agora
+                    @Localization.Get("Investments.UpdateNow")
                 </button>
             </div>
 
@@ -107,39 +107,39 @@
                     <div class="row g-3">
                         <!-- Tipo de Ativo -->
                         <div class="col-12 col-md-3">
-                            <label class="form-label small text-muted mb-1">Tipo de Ativo</label>
+                            <label class="form-label small text-muted mb-1">@Localization.Get("Investments.AssetType")</label>
                             <select class="form-select form-select-sm" @bind="filterAssetType" @bind:after="OnFilterChanged">
-                                <option value="">Todos</option>
-                                <option value="@((int)InvestmentAssetType.Stock)">Ações</option>
-                                <option value="@((int)InvestmentAssetType.FixedIncome)">Renda Fixa</option>
-                                <option value="@((int)InvestmentAssetType.RealEstate)">Fundos Imobiliários</option>
-                                <option value="@((int)InvestmentAssetType.Crypto)">Criptomoedas</option>
-                                <option value="@((int)InvestmentAssetType.Fund)">Fundos de Investimento</option>
-                                <option value="@((int)InvestmentAssetType.ETF)">ETFs</option>
-                                <option value="@((int)InvestmentAssetType.Other)">Outros</option>
+                                <option value="">@Localization.Get("Investments.AllTypes")</option>
+                                <option value="@((int)InvestmentAssetType.Stock)">@Localization.Get("Investments.Stock")</option>
+                                <option value="@((int)InvestmentAssetType.FixedIncome)">@Localization.Get("Investments.FixedIncome")</option>
+                                <option value="@((int)InvestmentAssetType.RealEstate)">@Localization.Get("Investments.RealEstate")</option>
+                                <option value="@((int)InvestmentAssetType.Crypto)">@Localization.Get("Investments.Crypto")</option>
+                                <option value="@((int)InvestmentAssetType.Fund)">@Localization.Get("Investments.Fund")</option>
+                                <option value="@((int)InvestmentAssetType.ETF)">@Localization.Get("Investments.ETF")</option>
+                                <option value="@((int)InvestmentAssetType.Other)">@Localization.Get("Investments.Other")</option>
                             </select>
                         </div>
 
                         <!-- Ordenar por -->
                         <div class="col-12 col-md-3">
-                            <label class="form-label small text-muted mb-1">Ordenar por</label>
+                            <label class="form-label small text-muted mb-1">@Localization.Get("Investments.SortBy")</label>
                             <select class="form-select form-select-sm" @bind="sortBy" @bind:after="OnFilterChanged">
-                                <option value="name">Nome</option>
-                                <option value="type">Tipo</option>
-                                <option value="value_desc">Valor (Maior)</option>
-                                <option value="value_asc">Valor (Menor)</option>
-                                <option value="profit_desc">Lucro/Prejuízo (Maior)</option>
-                                <option value="profit_asc">Lucro/Prejuízo (Menor)</option>
-                                <option value="performance_desc">Rentabilidade % (Maior)</option>
-                                <option value="performance_asc">Rentabilidade % (Menor)</option>
+                                <option value="name">@Localization.Get("Investments.SortByName")</option>
+                                <option value="type">@Localization.Get("Investments.SortByType")</option>
+                                <option value="value_desc">@Localization.Get("Investments.SortByValueDesc")</option>
+                                <option value="value_asc">@Localization.Get("Investments.SortByValueAsc")</option>
+                                <option value="profit_desc">@Localization.Get("Investments.SortByProfitDesc")</option>
+                                <option value="profit_asc">@Localization.Get("Investments.SortByProfitAsc")</option>
+                                <option value="performance_desc">@Localization.Get("Investments.SortByPerformanceDesc")</option>
+                                <option value="performance_asc">@Localization.Get("Investments.SortByPerformanceAsc")</option>
                             </select>
                         </div>
 
                         <!-- Pesquisar -->
                         <div class="col-12 col-md-6">
-                            <label class="form-label small text-muted mb-1">Pesquisar</label>
+                            <label class="form-label small text-muted mb-1">@Localization.Get("Investments.Search")</label>
                             <input type="text" class="form-control form-control-sm" 
-                                   placeholder="Nome ou ticker do ativo..." 
+                                   placeholder="@Localization.Get("Investments.SearchPlaceholder")" 
                                    @bind="searchTerm" 
                                    @bind:event="oninput" 
                                    @bind:after="OnFilterChanged" />
@@ -168,7 +168,7 @@
             else
             {
                 <div class="alert alert-info text-center">
-                    <i class="fas fa-filter"></i> Nenhum ativo encontrado com os filtros aplicados.
+                    <i class="fas fa-filter"></i> @Localization.Get("Investments.NoResults")
                 </div>
             }
         }
@@ -178,10 +178,10 @@
             <div class="card shadow-sm border-0 text-center py-5">
                 <div class="card-body">
                     <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
-                    <h4>Você ainda não possui investimentos</h4>
-                    <p class="text-muted">Comece adicionando seu primeiro ativo de investimento</p>
+                    <h4>@Localization.Get("Investments.NoAssets")</h4>
+                    <p class="text-muted">@Localization.Get("Investments.NoAssetsDescription")</p>
                     <button class="btn btn-primary btn-lg mt-3" @onclick="ShowAddModal">
-                        <i class="fas fa-plus"></i> Adicionar Primeiro Ativo
+                        <i class="fas fa-plus"></i> @Localization.Get("Investments.AddFirstAsset")
                     </button>
                 </div>
             </div>
@@ -198,7 +198,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas @(isEditing ? "fa-edit" : "fa-plus-circle")"></i>
-                        @(isEditing ? "Editar Ativo" : "Adicionar Ativo")
+                        @Localization.Get(isEditing ? "Investments.EditAsset" : "Investments.NewAsset")
                     </h5>
                     <button type="button" class="btn-close" @onclick="CancelAddEdit" disabled="@isBusy"></button>
                 </div>
@@ -216,9 +216,9 @@
                         {
                             <!-- Conta -->
                             <div class="col-md-6">
-                                <label class="form-label">Conta de Investimento <span class="text-danger">*</span></label>
+                                <label class="form-label">@Localization.Get("Investments.Account") <span class="text-danger">*</span></label>
                                 <select class="form-select" @bind="createRequest.AccountId">
-                                    <option value="">-- Selecione uma conta --</option>
+                                    <option value="">@Localization.Get("Investments.SelectAccount")</option>
                                     @if (accounts != null)
                                     {
                                         @foreach (var account in accounts.Where(a => a.Type == AccountType.Investment))
@@ -231,42 +231,42 @@
 
                             <!-- Tipo de Ativo -->
                             <div class="col-md-6">
-                                <label class="form-label">Tipo de Ativo <span class="text-danger">*</span></label>
+                                <label class="form-label">@Localization.Get("Investments.AssetType") <span class="text-danger">*</span></label>
                                 <select class="form-select" @bind="createRequest.AssetType">
-                                    <option value="@InvestmentAssetType.Stock">Ações</option>
-                                    <option value="@InvestmentAssetType.FixedIncome">Renda Fixa</option>
-                                    <option value="@InvestmentAssetType.RealEstate">Fundos Imobiliários</option>
-                                    <option value="@InvestmentAssetType.Crypto">Criptomoedas</option>
-                                    <option value="@InvestmentAssetType.Fund">Fundos de Investimento</option>
-                                    <option value="@InvestmentAssetType.ETF">ETFs</option>
-                                    <option value="@InvestmentAssetType.Other">Outros</option>
+                                    <option value="@InvestmentAssetType.Stock">@Localization.Get("Investments.Stock")</option>
+                                    <option value="@InvestmentAssetType.FixedIncome">@Localization.Get("Investments.FixedIncome")</option>
+                                    <option value="@InvestmentAssetType.RealEstate">@Localization.Get("Investments.RealEstate")</option>
+                                    <option value="@InvestmentAssetType.Crypto">@Localization.Get("Investments.Crypto")</option>
+                                    <option value="@InvestmentAssetType.Fund">@Localization.Get("Investments.Fund")</option>
+                                    <option value="@InvestmentAssetType.ETF">@Localization.Get("Investments.ETF")</option>
+                                    <option value="@InvestmentAssetType.Other">@Localization.Get("Investments.Other")</option>
                                 </select>
                             </div>
                         }
 
                         <!-- Nome -->
                         <div class="col-md-6">
-                            <label class="form-label">Nome do Ativo <span class="text-danger">*</span></label>
+                            <label class="form-label">@Localization.Get("Investments.Name") <span class="text-danger">*</span></label>
                             @if (isEditing)
                             {
-                                <input type="text" class="form-control" @bind="currentName" placeholder="Ex: Itaú Unibanco" />
+                                <input type="text" class="form-control" @bind="currentName" placeholder="@Localization.Get("Investments.NamePlaceholder")" />
                             }
                             else
                             {
-                                <input type="text" class="form-control" @bind="createRequest.Name" placeholder="Ex: Itaú Unibanco" />
+                                <input type="text" class="form-control" @bind="createRequest.Name" placeholder="@Localization.Get("Investments.NamePlaceholder")" />
                             }
                         </div>
 
                         <!-- Ticker -->
                         <div class="col-md-6">
-                            <label class="form-label">Ticker/Código</label>
+                            <label class="form-label">@Localization.Get("Investments.Ticker")</label>
                             @if (isEditing)
                             {
-                                <input type="text" class="form-control" @bind="currentTicker" placeholder="Ex: ITUB4" />
+                                <input type="text" class="form-control" @bind="currentTicker" placeholder="@Localization.Get("Investments.TickerPlaceholder")" />
                             }
                             else
                             {
-                                <input type="text" class="form-control" @bind="createRequest.Ticker" placeholder="Ex: ITUB4" />
+                                <input type="text" class="form-control" @bind="createRequest.Ticker" placeholder="@Localization.Get("Investments.TickerPlaceholder")" />
                             }
                         </div>
 
@@ -274,7 +274,7 @@
                         {
                             <!-- Quantidade Inicial -->
                             <div class="col-md-4">
-                                <label class="form-label">Quantidade Inicial</label>
+                                <label class="form-label">@Localization.Get("Investments.InitialQuantity")</label>
                                 <input type="number" class="form-control" 
                                        @bind="createRequest.InitialQuantity" 
                                        step="0.01" 
@@ -283,13 +283,13 @@
 
                             <!-- Preço Inicial -->
                             <div class="col-md-4">
-                                <label class="form-label">Preço Inicial</label>
+                                <label class="form-label">@Localization.Get("Investments.InitialPrice")</label>
                                 <MoneyInput @bind-Value="createRequest.InitialPrice" Placeholder="R$ 0,00" />
                             </div>
 
                             <!-- Taxas -->
                             <div class="col-md-4">
-                                <label class="form-label">Taxas/Corretagem</label>
+                                <label class="form-label">@Localization.Get("Investments.InitialFees")</label>
                                 <MoneyInput @bind-Value="createRequest.InitialFees" Placeholder="R$ 0,00" />
                             </div>
 
@@ -297,7 +297,7 @@
                             {
                                 <div class="col-12">
                                     <div class="alert alert-info mb-0">
-                                        <strong>Total a Investir:</strong> 
+                                        <strong>@Localization.Get("Investments.TotalToInvest")</strong> 
                                         R$ @((createRequest.InitialQuantity * createRequest.InitialPrice + createRequest.InitialFees).ToString("N2"))
                                     </div>
                                 </div>
@@ -306,21 +306,21 @@
 
                         <!-- Notas -->
                         <div class="col-12">
-                            <label class="form-label">Observações</label>
+                            <label class="form-label">@Localization.Get("Investments.Notes")</label>
                             @if (isEditing)
                             {
-                                <textarea class="form-control" @bind="currentNotes" rows="3" placeholder="Adicione notas sobre este ativo..."></textarea>
+                                <textarea class="form-control" @bind="currentNotes" rows="3" placeholder="@Localization.Get("Investments.NotesPlaceholder")"></textarea>
                             }
                             else
                             {
-                                <textarea class="form-control" @bind="createRequest.Notes" rows="3" placeholder="Adicione notas sobre este ativo..."></textarea>
+                                <textarea class="form-control" @bind="createRequest.Notes" rows="3" placeholder="@Localization.Get("Investments.NotesPlaceholder")"></textarea>
                             }
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CancelAddEdit" disabled="@isBusy">
-                        <i class="fas fa-times"></i> Cancelar
+                        <i class="fas fa-times"></i> @Localization.Get("Investments.Cancel")
                     </button>
                     <button type="button" class="btn btn-primary" @onclick="SaveAsset" disabled="@isBusy">
                         @if (isBusy)
@@ -331,7 +331,7 @@
                         {
                             <i class="fas fa-save"></i>
                         }
-                        @(isEditing ? "Salvar Alterações" : "Adicionar Ativo")
+                        @Localization.Get(isEditing ? "Investments.Save" : "Investments.Add")
                     </button>
                 </div>
             </div>
@@ -347,7 +347,7 @@
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title">
-                        <i class="fas fa-trash"></i> Confirmar Exclusão
+                        <i class="fas fa-trash"></i> @Localization.Get("Investments.ConfirmDelete")
                     </h5>
                     <button type="button" class="btn-close btn-close-white" @onclick="CancelDelete" disabled="@isBusy"></button>
                 </div>
@@ -356,16 +356,16 @@
                         <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
                     </div>
                     <p class="text-center">
-                        Tem certeza que deseja excluir o ativo <strong>@assetToDelete.Name</strong>?
+                        @Localization.Get("Investments.DeleteQuestion", assetToDelete.Name)
                     </p>
                     <div class="alert alert-warning">
                         <i class="fas fa-info-circle"></i>
-                        <strong>Atenção:</strong> Esta ação não pode ser desfeita. Todo o histórico de transações será mantido.
+                        <strong>@Localization.Get("Common.Warning"):</strong> @Localization.Get("Investments.DeleteWarning")
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" @onclick="CancelDelete" disabled="@isBusy">
-                        <i class="fas fa-times"></i> Cancelar
+                        <i class="fas fa-times"></i> @Localization.Get("Investments.Cancel")
                     </button>
                     <button type="button" class="btn btn-danger" @onclick="ConfirmDelete" disabled="@isBusy">
                         @if (isBusy)
@@ -376,7 +376,7 @@
                         {
                             <i class="fas fa-trash"></i>
                         }
-                        Sim, Excluir
+                        @Localization.Get("Investments.DeleteConfirm")
                     </button>
                 </div>
             </div>
@@ -506,7 +506,7 @@ private void OnFilterChanged()
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar investimentos: {ex.Message}";
+            errorMessage = Localization.Get("Investments.ErrorLoading", ex.Message);
             Console.WriteLine($"[Investments] Erro: {ex}");
         }
         finally
@@ -532,7 +532,7 @@ private void OnFilterChanged()
             if (response != null)
             {
                 priceUpdateSuccess = true;
-                priceUpdateMessage = $"Preços atualizados! {response.Updated} ativo(s) atualizado(s), {response.Skipped} pulado(s).";
+                priceUpdateMessage = Localization.Get("Investments.UpdateSuccess", response.Updated, response.Skipped);
                 
                 // Recarregar dados
                 await LoadData();
@@ -540,13 +540,13 @@ private void OnFilterChanged()
             else
             {
                 priceUpdateSuccess = false;
-                priceUpdateMessage = "Erro ao atualizar preços. Tente novamente.";
+                priceUpdateMessage = Localization.Get("Investments.UpdateError");
             }
         }
         catch (Exception ex)
         {
             priceUpdateSuccess = false;
-            priceUpdateMessage = $"Erro: {ex.Message}";
+            priceUpdateMessage = Localization.Get("Investments.ErrorSaving", ex.Message);
             Console.WriteLine($"[Investments] Erro ao atualizar preços: {ex}");
         }
         finally
@@ -589,7 +589,7 @@ private void OnFilterChanged()
 
         modalError = null;
         isBusy = true;
-        busyMessage = isEditing ? "Salvando alterações..." : "Criando ativo...";
+        busyMessage = Localization.Get(isEditing ? "Investments.Saving" : "Investments.Creating");
 
         try
         {
@@ -597,7 +597,7 @@ private void OnFilterChanged()
             {
                 if (string.IsNullOrWhiteSpace(currentName))
                 {
-                    modalError = "O nome do ativo é obrigatório.";
+                    modalError = Localization.Get("Investments.ErrorNameRequired");
                     return;
                 }
 
@@ -614,13 +614,13 @@ private void OnFilterChanged()
             {
                 if (string.IsNullOrEmpty(createRequest.AccountId))
                 {
-                    modalError = "Selecione uma conta de investimento.";
+                    modalError = Localization.Get("Investments.ErrorAccountRequired");
                     return;
                 }
 
                 if (string.IsNullOrWhiteSpace(createRequest.Name))
                 {
-                    modalError = "O nome do ativo é obrigatório.";
+                    modalError = Localization.Get("Investments.ErrorNameRequired");
                     return;
                 }
 
@@ -632,7 +632,7 @@ private void OnFilterChanged()
         }
         catch (Exception ex)
         {
-            modalError = $"Erro: {ex.Message}";
+            modalError = Localization.Get("Investments.ErrorSaving", ex.Message);
             Console.WriteLine($"[Investments] Erro ao salvar: {ex}");
         }
         finally
@@ -659,7 +659,7 @@ private void OnFilterChanged()
         if (isBusy || assetToDelete == null) return;
 
         isBusy = true;
-        busyMessage = "Excluindo ativo...";
+        busyMessage = Localization.Get("Investments.Deleting");
 
         try
         {
@@ -670,7 +670,7 @@ private void OnFilterChanged()
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao excluir ativo: {ex.Message}";
+            errorMessage = Localization.Get("Investments.ErrorDeleting", ex.Message);
             Console.WriteLine($"[Investments] Erro ao excluir: {ex}");
         }
         finally

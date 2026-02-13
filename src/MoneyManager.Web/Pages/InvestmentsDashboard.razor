@@ -1,4 +1,4 @@
-@page "/investments/dashboard"
+ï»¿@page "/investments/dashboard"
 @using MoneyManager.Application.DTOs.Response
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Web.Services
@@ -12,7 +12,7 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<PageTitle>Dashboard de Investimentos</PageTitle>
+<PageTitle>@Localization.Get("InvestmentsDashboard.PageTitle")</PageTitle>
 
 <div class="container-fluid py-4">
     <!-- Header -->
@@ -20,14 +20,14 @@
         <div class="col-12">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                 <h1 class="mb-0">
-                    <i class="fas fa-chart-pie text-primary"></i> Dashboard de Investimentos
+                    <i class="fas fa-chart-pie text-primary"></i> @Localization.Get("InvestmentsDashboard.Title")
                 </h1>
                 <div class="d-flex gap-2">
                     <a href="/investments/reports" class="btn btn-outline-secondary">
-                        <i class="fas fa-file-invoice"></i> Relatórios
+                        <i class="fas fa-file-invoice"></i> @Localization.Get("InvestmentsDashboard.Reports")
                     </a>
                     <a href="/investments" class="btn btn-outline-primary">
-                        <i class="fas fa-arrow-left"></i> Voltar para Ativos
+                        <i class="fas fa-arrow-left"></i> @Localization.Get("InvestmentsDashboard.BackToAssets")
                     </a>
                 </div>
             </div>
@@ -40,7 +40,7 @@
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Carregando...</span>
             </div>
-            <p class="mt-3 text-muted">Carregando dashboard...</p>
+            <p class="mt-3 text-muted">@Localization.Get("InvestmentsDashboard.Loading")</p>
         </div>
     }
     else if (!string.IsNullOrEmpty(errorMessage))
@@ -52,7 +52,7 @@
     }
     else if (summary != null)
     {
-        <!-- A. Cards de Métricas (Topo) -->
+        <!-- A. Cards de Mï¿½tricas (Topo) -->
         <div class="row g-3 mb-4">
             <!-- Total Investido -->
             <div class="col-12 col-md-6 col-lg-3">
@@ -63,7 +63,7 @@
                                 <i class="fas fa-wallet text-primary fa-2x"></i>
                             </div>
                             <div>
-                                <small class="text-muted d-block">Total Investido</small>
+                                <small class="text-muted d-block">@Localization.Get("InvestmentsDashboard.TotalInvested")</small>
                                 <h4 class="mb-0 fw-bold">R$ @summary.TotalInvested.ToString("N2")</h4>
                             </div>
                         </div>
@@ -80,7 +80,7 @@
                                 <i class="fas fa-chart-line text-info fa-2x"></i>
                             </div>
                             <div>
-                                <small class="text-muted d-block">Valor Atual</small>
+                                <small class="text-muted d-block">@Localization.Get("InvestmentsDashboard.CurrentValue")</small>
                                 <h4 class="mb-0 fw-bold">R$ @summary.CurrentValue.ToString("N2")</h4>
                             </div>
                         </div>
@@ -88,7 +88,7 @@
                 </div>
             </div>
 
-            <!-- Lucro/Prejuízo -->
+            <!-- Lucro/Prejuï¿½zo -->
             <div class="col-12 col-md-6 col-lg-3">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body">
@@ -97,7 +97,7 @@
                                 <i class="fas @GetProfitLossIcon() @GetProfitLossTextClass() fa-2x"></i>
                             </div>
                             <div>
-                                <small class="text-muted d-block">Lucro/Prejuízo</small>
+                                <small class="text-muted d-block">@Localization.Get("InvestmentsDashboard.ProfitLoss")</small>
                                 <h4 class="mb-0 fw-bold @GetProfitLossTextClass()">R$ @summary.TotalProfitLoss.ToString("N2")</h4>
                                 <small class="@GetProfitLossTextClass()">@summary.TotalProfitLossPercentage.ToString("N2")%</small>
                             </div>
@@ -115,11 +115,11 @@
                                 <i class="fas fa-percentage text-warning fa-2x"></i>
                             </div>
                             <div>
-                                <small class="text-muted d-block">Rentabilidade Total</small>
+                                <small class="text-muted d-block">@Localization.Get("InvestmentsDashboard.TotalReturn")</small>
                                 <h4 class="mb-0 fw-bold @GetProfitLossTextClass()">@summary.TotalProfitLossPercentage.ToString("N2")%</h4>
                                 @if (summary.TotalYields > 0)
                                 {
-                                    <small class="text-success">+R$ @summary.TotalYields.ToString("N2") em rendimentos</small>
+                                    <small class="text-success">+R$ @summary.TotalYields.ToString("N2") @Localization.Get("Investments.TotalYields")</small>
                                 }
                             </div>
                         </div>
@@ -128,14 +128,14 @@
             </div>
         </div>
 
-        <!-- B. Gráficos -->
+        <!-- B. Grï¿½ficos -->
         <div class="row g-4 mb-4">
-            <!-- Gráfico 1: Diversificação por Tipo -->
+            <!-- Grï¿½fico 1: Diversificaï¿½ï¿½o por Tipo -->
             <div class="col-12 col-lg-6">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom">
                         <h6 class="mb-0">
-                            <i class="fas fa-chart-pie text-primary"></i> Diversificação por Tipo de Ativo
+                            <i class="fas fa-chart-pie text-primary"></i> Diversificaï¿½ï¿½o por Tipo de Ativo
                         </h6>
                     </div>
                     <div class="card-body">
@@ -144,12 +144,12 @@
                 </div>
             </div>
 
-            <!-- Gráfico 2: Top 10 Ativos -->
+            <!-- Grï¿½fico 2: Top 10 Ativos -->
             <div class="col-12 col-lg-6">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom">
                         <h6 class="mb-0">
-                            <i class="fas fa-chart-bar text-primary"></i> Top 10 Ativos por Valor
+                            <i class="fas fa-chart-bar text-primary"></i> @Localization.Get("InvestmentsDashboard.Top10Assets")
                         </h6>
                     </div>
                     <div class="card-body">
@@ -158,19 +158,19 @@
                 </div>
             </div>
 
-            <!-- Gráfico 3: Evolução Patrimonial -->
+            <!-- Grï¿½fico 3: Evoluï¿½ï¿½o Patrimonial -->
             <div class="col-12 col-lg-6">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">
-                            <i class="fas fa-chart-line text-primary"></i> Evolução Patrimonial
+                            <i class="fas fa-chart-line text-primary"></i> Evoluï¿½ï¿½o Patrimonial
                         </h6>
                         <div class="btn-group btn-group-sm" role="group">
-                            <button type="button" class="btn @(evolutionPeriod == "1M" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("1M"))">1M</button>
-                            <button type="button" class="btn @(evolutionPeriod == "3M" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("3M"))">3M</button>
-                            <button type="button" class="btn @(evolutionPeriod == "6M" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("6M"))">6M</button>
-                            <button type="button" class="btn @(evolutionPeriod == "1Y" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("1Y"))">1A</button>
-                            <button type="button" class="btn @(evolutionPeriod == "ALL" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("ALL"))">Tudo</button>
+                            <button type="button" class="btn @(evolutionPeriod == "1M" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("1M"))">@Localization.Get("InvestmentsDashboard.Period1M")</button>
+                            <button type="button" class="btn @(evolutionPeriod == "3M" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("3M"))">@Localization.Get("InvestmentsDashboard.Period3M")</button>
+                            <button type="button" class="btn @(evolutionPeriod == "6M" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("6M"))">@Localization.Get("InvestmentsDashboard.Period6M")</button>
+                            <button type="button" class="btn @(evolutionPeriod == "1Y" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("1Y"))">@Localization.Get("InvestmentsDashboard.Period1Y")</button>
+                            <button type="button" class="btn @(evolutionPeriod == "ALL" ? "btn-primary" : "btn-outline-primary")" @onclick="@(() => SetEvolutionPeriod("ALL"))">@Localization.Get("InvestmentsDashboard.PeriodAll")</button>
                         </div>
                     </div>
                     <div class="card-body">
@@ -179,12 +179,12 @@
                 </div>
             </div>
 
-            <!-- Gráfico 4: Rendimentos Mensais -->
+            <!-- Grï¿½fico 4: Rendimentos Mensais -->
             <div class="col-12 col-lg-6">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom">
                         <h6 class="mb-0">
-                            <i class="fas fa-coins text-primary"></i> Rendimentos Mensais (Últimos 12 meses)
+                            <i class="fas fa-coins text-primary"></i> Rendimentos Mensais (ï¿½ltimos 12 meses)
                         </h6>
                     </div>
                     <div class="card-body">
@@ -194,14 +194,14 @@
             </div>
         </div>
 
-        <!-- C. Tabelas de Análise -->
+        <!-- C. Tabelas de Anï¿½lise -->
         <div class="row g-4">
-            <!-- Top 5 Melhores Performers -->
+            <!-- @Localization.Get("InvestmentsDashboard.TopPerformers") -->
             <div class="col-12 col-lg-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-success text-white">
                         <h6 class="mb-0">
-                            <i class="fas fa-trophy"></i> Top 5 Melhores Performers
+                            <i class="fas fa-trophy"></i> @Localization.Get("InvestmentsDashboard.TopPerformers")
                         </h6>
                     </div>
                     <div class="card-body p-0">
@@ -231,19 +231,19 @@
                         {
                             <div class="p-3 text-center text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2"></i>
-                                <p class="mb-0">Sem dados disponíveis</p>
+                                <p class="mb-0">Sem dados disponï¿½veis</p>
                             </div>
                         }
                     </div>
                 </div>
             </div>
 
-            <!-- Top 5 Piores Performers -->
+            <!-- @Localization.Get("InvestmentsDashboard.WorstPerformers") -->
             <div class="col-12 col-lg-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-danger text-white">
                         <h6 class="mb-0">
-                            <i class="fas fa-chart-line"></i> Top 5 Piores Performers
+                            <i class="fas fa-chart-line"></i> @Localization.Get("InvestmentsDashboard.WorstPerformers")
                         </h6>
                     </div>
                     <div class="card-body p-0">
@@ -273,19 +273,19 @@
                         {
                             <div class="p-3 text-center text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2"></i>
-                                <p class="mb-0">Sem dados disponíveis</p>
+                                <p class="mb-0">Sem dados disponï¿½veis</p>
                             </div>
                         }
                     </div>
                 </div>
             </div>
 
-            <!-- Transações Recentes -->
+            <!-- Transaï¿½ï¿½es Recentes -->
             <div class="col-12 col-lg-4">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-primary text-white">
                         <h6 class="mb-0">
-                            <i class="fas fa-history"></i> Transações Recentes
+                            <i class="fas fa-history"></i> Transaï¿½ï¿½es Recentes
                         </h6>
                     </div>
                     <div class="card-body p-0">
@@ -320,7 +320,7 @@
                         {
                             <div class="p-3 text-center text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2"></i>
-                                <p class="mb-0">Sem transações</p>
+                                <p class="mb-0">Sem transaï¿½ï¿½es</p>
                             </div>
                         }
                     </div>
@@ -334,10 +334,10 @@
         <div class="card shadow-sm border-0 text-center py-5">
             <div class="card-body">
                 <i class="fas fa-chart-pie fa-4x text-muted mb-3"></i>
-                <h4>Dashboard Vazio</h4>
-                <p class="text-muted">Adicione investimentos para visualizar análises e gráficos</p>
+                <h4>@Localization.Get("InvestmentsDashboard.EmptyTitle")</h4>
+                <p class="text-muted">Adicione investimentos para visualizar anï¿½lises e grï¿½ficos</p>
                 <a href="/investments" class="btn btn-primary mt-3">
-                    <i class="fas fa-plus"></i> Adicionar Investimentos
+                    <i class="fas fa-plus"></i> @Localization.Get("InvestmentsDashboard.AddInvestments")
                 </a>
             </div>
         </div>
@@ -357,7 +357,7 @@
     // Chart periods
     private string evolutionPeriod = "6M";
     
-    // Flag para controlar renderização dos gráficos
+    // Flag para controlar renderizaï¿½ï¿½o dos grï¿½ficos
     private bool chartsRendered = false;
 
     protected override async Task OnInitializedAsync()
@@ -367,20 +367,20 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Renderizar gráficos quando os dados estiverem disponíveis e ainda não foram renderizados
+        // Renderizar grï¿½ficos quando os dados estiverem disponï¿½veis e ainda nï¿½o foram renderizados
         if (!isLoading && !chartsRendered && summary != null && assets != null)
         {
             chartsRendered = true;
-            Console.WriteLine("[InvestmentsDashboard] Condições atendidas, iniciando renderização dos gráficos...");
+            Console.WriteLine("[InvestmentsDashboard] Condiï¿½ï¿½es atendidas, iniciando renderizaï¿½ï¿½o dos grï¿½ficos...");
             
-            // Aguardar um pouco para garantir que o DOM está pronto
+            // Aguardar um pouco para garantir que o DOM estï¿½ pronto
             await Task.Delay(100);
             
-            // Verificar se chartInterop está disponível
+            // Verificar se chartInterop estï¿½ disponï¿½vel
             try
             {
                 var isAvailable = await JSRuntime.InvokeAsync<bool>("eval", "typeof chartInterop !== 'undefined'");
-                Console.WriteLine($"[InvestmentsDashboard] chartInterop disponível: {isAvailable}");
+                Console.WriteLine($"[InvestmentsDashboard] chartInterop disponï¿½vel: {isAvailable}");
                 
                 if (isAvailable)
                 {
@@ -388,7 +388,7 @@
                 }
                 else
                 {
-                    Console.WriteLine("[InvestmentsDashboard] ERRO: chartInterop não está disponível!");
+                    Console.WriteLine("[InvestmentsDashboard] ERRO: chartInterop nï¿½o estï¿½ disponï¿½vel!");
                     chartsRendered = false; // Permitir nova tentativa
                 }
             }
@@ -444,7 +444,7 @@
     {
         try
         {
-            Console.WriteLine("[InvestmentsDashboard] ===== INICIANDO RENDERIZAÇÃO =====");
+            Console.WriteLine("[InvestmentsDashboard] ===== INICIANDO RENDERIZAï¿½ï¿½O =====");
             Console.WriteLine($"[InvestmentsDashboard] Summary: {summary != null}");
             Console.WriteLine($"[InvestmentsDashboard] Assets: {assets != null} ({assets?.Count ?? 0})");
             Console.WriteLine($"[InvestmentsDashboard] AssetsByType: {summary?.AssetsByType?.Count() ?? 0}");
@@ -455,12 +455,12 @@
                 return;
             }
 
-            // Gráfico 1: Diversificação por Tipo (Pizza)
+            // Grï¿½fico 1: Diversificaï¿½ï¿½o por Tipo (Pizza)
             try
             {
                 if (summary.AssetsByType != null && summary.AssetsByType.Any())
                 {
-                    Console.WriteLine("[InvestmentsDashboard] === Gráfico 1: Diversificação por Tipo ===");
+                    Console.WriteLine("[InvestmentsDashboard] === Grï¿½fico 1: Diversificaï¿½ï¿½o por Tipo ===");
                     
                     var labels = summary.AssetsByType.Select(dto => GetAssetTypeName(dto.AssetType)).ToArray();
                     var data = summary.AssetsByType.Select(dto => (double)dto.CurrentValue).ToArray();
@@ -471,20 +471,20 @@
                     Console.WriteLine($"[InvestmentsDashboard] Chamando chartInterop.createPieChart...");
 
                     await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "chartDiversificationType", labels, data, colors);
-                    Console.WriteLine("[InvestmentsDashboard] ? Gráfico 1 renderizado");
+                    Console.WriteLine("[InvestmentsDashboard] ? Grï¿½fico 1 renderizado");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 1: {ex.Message}");
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Grï¿½fico 1: {ex.Message}");
             }
 
-            // Gráfico 2: Top 10 Ativos (Barras)
+            // Grï¿½fico 2: Top 10 Ativos (Barras)
             try
             {
                 if (assets.Any())
                 {
-                    Console.WriteLine("[InvestmentsDashboard] === Gráfico 2: Top 10 Ativos ===");
+                    Console.WriteLine("[InvestmentsDashboard] === Grï¿½fico 2: Top 10 Ativos ===");
                     
                     var topAssets = assets.OrderByDescending(a => a.CurrentValue).Take(10).ToList();
                     var labels = topAssets.Select(a => a.Name).ToArray();
@@ -496,39 +496,39 @@
                     Console.WriteLine($"[InvestmentsDashboard] Chamando chartInterop.createBarChart...");
 
                     await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "chartTopAssets", labels, data, colors);
-                    Console.WriteLine("[InvestmentsDashboard] ? Gráfico 2 renderizado");
+                    Console.WriteLine("[InvestmentsDashboard] ? Grï¿½fico 2 renderizado");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 2: {ex.Message}");
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Grï¿½fico 2: {ex.Message}");
             }
 
-            // Gráfico 3: Evolução (Linha)
+            // Grï¿½fico 3: Evoluï¿½ï¿½o (Linha)
             try
             {
-                Console.WriteLine("[InvestmentsDashboard] === Gráfico 3: Evolução ===");
+                Console.WriteLine("[InvestmentsDashboard] === Grï¿½fico 3: Evoluï¿½ï¿½o ===");
                 await RenderEvolutionChart();
-                Console.WriteLine("[InvestmentsDashboard] ? Gráfico 3 renderizado");
+                Console.WriteLine("[InvestmentsDashboard] ? Grï¿½fico 3 renderizado");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 3: {ex.Message}");
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Grï¿½fico 3: {ex.Message}");
             }
 
-            // Gráfico 4: Rendimentos Mensais (Barras)
+            // Grï¿½fico 4: Rendimentos Mensais (Barras)
             try
             {
-                Console.WriteLine("[InvestmentsDashboard] === Gráfico 4: Rendimentos ===");
+                Console.WriteLine("[InvestmentsDashboard] === Grï¿½fico 4: Rendimentos ===");
                 await RenderMonthlyYieldsChart();
-                Console.WriteLine("[InvestmentsDashboard] ? Gráfico 4 renderizado");
+                Console.WriteLine("[InvestmentsDashboard] ? Grï¿½fico 4 renderizado");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Gráfico 4: {ex.Message}");
+                Console.WriteLine($"[InvestmentsDashboard] ? Erro no Grï¿½fico 4: {ex.Message}");
             }
             
-            Console.WriteLine("[InvestmentsDashboard] ===== RENDERIZAÇÃO CONCLUÍDA =====");
+            Console.WriteLine("[InvestmentsDashboard] ===== RENDERIZAï¿½ï¿½O CONCLUï¿½DA =====");
         }
         catch (Exception ex)
         {
@@ -541,9 +541,9 @@
     {
         try
         {
-            Console.WriteLine("[InvestmentsDashboard] Gerando dados mock para evolução patrimonial...");
+            Console.WriteLine("[InvestmentsDashboard] Gerando dados mock para evoluï¿½ï¿½o patrimonial...");
             
-            // Mock data - substituir por dados reais do histórico
+            // Mock data - substituir por dados reais do histï¿½rico
             var labels = Enumerable.Range(0, 12)
                 .Select(i =>
                 {
@@ -560,14 +560,14 @@
                 .Select(i => (double)(summary?.TotalInvested ?? 0) * (1 + new Random(i + 100).NextDouble() * 0.1 - 0.05))
                 .ToArray();
 
-            Console.WriteLine($"[InvestmentsDashboard] Dados de evolução gerados: {labels.Length} pontos");
+            Console.WriteLine($"[InvestmentsDashboard] Dados de evoluï¿½ï¿½o gerados: {labels.Length} pontos");
             
             await JSRuntime.InvokeVoidAsync("chartInterop.createLineChart", "chartEvolution", labels, new { income = incomeData, expenses = expensesData });
-            Console.WriteLine("[InvestmentsDashboard] Gráfico de evolução renderizado");
+            Console.WriteLine("[InvestmentsDashboard] Grï¿½fico de evoluï¿½ï¿½o renderizado");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[InvestmentsDashboard] Erro ao renderizar evolução: {ex.Message}");
+            Console.WriteLine($"[InvestmentsDashboard] Erro ao renderizar evoluï¿½ï¿½o: {ex.Message}");
         }
     }
 
@@ -594,7 +594,7 @@
 
             Console.WriteLine($"[InvestmentsDashboard] Dados de rendimentos gerados: {labels.Length} pontos");
             await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "chartMonthlyYields", labels, data, colors);
-            Console.WriteLine("[InvestmentsDashboard] Gráfico de rendimentos mensais renderizado");
+            Console.WriteLine("[InvestmentsDashboard] Grï¿½fico de rendimentos mensais renderizado");
         }
         catch (Exception ex)
         {
@@ -635,7 +635,7 @@
     {
         return type switch
         {
-            InvestmentAssetType.Stock => "Ações",
+            InvestmentAssetType.Stock => "Aï¿½ï¿½es",
             InvestmentAssetType.FixedIncome => "Renda Fixa",
             InvestmentAssetType.RealEstate => "FIIs",
             InvestmentAssetType.Crypto => "Cripto",
