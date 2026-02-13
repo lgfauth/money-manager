@@ -1,56 +1,56 @@
-# ?? Guia do Usuário - Sistema de Investimentos
+# ðŸ“˜ Guia do UsuÃ¡rio - Sistema de Investimentos
 
-## Bem-vindo ao MoneyManager Investimentos! ??
+## Bem-vindo ao MoneyManager Investimentos! ðŸš€
 
-Este guia vai te ensinar a usar todas as funcionalidades do módulo de investimentos para gerenciar sua carteira de forma profissional.
+Este guia vai te ensinar a usar todas as funcionalidades do mÃ³dulo de investimentos para gerenciar sua carteira de forma profissional.
 
 ---
 
-## ?? Índice
+## ðŸ“‘ Ãndice
 
-1. [Começando](#começando)
+1. [ComeÃ§ando](#comeÃ§ando)
 2. [Criando sua primeira conta de investimento](#criando-sua-primeira-conta-de-investimento)
 3. [Adicionando um ativo](#adicionando-um-ativo)
 4. [Registrando compras](#registrando-compras)
 5. [Registrando vendas](#registrando-vendas)
-6. [Lançando rendimentos](#lançando-rendimentos)
-7. [Ajustando preços](#ajustando-preços)
+6. [LanÃ§ando rendimentos](#lanÃ§ando-rendimentos)
+7. [Ajustando preÃ§os](#ajustando-preÃ§os)
 8. [Visualizando o dashboard](#visualizando-o-dashboard)
-9. [Gerando relatórios](#gerando-relatórios)
-10. [Dicas e boas práticas](#dicas-e-boas-práticas)
+9. [Gerando relatÃ³rios](#gerando-relatÃ³rios)
+10. [Dicas e boas prÃ¡ticas](#dicas-e-boas-prÃ¡ticas)
 11. [Perguntas Frequentes (FAQ)](#perguntas-frequentes-faq)
 
 ---
 
-## Começando
+## ComeÃ§ando
 
-### O que você pode fazer?
+### O que vocÃª pode fazer?
 
-Com o módulo de investimentos do MoneyManager, você pode:
+Com o mÃ³dulo de investimentos do MoneyManager, vocÃª pode:
 
-? **Gerenciar múltiplos tipos de ativos:**
-- Ações (B3)
-- Fundos Imobiliários (FIIs)
+âœ… **Gerenciar mÃºltiplos tipos de ativos:**
+- AÃ§Ãµes (B3)
+- Fundos ImobiliÃ¡rios (FIIs)
 - Renda Fixa (CDBs, LCIs, LCAs, Tesouro Direto)
 - Criptomoedas
 - Fundos de Investimento
 - ETFs
 - Outros
 
-? **Acompanhar automaticamente:**
-- Preço médio de compra
-- Lucro ou prejuízo (realizado e não realizado)
+âœ… **Acompanhar automaticamente:**
+- PreÃ§o mÃ©dio de compra
+- Lucro ou prejuÃ­zo (realizado e nÃ£o realizado)
 - Rentabilidade percentual
-- Cotações atualizadas 3x ao dia (ações e FIIs B3)
+- CotaÃ§Ãµes atualizadas 3Ã— ao dia (aÃ§Ãµes e FIIs B3)
 
-? **Registrar todas as operações:**
+âœ… **Registrar todas as operaÃ§Ãµes:**
 - Compras e vendas
 - Dividendos, JCP, juros
-- Aluguéis de FIIs
+- AluguÃ©is de FIIs
 - Taxas de corretagem
 
-? **Gerar relatórios:**
-- Vendas para declaração de IR
+âœ… **Gerar relatÃ³rios:**
+- Vendas para declaraÃ§Ã£o de IR
 - Rendimentos recebidos
 - Extrato consolidado
 
@@ -62,178 +62,178 @@ Com o módulo de investimentos do MoneyManager, você pode:
 
 1. **Acesse o menu Contas**
    - Clique em "Contas" no menu lateral
-   - Clique no botão "+ Nova Conta"
+   - Clique no botÃ£o "+ Nova Conta"
 
 2. **Preencha os dados**
    - **Nome:** "Corretora XP" (exemplo)
-   - **Tipo:** Selecione "Investimento" ??
-   - **Saldo Inicial:** Digite o valor que você tem disponível (ex: R$ 10.000,00)
+   - **Tipo:** Selecione "Investimento" ðŸ¦
+   - **Saldo Inicial:** Digite o valor que vocÃª tem disponÃ­vel (ex: R$ 10.000,00)
 
 3. **Salve**
    - Clique em "Salvar"
-   - Sua conta de investimento está criada!
+   - Sua conta de investimento estÃ¡ criada!
 
-> **?? Dica:** Você pode criar uma conta de investimento para cada corretora que usa (XP, Clear, Rico, etc.) ou uma conta geral para todos os investimentos.
+> **ðŸ’¡ Dica:** VocÃª pode criar uma conta de investimento para cada corretora que usa (XP, Clear, Rico, etc.) ou uma conta geral para todos os investimentos.
 
 ---
 
 ## Adicionando um ativo
 
-### Exemplo: Adicionando Ações da Petrobras (PETR4)
+### Exemplo: Adicionando AÃ§Ãµes da Petrobras (PETR4)
 
 1. **Acesse Investimentos**
    - Clique em "Investimentos" no menu lateral
-   - Clique no botão "+ Adicionar Ativo"
+   - Clique no botÃ£o "+ Adicionar Ativo"
 
-2. **Preencha os dados básicos**
+2. **Preencha os dados bÃ¡sicos**
    - **Conta:** Selecione sua conta de investimento
-   - **Tipo de Ativo:** Ações
+   - **Tipo de Ativo:** AÃ§Ãµes
    - **Nome:** "Petrobras PN" ou "PETR4"
-   - **Ticker/Código:** "PETR4" (importante para cotações automáticas!)
+   - **Ticker/CÃ³digo:** "PETR4" (importante para cotaÃ§Ãµes automÃ¡ticas!)
 
 3. **Primeira compra (opcional)**
-   Se você já possui o ativo, pode registrar a compra inicial:
-   - **Quantidade:** 100 (ações)
-   - **Preço:** R$ 32,50
+   Se vocÃª jÃ¡ possui o ativo, pode registrar a compra inicial:
+   - **Quantidade:** 100 (aÃ§Ãµes)
+   - **PreÃ§o:** R$ 32,50
    - **Taxas:** R$ 10,00 (corretagem)
 
-4. **Observações (opcional)**
-   - Adicione notas como: "Compra inicial - estratégia de dividendos"
+4. **ObservaÃ§Ãµes (opcional)**
+   - Adicione notas como: "Compra inicial - estratÃ©gia de dividendos"
 
 5. **Salve**
    - Clique em "Adicionar Ativo"
 
-**?? Pronto!** Seu ativo foi adicionado e o preço médio foi calculado automaticamente.
+**âœ… Pronto!** Seu ativo foi adicionado e o preÃ§o mÃ©dio foi calculado automaticamente.
 
 ---
 
 ## Registrando compras
 
-### Cenário: Você comprou mais ações
+### CenÃ¡rio: VocÃª comprou mais aÃ§Ãµes
 
-Você já possui 100 ações PETR4 a R$ 32,50 (preço médio) e comprou mais 50 a R$ 35,00.
+VocÃª jÃ¡ possui 100 aÃ§Ãµes PETR4 a R$ 32,50 (preÃ§o mÃ©dio) e comprou mais 50 a R$ 35,00.
 
 1. **Encontre o ativo**
-   - Na página "Investimentos", localize o card "PETR4"
-   - Clique no botão "Comprar" ??
+   - Na pÃ¡gina "Investimentos", localize o card "PETR4"
+   - Clique no botÃ£o "Comprar" ðŸ›’
 
 2. **Preencha os dados da compra**
    - **Quantidade:** 50
-   - **Preço Unitário:** R$ 35,00
+   - **PreÃ§o UnitÃ¡rio:** R$ 35,00
    - **Taxa/Corretagem:** R$ 5,00
-   - **Data:** Selecione a data da operação
-   - **Descrição:** "Aporte mensal" (opcional)
+   - **Data:** Selecione a data da operaÃ§Ã£o
+   - **DescriÃ§Ã£o:** "Aporte mensal" (opcional)
 
 3. **Veja o resumo**
    O sistema mostra automaticamente:
-   - **Valor Total:** R$ 1.755,00 (50 × 35,00 + 5,00)
-   - **Novo Preço Médio:** R$ 33,50
+   - **Valor Total:** R$ 1.755,00 (50 Ã— 35,00 + 5,00)
+   - **Novo PreÃ§o MÃ©dio:** R$ 33,50
    - **Novo Total Investido:** R$ 5.025,00
 
 4. **Confirme**
    - Clique em "Confirmar Compra"
 
 **O que acontece nos bastidores:**
-- ? Quantidade atualizada: 100 ? 150 ações
-- ? Preço médio recalculado: R$ 32,50 ? R$ 33,50
-- ? Saldo da conta deduzido: -R$ 1.755,00
-- ? Transação registrada no histórico
+- âœ… Quantidade atualizada: 100 â†’ 150 aÃ§Ãµes
+- âœ… PreÃ§o mÃ©dio recalculado: R$ 32,50 â†’ R$ 33,50
+- âœ… Saldo da conta deduzido: -R$ 1.755,00
+- âœ… TransaÃ§Ã£o registrada no histÃ³rico
 
 ---
 
 ## Registrando vendas
 
-### Cenário: Realizando lucro
+### CenÃ¡rio: Realizando lucro
 
-Você quer vender 50 ações PETR4 que estão valendo R$ 38,00.
+VocÃª quer vender 50 aÃ§Ãµes PETR4 que estÃ£o valendo R$ 38,00.
 
 1. **Abra o modal de venda**
-   - No card do ativo, clique em "Vender" ??
+   - No card do ativo, clique em "Vender" ðŸ’¸
 
 2. **Preencha os dados**
-   - **Quantidade:** 50 (máximo disponível: 150)
-   - **Preço de Venda:** R$ 38,00
+   - **Quantidade:** 50 (mÃ¡ximo disponÃ­vel: 150)
+   - **PreÃ§o de Venda:** R$ 38,00
    - **Taxa/Corretagem:** R$ 5,00
-   - **Data:** Data da operação
-   - **Descrição:** "Realização de lucro"
+   - **Data:** Data da operaÃ§Ã£o
+   - **DescriÃ§Ã£o:** "RealizaÃ§Ã£o de lucro"
 
 3. **Veja o resultado**
    O sistema calcula automaticamente:
-   - **Valor Bruto:** R$ 1.900,00 (50 × 38,00)
-   - **Valor Líquido:** R$ 1.895,00 (1.900 - 5)
-   - **Lucro da Operação:** R$ 220,00
-     - Cálculo: (38 - 33,50) × 50 - 5 = R$ 220,00
+   - **Valor Bruto:** R$ 1.900,00 (50 Ã— 38,00)
+   - **Valor LÃ­quido:** R$ 1.895,00 (1.900 - 5)
+   - **Lucro da OperaÃ§Ã£o:** R$ 220,00
+     - CÃ¡lculo: (38 - 33,50) Ã— 50 - 5 = R$ 220,00
    - **IR Estimado:** R$ 33,00 (15% sobre lucro)
 
 4. **Confirme**
    - Clique em "Confirmar Venda"
 
 **O que acontece:**
-- ? Quantidade reduzida: 150 ? 100 ações
-- ? Preço médio **mantido**: R$ 33,50
-- ? Saldo da conta creditado: +R$ 1.895,00
-- ? Lucro registrado para IR
+- âœ… Quantidade reduzida: 150 â†’ 100 aÃ§Ãµes
+- âœ… PreÃ§o mÃ©dio **mantido**: R$ 33,50
+- âœ… Saldo da conta creditado: +R$ 1.895,00
+- âœ… Lucro registrado para IR
 
-> **?? Importante:** O preço médio não muda na venda! Apenas na compra.
+> **âš ï¸ Importante:** O preÃ§o mÃ©dio nÃ£o muda na venda! Apenas na compra.
 
 ---
 
-## Lançando rendimentos
+## LanÃ§ando rendimentos
 
 ### Exemplo: Recebendo dividendos da PETR4
 
-1. **Clique em "Rendimento"** ??
-   - Na página Investimentos, clique no botão "Rendimento"
+1. **Clique em "Rendimento"** ðŸ’°
+   - Na pÃ¡gina Investimentos, clique no botÃ£o "Rendimento"
 
 2. **Preencha os dados**
    - **Ativo:** Selecione "PETR4"
    - **Tipo de Rendimento:** Dividendo
-   - **Valor Líquido:** R$ 150,00 (já descontado IR na fonte)
+   - **Valor LÃ­quido:** R$ 150,00 (jÃ¡ descontado IR na fonte)
    - **Data:** Data do recebimento
-   - **Descrição:** "Dividendos PETR4 - referência 2024"
+   - **DescriÃ§Ã£o:** "Dividendos PETR4 - referÃªncia 2024"
 
 3. **Confirme**
    - Clique em "Registrar Rendimento"
 
 **O que acontece:**
-- ? Rendimento registrado no histórico
-- ? Saldo da conta creditado: +R$ 150,00
-- ? Total de rendimentos no ano atualizado
+- âœ… Rendimento registrado no histÃ³rico
+- âœ… Saldo da conta creditado: +R$ 150,00
+- âœ… Total de rendimentos no ano atualizado
 
 ### Outros tipos de rendimentos
 
 - **Juros (Renda Fixa):** Use "Interest"
 - **Aluguel (FIIs):** Use "Aluguel/Yield"
-- **JCP (Juros sobre Capital Próprio):** Use "Dividendo"
+- **JCP (Juros sobre Capital PrÃ³prio):** Use "Dividendo"
 
 ---
 
-## Ajustando preços
+## Ajustando preÃ§os
 
 ### Quando usar?
 
-- Cotações não atualizaram automaticamente
+- CotaÃ§Ãµes nÃ£o atualizaram automaticamente
 - Ativo sem ticker (renda fixa, por exemplo)
-- Você quer atualizar manualmente
+- VocÃª quer atualizar manualmente
 
 ### Como fazer?
 
-1. **Clique em "Ajustar Preço"** ??
+1. **Clique em "Ajustar PreÃ§o"** ðŸ·ï¸
    - No card do ativo
 
-2. **Informe o novo preço**
-   - **Preço Atual:** R$ 35,00 (exibido)
-   - **Novo Preço:** R$ 37,50
-   - **Data de Referência:** Hoje
+2. **Informe o novo preÃ§o**
+   - **PreÃ§o Atual:** R$ 35,00 (exibido)
+   - **Novo PreÃ§o:** R$ 37,50
+   - **Data de ReferÃªncia:** Hoje
 
 3. **Veja o impacto**
-   - **Variação:** +R$ 2,50 (+7,14%)
+   - **VariaÃ§Ã£o:** +R$ 2,50 (+7,14%)
    - **Novo Valor Total:** R$ 3.750,00
-   - **Novo Lucro/Prejuízo:** R$ 500,00
+   - **Novo Lucro/PrejuÃ­zo:** R$ 500,00
 
 4. **Confirme**
 
-> **?? Dica:** Para ações e FIIs B3 com ticker, os preços atualizam automaticamente 3x ao dia (12h, 15h e 18h). Use "Atualizar Agora" para forçar atualização imediata.
+> **ðŸ’¡ Dica:** Para aÃ§Ãµes e FIIs B3 com ticker, os preÃ§os atualizam automaticamente 3Ã— ao dia (12h, 15h e 18h). Use "Atualizar Agora" para forÃ§ar atualizaÃ§Ã£o imediata.
 
 ---
 
@@ -241,74 +241,74 @@ Você quer vender 50 ações PETR4 que estão valendo R$ 38,00.
 
 ### Acessando
 
-- Menu lateral ? "Dashboard de Investimentos"
+- Menu lateral â†’ "Dashboard de Investimentos"
 
-### O que você vê
+### O que vocÃª vÃª
 
-**?? Cards de Métricas (Topo)**
+**ðŸ“Š Cards de MÃ©tricas (Topo)**
 - Total Investido
 - Valor Atual
-- Lucro/Prejuízo Total
+- Lucro/PrejuÃ­zo Total
 - Rentabilidade %
-- Rendimentos no Mês
+- Rendimentos no MÃªs
 
-**?? Gráficos**
+**ðŸ“ˆ GrÃ¡ficos**
 
-1. **Diversificação por Tipo**
+1. **DiversificaÃ§Ã£o por Tipo**
    - Pizza mostrando % de cada tipo de ativo
 
-2. **Maiores Posições**
+2. **Maiores PosiÃ§Ãµes**
    - Top 10 ativos por valor
 
-3. **Evolução Patrimonial**
+3. **EvoluÃ§Ã£o Patrimonial**
    - Linha do tempo mostrando crescimento
    - Filtros: 1M, 3M, 6M, 1A, Tudo
 
 4. **Rendimentos Mensais**
-   - Barras com rendimentos dos últimos 12 meses
+   - Barras com rendimentos dos Ãºltimos 12 meses
 
-**?? Tabelas de Análise**
+**ðŸ“‹ Tabelas de AnÃ¡lise**
 
 - **Melhores Performers:** Top 5 com maior rentabilidade
 - **Piores Performers:** Top 5 com pior desempenho
-- **Transações Recentes:** Últimas 20 operações
+- **TransaÃ§Ãµes Recentes:** Ãšltimas 20 operaÃ§Ãµes
 
 ---
 
-## Gerando relatórios
+## Gerando relatÃ³rios
 
-### Relatório de Vendas (para IR)
+### RelatÃ³rio de Vendas (para IR)
 
-1. **Acesse Relatórios**
-   - Menu ? "Investimentos" ? "Relatórios"
+1. **Acesse RelatÃ³rios**
+   - Menu â†’ "Investimentos" â†’ "RelatÃ³rios"
 
 2. **Selecione o ano**
    - Exemplo: 2025
 
 3. **Visualize**
    - Tabela com todas as vendas:
-     - Data, Ativo, Quantidade, Preço Médio, Preço Venda
-     - Lucro/Prejuízo, Taxa, IR Devido (estimativa)
+     - Data, Ativo, Quantidade, PreÃ§o MÃ©dio, PreÃ§o Venda
+     - Lucro/PrejuÃ­zo, Taxa, IR Devido (estimativa)
 
 4. **Exporte**
-   - Clique em "Exportar para Excel" ??
+   - Clique em "Exportar para Excel"
    - Ou "Gerar PDF"
 
 **Totalizadores:**
 - Total Vendido no ano
 - Lucro Total
-- Prejuízo Total
+- PrejuÃ­zo Total
 - IR Total Devido (estimativa 15%)
 
-### Relatório de Rendimentos
+### RelatÃ³rio de Rendimentos
 
 1. **Aba "Rendimentos"**
 2. **Selecione o ano**
-3. **Visualize por mês**
+3. **Visualize por mÃªs**
    - Dividendos
    - Juros
    - JCP
-   - Aluguéis (FIIs)
+   - AluguÃ©is (FIIs)
 
 4. **Exporte**
    - Excel ou PDF
@@ -316,187 +316,187 @@ Você quer vender 50 ações PETR4 que estão valendo R$ 38,00.
 ### Extrato Consolidado
 
 1. **Aba "Extrato Consolidado"**
-2. **Selecione o período**
+2. **Selecione o perÃ­odo**
    - Data inicial e final
-3. **Todas as operações:**
+3. **Todas as operaÃ§Ãµes:**
    - Compras, Vendas, Rendimentos, Ajustes
 
 ---
 
-## Dicas e boas práticas
+## Dicas e boas prÃ¡ticas
 
-### ?? Estratégia
+### ðŸŽ¯ EstratÃ©gia
 
 **1. Sempre informe o ticker!**
-- Ações B3: "PETR4", "VALE3", "ITUB4"
+- AÃ§Ãµes B3: "PETR4", "VALE3", "ITUB4"
 - FIIs: "KNRI11", "HGLG11", "MXRF11"
-- Cotações atualizam automaticamente
+- CotaÃ§Ãµes atualizam automaticamente
 
 **2. Registre todas as taxas**
 - Corretagem
-- Custódia
+- CustÃ³dia
 - Emolumentos
-- Isso afeta seu preço médio real
+- Isso afeta seu preÃ§o mÃ©dio real
 
-**3. Use notas/observações**
-- Estratégia de investimento
+**3. Use notas/observaÃ§Ãµes**
+- EstratÃ©gia de investimento
 - Motivo da compra/venda
-- Metas de alocação
+- Metas de alocaÃ§Ã£o
 
-### ?? Controle Financeiro
+### ðŸ“’ Controle Financeiro
 
 **1. Separe por corretora**
 - Crie uma conta de investimento para cada corretora
-- Facilita reconciliação
+- Facilita reconciliaÃ§Ã£o
 
 **2. Registre rendimentos**
-- Não esqueça de lançar dividendos e JCP
-- Importante para cálculo de rentabilidade real
+- NÃ£o esqueÃ§a de lanÃ§ar dividendos e JCP
+- Importante para cÃ¡lculo de rentabilidade real
 
 **3. Revise mensalmente**
 - Acesse o dashboard
-- Verifique se está diversificado
-- Rebalanceie se necessário
+- Verifique se estÃ¡ diversificado
+- Rebalanceie se necessÃ¡rio
 
-### ?? Declaração de IR
+### ðŸ§¾ DeclaraÃ§Ã£o de IR
 
-**1. Use os relatórios**
-- Relatório de Vendas: para calcular IR mensal
-- Relatório de Rendimentos: para declaração anual
+**1. Use os relatÃ³rios**
+- RelatÃ³rio de Vendas: para calcular IR mensal
+- RelatÃ³rio de Rendimentos: para declaraÃ§Ã£o anual
 
-**2. Atenção aos valores**
-- IR mensal: 15% sobre lucro em vendas > R$ 20.000/mês
+**2. AtenÃ§Ã£o aos valores**
+- IR mensal: 15% sobre lucro em vendas > R$ 20.000/mÃªs
 - IR anual: declarar todos os rendimentos
-- Consulte um contador para casos específicos
+- Consulte um contador para casos especÃ­ficos
 
 **3. Exporte mensalmente**
-- Gere relatórios todo mês
+- Gere relatÃ³rios todo mÃªs
 - Salve em PDF/Excel
-- Facilita declaração no ano seguinte
+- Facilita declaraÃ§Ã£o no ano seguinte
 
 ---
 
 ## Perguntas Frequentes (FAQ)
 
-### ? Como funciona o preço médio?
+### Como funciona o preÃ§o mÃ©dio?
 
-**R:** O preço médio é calculado toda vez que você compra mais unidades:
+**R:** O preÃ§o mÃ©dio Ã© calculado toda vez que vocÃª compra mais unidades:
 
 ```
-Novo Preço Médio = (Total Investido Anterior + Valor da Nova Compra) / Quantidade Total
+Novo PreÃ§o MÃ©dio = (Total Investido Anterior + Valor da Nova Compra) / Quantidade Total
 ```
 
 **Exemplo:**
-- Você tem: 100 ações @ R$ 30 = R$ 3.000
-- Compra: 50 ações @ R$ 36 + R$ 5 taxa = R$ 1.805
-- Novo Preço Médio: (3.000 + 1.805) / 150 = **R$ 32,03**
+- VocÃª tem: 100 aÃ§Ãµes @ R$ 30 = R$ 3.000
+- Compra: 50 aÃ§Ãµes @ R$ 36 + R$ 5 taxa = R$ 1.805
+- Novo PreÃ§o MÃ©dio: (3.000 + 1.805) / 150 = **R$ 32,03**
 
-### ? Por que o preço médio não muda quando vendo?
+### Por que o preÃ§o mÃ©dio nÃ£o muda quando vendo?
 
-**R:** Porque você está realizando o lucro/prejuízo daquela parte vendida. O preço médio das ações restantes continua o mesmo.
+**R:** Porque vocÃª estÃ¡ realizando o lucro/prejuÃ­zo daquela parte vendida. O preÃ§o mÃ©dio das aÃ§Ãµes restantes continua o mesmo.
 
 **Exemplo:**
-- Você tem: 150 ações @ R$ 32,03
-- Vende: 50 ações @ R$ 40
-- Ficou com: 100 ações @ **R$ 32,03** (preço médio não muda!)
+- VocÃª tem: 150 aÃ§Ãµes @ R$ 32,03
+- Vende: 50 aÃ§Ãµes @ R$ 40
+- Ficou com: 100 aÃ§Ãµes @ **R$ 32,03** (preÃ§o mÃ©dio nÃ£o muda!)
 
-### ? Como atualizar preços manualmente?
+### Como atualizar preÃ§os manualmente?
 
-**R:** 
+**R:**
 1. Clique no card do ativo
-2. Botão "Ajustar Preço"
-3. Informe o novo preço
+2. BotÃ£o "Ajustar PreÃ§o"
+3. Informe o novo preÃ§o
 
-Ou use "Atualizar Preços" na página principal para atualizar todos de uma vez.
+Ou use "Atualizar PreÃ§os" na pÃ¡gina principal para atualizar todos de uma vez.
 
-### ? Posso usar para renda fixa?
+### Posso usar para renda fixa?
 
-**R:** Sim! 
+**R:** Sim!
 - Tipo: "Renda Fixa"
 - Nome: "CDB Banco X - 120% CDI"
-- Não precisa de ticker
-- Atualize o preço manualmente quando vencer ou consultar
+- NÃ£o precisa de ticker
+- Atualize o preÃ§o manualmente quando vencer ou consultar
 
-### ? E para criptomoedas?
+### E para criptomoedas?
 
 **R:** Sim!
 - Tipo: "Criptomoedas"
 - Nome: "Bitcoin"
-- Ticker: "BTC" (opcional, cotações não atualizarão automaticamente)
+- Ticker: "BTC" (opcional, cotaÃ§Ãµes nÃ£o atualizarÃ£o automaticamente)
 - Registre compras/vendas normalmente
 
-### ? Posso registrar ações fracionárias?
+### Posso registrar aÃ§Ãµes fracionÃ¡rias?
 
 **R:** Sim! O sistema aceita decimais.
-- Exemplo: 10,5 ações AAPL34 (BDR)
+- Exemplo: 10,5 aÃ§Ãµes AAPL34 (BDR)
 
-### ? O sistema calcula IR automaticamente?
+### O sistema calcula IR automaticamente?
 
 **R:** Parcialmente.
-- ? Calcula lucro/prejuízo em vendas
-- ? Estima IR de 15% sobre lucro
-- ? Não gera DARF automaticamente
-- ? Não considera isenções (vendas < R$ 20k/mês em ações)
+- âœ… Calcula lucro/prejuÃ­zo em vendas
+- âœ… Estima IR de 15% sobre lucro
+- âŒ NÃ£o gera DARF automaticamente
+- âš ï¸ NÃ£o considera isenÃ§Ãµes (vendas < R$ 20k/mÃªs em aÃ§Ãµes)
 
-**Recomendação:** Use os relatórios como base e consulte um contador.
+**RecomendaÃ§Ã£o:** Use os relatÃ³rios como base e consulte um contador.
 
-### ? Posso desfazer uma operação?
+### Posso desfazer uma operaÃ§Ã£o?
 
-**R:** Não diretamente. Mas você pode:
-1. Deletar a transação (histórico)
-2. Fazer operação inversa
-3. Ou deletar o ativo e recriá-lo
+**R:** NÃ£o diretamente. Mas vocÃª pode:
+1. Deletar a transaÃ§Ã£o (histÃ³rico)
+2. Fazer operaÃ§Ã£o inversa
+3. Ou deletar o ativo e recriÃ¡-lo
 
-### ? Os preços atualizam em tempo real?
+### Os preÃ§os atualizam em tempo real?
 
-**R:** Não. As cotações atualizam:
-- **Automaticamente:** 3x ao dia (12h, 15h, 18h)
-- **Manualmente:** Clicando em "Atualizar Agora"
+**R:** NÃ£o. As cotaÃ§Ãµes atualizam:
+- **Automaticamente:** 3Ã— ao dia (12h, 15h, 18h)
+- **Manualmente:** clicando em "Atualizar Agora"
 
-Para investidores de longo prazo, isso é suficiente.
+Para investidores de longo prazo, isso Ã© suficiente.
 
-### ? Posso ver o histórico de preços?
+### Posso ver o histÃ³rico de preÃ§os?
 
-**R:** Sim, no dashboard há um gráfico de "Evolução Patrimonial" que mostra como seu patrimônio variou ao longo do tempo.
+**R:** Sim, no dashboard hÃ¡ um grÃ¡fico de "EvoluÃ§Ã£o Patrimonial" que mostra como seu patrimÃ´nio variou ao longo do tempo.
 
-### ? Como excluir um ativo?
+### Como excluir um ativo?
 
 **R:**
 1. No card do ativo, clique em "Excluir"
-2. Confirme a exclusão
-3. O ativo será removido (soft delete - dados preservados)
+2. Confirme a exclusÃ£o
+3. O ativo serÃ¡ removido (soft delete - dados preservados)
 
-**?? Atenção:** Exclua apenas se não tiver mais o ativo. Se vendeu tudo, o sistema já zera a quantidade.
+**âš ï¸ AtenÃ§Ã£o:** Exclua apenas se nÃ£o tiver mais o ativo. Se vendeu tudo, o sistema jÃ¡ zera a quantidade.
 
 ---
 
-## ?? Precisa de Ajuda?
+## ðŸ†˜ Precisa de Ajuda?
 
 - **Suporte:** suporte@moneymanager.com
-- **Tutoriais em Vídeo:** youtube.com/moneymanager
+- **Tutoriais em VÃ­deo:** youtube.com/moneymanager
 - **Comunidade:** forum.moneymanager.com
 - **FAQ Completo:** docs.moneymanager.com/faq
 
 ---
 
-## ?? Recursos Adicionais
+## ðŸ“š Recursos Adicionais
 
 ### Aprenda Mais
 
-- [Como declarar ações no IR 2025](https://docs.moneymanager.com/ir-acoes)
-- [Estratégias de diversificação](https://docs.moneymanager.com/diversificacao)
+- [Como declarar aÃ§Ãµes no IR 2025](https://docs.moneymanager.com/ir-acoes)
+- [EstratÃ©gias de diversificaÃ§Ã£o](https://docs.moneymanager.com/diversificacao)
 - [Calculadora de IR em vendas](https://docs.moneymanager.com/calculadora-ir)
 
-### Vídeos Tutoriais
+### VÃ­deos Tutoriais
 
-1. ?? [Como adicionar seu primeiro ativo (5min)](https://youtube.com)
-2. ?? [Registrando compras e vendas (8min)](https://youtube.com)
-3. ?? [Usando relatórios para IR (12min)](https://youtube.com)
-4. ?? [Dashboard completo explicado (10min)](https://youtube.com)
+1. ðŸŽ¥ [Como adicionar seu primeiro ativo (5min)](https://youtube.com)
+2. ðŸŽ¥ [Registrando compras e vendas (8min)](https://youtube.com)
+3. ðŸŽ¥ [Usando relatÃ³rios para IR (12min)](https://youtube.com)
+4. ðŸŽ¥ [Dashboard completo explicado (10min)](https://youtube.com)
 
 ---
 
-**Última atualização:** 13/02/2025
-**Versão:** 1.0.0
+**Ãšltima atualizaÃ§Ã£o:** 13/02/2025
+**VersÃ£o:** 1.0.0
 
-**Gostou do guia? Deixe seu feedback:** feedback@moneymanager.com ??
+**Gostou do guia? Deixe seu feedback:** feedback@moneymanager.com
