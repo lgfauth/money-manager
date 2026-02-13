@@ -169,9 +169,16 @@
         <div class="row g-4">
             @foreach (var account in GetAccountsSorted(accounts))
             {
+                var isInvestmentAccount = account.Type == AccountType.Investment;
                 <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="card shadow-sm">
+                    <div class="card shadow-sm @(isInvestmentAccount ? "border-primary border-2" : "")">
                         <div class="card-body">
+                            @if (isInvestmentAccount)
+                            {
+                                <div class="badge bg-primary position-absolute top-0 end-0 m-2">
+                                    <i class="fas fa-chart-line"></i> Investimento
+                                </div>
+                            }
                             <h5 class="card-title mb-3">@account.Name</h5>
                             <div class="mb-3">
                                 <p class="text-muted small mb-2">Saldo</p>
@@ -205,6 +212,12 @@
                                     </button>
                                     <button class="btn btn-sm btn-primary" @onclick="() => ShowPayInvoice(account)">
                                         <i class="fas fa-file-invoice-dollar"></i> Pagar Fatura
+                                    </button>
+                                }
+                                @if (isInvestmentAccount)
+                                {
+                                    <button class="btn btn-sm btn-primary" @onclick="@(() => GoToInvestments())">
+                                        <i class="fas fa-chart-pie"></i> Ver Investimentos
                                     </button>
                                 }
                                 <button class="btn btn-sm btn-warning" @onclick="() => BeginEditAccount(account.Id)">
@@ -721,6 +734,11 @@
     private void GoToDashboard(string accountId)
     {
         Navigation.NavigateTo($"/credit-cards/{accountId}");
+    }
+
+    private void GoToInvestments()
+    {
+        Navigation.NavigateTo("/investments");
     }
 
     private async Task LoadPendingInvoices()

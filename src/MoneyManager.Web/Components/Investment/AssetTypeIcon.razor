@@ -1,0 +1,40 @@
+@using MoneyManager.Domain.Enums
+
+@* Componente que exibe o ícone apropriado para cada tipo de ativo *@
+
+@if (AssetType == InvestmentAssetType.Stock)
+{
+    <i class="fas fa-chart-line" title="Ações" aria-label="Ações"></i>
+}
+else if (AssetType == InvestmentAssetType.FixedIncome)
+{
+    <i class="fas fa-piggy-bank" title="Renda Fixa" aria-label="Renda Fixa"></i>
+}
+else if (AssetType == InvestmentAssetType.RealEstate)
+{
+    <i class="fas fa-building" title="Fundos Imobiliários" aria-label="Fundos Imobiliários"></i>
+}
+else if (AssetType == InvestmentAssetType.Crypto)
+{
+    <i class="fab fa-bitcoin" title="Criptomoedas" aria-label="Criptomoedas"></i>
+}
+else if (AssetType == InvestmentAssetType.Fund)
+{
+    <i class="fas fa-briefcase" title="Fundos de Investimento" aria-label="Fundos de Investimento"></i>
+}
+else if (AssetType == InvestmentAssetType.ETF)
+{
+    <i class="fas fa-chart-bar" title="ETFs" aria-label="ETFs"></i>
+}
+else
+{
+    <i class="fas fa-coins" title="Outros" aria-label="Outros"></i>
+}
+
+@code {
+    /// <summary>
+    /// Tipo do ativo para exibir o ícone correspondente.
+    /// </summary>
+    [Parameter]
+    public InvestmentAssetType AssetType { get; set; }
+}

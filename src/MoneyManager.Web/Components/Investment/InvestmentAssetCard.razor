@@ -1,0 +1,170 @@
+@using MoneyManager.Application.DTOs.Response
+
+@* Card de ativo de investimento com informações e ações *@
+
+<div class="card h-100 shadow-sm border-0 hover-shadow">
+    <div class="card-body">
+        <!-- Header com Tipo e Ações -->
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="d-flex align-items-center">
+                <div class="me-2 fs-4">
+                    <AssetTypeIcon AssetType="@Asset.AssetType" />
+                </div>
+                <div>
+                    <h5 class="card-title mb-0 fw-bold">@Asset.Name</h5>
+                    @if (!string.IsNullOrEmpty(Asset.Ticker))
+                    {
+                        <small class="text-muted">@Asset.Ticker</small>
+                    }
+                </div>
+            </div>
+            
+            <!-- Dropdown de Ações -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <button class="dropdown-item" @onclick="() => OnBuy.InvokeAsync(Asset)">
+                            <i class="fas fa-plus-circle text-primary me-2"></i>Comprar
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item" @onclick="() => OnSell.InvokeAsync(Asset)">
+                            <i class="fas fa-minus-circle text-warning me-2"></i>Vender
+                        </button>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <button class="dropdown-item" @onclick="() => OnEdit.InvokeAsync(Asset)">
+                            <i class="fas fa-edit text-info me-2"></i>Editar
+                        </button>
+                    </li>
+                    <li>
+                        <button class="dropdown-item text-danger" @onclick="() => OnDelete.InvokeAsync(Asset)">
+                            <i class="fas fa-trash me-2"></i>Excluir
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Quantidade e Preço Médio -->
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <div class="bg-light rounded p-2">
+                    <small class="text-muted d-block">Quantidade</small>
+                    <strong>@Asset.Quantity.ToString("N2")</strong>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="bg-light rounded p-2">
+                    <small class="text-muted d-block">Preço Médio</small>
+                    <strong>R$ @Asset.AveragePurchasePrice.ToString("N2")</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Investido e Valor Atual -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <small class="text-muted">Total Investido:</small>
+                <strong>R$ @Asset.TotalInvested.ToString("N2")</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <small class="text-muted">Valor Atual:</small>
+                <strong>R$ @Asset.CurrentValue.ToString("N2")</strong>
+            </div>
+            
+            <!-- Barra de Progresso Visual -->
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar @GetProgressBarClass()" 
+                     role="progressbar" 
+                     style="width: @GetProgressPercentage()%"
+                     aria-valuenow="@GetProgressPercentage()" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+
+        <!-- Lucro/Prejuízo -->
+        <div class="d-flex justify-content-between align-items-center p-2 rounded @GetProfitLossBackgroundClass()">
+            <span class="small fw-bold">Rentabilidade:</span>
+            <ProfitLossIndicator Value="@Asset.ProfitLoss" Percentage="@Asset.ProfitLossPercentage" />
+        </div>
+
+        <!-- Última Atualização -->
+        @if (Asset.LastPriceUpdate.HasValue)
+        {
+            <div class="mt-2 text-center">
+                <small class="text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    Atualizado em @Asset.LastPriceUpdate.Value.ToString("dd/MM/yyyy HH:mm")
+                </small>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .hover-shadow {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .hover-shadow:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Ativo de investimento a ser exibido.
+    /// </summary>
+    [Parameter]
+    public InvestmentAssetResponseDto Asset { get; set; } = new();
+
+    /// <summary>
+    /// Callback executado ao clicar em Editar.
+    /// </summary>
+    [Parameter]
+    public EventCallback<InvestmentAssetResponseDto> OnEdit { get; set; }
+
+    /// <summary>
+    /// Callback executado ao clicar em Excluir.
+    /// </summary>
+    [Parameter]
+    public EventCallback<InvestmentAssetResponseDto> OnDelete { get; set; }
+
+    /// <summary>
+    /// Callback executado ao clicar em Comprar.
+    /// </summary>
+    [Parameter]
+    public EventCallback<InvestmentAssetResponseDto> OnBuy { get; set; }
+
+    /// <summary>
+    /// Callback executado ao clicar em Vender.
+    /// </summary>
+    [Parameter]
+    public EventCallback<InvestmentAssetResponseDto> OnSell { get; set; }
+
+    private string GetProfitLossBackgroundClass()
+    {
+        return Asset.ProfitLoss >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10";
+    }
+
+    private string GetProgressBarClass()
+    {
+        return Asset.ProfitLoss >= 0 ? "bg-success" : "bg-danger";
+    }
+
+    private int GetProgressPercentage()
+    {
+        if (Asset.TotalInvested == 0) return 0;
+        
+        var percentage = (Asset.CurrentValue / Asset.TotalInvested) * 100;
+        return Math.Min(100, Math.Max(0, (int)percentage));
+    }
+}

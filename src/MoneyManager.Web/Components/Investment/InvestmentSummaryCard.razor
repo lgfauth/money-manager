@@ -1,0 +1,102 @@
+@using MoneyManager.Application.DTOs.Response
+
+@* Componente de cards de resumo de investimentos *@
+
+<div class="row g-3 mb-4">
+    <!-- Total Investido -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+                        <i class="fas fa-wallet text-primary fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small">Total Investido</h6>
+                        <h4 class="mb-0 fw-bold">R$ @Summary.TotalInvested.ToString("N2")</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Valor Atual -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="bg-info bg-opacity-10 rounded p-2 me-3">
+                        <i class="fas fa-chart-line text-info fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small">Valor Atual</h6>
+                        <h4 class="mb-0 fw-bold">R$ @Summary.CurrentValue.ToString("N2")</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lucro/Prejuízo -->
+    <div class="col-12 col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="@GetProfitLossBackgroundClass() rounded p-2 me-3">
+                        <i class="fas @GetProfitLossIcon() @GetProfitLossTextClass() fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-0 small">Lucro/Prejuízo</h6>
+                        <h4 class="mb-0 fw-bold @GetProfitLossTextClass()">
+                            R$ @Summary.TotalProfitLoss.ToString("N2")
+                        </h4>
+                        <small class="@GetProfitLossTextClass()">
+                            (@Summary.TotalProfitLossPercentage.ToString("N2")%)
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Summary.TotalYields > 0)
+    {
+        <!-- Rendimentos -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm bg-success bg-opacity-10">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-coins text-success me-2"></i>
+                            <span class="text-success fw-bold">Total de Rendimentos Recebidos:</span>
+                        </div>
+                        <span class="text-success fw-bold">R$ @Summary.TotalYields.ToString("N2")</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Resumo de investimentos a ser exibido.
+    /// </summary>
+    [Parameter]
+    public InvestmentSummaryResponseDto Summary { get; set; } = new();
+
+    private string GetProfitLossTextClass()
+    {
+        return Summary.TotalProfitLoss >= 0 ? "text-success" : "text-danger";
+    }
+
+    private string GetProfitLossBackgroundClass()
+    {
+        return Summary.TotalProfitLoss >= 0 ? "bg-success bg-opacity-10" : "bg-danger bg-opacity-10";
+    }
+
+    private string GetProfitLossIcon()
+    {
+        return Summary.TotalProfitLoss >= 0 ? "fa-arrow-trend-up" : "fa-arrow-trend-down";
+    }
+}

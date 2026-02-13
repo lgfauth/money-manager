@@ -1,0 +1,77 @@
+@using MoneyManager.Application.DTOs.Response
+@using MoneyManager.Domain.Enums
+
+@* Componente dropdown para seleção de ativo *@
+
+<div class="mb-3">
+    <label class="form-label">Ativo</label>
+    <select class="form-select" @bind="SelectedAssetIdValue" @bind:after="OnSelectionChanged">
+        <option value="">-- Selecione um ativo --</option>
+        @if (FilterByType.HasValue)
+        {
+            @foreach (var asset in Assets.Where(a => a.AssetType == FilterByType.Value))
+            {
+                <option value="@asset.Id">
+                    @asset.Name @(!string.IsNullOrEmpty(asset.Ticker) ? $"({asset.Ticker})" : "")
+                </option>
+            }
+        }
+        else
+        {
+            @foreach (var asset in Assets)
+            {
+                <option value="@asset.Id">
+                    @asset.Name @(!string.IsNullOrEmpty(asset.Ticker) ? $"({asset.Ticker})" : "")
+                </option>
+            }
+        }
+    </select>
+</div>
+
+@code {
+    /// <summary>
+    /// Lista de ativos disponíveis para seleção.
+    /// </summary>
+    [Parameter]
+    public IEnumerable<InvestmentAssetResponseDto> Assets { get; set; } = Enumerable.Empty<InvestmentAssetResponseDto>();
+
+    /// <summary>
+    /// ID do ativo selecionado.
+    /// </summary>
+    [Parameter]
+    public string? SelectedAssetId { get; set; }
+
+    /// <summary>
+    /// Callback executado quando um ativo é selecionado.
+    /// </summary>
+    [Parameter]
+    public EventCallback<string?> SelectedAssetIdChanged { get; set; }
+
+    /// <summary>
+    /// Callback executado após a seleção (opcional).
+    /// </summary>
+    [Parameter]
+    public EventCallback<string?> OnAssetSelected { get; set; }
+
+    /// <summary>
+    /// Filtrar ativos por tipo (opcional).
+    /// </summary>
+    [Parameter]
+    public InvestmentAssetType? FilterByType { get; set; }
+
+    private string? SelectedAssetIdValue
+    {
+        get => SelectedAssetId;
+        set => SelectedAssetId = value;
+    }
+
+    private async Task OnSelectionChanged()
+    {
+        await SelectedAssetIdChanged.InvokeAsync(SelectedAssetId);
+        
+        if (OnAssetSelected.HasDelegate)
+        {
+            await OnAssetSelected.InvokeAsync(SelectedAssetId);
+        }
+    }
+}

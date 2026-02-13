@@ -70,6 +70,7 @@
                 <option value="all">@Localization.Get("Transactions.AllTypes")</option>
                 <option value="income">@Localization.Get("Transactions.IncomeOnly")</option>
                 <option value="expense">@Localization.Get("Transactions.ExpenseOnly")</option>
+                <option value="investment">💼 Investimentos</option>
             </select>
         </div>
     </div>
@@ -300,7 +301,10 @@
                         {
                             <tr>
                                 <td>@transaction.Date.ToString("dd/MM/yyyy")</td>
-                                <td>@transaction.Description</td>
+                                <td>
+                                    @GetTransactionTypeIcon(transaction.Type)
+                                    @transaction.Description
+                                </td>
                                 <td>
                                     <span class="badge bg-light text-dark">@GetCategoryName(transaction.CategoryId)</span>
                                 </td>
@@ -312,6 +316,10 @@
                                     else if (transaction.Type.ToString() == "Transfer")
                                     {
                                         <span class="text-primary">R$ @transaction.Amount.ToString("F2")</span>
+                                    }
+                                    else if (IsInvestmentTransaction(transaction.Type))
+                                    {
+                                        <span class="@GetInvestmentTransactionColor(transaction.Type)">@GetInvestmentTransactionSign(transaction.Type) R$ @transaction.Amount.ToString("F2")</span>
                                     }
                                     else
                                     {
@@ -648,10 +656,51 @@
         {
             "income" => query.Where(t => t.Type == TransactionType.Income),
             "expense" => query.Where(t => t.Type == TransactionType.Expense),
+            "investment" => query.Where(t => IsInvestmentTransaction(t.Type)),
             _ => query
         };
 
         return query;
+    }
+
+    private bool IsInvestmentTransaction(TransactionType type)
+    {
+        return type == TransactionType.InvestmentYield ||
+               type == TransactionType.InvestmentBuy ||
+               type == TransactionType.InvestmentSell;
+    }
+
+    private string GetTransactionTypeIcon(TransactionType type)
+    {
+        return type switch
+        {
+            TransactionType.InvestmentYield => "💰",
+            TransactionType.InvestmentBuy => "🛒",
+            TransactionType.InvestmentSell => "💵",
+            _ => ""
+        };
+    }
+
+    private string GetInvestmentTransactionColor(TransactionType type)
+    {
+        return type switch
+        {
+            TransactionType.InvestmentYield => "text-success",
+            TransactionType.InvestmentBuy => "text-primary",
+            TransactionType.InvestmentSell => "text-warning",
+            _ => "text-muted"
+        };
+    }
+
+    private string GetInvestmentTransactionSign(TransactionType type)
+    {
+        return type switch
+        {
+            TransactionType.InvestmentYield => "+",
+            TransactionType.InvestmentBuy => "-",
+            TransactionType.InvestmentSell => "+",
+            _ => ""
+        };
     }
 
     private static IEnumerable<Account> GetAccountsOrdered(IEnumerable<Account>? accounts)

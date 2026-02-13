@@ -35,6 +35,8 @@ public static class ServiceCollectionExtensions
 
         services.AddHostedService<ScheduledTransactionWorker>();
         services.AddHostedService<InvoiceClosureWorker>();
+        services.AddHostedService<MoneyManager.Worker.Jobs.InvestmentYieldProcessorJob>();
+        services.AddHostedService<MoneyManager.Worker.Jobs.PriceUpdateJob>();
 
         return services;
     }

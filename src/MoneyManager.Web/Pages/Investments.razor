@@ -1,0 +1,680 @@
+@page "/investments"
+@using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Application.DTOs.Response
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Web.Services
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject IInvestmentAssetService InvestmentAssetService
+@inject IAccountService AccountService
+@inject NavigationManager Navigation
+
+<PageTitle>Meus Investimentos</PageTitle>
+
+<BusyOverlay IsBusy="@isBusy" Message="@busyMessage" />
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <h1 class="mb-0">
+                    <i class="fas fa-chart-line text-primary"></i> Meus Investimentos
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="/investments/reports" class="btn btn-outline-secondary">
+                        <i class="fas fa-file-invoice"></i> Relatórios
+                    </a>
+                    <a href="/investments/dashboard" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-pie"></i> Dashboard
+                    </a>
+                    <button class="btn btn-primary" @onclick="ShowAddModal">
+                        <i class="fas fa-plus"></i> Adicionar Ativo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando investimentos...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+    else
+    {
+        <!-- Botão de Atualização de Preços -->
+        @if (assets != null && assets.Any(a => !string.IsNullOrWhiteSpace(a.Ticker)))
+        {
+            <div class="alert alert-info d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <i class="fas fa-sync-alt"></i>
+                    <strong>Atualização Automática de Preços:</strong>
+                    Seus ativos são atualizados automaticamente 3x ao dia (12h, 15h e 18h).
+                    @if (lastPriceUpdate.HasValue)
+                    {
+                        <span>Última atualização: @lastPriceUpdate.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                    }
+                </div>
+                <button class="btn btn-sm btn-primary" @onclick="UpdatePricesManually" disabled="@isUpdatingPrices">
+                    @if (isUpdatingPrices)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-sync-alt me-1"></i>
+                    }
+                    Atualizar Agora
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(priceUpdateMessage))
+            {
+                <div class="alert @(priceUpdateSuccess ? "alert-success" : "alert-warning") alert-dismissible fade show">
+                    <i class="fas @(priceUpdateSuccess ? "fa-check-circle" : "fa-exclamation-triangle")"></i>
+                    @priceUpdateMessage
+                    <button type="button" class="btn-close" @onclick="@(() => priceUpdateMessage = null)"></button>
+                </div>
+            }
+        }
+
+        <!-- Cards de Resumo -->
+        @if (summary != null)
+        {
+            <InvestmentSummaryCard Summary="@summary" />
+        }
+
+        @if (assets != null && assets.Any())
+        {
+            <!-- Filtros e Ordenação -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Tipo de Ativo -->
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small text-muted mb-1">Tipo de Ativo</label>
+                            <select class="form-select form-select-sm" @bind="filterAssetType">
+                                <option value="">Todos</option>
+                                <option value="@((int)InvestmentAssetType.Stock)">Ações</option>
+                                <option value="@((int)InvestmentAssetType.FixedIncome)">Renda Fixa</option>
+                                <option value="@((int)InvestmentAssetType.RealEstate)">Fundos Imobiliários</option>
+                                <option value="@((int)InvestmentAssetType.Crypto)">Criptomoedas</option>
+                                <option value="@((int)InvestmentAssetType.Fund)">Fundos de Investimento</option>
+                                <option value="@((int)InvestmentAssetType.ETF)">ETFs</option>
+                                <option value="@((int)InvestmentAssetType.Other)">Outros</option>
+                            </select>
+                        </div>
+
+                        <!-- Ordenar por -->
+                        <div class="col-12 col-md-3">
+                            <label class="form-label small text-muted mb-1">Ordenar por</label>
+                            <select class="form-select form-select-sm" @bind="sortBy">
+                                <option value="name">Nome</option>
+                                <option value="type">Tipo</option>
+                                <option value="value_desc">Valor (Maior)</option>
+                                <option value="value_asc">Valor (Menor)</option>
+                                <option value="profit_desc">Lucro/Prejuízo (Maior)</option>
+                                <option value="profit_asc">Lucro/Prejuízo (Menor)</option>
+                                <option value="performance_desc">Rentabilidade % (Maior)</option>
+                                <option value="performance_asc">Rentabilidade % (Menor)</option>
+                            </select>
+                        </div>
+
+                        <!-- Pesquisar -->
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small text-muted mb-1">Pesquisar</label>
+                            <input type="text" class="form-control form-control-sm" 
+                                   placeholder="Nome ou ticker do ativo..." 
+                                   @bind="searchTerm" 
+                                   @bind:event="oninput" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid de Ativos -->
+            <div class="row g-3">
+                @foreach (var asset in GetFilteredAndSortedAssets())
+                {
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <InvestmentAssetCard 
+                            Asset="@asset"
+                            OnEdit="@HandleEdit"
+                            OnDelete="@HandleDelete"
+                            OnBuy="@HandleBuy"
+                            OnSell="@HandleSell" />
+                    </div>
+                }
+            </div>
+
+            @if (!GetFilteredAndSortedAssets().Any())
+            {
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-filter"></i> Nenhum ativo encontrado com os filtros aplicados.
+                </div>
+            }
+        }
+        else
+        {
+            <!-- Empty State -->
+            <div class="card shadow-sm border-0 text-center py-5">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+                    <h4>Você ainda não possui investimentos</h4>
+                    <p class="text-muted">Comece adicionando seu primeiro ativo de investimento</p>
+                    <button class="btn btn-primary btn-lg mt-3" @onclick="ShowAddModal">
+                        <i class="fas fa-plus"></i> Adicionar Primeiro Ativo
+                    </button>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<!-- Modal de Adicionar/Editar Ativo -->
+@if (showAddEditModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas @(isEditing ? "fa-edit" : "fa-plus-circle")"></i>
+                        @(isEditing ? "Editar Ativo" : "Adicionar Ativo")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CancelAddEdit" disabled="@isBusy"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(modalError))
+                    {
+                        <div class="alert alert-danger alert-dismissible">
+                            <i class="fas fa-exclamation-triangle"></i> @modalError
+                            <button type="button" class="btn-close" @onclick="@(() => modalError = null)"></button>
+                        </div>
+                    }
+
+                    <div class="row g-3">
+                        @if (!isEditing)
+                        {
+                            <!-- Conta -->
+                            <div class="col-md-6">
+                                <label class="form-label">Conta de Investimento <span class="text-danger">*</span></label>
+                                <select class="form-select" @bind="createRequest.AccountId">
+                                    <option value="">-- Selecione uma conta --</option>
+                                    @if (accounts != null)
+                                    {
+                                        @foreach (var account in accounts.Where(a => a.Type == AccountType.Investment))
+                                        {
+                                            <option value="@account.Id">@account.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+
+                            <!-- Tipo de Ativo -->
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo de Ativo <span class="text-danger">*</span></label>
+                                <select class="form-select" @bind="createRequest.AssetType">
+                                    <option value="@InvestmentAssetType.Stock">Ações</option>
+                                    <option value="@InvestmentAssetType.FixedIncome">Renda Fixa</option>
+                                    <option value="@InvestmentAssetType.RealEstate">Fundos Imobiliários</option>
+                                    <option value="@InvestmentAssetType.Crypto">Criptomoedas</option>
+                                    <option value="@InvestmentAssetType.Fund">Fundos de Investimento</option>
+                                    <option value="@InvestmentAssetType.ETF">ETFs</option>
+                                    <option value="@InvestmentAssetType.Other">Outros</option>
+                                </select>
+                            </div>
+                        }
+
+                        <!-- Nome -->
+                        <div class="col-md-6">
+                            <label class="form-label">Nome do Ativo <span class="text-danger">*</span></label>
+                            @if (isEditing)
+                            {
+                                <input type="text" class="form-control" @bind="currentName" placeholder="Ex: Itaú Unibanco" />
+                            }
+                            else
+                            {
+                                <input type="text" class="form-control" @bind="createRequest.Name" placeholder="Ex: Itaú Unibanco" />
+                            }
+                        </div>
+
+                        <!-- Ticker -->
+                        <div class="col-md-6">
+                            <label class="form-label">Ticker/Código</label>
+                            @if (isEditing)
+                            {
+                                <input type="text" class="form-control" @bind="currentTicker" placeholder="Ex: ITUB4" />
+                            }
+                            else
+                            {
+                                <input type="text" class="form-control" @bind="createRequest.Ticker" placeholder="Ex: ITUB4" />
+                            }
+                        </div>
+
+                        @if (!isEditing)
+                        {
+                            <!-- Quantidade Inicial -->
+                            <div class="col-md-4">
+                                <label class="form-label">Quantidade Inicial</label>
+                                <input type="number" class="form-control" 
+                                       @bind="createRequest.InitialQuantity" 
+                                       step="0.01" 
+                                       min="0" />
+                            </div>
+
+                            <!-- Preço Inicial -->
+                            <div class="col-md-4">
+                                <label class="form-label">Preço Inicial (R$)</label>
+                                <input type="number" class="form-control" 
+                                       @bind="createRequest.InitialPrice" 
+                                       step="0.01" 
+                                       min="0" />
+                            </div>
+
+                            <!-- Taxas -->
+                            <div class="col-md-4">
+                                <label class="form-label">Taxas/Corretagem (R$)</label>
+                                <input type="number" class="form-control" 
+                                       @bind="createRequest.InitialFees" 
+                                       step="0.01" 
+                                       min="0" />
+                            </div>
+
+                            @if (createRequest.InitialQuantity > 0 && createRequest.InitialPrice > 0)
+                            {
+                                <div class="col-12">
+                                    <div class="alert alert-info mb-0">
+                                        <strong>Total a Investir:</strong> 
+                                        R$ @((createRequest.InitialQuantity * createRequest.InitialPrice + createRequest.InitialFees).ToString("N2"))
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                        <!-- Notas -->
+                        <div class="col-12">
+                            <label class="form-label">Observações</label>
+                            @if (isEditing)
+                            {
+                                <textarea class="form-control" @bind="currentNotes" rows="3" placeholder="Adicione notas sobre este ativo..."></textarea>
+                            }
+                            else
+                            {
+                                <textarea class="form-control" @bind="createRequest.Notes" rows="3" placeholder="Adicione notas sobre este ativo..."></textarea>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelAddEdit" disabled="@isBusy">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveAsset" disabled="@isBusy">
+                        @if (isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-save"></i>
+                        }
+                        @(isEditing ? "Salvar Alterações" : "Adicionar Ativo")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal de Confirmação de Exclusão -->
+@if (showDeleteModal && assetToDelete != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-trash"></i> Confirmar Exclusão
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelDelete" disabled="@isBusy"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning"></i>
+                    </div>
+                    <p class="text-center">
+                        Tem certeza que deseja excluir o ativo <strong>@assetToDelete.Name</strong>?
+                    </p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Atenção:</strong> Esta ação não pode ser desfeita. Todo o histórico de transações será mantido.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelDelete" disabled="@isBusy">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-danger" @onclick="ConfirmDelete" disabled="@isBusy">
+                        @if (isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-trash"></i>
+                        }
+                        Sim, Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Data
+    private List<InvestmentAssetResponseDto>? assets;
+    private InvestmentSummaryResponseDto? summary;
+    private IEnumerable<Domain.Entities.Account>? accounts;
+
+    // Loading States
+    private bool isLoading = true;
+    private bool isBusy = false;
+    private string busyMessage = "";
+    private string? errorMessage;
+    private string? modalError;
+
+    // Filtros
+    private string filterAssetType = "";
+    private string sortBy = "name";
+    private string searchTerm = "";
+
+    // Modais
+    private bool showAddEditModal = false;
+    private bool showDeleteModal = false;
+    private bool isEditing = false;
+    private string? editingAssetId;
+    private InvestmentAssetResponseDto? assetToDelete;
+
+    // Requests
+    private CreateInvestmentAssetRequestDto createRequest = new() { AssetType = InvestmentAssetType.Stock };
+    private UpdateInvestmentAssetRequestDto updateRequest = new();
+    
+    // Separate properties for editing
+    private string currentName = "";
+    private string? currentTicker = "";
+    private string? currentNotes = "";
+
+    // Price Update
+    private bool isUpdatingPrices = false;
+    private string? priceUpdateMessage;
+    private bool priceUpdateSuccess = false;
+    private DateTime? lastPriceUpdate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var assetsTask = InvestmentAssetService.GetAllAsync();
+            var summaryTask = InvestmentAssetService.GetSummaryAsync();
+            var accountsTask = AccountService.GetAllAsync();
+
+            await Task.WhenAll(assetsTask, summaryTask, accountsTask);
+
+            assets = (await assetsTask)?.ToList();
+            summary = await summaryTask;
+            accounts = await accountsTask;
+
+            // Atualizar last price update
+            if (assets != null && assets.Any())
+            {
+                lastPriceUpdate = assets
+                    .Where(a => a.LastPriceUpdate.HasValue)
+                    .OrderByDescending(a => a.LastPriceUpdate)
+                    .Select(a => a.LastPriceUpdate)
+                    .FirstOrDefault();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao carregar investimentos: {ex.Message}";
+            Console.WriteLine($"[Investments] Erro: {ex}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task UpdatePricesManually()
+    {
+        if (isUpdatingPrices) return;
+
+        isUpdatingPrices = true;
+        priceUpdateMessage = null;
+        priceUpdateSuccess = false;
+
+        try
+        {
+            Console.WriteLine("[Investments] Iniciando atualização manual de preços...");
+
+            var response = await InvestmentAssetService.UpdatePricesAsync();
+
+            if (response != null)
+            {
+                priceUpdateSuccess = true;
+                priceUpdateMessage = $"Preços atualizados! {response.Updated} ativo(s) atualizado(s), {response.Skipped} pulado(s).";
+                
+                // Recarregar dados
+                await LoadData();
+            }
+            else
+            {
+                priceUpdateSuccess = false;
+                priceUpdateMessage = "Erro ao atualizar preços. Tente novamente.";
+            }
+        }
+        catch (Exception ex)
+        {
+            priceUpdateSuccess = false;
+            priceUpdateMessage = $"Erro: {ex.Message}";
+            Console.WriteLine($"[Investments] Erro ao atualizar preços: {ex}");
+        }
+        finally
+        {
+            isUpdatingPrices = false;
+        }
+    }
+
+    private IEnumerable<InvestmentAssetResponseDto> GetFilteredAndSortedAssets()
+    {
+        if (assets == null) return Enumerable.Empty<InvestmentAssetResponseDto>();
+
+        var filtered = assets.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(filterAssetType) && int.TryParse(filterAssetType, out var typeValue))
+        {
+            var assetType = (InvestmentAssetType)typeValue;
+            filtered = filtered.Where(a => a.AssetType == assetType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.ToLower();
+            filtered = filtered.Where(a =>
+                a.Name.ToLower().Contains(search) ||
+                (!string.IsNullOrEmpty(a.Ticker) && a.Ticker.ToLower().Contains(search))
+            );
+        }
+
+        filtered = sortBy switch
+        {
+            "type" => filtered.OrderBy(a => a.AssetType).ThenBy(a => a.Name),
+            "value_desc" => filtered.OrderByDescending(a => a.CurrentValue),
+            "value_asc" => filtered.OrderBy(a => a.CurrentValue),
+            "profit_desc" => filtered.OrderByDescending(a => a.ProfitLoss),
+            "profit_asc" => filtered.OrderBy(a => a.ProfitLoss),
+            "performance_desc" => filtered.OrderByDescending(a => a.ProfitLossPercentage),
+            "performance_asc" => filtered.OrderBy(a => a.ProfitLossPercentage),
+            _ => filtered.OrderBy(a => a.Name)
+        };
+
+        return filtered;
+    }
+
+    private void ShowAddModal()
+    {
+        isEditing = false;
+        editingAssetId = null;
+        createRequest = new CreateInvestmentAssetRequestDto { AssetType = InvestmentAssetType.Stock };
+        modalError = null;
+        showAddEditModal = true;
+    }
+
+    private void HandleEdit(InvestmentAssetResponseDto asset)
+    {
+        isEditing = true;
+        editingAssetId = asset.Id;
+        currentName = asset.Name;
+        currentTicker = asset.Ticker;
+        currentNotes = asset.Notes;
+        modalError = null;
+        showAddEditModal = true;
+    }
+
+    private void CancelAddEdit()
+    {
+        showAddEditModal = false;
+        isEditing = false;
+        editingAssetId = null;
+        modalError = null;
+    }
+
+    private async Task SaveAsset()
+    {
+        if (isBusy) return;
+
+        modalError = null;
+        isBusy = true;
+        busyMessage = isEditing ? "Salvando alterações..." : "Criando ativo...";
+
+        try
+        {
+            if (isEditing && !string.IsNullOrEmpty(editingAssetId))
+            {
+                if (string.IsNullOrWhiteSpace(currentName))
+                {
+                    modalError = "O nome do ativo é obrigatório.";
+                    return;
+                }
+
+                updateRequest = new UpdateInvestmentAssetRequestDto
+                {
+                    Name = currentName,
+                    Ticker = currentTicker,
+                    Notes = currentNotes
+                };
+
+                await InvestmentAssetService.UpdateAsync(editingAssetId, updateRequest);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(createRequest.AccountId))
+                {
+                    modalError = "Selecione uma conta de investimento.";
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(createRequest.Name))
+                {
+                    modalError = "O nome do ativo é obrigatório.";
+                    return;
+                }
+
+                await InvestmentAssetService.CreateAsync(createRequest);
+            }
+
+            showAddEditModal = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            modalError = $"Erro: {ex.Message}";
+            Console.WriteLine($"[Investments] Erro ao salvar: {ex}");
+        }
+        finally
+        {
+            isBusy = false;
+            busyMessage = "";
+        }
+    }
+
+    private void HandleDelete(InvestmentAssetResponseDto asset)
+    {
+        assetToDelete = asset;
+        showDeleteModal = true;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteModal = false;
+        assetToDelete = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (isBusy || assetToDelete == null) return;
+
+        isBusy = true;
+        busyMessage = "Excluindo ativo...";
+
+        try
+        {
+            await InvestmentAssetService.DeleteAsync(assetToDelete.Id);
+            showDeleteModal = false;
+            assetToDelete = null;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro ao excluir ativo: {ex.Message}";
+            Console.WriteLine($"[Investments] Erro ao excluir: {ex}");
+        }
+        finally
+        {
+            isBusy = false;
+            busyMessage = "";
+        }
+    }
+
+    private void HandleBuy(InvestmentAssetResponseDto asset)
+    {
+        Console.WriteLine($"[Investments] Comprar ativo: {asset.Name}");
+    }
+
+    private void HandleSell(InvestmentAssetResponseDto asset)
+    {
+        Console.WriteLine($"[Investments] Vender ativo: {asset.Name}");
+    }
+}

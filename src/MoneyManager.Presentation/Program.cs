@@ -38,6 +38,13 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
+builder.Services.AddScoped<IInvestmentAssetService, InvestmentAssetService>();
+builder.Services.AddScoped<IInvestmentTransactionService, InvestmentTransactionService>();
+builder.Services.AddScoped<IInvestmentReportService, InvestmentReportService>();
+
+// Market Data Service com HttpClient e Cache
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<IMarketDataService, BrapiMarketDataService>();
 
 // Register validators
 builder.Services.AddValidatorsFromAssembly(typeof(RegisterRequestValidator).Assembly);

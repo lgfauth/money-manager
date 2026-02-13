@@ -1,0 +1,342 @@
+@using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Application.DTOs.Response
+
+@* Modal para registrar venda de ativo *@
+
+@if (IsVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">
+                        <i class="fas fa-minus-circle"></i> Vender Ativo
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="Cancel" disabled="@isBusy"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible">
+                            <i class="fas fa-exclamation-triangle"></i> @errorMessage
+                            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+                        </div>
+                    }
+
+                    <div class="row g-3">
+                        <!-- Seletor de Ativo -->
+                        @if (SelectedAsset == null && Assets != null && Assets.Any())
+                        {
+                            <div class="col-12">
+                                <InvestmentAssetSelector 
+                                    Assets="@Assets" 
+                                    @bind-SelectedAssetId="selectedAssetId"
+                                    OnAssetSelected="@HandleAssetSelected" />
+                            </div>
+                        }
+                        else if (SelectedAsset != null)
+                        {
+                            <!-- Informações do Ativo Selecionado -->
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="mb-2">
+                                            <AssetTypeIcon AssetType="@SelectedAsset.AssetType" />
+                                            <strong class="ms-2">@SelectedAsset.Name</strong>
+                                            @if (!string.IsNullOrEmpty(SelectedAsset.Ticker))
+                                            {
+                                                <span class="text-muted">(@SelectedAsset.Ticker)</span>
+                                            }
+                                        </h6>
+                                        <div class="row g-2">
+                                            <div class="col-3">
+                                                <small class="text-muted d-block">Quantidade Disponível</small>
+                                                <strong class="text-primary">@SelectedAsset.Quantity.ToString("N2")</strong>
+                                            </div>
+                                            <div class="col-3">
+                                                <small class="text-muted d-block">Preço Médio</small>
+                                                <strong>R$ @SelectedAsset.AveragePurchasePrice.ToString("N2")</strong>
+                                            </div>
+                                            <div class="col-3">
+                                                <small class="text-muted d-block">Preço Atual</small>
+                                                <strong>R$ @SelectedAsset.CurrentPrice.ToString("N2")</strong>
+                                            </div>
+                                            <div class="col-3">
+                                                <small class="text-muted d-block">Total Investido</small>
+                                                <strong>R$ @SelectedAsset.TotalInvested.ToString("N2")</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Quantidade -->
+                        <div class="col-md-6">
+                            <label class="form-label">Quantidade <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" @bind="request.Quantity" 
+                                   step="0.01" min="0.01" 
+                                   max="@(SelectedAsset?.Quantity ?? 0)"
+                                   placeholder="0,00" />
+                            @if (SelectedAsset != null)
+                            {
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> Disponível: @SelectedAsset.Quantity.ToString("N2")
+                                </small>
+                            }
+                        </div>
+
+                        <!-- Preço de Venda -->
+                        <div class="col-md-6">
+                            <label class="form-label">Preço de Venda <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" @bind="request.Price" 
+                                       step="0.01" min="0.01" placeholder="0,00" />
+                            </div>
+                            @if (SelectedAsset != null && request.Price > 0)
+                            {
+                                var diff = request.Price - SelectedAsset.AveragePurchasePrice;
+                                var diffPercent = (diff / SelectedAsset.AveragePurchasePrice) * 100;
+                                <small class="@(diff >= 0 ? "text-success" : "text-danger")">
+                                    @(diff >= 0 ? "?" : "?") @Math.Abs(diffPercent).ToString("N2")% do preço médio
+                                </small>
+                            }
+                        </div>
+
+                        <!-- Taxa/Corretagem -->
+                        <div class="col-md-6">
+                            <label class="form-label">Taxa/Corretagem</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" @bind="request.Fees" 
+                                       step="0.01" min="0" placeholder="0,00" />
+                            </div>
+                        </div>
+
+                        <!-- Data -->
+                        <div class="col-md-6">
+                            <label class="form-label">Data da Venda</label>
+                            <input type="date" class="form-control" @bind="request.Date" />
+                        </div>
+
+                        <!-- Descrição -->
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" @bind="request.Description" 
+                                      rows="2" placeholder="Observações sobre a venda..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Cálculos em Tempo Real -->
+                    @if (request.Quantity > 0 && request.Price > 0 && SelectedAsset != null)
+                    {
+                        var grossValue = request.Quantity * request.Price;
+                        var netValue = grossValue - request.Fees;
+                        var costBasis = request.Quantity * SelectedAsset.AveragePurchasePrice;
+                        var profitLoss = netValue - costBasis;
+                        var profitLossPercent = (profitLoss / costBasis) * 100;
+
+                        <div class="card mt-3 @(profitLoss >= 0 ? "border-success" : "border-danger")">
+                            <div class="card-header @(profitLoss >= 0 ? "bg-success" : "bg-danger") text-white py-2">
+                                <small><i class="fas fa-calculator"></i> Simulação da Venda</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Valor Bruto</small>
+                                        <h6 class="mb-0">R$ @grossValue.ToString("N2")</h6>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Taxas</small>
+                                        <h6 class="mb-0">R$ @request.Fees.ToString("N2")</h6>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Valor Líquido</small>
+                                        <h6 class="mb-0 text-warning">R$ @netValue.ToString("N2")</h6>
+                                    </div>
+
+                                    <div class="col-12"><hr class="my-2" /></div>
+
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Custo Base (Preço Médio)</small>
+                                        <h6 class="mb-0">R$ @costBasis.ToString("N2")</h6>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Lucro/Prejuízo da Operação</small>
+                                        <h5 class="mb-0 @(profitLoss >= 0 ? "text-success" : "text-danger")">
+                                            <i class="fas fa-arrow-@(profitLoss >= 0 ? "up" : "down")"></i>
+                                            R$ @Math.Abs(profitLoss).ToString("N2")
+                                            <small class="ms-2">(@profitLossPercent.ToString("N2")%)</small>
+                                        </h5>
+                                    </div>
+
+                                    @if (request.Quantity < SelectedAsset.Quantity)
+                                    {
+                                        var remainingQty = SelectedAsset.Quantity - request.Quantity;
+                                        var remainingValue = remainingQty * SelectedAsset.AveragePurchasePrice;
+
+                                        <div class="col-12"><hr class="my-2" /></div>
+
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Quantidade Restante</small>
+                                            <h6 class="mb-0">@remainingQty.ToString("N2")</h6>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted d-block">Valor Restante Investido</small>
+                                            <h6 class="mb-0">R$ @remainingValue.ToString("N2")</h6>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="col-12">
+                                            <div class="alert alert-warning mb-0 py-2">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                <small><strong>Atenção:</strong> Venda total do ativo. A posição será zerada.</small>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Cancel" disabled="@isBusy">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-warning" @onclick="ConfirmSell" disabled="@isBusy">
+                        @if (isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-hand-holding-usd"></i>
+                        }
+                        Confirmar Venda
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public InvestmentAssetResponseDto? SelectedAsset { get; set; }
+
+    [Parameter]
+    public IEnumerable<InvestmentAssetResponseDto>? Assets { get; set; }
+
+    [Parameter]
+    public EventCallback OnSuccess { get; set; }
+
+    private SellAssetRequestDto request = new();
+    private string? selectedAssetId;
+    private bool isBusy = false;
+    private string? errorMessage;
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            request = new SellAssetRequestDto
+            {
+                Date = DateTime.Today,
+                Fees = 0
+            };
+
+            if (SelectedAsset != null)
+            {
+                selectedAssetId = SelectedAsset.Id;
+                request.Price = SelectedAsset.CurrentPrice;
+            }
+
+            errorMessage = null;
+        }
+    }
+
+    private void HandleAssetSelected(string? assetId)
+    {
+        if (!string.IsNullOrEmpty(assetId) && Assets != null)
+        {
+            SelectedAsset = Assets.FirstOrDefault(a => a.Id == assetId);
+            if (SelectedAsset != null)
+            {
+                request.Price = SelectedAsset.CurrentPrice;
+            }
+        }
+    }
+
+    private async Task ConfirmSell()
+    {
+        if (isBusy) return;
+
+        errorMessage = null;
+
+        // Validações
+        if (SelectedAsset == null)
+        {
+            errorMessage = "Selecione um ativo.";
+            return;
+        }
+
+        if (request.Quantity <= 0)
+        {
+            errorMessage = "A quantidade deve ser maior que zero.";
+            return;
+        }
+
+        if (request.Quantity > SelectedAsset.Quantity)
+        {
+            errorMessage = $"Quantidade disponível insuficiente. Disponível: {SelectedAsset.Quantity.ToString("N2")}";
+            return;
+        }
+
+        if (request.Price <= 0)
+        {
+            errorMessage = "O preço deve ser maior que zero.";
+            return;
+        }
+
+        isBusy = true;
+
+        try
+        {
+            await OnSuccess.InvokeAsync();
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        if (isBusy) return;
+        await CloseModal();
+    }
+
+    private async Task CloseModal()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(IsVisible);
+        errorMessage = null;
+        selectedAssetId = null;
+    }
+
+    public SellAssetRequestDto GetRequest() => request;
+    public string? GetSelectedAssetId() => selectedAssetId ?? SelectedAsset?.Id;
+}

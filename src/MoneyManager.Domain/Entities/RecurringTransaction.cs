@@ -19,6 +19,13 @@ public class RecurringTransaction
     [BsonElement("categoryId")]
     public string? CategoryId { get; set; }
 
+    /// <summary>
+    /// ID do ativo de investimento vinculado (opcional).
+    /// Usado para rendimentos recorrentes de investimentos.
+    /// </summary>
+    [BsonElement("linkedInvestmentAssetId")]
+    public string? LinkedInvestmentAssetId { get; set; }
+
     [BsonElement("type")]
     public TransactionType Type { get; set; }
 

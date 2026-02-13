@@ -1,0 +1,40 @@
+@* Componente que exibe lucro/prejuízo com cores e ícones apropriados *@
+
+<div class="d-flex align-items-center">
+    @if (Value >= 0)
+    {
+        <i class="fas fa-arrow-up text-success me-2" aria-label="Lucro"></i>
+        <span class="text-success fw-bold">
+            R$ @Value.ToString("N2")
+            @if (Percentage.HasValue)
+            {
+                <small class="ms-1">(@Percentage.Value.ToString("N2")%)</small>
+            }
+        </span>
+    }
+    else
+    {
+        <i class="fas fa-arrow-down text-danger me-2" aria-label="Prejuízo"></i>
+        <span class="text-danger fw-bold">
+            R$ @Value.ToString("N2")
+            @if (Percentage.HasValue)
+            {
+                <small class="ms-1">(@Percentage.Value.ToString("N2")%)</small>
+            }
+        </span>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Valor do lucro ou prejuízo.
+    /// </summary>
+    [Parameter]
+    public decimal Value { get; set; }
+
+    /// <summary>
+    /// Percentual do lucro ou prejuízo (opcional).
+    /// </summary>
+    [Parameter]
+    public decimal? Percentage { get; set; }
+}

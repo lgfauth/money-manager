@@ -1,0 +1,295 @@
+@using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Application.DTOs.Response
+@using MoneyManager.Domain.Enums
+
+@* Modal para registrar rendimento (dividendo, juros, aluguel) *@
+
+@if (IsVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-coins"></i> Lançar Rendimento
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="Cancel" disabled="@isBusy"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible">
+                            <i class="fas fa-exclamation-triangle"></i> @errorMessage
+                            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+                        </div>
+                    }
+
+                    <div class="row g-3">
+                        <!-- Seletor de Ativo -->
+                        @if (SelectedAsset == null && Assets != null && Assets.Any())
+                        {
+                            <div class="col-12">
+                                <InvestmentAssetSelector 
+                                    Assets="@Assets" 
+                                    @bind-SelectedAssetId="request.AssetId"
+                                    OnAssetSelected="@HandleAssetSelected" />
+                            </div>
+                        }
+                        else if (SelectedAsset != null)
+                        {
+                            <!-- Informações do Ativo Selecionado -->
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="mb-2">
+                                            <AssetTypeIcon AssetType="@SelectedAsset.AssetType" />
+                                            <strong class="ms-2">@SelectedAsset.Name</strong>
+                                            @if (!string.IsNullOrEmpty(SelectedAsset.Ticker))
+                                            {
+                                                <span class="text-muted">(@SelectedAsset.Ticker)</span>
+                                            }
+                                        </h6>
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Quantidade</small>
+                                                <strong>@SelectedAsset.Quantity.ToString("N2")</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted d-block">Valor Atual</small>
+                                                <strong>R$ @SelectedAsset.CurrentValue.ToString("N2")</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Tipo de Rendimento -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de Rendimento <span class="text-danger">*</span></label>
+                            <select class="form-select" @bind="request.YieldType">
+                                <option value="@InvestmentTransactionType.Dividend">Dividendo</option>
+                                <option value="@InvestmentTransactionType.Interest">Juros</option>
+                                <option value="@InvestmentTransactionType.YieldPayment">Rendimento/Aluguel</option>
+                            </select>
+                            <small class="text-muted">
+                                @GetYieldTypeDescription(request.YieldType)
+                            </small>
+                        </div>
+
+                        <!-- Valor Líquido -->
+                        <div class="col-md-6">
+                            <label class="form-label">Valor Líquido <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" class="form-control" @bind="request.Amount" 
+                                       step="0.01" min="0.01" placeholder="0,00" />
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle"></i> Valor já descontado impostos
+                            </small>
+                        </div>
+
+                        <!-- Data -->
+                        <div class="col-md-6">
+                            <label class="form-label">Data do Rendimento</label>
+                            <input type="date" class="form-control" @bind="request.Date" />
+                        </div>
+
+                        <!-- Descrição -->
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea class="form-control" @bind="request.Description" 
+                                      rows="2" placeholder="Observações sobre o rendimento..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Informações Adicionais -->
+                    @if (request.Amount > 0 && SelectedAsset != null)
+                    {
+                        var yieldPercent = SelectedAsset.CurrentValue > 0 
+                            ? (request.Amount / SelectedAsset.CurrentValue) * 100 
+                            : 0;
+                        var yearlyProjection = request.Amount * 12; // Projeção anual (simplificada)
+
+                        <div class="card mt-3 border-success">
+                            <div class="card-header bg-success text-white py-2">
+                                <small><i class="fas fa-chart-pie"></i> Análise do Rendimento</small>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Rendimento sobre Valor Atual</small>
+                                        <h6 class="mb-0 text-success">@yieldPercent.ToString("N2")%</h6>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Projeção Anual (12x)</small>
+                                        <h6 class="mb-0">R$ @yearlyProjection.ToString("N2")</h6>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted d-block">Yield Anual Estimado</small>
+                                        <h6 class="mb-0 text-success">@(yieldPercent * 12).ToString("N2")%</h6>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="alert alert-info mb-0 py-2">
+                                            <i class="fas fa-lightbulb"></i>
+                                            <small>
+                                                <strong>Dica:</strong> O rendimento será creditado na conta de investimento associada ao ativo.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Histórico de Rendimentos (se disponível) -->
+                    @if (SelectedAsset != null && showYieldHistory)
+                    {
+                        <div class="card mt-3">
+                            <div class="card-header py-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-history"></i> Rendimentos Anteriores (últimos 12 meses)
+                                </small>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted text-center mb-0">
+                                    <small>Histórico será implementado na integração com transações</small>
+                                </p>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Cancel" disabled="@isBusy">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-success" @onclick="ConfirmYield" disabled="@isBusy">
+                        @if (isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-check-circle"></i>
+                        }
+                        Lançar Rendimento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public InvestmentAssetResponseDto? SelectedAsset { get; set; }
+
+    [Parameter]
+    public IEnumerable<InvestmentAssetResponseDto>? Assets { get; set; }
+
+    [Parameter]
+    public EventCallback OnSuccess { get; set; }
+
+    private RecordYieldRequestDto request = new();
+    private bool isBusy = false;
+    private string? errorMessage;
+    private bool showYieldHistory = false;
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible)
+        {
+            request = new RecordYieldRequestDto
+            {
+                Date = DateTime.Today,
+                YieldType = InvestmentTransactionType.Dividend
+            };
+
+            if (SelectedAsset != null)
+            {
+                request.AssetId = SelectedAsset.Id;
+            }
+
+            errorMessage = null;
+        }
+    }
+
+    private void HandleAssetSelected(string? assetId)
+    {
+        if (!string.IsNullOrEmpty(assetId) && Assets != null)
+        {
+            SelectedAsset = Assets.FirstOrDefault(a => a.Id == assetId);
+            request.AssetId = assetId;
+        }
+    }
+
+    private async Task ConfirmYield()
+    {
+        if (isBusy) return;
+
+        errorMessage = null;
+
+        // Validações
+        if (string.IsNullOrEmpty(request.AssetId))
+        {
+            errorMessage = "Selecione um ativo.";
+            return;
+        }
+
+        if (request.Amount <= 0)
+        {
+            errorMessage = "O valor do rendimento deve ser maior que zero.";
+            return;
+        }
+
+        isBusy = true;
+
+        try
+        {
+            await OnSuccess.InvokeAsync();
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erro: {ex.Message}";
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        if (isBusy) return;
+        await CloseModal();
+    }
+
+    private async Task CloseModal()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(IsVisible);
+        errorMessage = null;
+    }
+
+    private string GetYieldTypeDescription(InvestmentTransactionType type)
+    {
+        return type switch
+        {
+            InvestmentTransactionType.Dividend => "Lucros distribuídos por ações",
+            InvestmentTransactionType.Interest => "Juros de renda fixa",
+            InvestmentTransactionType.YieldPayment => "Rendimento ou aluguel de FIIs",
+            _ => ""
+        };
+    }
+
+    public RecordYieldRequestDto GetRequest() => request;
+}
