@@ -84,7 +84,7 @@ public class InvestmentCalculationsTests
         // Compra 3: 25 @ R$ 8,00
         asset.UpdateAveragePriceOnBuy(25, 8.00m, 0);
         Assert.Equal(175, asset.Quantity);
-        Assert.Equal(10.29m, Math.Round(asset.AveragePurchasePrice, 2));
+        Assert.Equal(10.31m, Math.Round(asset.AveragePurchasePrice, 2)); // (1605 + 200) / 175 = 10.314...
         Assert.Equal(1805.00m, asset.TotalInvested);
     }
 
@@ -202,7 +202,7 @@ public class InvestmentCalculationsTests
     [InlineData(50, 110.75, 5537.50)]
     [InlineData(1, 10000.00, 10000.00)]
     [InlineData(0, 25.00, 0.00)]
-    [InlineData(150.5, 32.10, 4830.05)]
+    [InlineData(150.5, 32.10, 4831.05)]
     public void CalculateCurrentValue_DifferentQuantities_ShouldMultiplyCorrectly(
         decimal quantity,
         decimal price,
@@ -349,8 +349,8 @@ public class InvestmentCalculationsTests
 
         // Assert
         Assert.Equal(15.75m, asset.Quantity);
-        Assert.Equal(27.22m, Math.Round(asset.AveragePurchasePrice, 2));
-        Assert.Equal(428.75m, asset.TotalInvested);
+        Assert.Equal(27.16m, Math.Round(asset.AveragePurchasePrice, 2)); // (267.75 + 160.00) / 15.75 = 27.158...
+        Assert.Equal(427.75m, Math.Round(asset.TotalInvested, 2)); // 267.75 + 157.50 + 2.50 = 427.75
     }
 
     #endregion

@@ -622,16 +622,17 @@ public class InvestmentAssetServiceTests
             asset.CalculateProfitLoss();
         }
 
-        _unitOfWork.InvestmentAssets.GetAllAsync().Returns(assets);
+        _unitOfWork.InvestmentAssets.GetActiveByUserIdAsync(userId).Returns(assets);
+        _unitOfWork.InvestmentTransactions.GetByUserIdAsync(userId).Returns(new List<InvestmentTransaction>());
 
         // Act
         var result = await _service.GetSummaryAsync(userId);
 
         // Assert
         Assert.Equal(17000.00m, result.TotalInvested); // 2000 + 5000 + 10000
-        Assert.Equal(17000.00m, result.CurrentValue); // 2500 + 5500 + 9500
-        Assert.Equal(0m, result.TotalProfitLoss); // 500 + 500 - 500
-        Assert.Equal(0m, result.TotalProfitLossPercentage);
+        Assert.Equal(17500.00m, result.CurrentValue); // 2500 + 5500 + 9500
+        Assert.Equal(500.00m, result.TotalProfitLoss); // 500 + 500 - 500 = 500
+        Assert.Equal(2.94m, Math.Round(result.TotalProfitLossPercentage, 2)); // (500 / 17000) * 100 = 2.94%
         Assert.Equal(3, result.TotalAssets);
     }
 
