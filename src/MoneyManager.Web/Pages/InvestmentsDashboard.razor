@@ -354,6 +354,9 @@
 
     // Chart periods
     private string evolutionPeriod = "6M";
+    
+    // Flag para controlar renderização dos gráficos
+    private bool chartsRendered = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -362,10 +365,14 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && summary != null && assets != null)
+        // Renderizar gráficos quando os dados estiverem disponíveis e ainda não foram renderizados
+        if (!isLoading && !chartsRendered && summary != null && assets != null)
         {
-            // Aguardar um pouco para garantir que o DOM e scripts estejam prontos
-            await Task.Delay(500);
+            chartsRendered = true;
+            Console.WriteLine("[InvestmentsDashboard] Condições atendidas, iniciando renderização dos gráficos...");
+            
+            // Aguardar um pouco para garantir que o DOM está pronto
+            await Task.Delay(100);
             
             // Verificar se chartInterop está disponível
             try
@@ -380,16 +387,18 @@
                 else
                 {
                     Console.WriteLine("[InvestmentsDashboard] ERRO: chartInterop não está disponível!");
+                    chartsRendered = false; // Permitir nova tentativa
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[InvestmentsDashboard] Erro ao verificar chartInterop: {ex.Message}");
+                chartsRendered = false; // Permitir nova tentativa
             }
         }
         else
         {
-            Console.WriteLine($"[InvestmentsDashboard] OnAfterRenderAsync - firstRender: {firstRender}, summary: {summary != null}, assets: {assets != null}");
+            Console.WriteLine($"[InvestmentsDashboard] OnAfterRenderAsync - firstRender: {firstRender}, isLoading: {isLoading}, chartsRendered: {chartsRendered}, summary: {summary != null}, assets: {assets != null}");
         }
     }
 
