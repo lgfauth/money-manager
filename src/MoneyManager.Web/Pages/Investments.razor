@@ -98,8 +98,6 @@
 
         @if (HasAssets)
         {
-            Console.WriteLine($"[Render] Renderizando seção de assets. FilteredAssets.Count={FilteredAssets.Count}");
-            
             <!-- Filtros e Ordenação -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
@@ -436,25 +434,16 @@ private bool HasAssets => assets != null && assets.Any();
     {
         get
         {
-            Console.WriteLine($"[FilteredAssets] Getter chamado. Assets: {assets?.Count ?? 0}");
-            
-            if (assets == null)
-            {
-                Console.WriteLine("[FilteredAssets] Assets é null, retornando lista vazia");
-                return new List<InvestmentAssetResponseDto>();
-            }
+            if (assets == null) return new List<InvestmentAssetResponseDto>();
 
             var filtered = assets.AsEnumerable();
 
-            Console.WriteLine($"[FilteredAssets] Filtro tipo: '{filterAssetType}'");
             if (!string.IsNullOrEmpty(filterAssetType) && int.TryParse(filterAssetType, out var typeValue))
             {
                 var assetType = (InvestmentAssetType)typeValue;
                 filtered = filtered.Where(a => a.AssetType == assetType);
-                Console.WriteLine($"[FilteredAssets] Após filtro de tipo: {filtered.Count()}");
             }
 
-            Console.WriteLine($"[FilteredAssets] Termo de busca: '{searchTerm}'");
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 var search = searchTerm.ToLower();
@@ -462,10 +451,8 @@ private bool HasAssets => assets != null && assets.Any();
                     a.Name.ToLower().Contains(search) ||
                     (!string.IsNullOrEmpty(a.Ticker) && a.Ticker.ToLower().Contains(search))
                 );
-                Console.WriteLine($"[FilteredAssets] Após busca: {filtered.Count()}");
             }
 
-            Console.WriteLine($"[FilteredAssets] Ordenação: {sortBy}");
             filtered = sortBy switch
             {
                 "type" => filtered.OrderBy(a => a.AssetType).ThenBy(a => a.Name),
@@ -478,10 +465,7 @@ private bool HasAssets => assets != null && assets.Any();
                 _ => filtered.OrderBy(a => a.Name)
             };
 
-            var result = filtered.ToList();
-            Console.WriteLine($"[FilteredAssets] Resultado final: {result.Count} assets");
-            
-            return result;
+            return filtered.ToList();
         }
     }
 
@@ -498,7 +482,6 @@ private void OnFilterChanged()
 
     private async Task LoadData()
     {
-        Console.WriteLine("[LoadData] Iniciando...");
         isLoading = true;
         errorMessage = null;
 
@@ -514,9 +497,6 @@ private void OnFilterChanged()
             summary = await summaryTask;
             accounts = await accountsTask;
 
-            Console.WriteLine($"[LoadData] Assets carregados: {assets?.Count ?? 0}");
-            Console.WriteLine($"[LoadData] Summary: {summary?.TotalInvested}, HasAssets: {HasAssets}");
-
             // Atualizar last price update
             if (assets != null && assets.Any())
             {
@@ -525,19 +505,16 @@ private void OnFilterChanged()
                     .OrderByDescending(a => a.LastPriceUpdate)
                     .Select(a => a.LastPriceUpdate)
                     .FirstOrDefault();
-                    
-                Console.WriteLine($"[LoadData] Last price update: {lastPriceUpdate}");
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Erro ao carregar investimentos: {ex.Message}";
-            Console.WriteLine($"[LoadData] Erro: {ex}");
+            Console.WriteLine($"[Investments] Erro: {ex}");
         }
         finally
         {
             isLoading = false;
-            Console.WriteLine($"[LoadData] Finalizado. isLoading={isLoading}, HasAssets={HasAssets}");
         }
     }
 
