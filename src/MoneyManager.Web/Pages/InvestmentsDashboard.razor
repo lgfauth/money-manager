@@ -426,23 +426,16 @@
             Console.WriteLine($"[InvestmentsDashboard] AssetsByType: {summary.AssetsByType?.Count() ?? 0} tipos");
             Console.WriteLine($"[InvestmentsDashboard] Assets: {assets.Count} ativos");
 
-            // Gráfico 1: Diversificação por Tipo
+            // Gráfico 1: Diversificação por Tipo (Pizza)
             if (summary.AssetsByType != null && summary.AssetsByType.Any())
             {
                 Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de diversificação por tipo...");
                 
-                var diversificationData = summary.AssetsByType
-                    .ToDictionary(
-                        dto => ((int)dto.AssetType).ToString(),
-                        dto => (double)dto.CurrentValue
-                    );
+                var labels = summary.AssetsByType.Select(dto => GetAssetTypeName(dto.AssetType)).ToArray();
+                var data = summary.AssetsByType.Select(dto => (double)dto.CurrentValue).ToArray();
+                var colors = summary.AssetsByType.Select((dto, i) => GetChartColorByIndex(i)).ToArray();
 
-                foreach (var item in diversificationData)
-                {
-                    Console.WriteLine($"[InvestmentsDashboard] - Tipo {item.Key}: R$ {item.Value}");
-                }
-
-                await JSRuntime.InvokeVoidAsync("renderDiversificationByType", "chartDiversificationType", diversificationData);
+                await JSRuntime.InvokeVoidAsync("chartInterop.createPieChart", "chartDiversificationType", labels, data, colors);
                 Console.WriteLine("[InvestmentsDashboard] Gráfico de diversificação por tipo renderizado");
             }
             else
@@ -450,29 +443,17 @@
                 Console.WriteLine("[InvestmentsDashboard] Sem dados para gráfico de diversificação por tipo");
             }
 
-            // Gráfico 2: Top 10 Ativos
+            // Gráfico 2: Top 10 Ativos (Barras)
             if (assets.Any())
             {
                 Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de top 10 ativos...");
                 
-                var topAssetsData = assets
-                    .OrderByDescending(a => a.CurrentValue)
-                    .Take(10)
-                    .Select(a => new
-                    {
-                        name = a.Name,
-                        value = (double)a.CurrentValue,
-                        assetType = (int)a.AssetType
-                    })
-                    .ToArray();
+                var topAssets = assets.OrderByDescending(a => a.CurrentValue).Take(10).ToList();
+                var labels = topAssets.Select(a => a.Name).ToArray();
+                var data = topAssets.Select(a => (double)a.CurrentValue).ToArray();
+                var colors = topAssets.Select((_, i) => GetChartColorByIndex(i)).ToArray();
 
-                Console.WriteLine($"[InvestmentsDashboard] Top ativos: {topAssetsData.Length}");
-                foreach (var item in topAssetsData)
-                {
-                    Console.WriteLine($"[InvestmentsDashboard] - {item.name}: R$ {item.value}");
-                }
-
-                await JSRuntime.InvokeVoidAsync("renderDiversificationByAsset", "chartTopAssets", topAssetsData);
+                await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "chartTopAssets", labels, data, colors);
                 Console.WriteLine("[InvestmentsDashboard] Gráfico de top 10 ativos renderizado");
             }
             else
@@ -480,11 +461,11 @@
                 Console.WriteLine("[InvestmentsDashboard] Sem ativos para renderizar");
             }
 
-            // Gráfico 3: Evolução (dados mockados - implementar quando houver histórico)
+            // Gráfico 3: Evolução (Linha)
             Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de evolução...");
             await RenderEvolutionChart();
 
-            // Gráfico 4: Rendimentos Mensais (dados mockados - implementar quando houver histórico)
+            // Gráfico 4: Rendimentos Mensais (Barras)
             Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de rendimentos mensais...");
             await RenderMonthlyYieldsChart();
             
@@ -504,22 +485,25 @@
             Console.WriteLine("[InvestmentsDashboard] Gerando dados mock para evolução patrimonial...");
             
             // Mock data - substituir por dados reais do histórico
-            var mockData = Enumerable.Range(0, 12)
+            var labels = Enumerable.Range(0, 12)
                 .Select(i =>
                 {
                     var date = DateTime.Today.AddMonths(-11 + i);
-                    var value = summary?.CurrentValue ?? 0;
-                    var variation = (decimal)(new Random(i).NextDouble() * 0.2 - 0.1); // -10% a +10%
-                    return new
-                    {
-                        date = date.ToString("yyyy-MM-dd"),
-                        value = (double)(value * (1 + variation))
-                    };
+                    return date.ToString("MMM/yy");
                 })
                 .ToArray();
 
-            Console.WriteLine($"[InvestmentsDashboard] Dados de evolução gerados: {mockData.Length} pontos");
-            await JSRuntime.InvokeVoidAsync("renderEvolutionChart", "chartEvolution", mockData);
+            var incomeData = Enumerable.Range(0, 12)
+                .Select(i => (double)(summary?.CurrentValue ?? 0) * (1 + new Random(i).NextDouble() * 0.1 - 0.05))
+                .ToArray();
+
+            var expensesData = Enumerable.Range(0, 12)
+                .Select(i => (double)(summary?.TotalInvested ?? 0) * (1 + new Random(i + 100).NextDouble() * 0.1 - 0.05))
+                .ToArray();
+
+            Console.WriteLine($"[InvestmentsDashboard] Dados de evolução gerados: {labels.Length} pontos");
+            
+            await JSRuntime.InvokeVoidAsync("chartInterop.createLineChart", "chartEvolution", labels, new { income = incomeData, expenses = expensesData });
             Console.WriteLine("[InvestmentsDashboard] Gráfico de evolução renderizado");
         }
         catch (Exception ex)
@@ -535,26 +519,46 @@
             Console.WriteLine("[InvestmentsDashboard] Gerando dados mock para rendimentos mensais...");
             
             // Mock data - substituir por dados reais de rendimentos
-            var mockData = Enumerable.Range(0, 12)
+            var labels = Enumerable.Range(0, 12)
                 .Select(i =>
                 {
                     var date = DateTime.Today.AddMonths(-11 + i);
-                    return new
-                    {
-                        month = date.ToString("MMM/yy"),
-                        value = (double)(new Random(i).Next(100, 500))
-                    };
+                    return date.ToString("MMM/yy");
                 })
                 .ToArray();
 
-            Console.WriteLine($"[InvestmentsDashboard] Dados de rendimentos gerados: {mockData.Length} pontos");
-            await JSRuntime.InvokeVoidAsync("renderMonthlyYields", "chartMonthlyYields", mockData);
+            var data = Enumerable.Range(0, 12)
+                .Select(i => (double)(new Random(i).Next(100, 500)))
+                .ToArray();
+
+            var colors = labels.Select((_, i) => "rgba(75, 192, 192, 0.7)").ToArray();
+
+            Console.WriteLine($"[InvestmentsDashboard] Dados de rendimentos gerados: {labels.Length} pontos");
+            await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "chartMonthlyYields", labels, data, colors);
             Console.WriteLine("[InvestmentsDashboard] Gráfico de rendimentos mensais renderizado");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[InvestmentsDashboard] Erro ao renderizar rendimentos: {ex.Message}");
         }
+    }
+
+    private string GetChartColorByIndex(int index)
+    {
+        var colors = new[]
+        {
+            "rgba(54, 162, 235, 0.7)",
+            "rgba(255, 159, 64, 0.7)",
+            "rgba(153, 102, 255, 0.7)",
+            "rgba(255, 205, 86, 0.7)",
+            "rgba(75, 192, 192, 0.7)",
+            "rgba(255, 99, 132, 0.7)",
+            "rgba(102, 126, 234, 0.7)",
+            "rgba(118, 75, 162, 0.7)",
+            "rgba(255, 107, 107, 0.7)",
+            "rgba(78, 205, 196, 0.7)"
+        };
+        return colors[index % colors.Length];
     }
 
     private async Task SetEvolutionPeriod(string period)

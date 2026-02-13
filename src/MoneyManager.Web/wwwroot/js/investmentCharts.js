@@ -46,11 +46,17 @@ function getAssetTypeName(assetType) {
  * @param {Object} data - Dados agrupados por tipo { assetType: value }
  */
 window.renderDiversificationByType = function(canvasId, data) {
+    console.log('[investmentCharts] renderDiversificationByType chamado:', canvasId, data);
+    
     const ctx = document.getElementById(canvasId);
-    if (!ctx) return null;
+    if (!ctx) {
+        console.error('[investmentCharts] Canvas nao encontrado:', canvasId);
+        return null;
+    }
 
     // Destruir gráfico existente se houver
     if (ctx.chart) {
+        console.log('[investmentCharts] Destruindo grafico anterior');
         ctx.chart.destroy();
     }
 
@@ -62,7 +68,10 @@ window.renderDiversificationByType = function(canvasId, data) {
         labels.push(getAssetTypeName(parseInt(assetType)));
         values.push(value);
         colors.push(getAssetTypeColor(parseInt(assetType)));
+        console.log('[investmentCharts] Tipo:', assetType, 'Valor:', value);
     }
+
+    console.log('[investmentCharts] Criando gráfico com', labels.length, 'tipos');
 
     const chart = new Chart(ctx, {
         type: 'pie',
@@ -104,6 +113,7 @@ window.renderDiversificationByType = function(canvasId, data) {
     });
 
     ctx.chart = chart;
+    console.log('[investmentCharts] Gráfico criado com sucesso');
     return chart;
 };
 
@@ -113,14 +123,20 @@ window.renderDiversificationByType = function(canvasId, data) {
  * @param {Array} assets - Array de objetos { name, value, assetType }
  */
 window.renderDiversificationByAsset = function(canvasId, assets) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return null;
+console.log('[investmentCharts] renderDiversificationByAsset chamado:', canvasId, assets);
+    
+const ctx = document.getElementById(canvasId);
+if (!ctx) {
+    console.error('[investmentCharts] Canvas não encontrado:', canvasId);
+    return null;
+}
 
-    if (ctx.chart) {
-        ctx.chart.destroy();
-    }
+if (ctx.chart) {
+    console.log('[investmentCharts] Destruindo gráfico anterior');
+    ctx.chart.destroy();
+}
 
-    // Ordenar e pegar top 10
+// Ordenar e pegar top 10
     const topAssets = assets
         .sort((a, b) => b.value - a.value)
         .slice(0, 10);
@@ -128,6 +144,8 @@ window.renderDiversificationByAsset = function(canvasId, assets) {
     const labels = topAssets.map(a => a.name);
     const values = topAssets.map(a => a.value);
     const colors = topAssets.map(a => getAssetTypeColor(a.assetType));
+
+    console.log('[investmentCharts] Criando gráfico com', topAssets.length, 'ativos');
 
     const chart = new Chart(ctx, {
         type: 'bar',
@@ -170,6 +188,7 @@ window.renderDiversificationByAsset = function(canvasId, assets) {
     });
 
     ctx.chart = chart;
+    console.log('[investmentCharts] Gráfico criado com sucesso');
     return chart;
 };
 
@@ -179,10 +198,16 @@ window.renderDiversificationByAsset = function(canvasId, assets) {
  * @param {Array} data - Array de objetos { date, value }
  */
 window.renderEvolutionChart = function(canvasId, data) {
+    console.log('[investmentCharts] renderEvolutionChart chamado:', canvasId, data);
+    
     const ctx = document.getElementById(canvasId);
-    if (!ctx) return null;
+    if (!ctx) {
+        console.error('[investmentCharts] Canvas não encontrado:', canvasId);
+        return null;
+    }
 
     if (ctx.chart) {
+        console.log('[investmentCharts] Destruindo gráfico anterior');
         ctx.chart.destroy();
     }
 
@@ -192,6 +217,8 @@ window.renderEvolutionChart = function(canvasId, data) {
         return date.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' });
     });
     const values = sortedData.map(d => d.value);
+
+    console.log('[investmentCharts] Criando gráfico com', labels.length, 'pontos');
 
     const chart = new Chart(ctx, {
         type: 'line',
@@ -241,6 +268,7 @@ window.renderEvolutionChart = function(canvasId, data) {
     });
 
     ctx.chart = chart;
+    console.log('[investmentCharts] Gráfico criado com sucesso');
     return chart;
 };
 
@@ -250,15 +278,24 @@ window.renderEvolutionChart = function(canvasId, data) {
  * @param {Array} data - Array de objetos { month, value }
  */
 window.renderMonthlyYields = function(canvasId, data) {
+    console.log('[investmentCharts] renderMonthlyYields chamado:', canvasId, data);
+    
     const ctx = document.getElementById(canvasId);
-    if (!ctx) return null;
+    if (!ctx) {
+        console.error('[investmentCharts] Canvas não encontrado:', canvasId);
+        return null;
+    }
 
+    
     if (ctx.chart) {
+        console.log('[investmentCharts] Destruindo gráfico anterior');
         ctx.chart.destroy();
     }
 
     const labels = data.map(d => d.month);
     const values = data.map(d => d.value);
+
+    console.log('[investmentCharts] Criando gráfico com', labels.length, 'meses');
 
     const chart = new Chart(ctx, {
         type: 'bar',
@@ -300,6 +337,7 @@ window.renderMonthlyYields = function(canvasId, data) {
     });
 
     ctx.chart = chart;
+    console.log('[investmentCharts] Gráfico criado com sucesso');
     return chart;
 };
 
@@ -307,6 +345,7 @@ window.renderMonthlyYields = function(canvasId, data) {
  * Destrói todos os gráficos na página
  */
 window.destroyAllCharts = function() {
+    console.log('[investmentCharts] Destruindo todos os gráficos');
     const canvases = document.querySelectorAll('canvas');
     canvases.forEach(canvas => {
         if (canvas.chart) {
@@ -315,3 +354,5 @@ window.destroyAllCharts = function() {
         }
     });
 };
+
+console.log('[investmentCharts] Script carregado com sucesso!');
