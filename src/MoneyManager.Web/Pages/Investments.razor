@@ -96,9 +96,9 @@
             <InvestmentSummaryCard Summary="@summary" />
         }
 
-        @if (assets != null && assets.Any())
+        @if (HasAssets)
         {
-            var filteredAssets = GetFilteredAndSortedAssets().ToList();
+            Console.WriteLine($"[Render] Renderizando seção de assets. FilteredAssets.Count={FilteredAssets.Count}");
             
             <!-- Filtros e Ordenação -->
             <div class="card shadow-sm mb-4">
@@ -107,7 +107,7 @@
                         <!-- Tipo de Ativo -->
                         <div class="col-12 col-md-3">
                             <label class="form-label small text-muted mb-1">Tipo de Ativo</label>
-                            <select class="form-select form-select-sm" @bind="filterAssetType">
+                            <select class="form-select form-select-sm" @bind="filterAssetType" @bind:after="OnFilterChanged">
                                 <option value="">Todos</option>
                                 <option value="@((int)InvestmentAssetType.Stock)">Ações</option>
                                 <option value="@((int)InvestmentAssetType.FixedIncome)">Renda Fixa</option>
@@ -122,7 +122,7 @@
                         <!-- Ordenar por -->
                         <div class="col-12 col-md-3">
                             <label class="form-label small text-muted mb-1">Ordenar por</label>
-                            <select class="form-select form-select-sm" @bind="sortBy">
+                            <select class="form-select form-select-sm" @bind="sortBy" @bind:after="OnFilterChanged">
                                 <option value="name">Nome</option>
                                 <option value="type">Tipo</option>
                                 <option value="value_desc">Valor (Maior)</option>
@@ -140,17 +140,18 @@
                             <input type="text" class="form-control form-control-sm" 
                                    placeholder="Nome ou ticker do ativo..." 
                                    @bind="searchTerm" 
-                                   @bind:event="oninput" />
+                                   @bind:event="oninput" 
+                                   @bind:after="OnFilterChanged" />
                         </div>
                     </div>
                 </div>
             </div>
 
-            @if (filteredAssets.Any())
+            @if (FilteredAssets.Any())
             {
                 <!-- Grid de Ativos -->
                 <div class="row g-3">
-                    @foreach (var asset in filteredAssets)
+                    @foreach (var asset in FilteredAssets)
                     {
                         <div class="col-12 col-md-6 col-lg-4">
                             <InvestmentAssetCard 
@@ -389,52 +390,115 @@
 }
 
 @code {
-    // Data
-    private List<InvestmentAssetResponseDto>? assets;
-    private InvestmentSummaryResponseDto? summary;
-    private IEnumerable<Domain.Entities.Account>? accounts;
+// Data
+private List<InvestmentAssetResponseDto>? assets;
+private InvestmentSummaryResponseDto? summary;
+private IEnumerable<Domain.Entities.Account>? accounts;
 
-    // Loading States
-    private bool isLoading = true;
-    private bool isBusy = false;
-    private string busyMessage = "";
-    private string? errorMessage;
-    private string? modalError;
+// Loading States
+private bool isLoading = true;
+private bool isBusy = false;
+private string busyMessage = "";
+private string? errorMessage;
+private string? modalError;
 
-    // Filtros
-    private string filterAssetType = "";
-    private string sortBy = "name";
-    private string searchTerm = "";
+// Filtros
+private string filterAssetType = "";
+private string sortBy = "name";
+private string searchTerm = "";
 
-    // Modais
-    private bool showAddEditModal = false;
-    private bool showDeleteModal = false;
-    private bool isEditing = false;
-    private string? editingAssetId;
-    private InvestmentAssetResponseDto? assetToDelete;
+// Modais
+private bool showAddEditModal = false;
+private bool showDeleteModal = false;
+private bool isEditing = false;
+private string? editingAssetId;
+private InvestmentAssetResponseDto? assetToDelete;
 
-    // Requests
-    private CreateInvestmentAssetRequestDto createRequest = new() { AssetType = InvestmentAssetType.Stock };
-    private UpdateInvestmentAssetRequestDto updateRequest = new();
+// Requests
+private CreateInvestmentAssetRequestDto createRequest = new() { AssetType = InvestmentAssetType.Stock };
+private UpdateInvestmentAssetRequestDto updateRequest = new();
     
-    // Separate properties for editing
-    private string currentName = "";
-    private string? currentTicker = "";
-    private string? currentNotes = "";
+// Separate properties for editing
+private string currentName = "";
+private string? currentTicker = "";
+private string? currentNotes = "";
 
-    // Price Update
-    private bool isUpdatingPrices = false;
-    private string? priceUpdateMessage;
-    private bool priceUpdateSuccess = false;
-    private DateTime? lastPriceUpdate;
+// Price Update
+private bool isUpdatingPrices = false;
+private string? priceUpdateMessage;
+private bool priceUpdateSuccess = false;
+private DateTime? lastPriceUpdate;
 
-    protected override async Task OnInitializedAsync()
+// Computed Properties
+private bool HasAssets => assets != null && assets.Any();
+
+    private List<InvestmentAssetResponseDto> FilteredAssets
     {
-        await LoadData();
+        get
+        {
+            Console.WriteLine($"[FilteredAssets] Getter chamado. Assets: {assets?.Count ?? 0}");
+            
+            if (assets == null)
+            {
+                Console.WriteLine("[FilteredAssets] Assets é null, retornando lista vazia");
+                return new List<InvestmentAssetResponseDto>();
+            }
+
+            var filtered = assets.AsEnumerable();
+
+            Console.WriteLine($"[FilteredAssets] Filtro tipo: '{filterAssetType}'");
+            if (!string.IsNullOrEmpty(filterAssetType) && int.TryParse(filterAssetType, out var typeValue))
+            {
+                var assetType = (InvestmentAssetType)typeValue;
+                filtered = filtered.Where(a => a.AssetType == assetType);
+                Console.WriteLine($"[FilteredAssets] Após filtro de tipo: {filtered.Count()}");
+            }
+
+            Console.WriteLine($"[FilteredAssets] Termo de busca: '{searchTerm}'");
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var search = searchTerm.ToLower();
+                filtered = filtered.Where(a =>
+                    a.Name.ToLower().Contains(search) ||
+                    (!string.IsNullOrEmpty(a.Ticker) && a.Ticker.ToLower().Contains(search))
+                );
+                Console.WriteLine($"[FilteredAssets] Após busca: {filtered.Count()}");
+            }
+
+            Console.WriteLine($"[FilteredAssets] Ordenação: {sortBy}");
+            filtered = sortBy switch
+            {
+                "type" => filtered.OrderBy(a => a.AssetType).ThenBy(a => a.Name),
+                "value_desc" => filtered.OrderByDescending(a => a.CurrentValue),
+                "value_asc" => filtered.OrderBy(a => a.CurrentValue),
+                "profit_desc" => filtered.OrderByDescending(a => a.ProfitLoss),
+                "profit_asc" => filtered.OrderBy(a => a.ProfitLoss),
+                "performance_desc" => filtered.OrderByDescending(a => a.ProfitLossPercentage),
+                "performance_asc" => filtered.OrderBy(a => a.ProfitLossPercentage),
+                _ => filtered.OrderBy(a => a.Name)
+            };
+
+            var result = filtered.ToList();
+            Console.WriteLine($"[FilteredAssets] Resultado final: {result.Count} assets");
+            
+            return result;
+        }
     }
+
+protected override async Task OnInitializedAsync()
+{
+    await LoadData();
+}
+
+private void OnFilterChanged()
+{
+    // Force re-render when filters change
+    StateHasChanged();
+}
 
     private async Task LoadData()
     {
+        Console.WriteLine("[LoadData] Iniciando...");
         isLoading = true;
         errorMessage = null;
 
@@ -450,6 +514,9 @@
             summary = await summaryTask;
             accounts = await accountsTask;
 
+            Console.WriteLine($"[LoadData] Assets carregados: {assets?.Count ?? 0}");
+            Console.WriteLine($"[LoadData] Summary: {summary?.TotalInvested}, HasAssets: {HasAssets}");
+
             // Atualizar last price update
             if (assets != null && assets.Any())
             {
@@ -458,16 +525,19 @@
                     .OrderByDescending(a => a.LastPriceUpdate)
                     .Select(a => a.LastPriceUpdate)
                     .FirstOrDefault();
+                    
+                Console.WriteLine($"[LoadData] Last price update: {lastPriceUpdate}");
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Erro ao carregar investimentos: {ex.Message}";
-            Console.WriteLine($"[Investments] Erro: {ex}");
+            Console.WriteLine($"[LoadData] Erro: {ex}");
         }
         finally
         {
             isLoading = false;
+            Console.WriteLine($"[LoadData] Finalizado. isLoading={isLoading}, HasAssets={HasAssets}");
         }
     }
 
@@ -509,42 +579,6 @@
         {
             isUpdatingPrices = false;
         }
-    }
-
-    private IEnumerable<InvestmentAssetResponseDto> GetFilteredAndSortedAssets()
-    {
-        if (assets == null) return Enumerable.Empty<InvestmentAssetResponseDto>();
-
-        var filtered = assets.AsEnumerable();
-
-        if (!string.IsNullOrEmpty(filterAssetType) && int.TryParse(filterAssetType, out var typeValue))
-        {
-            var assetType = (InvestmentAssetType)typeValue;
-            filtered = filtered.Where(a => a.AssetType == assetType);
-        }
-
-        if (!string.IsNullOrWhiteSpace(searchTerm))
-        {
-            var search = searchTerm.ToLower();
-            filtered = filtered.Where(a =>
-                a.Name.ToLower().Contains(search) ||
-                (!string.IsNullOrEmpty(a.Ticker) && a.Ticker.ToLower().Contains(search))
-            );
-        }
-
-        filtered = sortBy switch
-        {
-            "type" => filtered.OrderBy(a => a.AssetType).ThenBy(a => a.Name),
-            "value_desc" => filtered.OrderByDescending(a => a.CurrentValue),
-            "value_asc" => filtered.OrderBy(a => a.CurrentValue),
-            "profit_desc" => filtered.OrderByDescending(a => a.ProfitLoss),
-            "profit_asc" => filtered.OrderBy(a => a.ProfitLoss),
-            "performance_desc" => filtered.OrderByDescending(a => a.ProfitLossPercentage),
-            "performance_asc" => filtered.OrderBy(a => a.ProfitLossPercentage),
-            _ => filtered.OrderBy(a => a.Name)
-        };
-
-        return filtered;
     }
 
     private void ShowAddModal()
