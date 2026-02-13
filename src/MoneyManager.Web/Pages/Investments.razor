@@ -280,20 +280,14 @@
 
                             <!-- Preço Inicial -->
                             <div class="col-md-4">
-                                <label class="form-label">Preço Inicial (R$)</label>
-                                <input type="number" class="form-control" 
-                                       @bind="createRequest.InitialPrice" 
-                                       step="0.01" 
-                                       min="0" />
+                                <label class="form-label">Preço Inicial</label>
+                                <MoneyInput @bind-Value="createRequest.InitialPrice" Placeholder="R$ 0,00" />
                             </div>
 
                             <!-- Taxas -->
                             <div class="col-md-4">
-                                <label class="form-label">Taxas/Corretagem (R$)</label>
-                                <input type="number" class="form-control" 
-                                       @bind="createRequest.InitialFees" 
-                                       step="0.01" 
-                                       min="0" />
+                                <label class="form-label">Taxas/Corretagem</label>
+                                <MoneyInput @bind-Value="createRequest.InitialFees" Placeholder="R$ 0,00" />
                             </div>
 
                             @if (createRequest.InitialQuantity > 0 && createRequest.InitialPrice > 0)
