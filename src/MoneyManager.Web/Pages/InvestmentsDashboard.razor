@@ -363,6 +363,8 @@
     {
         if (firstRender && summary != null)
         {
+            // Aguardar um pouco para garantir que o DOM e scripts estejam prontos
+            await Task.Delay(500);
             await RenderCharts();
         }
     }
@@ -374,6 +376,8 @@
 
         try
         {
+            Console.WriteLine("[InvestmentsDashboard] Iniciando carregamento de dados...");
+            
             var summaryTask = InvestmentAssetService.GetSummaryAsync();
             var assetsTask = InvestmentAssetService.GetAllAsync();
             var transactionsTask = InvestmentTransactionService.GetAllAsync();
@@ -385,11 +389,15 @@
             recentTransactions = (await transactionsTask)?
                 .OrderByDescending(t => t.Date)
                 .ToList();
+                
+            Console.WriteLine($"[InvestmentsDashboard] Summary carregado: TotalInvested={summary?.TotalInvested}");
+            Console.WriteLine($"[InvestmentsDashboard] Assets carregados: {assets?.Count ?? 0}");
+            Console.WriteLine($"[InvestmentsDashboard] Transactions carregadas: {recentTransactions?.Count ?? 0}");
         }
         catch (Exception ex)
         {
             errorMessage = $"Erro ao carregar dashboard: {ex.Message}";
-            Console.WriteLine($"[Dashboard] Erro: {ex}");
+            Console.WriteLine($"[InvestmentsDashboard] Erro: {ex}");
         }
         finally
         {
@@ -401,23 +409,52 @@
     {
         try
         {
-            if (summary == null || assets == null) return;
+            Console.WriteLine("[InvestmentsDashboard] Iniciando renderização de gráficos...");
+            
+            if (summary == null)
+            {
+                Console.WriteLine("[InvestmentsDashboard] Summary é null, abortando renderização");
+                return;
+            }
+            
+            if (assets == null)
+            {
+                Console.WriteLine("[InvestmentsDashboard] Assets é null, abortando renderização");
+                return;
+            }
+
+            Console.WriteLine($"[InvestmentsDashboard] AssetsByType: {summary.AssetsByType?.Count() ?? 0} tipos");
+            Console.WriteLine($"[InvestmentsDashboard] Assets: {assets.Count} ativos");
 
             // Gráfico 1: Diversificação por Tipo
             if (summary.AssetsByType != null && summary.AssetsByType.Any())
             {
+                Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de diversificação por tipo...");
+                
                 var diversificationData = summary.AssetsByType
                     .ToDictionary(
                         dto => ((int)dto.AssetType).ToString(),
                         dto => (double)dto.CurrentValue
                     );
 
+                foreach (var item in diversificationData)
+                {
+                    Console.WriteLine($"[InvestmentsDashboard] - Tipo {item.Key}: R$ {item.Value}");
+                }
+
                 await JSRuntime.InvokeVoidAsync("renderDiversificationByType", "chartDiversificationType", diversificationData);
+                Console.WriteLine("[InvestmentsDashboard] Gráfico de diversificação por tipo renderizado");
+            }
+            else
+            {
+                Console.WriteLine("[InvestmentsDashboard] Sem dados para gráfico de diversificação por tipo");
             }
 
             // Gráfico 2: Top 10 Ativos
             if (assets.Any())
             {
+                Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de top 10 ativos...");
+                
                 var topAssetsData = assets
                     .OrderByDescending(a => a.CurrentValue)
                     .Take(10)
@@ -429,57 +466,95 @@
                     })
                     .ToArray();
 
+                Console.WriteLine($"[InvestmentsDashboard] Top ativos: {topAssetsData.Length}");
+                foreach (var item in topAssetsData)
+                {
+                    Console.WriteLine($"[InvestmentsDashboard] - {item.name}: R$ {item.value}");
+                }
+
                 await JSRuntime.InvokeVoidAsync("renderDiversificationByAsset", "chartTopAssets", topAssetsData);
+                Console.WriteLine("[InvestmentsDashboard] Gráfico de top 10 ativos renderizado");
+            }
+            else
+            {
+                Console.WriteLine("[InvestmentsDashboard] Sem ativos para renderizar");
             }
 
             // Gráfico 3: Evolução (dados mockados - implementar quando houver histórico)
+            Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de evolução...");
             await RenderEvolutionChart();
 
             // Gráfico 4: Rendimentos Mensais (dados mockados - implementar quando houver histórico)
+            Console.WriteLine("[InvestmentsDashboard] Renderizando gráfico de rendimentos mensais...");
             await RenderMonthlyYieldsChart();
+            
+            Console.WriteLine("[InvestmentsDashboard] Todos os gráficos renderizados com sucesso!");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[Dashboard] Erro ao renderizar gráficos: {ex}");
+            Console.WriteLine($"[InvestmentsDashboard] Erro ao renderizar gráficos: {ex.Message}");
+            Console.WriteLine($"[InvestmentsDashboard] StackTrace: {ex.StackTrace}");
         }
     }
 
     private async Task RenderEvolutionChart()
     {
-        // Mock data - substituir por dados reais do histórico
-        var mockData = Enumerable.Range(0, 12)
-            .Select(i =>
-            {
-                var date = DateTime.Today.AddMonths(-11 + i);
-                var value = summary?.CurrentValue ?? 0;
-                var variation = (decimal)(new Random().NextDouble() * 0.2 - 0.1); // -10% a +10%
-                return new
+        try
+        {
+            Console.WriteLine("[InvestmentsDashboard] Gerando dados mock para evolução patrimonial...");
+            
+            // Mock data - substituir por dados reais do histórico
+            var mockData = Enumerable.Range(0, 12)
+                .Select(i =>
                 {
-                    date = date.ToString("yyyy-MM-dd"),
-                    value = (double)(value * (1 + variation))
-                };
-            })
-            .ToArray();
+                    var date = DateTime.Today.AddMonths(-11 + i);
+                    var value = summary?.CurrentValue ?? 0;
+                    var variation = (decimal)(new Random(i).NextDouble() * 0.2 - 0.1); // -10% a +10%
+                    return new
+                    {
+                        date = date.ToString("yyyy-MM-dd"),
+                        value = (double)(value * (1 + variation))
+                    };
+                })
+                .ToArray();
 
-        await JSRuntime.InvokeVoidAsync("renderEvolutionChart", "chartEvolution", mockData);
+            Console.WriteLine($"[InvestmentsDashboard] Dados de evolução gerados: {mockData.Length} pontos");
+            await JSRuntime.InvokeVoidAsync("renderEvolutionChart", "chartEvolution", mockData);
+            Console.WriteLine("[InvestmentsDashboard] Gráfico de evolução renderizado");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[InvestmentsDashboard] Erro ao renderizar evolução: {ex.Message}");
+        }
     }
 
     private async Task RenderMonthlyYieldsChart()
     {
-        // Mock data - substituir por dados reais de rendimentos
-        var mockData = Enumerable.Range(0, 12)
-            .Select(i =>
-            {
-                var date = DateTime.Today.AddMonths(-11 + i);
-                return new
+        try
+        {
+            Console.WriteLine("[InvestmentsDashboard] Gerando dados mock para rendimentos mensais...");
+            
+            // Mock data - substituir por dados reais de rendimentos
+            var mockData = Enumerable.Range(0, 12)
+                .Select(i =>
                 {
-                    month = date.ToString("MMM/yy"),
-                    value = (double)(new Random().Next(100, 500))
-                };
-            })
-            .ToArray();
+                    var date = DateTime.Today.AddMonths(-11 + i);
+                    return new
+                    {
+                        month = date.ToString("MMM/yy"),
+                        value = (double)(new Random(i).Next(100, 500))
+                    };
+                })
+                .ToArray();
 
-        await JSRuntime.InvokeVoidAsync("renderMonthlyYields", "chartMonthlyYields", mockData);
+            Console.WriteLine($"[InvestmentsDashboard] Dados de rendimentos gerados: {mockData.Length} pontos");
+            await JSRuntime.InvokeVoidAsync("renderMonthlyYields", "chartMonthlyYields", mockData);
+            Console.WriteLine("[InvestmentsDashboard] Gráfico de rendimentos mensais renderizado");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[InvestmentsDashboard] Erro ao renderizar rendimentos: {ex.Message}");
+        }
     }
 
     private async Task SetEvolutionPeriod(string period)
