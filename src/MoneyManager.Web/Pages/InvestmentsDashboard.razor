@@ -2,11 +2,13 @@
 @using MoneyManager.Application.DTOs.Response
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Web.Services
+@using MoneyManager.Web.Services.Localization
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.JSInterop
 @attribute [Authorize]
 @inject IInvestmentAssetService InvestmentAssetService
 @inject IInvestmentTransactionService InvestmentTransactionService
+@inject ILocalizationService Localization
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 

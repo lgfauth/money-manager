@@ -3,10 +3,13 @@
 @using MoneyManager.Application.DTOs.Response
 @using MoneyManager.Domain.Enums
 @using MoneyManager.Web.Services
+@using MoneyManager.Web.Services.Localization
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inject IInvestmentAssetService InvestmentAssetService
 @inject IAccountService AccountService
+@inject ILocalizationService Localization
+
 @inject NavigationManager Navigation
 
 <PageTitle>Meus Investimentos</PageTitle>
