@@ -155,21 +155,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Investimentos -->
-        <div class="col-12 col-lg-4">
-            <div class="card shadow-sm border-primary border-2">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> 💼 Meus Investimentos</h5>
-                    <a href="/investments" class="btn btn-light btn-sm">
-                        <i class="fas fa-eye"></i> Ver Detalhes
-                    </a>
-                </div>
-                <div class="card-body">
-                    <canvas id="investmentsChart" style="max-height: 250px;"></canvas>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Limite de Crédito -->
@@ -289,7 +274,6 @@ private decimal plannedBudget = 0m;
 private List<RecentTransactionDto> recentTransactions = new();
 private List<AccountBalanceDto> accountBalances = new();
 private List<AccountBalanceDto> creditCardBalances = new();
-private List<AccountBalanceDto> investmentBalances = new();
 private List<CreditCardLimitDto> creditCardLimits = new();
 private bool isLoading = true;
 private string? errorMessage;
@@ -327,7 +311,6 @@ private async Task LoadDashboardData()
         plannedBudget = summary.PlannedBudget;
         accountBalances = summary.AccountBalances;
         creditCardBalances = summary.CreditCardBalances;
-        investmentBalances = summary.InvestmentBalances;
         creditCardLimits = summary.CreditCardLimits;
         recentTransactions = summary.RecentTransactions;
     }
@@ -353,7 +336,6 @@ private async Task LoadDashboardData()
             await RenderIncomeExpenseChart();
             await RenderLiquidAccountsChart();
             await RenderCreditCardsChart();
-            await RenderInvestmentsChart();
         }
         catch (Exception ex)
         {
@@ -482,36 +464,6 @@ private async Task LoadDashboardData()
         catch (Exception ex)
         {
             Console.WriteLine($"Erro ao renderizar credit cards chart: {ex.Message}");
-        }
-    }
-
-    private async Task RenderInvestmentsChart()
-    {
-        try
-        {
-            string[] chartLabels;
-            double[] chartData;
-            string[] chartColors;
-
-            if (!investmentBalances.Any())
-            {
-                chartLabels = new[] { Localization.Get("Dashboard.NoInvestments") };
-                chartData = new[] { 0.0 };
-                chartColors = new[] { "rgba(200, 200, 200, 0.7)" };
-            }
-            else
-            {
-                chartLabels = investmentBalances.Select(a => a.AccountName).ToArray();
-                chartData = investmentBalances.Select(a => (double)a.Balance).ToArray();
-                chartColors = investmentBalances.Select((_, i) => "rgba(40, 167, 69, 0.7)").ToArray();
-            }
-
-            await JSRuntime.InvokeVoidAsync("chartInterop.createBarChart", "investmentsChart", chartLabels, chartData, chartColors);
-            Console.WriteLine("Investments chart renderizado com sucesso");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erro ao renderizar investments chart: {ex.Message}");
         }
     }
 

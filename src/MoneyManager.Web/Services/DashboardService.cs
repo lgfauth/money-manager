@@ -46,10 +46,10 @@ public class DashboardService : IDashboardService
             var creditCards = accountsList.Where(a => a.Type == AccountType.CreditCard).ToList();
             var investments = accountsList.Where(a => a.Type == AccountType.Investment).ToList();
 
-            // Saldo líquido (soma das contas correntes, poupança e dinheiro)
+            // Saldo lï¿½quido (soma das contas correntes, poupanï¿½a e dinheiro)
             summary.LiquidBalance = liquidAccounts.Sum(a => a.Balance);
 
-            // Saldo total (inclui investimentos, mas não cartões de crédito)
+            // Saldo total (inclui investimentos, mas nï¿½o cartï¿½es de crï¿½dito)
             summary.TotalBalance = liquidAccounts.Sum(a => a.Balance) + investments.Sum(a => a.Balance);
 
             var currentMonth = DateTime.Now.Month;
@@ -85,7 +85,7 @@ public class DashboardService : IDashboardService
                 summary.BudgetUsedPercentage = 0;
             }
 
-            // Contas líquidas (Corrente, Poupança, Dinheiro)
+            // Contas lï¿½quidas (Corrente, Poupanï¿½a, Dinheiro)
             summary.AccountBalances = liquidAccounts
                 .Select(a => new AccountBalanceDto
                 {
@@ -96,7 +96,7 @@ public class DashboardService : IDashboardService
                 .OrderByDescending(a => a.Balance)
                 .ToList();
 
-            // Cartões de crédito
+            // Cartï¿½es de crï¿½dito
             summary.CreditCardBalances = creditCards
                 .Select(a => new AccountBalanceDto
                 {
@@ -107,18 +107,8 @@ public class DashboardService : IDashboardService
                 .OrderByDescending(a => a.Balance)
                 .ToList();
 
-            // Investimentos
-            summary.InvestmentBalances = investments
-                .Select(a => new AccountBalanceDto
-                {
-                    AccountName = a.Name,
-                    Balance = a.Balance,
-                    Type = a.Type
-                })
-                .OrderByDescending(a => a.Balance)
-                .ToList();
 
-            // Calcular limite disponível dos cartões de crédito
+            // Calcular limite disponï¿½vel dos cartï¿½es de crï¿½dito
             summary.CreditCardLimits = creditCards
                 .Where(cc => cc.CreditLimit.HasValue && cc.CreditLimit.Value > 0)
                 .Select(cc =>

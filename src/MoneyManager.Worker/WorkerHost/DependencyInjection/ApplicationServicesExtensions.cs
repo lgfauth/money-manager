@@ -22,11 +22,6 @@ internal static class ApplicationServicesExtensions
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
         services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
-        services.AddScoped<IInvestmentTransactionService, InvestmentTransactionService>();
-
-        // Market Data Service com HttpClient e Cache
-        services.AddMemoryCache();
-        services.AddHttpClient<IMarketDataService, BrapiMarketDataService>();
 
         return services;
     }

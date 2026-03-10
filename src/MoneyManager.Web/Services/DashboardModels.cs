@@ -12,7 +12,6 @@ public class DashboardSummary
     public decimal PlannedBudget { get; set; }
     public List<AccountBalanceDto> AccountBalances { get; set; } = new();
     public List<AccountBalanceDto> CreditCardBalances { get; set; } = new();
-    public List<AccountBalanceDto> InvestmentBalances { get; set; } = new();
     public List<CreditCardLimitDto> CreditCardLimits { get; set; } = new();
     public List<RecentTransactionDto> RecentTransactions { get; set; } = new();
 }
