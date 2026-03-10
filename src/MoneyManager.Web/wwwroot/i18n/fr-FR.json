@@ -65,7 +65,7 @@
     "LiquidBalance": "SOLDE LIQUIDE",
     "LiquidBalanceDesc": "Compte courant + Épargne + Espèces",
     "TotalAssets": "PATRIMOINE TOTAL",
-    "TotalAssetsDesc": "Liquide + Investissements",
+    "TotalAssetsDesc": "Solde net + cartes",
     "MonthlyIncome": "Revenus du mois",
     "MonthlyExpenses": "Dépenses du mois",
     "BudgetUsed": "Budget utilisé",

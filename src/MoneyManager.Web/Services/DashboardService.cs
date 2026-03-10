@@ -44,13 +44,12 @@ public class DashboardService : IDashboardService
                 a.Type == AccountType.Cash).ToList();
 
             var creditCards = accountsList.Where(a => a.Type == AccountType.CreditCard).ToList();
-            var investments = accountsList.Where(a => a.Type == AccountType.Investment).ToList();
 
             // Saldo l�quido (soma das contas correntes, poupan�a e dinheiro)
             summary.LiquidBalance = liquidAccounts.Sum(a => a.Balance);
 
-            // Saldo total (inclui investimentos, mas n�o cart�es de cr�dito)
-            summary.TotalBalance = liquidAccounts.Sum(a => a.Balance) + investments.Sum(a => a.Balance);
+            // Saldo total do dashboard (mesma base das contas liquidas)
+            summary.TotalBalance = summary.LiquidBalance;
 
             var currentMonth = DateTime.Now.Month;
             var currentYear = DateTime.Now.Year;

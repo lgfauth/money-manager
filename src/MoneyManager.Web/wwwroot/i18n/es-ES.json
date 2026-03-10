@@ -65,7 +65,7 @@
     "LiquidBalance": "SALDO LÍQUIDO",
     "LiquidBalanceDesc": "Corriente + Ahorros + Efectivo",
     "TotalAssets": "PATRIMONIO TOTAL",
-    "TotalAssetsDesc": "Líquido + Inversiones",
+    "TotalAssetsDesc": "Saldo neto + tarjetas",
     "MonthlyIncome": "Ingresos del mes",
     "MonthlyExpenses": "Gastos del mes",
     "BudgetUsed": "Presupuesto utilizado",

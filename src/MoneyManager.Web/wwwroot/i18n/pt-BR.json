@@ -68,7 +68,7 @@
                       "LiquidBalanceDesc":  "Corrente + Poupança + Dinheiro",
                       "LiquidBalanceLabel":  "SALDO LÍQUIDO",
                       "TotalAssets":  "PATRIMÔNIO TOTAL",
-                      "TotalAssetsDesc":  "Líquido + Investimentos",
+                      "TotalAssetsDesc":  "Saldo líquido + cartões",
                       "TotalAssetsLabel":  "PATRIMÔNIO TOTAL",
                       "IncomeLabel":  "Receita",
                       "ExpenseLabel":  "Despesa",

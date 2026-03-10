@@ -65,7 +65,7 @@
     "LiquidBalance": "NET BALANCE",
     "LiquidBalanceDesc": "Checking + Savings + Cash",
     "TotalAssets": "TOTAL ASSETS",
-    "TotalAssetsDesc": "Net + Investments",
+    "TotalAssetsDesc": "Net balance + credit cards",
     "MonthlyIncome": "Monthly Income",
     "MonthlyExpenses": "Monthly Expenses",
     "BudgetUsed": "Budget Used",
