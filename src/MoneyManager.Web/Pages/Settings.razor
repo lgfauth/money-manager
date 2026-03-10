@@ -50,7 +50,7 @@
         }
 
         <div class="row g-4">
-            <!-- Preferências Financeiras -->
+            <!-- Preferï¿½ncias Financeiras -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -90,7 +90,7 @@
                 </div>
             </div>
 
-            <!-- Notificações -->
+            <!-- Notificaï¿½ï¿½es -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -167,7 +167,7 @@
                 </div>
             </div>
 
-            <!-- Aparência -->
+            <!-- Aparï¿½ncia -->
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -194,7 +194,7 @@
                 </div>
             </div>
 
-            <!-- Botões de Ação -->
+            <!-- Botï¿½es de Aï¿½ï¿½o -->
             <div class="col-12">
                 <div class="d-flex gap-2 justify-content-end">
                     <button class="btn btn-outline-secondary" @onclick="LoadSettings">
@@ -243,7 +243,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar configurações: {ex.Message}";
+            errorMessage = $"Erro ao carregar configuraÃ§Ãµes: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -266,11 +266,11 @@
             // Apply theme
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", settings.Theme);
 
-            successMessage = "Configurações salvas com sucesso!";
+            successMessage = "ConfiguraÃ§Ãµes salvas com sucesso!";
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao salvar configurações: {ex.Message}";
+            errorMessage = $"Erro ao salvar configuraÃ§Ãµes: {ex.Message}";
             Console.WriteLine($"Erro: {ex}");
         }
         finally

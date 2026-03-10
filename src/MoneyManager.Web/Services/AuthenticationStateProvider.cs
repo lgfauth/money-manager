@@ -54,7 +54,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
             }
 
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user-id"), new Claim(ClaimTypes.Name, "Usu·rio") };
+            var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user-id"), new Claim(ClaimTypes.Name, "Usu√°rio") };
             var identity = new ClaimsIdentity(claims, "jwt");
             var user = new ClaimsPrincipal(identity);
             return new AuthenticationState(user);
@@ -74,7 +74,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
         _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-        var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user-id"), new Claim(ClaimTypes.Name, "Usu·rio") };
+        var claims = new List<Claim> { new Claim(ClaimTypes.NameIdentifier, "user-id"), new Claim(ClaimTypes.Name, "Usu√°rio") };
         var identity = new ClaimsIdentity(claims, "jwt");
         var user = new ClaimsPrincipal(identity);
         NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(user)));
