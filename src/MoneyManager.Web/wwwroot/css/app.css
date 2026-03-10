@@ -156,8 +156,13 @@ canvas {
 }
 
 .nav-link.dropdown-toggle:hover {
-    color: rgba(255,255,255,1) !important;
     transform: translateY(-2px);
+}
+
+.user-menu-toggle:hover,
+.user-menu-toggle:hover span,
+.user-menu-toggle:hover i {
+    color: #000 !important;
 }
 
 /* ============================================
@@ -260,7 +265,7 @@ canvas {
     min-width: 0;
 }
 
-/* Font monospace para códigos hex */
+/* Font monospace para cï¿½digos hex */
 .font-monospace {
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.7rem;
