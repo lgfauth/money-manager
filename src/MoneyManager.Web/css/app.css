@@ -316,6 +316,16 @@ a:hover {
     color: white !important;
 }
 
+/* Keep user context-menu trigger text/icons dark on hover */
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle:hover,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle:hover span,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle:hover i,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle.show,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle.show span,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle.show i {
+    color: #000 !important;
+}
+
 /* ============================================
    SIDEBAR/NAV MENU
    ============================================ */

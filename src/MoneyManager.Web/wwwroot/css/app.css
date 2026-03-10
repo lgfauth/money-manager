@@ -165,6 +165,15 @@ canvas {
     color: #000 !important;
 }
 
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle:hover,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle:hover span,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle:hover i,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle.show,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle.show span,
+.navbar-nav .nav-link.user-menu-toggle.dropdown-toggle.show i {
+    color: #000 !important;
+}
+
 /* ============================================
    GLOBAL BUSY OVERLAY
    ============================================ */
