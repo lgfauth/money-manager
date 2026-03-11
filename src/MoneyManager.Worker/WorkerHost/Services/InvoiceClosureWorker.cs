@@ -6,8 +6,8 @@ using TransactionSchedulerWorker.WorkerHost.Options;
 namespace TransactionSchedulerWorker.WorkerHost.Services;
 
 /// <summary>
-/// Worker dedicado ao fechamento autom·tico de faturas de cart„o de crÈdito
-/// Executa diariamente ‡ meia-noite e 1 minuto (00:01)
+/// Worker dedicado ao fechamento autom√°tico de faturas de cart√£o de cr√©dito
+/// Executa diariamente √† meia-noite e 1 minuto (00:01)
 /// </summary>
 internal sealed class InvoiceClosureWorker(
     ILogger<InvoiceClosureWorker> logger,
@@ -50,13 +50,13 @@ internal sealed class InvoiceClosureWorker(
                     nextRunLocal,
                     AlreadyRanForSlot(nextRunUtc));
 
-                // Se chegou a hora e ainda n„o executou neste slot
+                // Se chegou a hora e ainda n√£o executou neste slot
                 if (nowUtc >= nextRunUtc && !AlreadyRanForSlot(nextRunUtc))
                 {
                     logger.LogInformation("TRIGGER: Executando fechamento de faturas (hora agendada atingida)");
                     await RunOnceAsync(nowUtc, stoppingToken);
                     _lastRunAt = nextRunUtc;
-                    logger.LogInformation("Fechamento concluÌdo. PrÛxima execuÁ„o: {NextRun:yyyy-MM-dd HH:mm:ss}",
+                    logger.LogInformation("Fechamento conclu√≠do. Pr√≥xima execu√ß√£o: {NextRun:yyyy-MM-dd HH:mm:ss}",
                         GetNextRunLocal(TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), tz), _schedule));
                 }
             }

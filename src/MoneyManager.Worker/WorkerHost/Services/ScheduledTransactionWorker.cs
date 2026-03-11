@@ -6,12 +6,12 @@ using TransactionSchedulerWorker.WorkerHost.Options;
 namespace TransactionSchedulerWorker.WorkerHost.Services;
 
 /// <summary>
-/// Worker respons·vel por executar o processamento agendado (1x ao dia).
-/// Estrutura seguindo boas pr·ticas:
+/// Worker respons√°vel por executar o processamento agendado (1x ao dia).
+/// Estrutura seguindo boas pr√°ticas:
 /// - BackgroundService
 /// - Cancelamento cooperativo
-/// - Timeout por execuÁ„o
-/// - SeparaÁ„o de responsabilidades (orquestraÁ„o vs. processamento)
+/// - Timeout por execu√ß√£o
+/// - Separa√ß√£o de responsabilidades (orquestra√ß√£o vs. processamento)
 /// </summary>
 internal sealed class ScheduledTransactionWorker(
     ILogger<ScheduledTransactionWorker> logger,
@@ -42,15 +42,15 @@ internal sealed class ScheduledTransactionWorker(
         logger.LogInformation("========================================");
 
         // Execute immediately on startup to process any backlog and validate everything works
-        logger.LogInformation("STARTUP EXECUTION: Processando recorrÍncias vencidas imediatamente...");
+        logger.LogInformation("STARTUP EXECUTION: Processando recorr√™ncias vencidas imediatamente...");
         try
         {
             await RunOnceAsync(timeProvider.GetUtcNow(), stoppingToken);
-            logger.LogInformation("STARTUP EXECUTION: ConcluÌda com sucesso. Aguardando prÛximo hor·rio agendado.");
+            logger.LogInformation("STARTUP EXECUTION: Conclu√≠da com sucesso. Aguardando pr√≥ximo hor√°rio agendado.");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "STARTUP EXECUTION: Falhou. Worker continuar· tentando no hor·rio agendado.");
+            logger.LogError(ex, "STARTUP EXECUTION: Falhou. Worker continuar√° tentando no hor√°rio agendado.");
         }
 
         while (!stoppingToken.IsCancellationRequested)
@@ -78,7 +78,7 @@ internal sealed class ScheduledTransactionWorker(
                         "TRIGGER: Executando processamento agendado (Now >= NextRun and not already ran)");
                     await RunOnceAsync(nowUtc, stoppingToken);
                     _lastRunAt = nextRunUtc;
-                    logger.LogInformation("Processamento agendado concluÌdo. PrÛxima execuÁ„o: {NextRun:yyyy-MM-dd HH:mm:ss}",
+                    logger.LogInformation("Processamento agendado conclu√≠do. Pr√≥xima execu√ß√£o: {NextRun:yyyy-MM-dd HH:mm:ss}",
                         GetNextRunLocal(TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), tz), _schedule));
                 }
             }
@@ -115,7 +115,7 @@ internal sealed class ScheduledTransactionWorker(
         }
         catch (OperationCanceledException)
         {
-            logger.LogWarning("ExecuÁ„o cancelada por timeout ({TimeoutMinutes} min).", _options.ExecutionTimeoutMinutes);
+            logger.LogWarning("Execu√ß√£o cancelada por timeout ({TimeoutMinutes} min).", _options.ExecutionTimeoutMinutes);
         }
         catch (Exception ex)
         {

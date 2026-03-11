@@ -7,7 +7,7 @@ using MoneyManager.Domain.Interfaces;
 namespace MoneyManager.Presentation.Controllers;
 
 /// <summary>
-/// Controller para operaÁıes administrativas e migraÁ„o de dados
+/// Controller para opera√ß√µes administrativas e migra√ß√£o de dados
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -29,7 +29,7 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Migra transaÁıes antigas de cartıes de crÈdito para faturas histÛricas
+    /// Migra transa√ß√µes antigas de cart√µes de cr√©dito para faturas hist√≥ricas
     /// </summary>
     [HttpPost("migrate-credit-card-invoices")]
     public async Task<IActionResult> MigrateCreditCardInvoices()
@@ -52,7 +52,7 @@ public class AdminController : ControllerBase
                 Errors = new List<string>()
             };
 
-            // Buscar todos os cartıes de crÈdito do usu·rio
+            // Buscar todos os cart√µes de cr√©dito do usu√°rio
             var allAccounts = await _unitOfWork.Accounts.GetAllAsync();
             var creditCards = allAccounts
                 .Where(a => a.UserId == userId && a.Type == AccountType.CreditCard && !a.IsDeleted)
@@ -66,18 +66,18 @@ public class AdminController : ControllerBase
                 {
                     _logger.LogInformation("Processing card {CardId} - {CardName}", card.Id, card.Name);
 
-                    // Verificar se j· existe fatura histÛrica
+                    // Verificar se j√° existe fatura hist√≥rica
                     var existingHistoryInvoice = await _unitOfWork.CreditCardInvoices
                         .GetByReferenceMonthAsync(card.Id, "HISTORY");
 
                     if (existingHistoryInvoice != null)
                     {
                         _logger.LogInformation("History invoice already exists for card {CardId}, skipping", card.Id);
-                        ((List<string>)migrationResult.Errors).Add($"Cart„o '{card.Name}': Fatura histÛrica j· existe");
+                        ((List<string>)migrationResult.Errors).Add($"Cart√£o '{card.Name}': Fatura hist√≥rica j√° existe");
                         continue;
                     }
 
-                    // Buscar transaÁıes antigas sem fatura vinculada
+                    // Buscar transa√ß√µes antigas sem fatura vinculada
                     var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
                     var unlinkedTransactions = allTransactions
                         .Where(t => t.AccountId == card.Id 
@@ -95,7 +95,7 @@ public class AdminController : ControllerBase
                     _logger.LogInformation("Found {Count} unlinked transactions for card {CardId}", 
                         unlinkedTransactions.Count, card.Id);
 
-                    // Criar fatura histÛrica
+                    // Criar fatura hist√≥rica
                     var historyInvoice = await _invoiceService.CreateHistoryInvoiceAsync(userId, card.Id);
 
                     migrationResult = new
@@ -112,7 +112,7 @@ public class AdminController : ControllerBase
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error processing card {CardId}", card.Id);
-                    ((List<string>)migrationResult.Errors).Add($"Cart„o '{card.Name}': {ex.Message}");
+                    ((List<string>)migrationResult.Errors).Add($"Cart√£o '{card.Name}': {ex.Message}");
                 }
             }
 
@@ -121,7 +121,7 @@ public class AdminController : ControllerBase
             return Ok(new
             {
                 Success = true,
-                Message = "MigraÁ„o concluÌda com sucesso",
+                Message = "Migra√ß√£o conclu√≠da com sucesso",
                 Result = migrationResult
             });
         }
@@ -131,14 +131,14 @@ public class AdminController : ControllerBase
             return StatusCode(500, new
             {
                 Success = false,
-                Message = "Erro durante a migraÁ„o",
+                Message = "Erro durante a migra√ß√£o",
                 Error = ex.Message
             });
         }
     }
 
     /// <summary>
-    /// Recalcula totais de todas as faturas de um usu·rio
+    /// Recalcula totais de todas as faturas de um usu√°rio
     /// </summary>
     [HttpPost("recalculate-invoices")]
     public async Task<IActionResult> RecalculateInvoices()
@@ -195,7 +195,7 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Cria fatura aberta para cartıes que n„o tÍm
+    /// Cria fatura aberta para cart√µes que n√£o t√™m
     /// </summary>
     [HttpPost("create-missing-open-invoices")]
     public async Task<IActionResult> CreateMissingOpenInvoices()

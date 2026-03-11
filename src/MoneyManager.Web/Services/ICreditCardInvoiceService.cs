@@ -6,7 +6,7 @@ namespace MoneyManager.Web.Services;
 
 public interface ICreditCardInvoiceService
 {
-    // Gest„o de Faturas
+    // Gest√£o de Faturas
     Task<CreditCardInvoice> GetOrCreateOpenInvoiceAsync(string accountId);
     Task<CreditCardInvoiceResponseDto> GetInvoiceByIdAsync(string invoiceId);
     Task<IEnumerable<CreditCardInvoiceResponseDto>> GetInvoicesByAccountAsync(string accountId);
@@ -20,11 +20,11 @@ public interface ICreditCardInvoiceService
     Task PayInvoiceAsync(PayInvoiceRequestDto request);
     Task PayPartialInvoiceAsync(PayInvoiceRequestDto request);
     
-    // RelatÛrios
+    // Relat√≥rios
     Task<InvoiceSummaryDto> GetInvoiceSummaryAsync(string invoiceId);
     Task<IEnumerable<TransactionResponseDto>> GetInvoiceTransactionsAsync(string invoiceId);
     
-    // Utilit·rios
+    // Utilit√°rios
     Task<CreditCardInvoice> DetermineInvoiceForTransactionAsync(string accountId, DateTime transactionDate);
     Task RecalculateInvoiceTotalAsync(string invoiceId);
     Task<CreditCardInvoice> CreateHistoryInvoiceAsync(string accountId);

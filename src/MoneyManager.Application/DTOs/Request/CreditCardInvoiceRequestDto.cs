@@ -3,7 +3,7 @@ using MoneyManager.Domain.Enums;
 namespace MoneyManager.Application.DTOs.Request;
 
 /// <summary>
-/// DTO para criar fatura de cart„o de crÈdito manualmente (usado na migraÁ„o e casos especiais)
+/// DTO para criar fatura de cart√£o de cr√©dito manualmente (usado na migra√ß√£o e casos especiais)
 /// </summary>
 public class CreateCreditCardInvoiceRequestDto
 {
@@ -41,7 +41,7 @@ public class PayInvoiceRequestDto
     public DateTime PaymentDate { get; set; } = DateTime.Today;
 
     /// <summary>
-    /// DescriÁ„o adicional (opcional)
+    /// Descri√ß√£o adicional (opcional)
     /// </summary>
     public string? Description { get; set; }
 }

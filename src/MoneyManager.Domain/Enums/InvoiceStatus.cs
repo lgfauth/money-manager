@@ -1,17 +1,17 @@
 namespace MoneyManager.Domain.Enums;
 
 /// <summary>
-/// Status de uma fatura de cartão de crédito
+/// Status de uma fatura de cartÃ£o de crÃ©dito
 /// </summary>
 public enum InvoiceStatus
 {
     /// <summary>
-    /// Fatura aberta, ainda aceitando novas transações
+    /// Fatura aberta, ainda aceitando novas transaÃ§Ãµes
     /// </summary>
     Open = 0,
 
     /// <summary>
-    /// Fatura fechada, não aceita mais transações mas ainda não foi paga
+    /// Fatura fechada, nÃ£o aceita mais transaÃ§Ãµes mas ainda nÃ£o foi paga
     /// </summary>
     Closed = 1,
 

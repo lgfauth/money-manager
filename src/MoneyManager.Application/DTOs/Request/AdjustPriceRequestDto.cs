@@ -3,20 +3,20 @@ using System.ComponentModel.DataAnnotations;
 namespace MoneyManager.Application.DTOs.Request;
 
 /// <summary>
-/// DTO para ajustar o preço de mercado de um ativo.
+/// DTO para ajustar o preÃ§o de mercado de um ativo.
 /// </summary>
 public class AdjustPriceRequestDto
 {
     /// <summary>
-    /// Novo preço de mercado por unidade.
+    /// Novo preÃ§o de mercado por unidade.
     /// </summary>
-    [Required(ErrorMessage = "O novo preço é obrigatório.")]
-    [Range(0, double.MaxValue, ErrorMessage = "O preço não pode ser negativo.")]
+    [Required(ErrorMessage = "O novo preÃ§o Ã© obrigatÃ³rio.")]
+    [Range(0, double.MaxValue, ErrorMessage = "O preÃ§o nÃ£o pode ser negativo.")]
     public decimal NewPrice { get; set; }
 
     /// <summary>
-    /// Data de referência para o ajuste de preço.
+    /// Data de referÃªncia para o ajuste de preÃ§o.
     /// </summary>
-    [Required(ErrorMessage = "A data é obrigatória.")]
+    [Required(ErrorMessage = "A data Ã© obrigatÃ³ria.")]
     public DateTime Date { get; set; } = DateTime.Today;
 }

@@ -12,12 +12,12 @@ public class CreateAccountRequestDto
     public int? InvoiceClosingDay { get; set; }
 
     /// <summary>
-    /// Limite de crédito (apenas para cartões de crédito)
+    /// Limite de crÃ©dito (apenas para cartÃµes de crÃ©dito)
     /// </summary>
     public decimal? CreditLimit { get; set; }
 
     /// <summary>
-    /// Dias entre o fechamento e o vencimento da fatura (padrão: 7 dias)
+    /// Dias entre o fechamento e o vencimento da fatura (padrÃ£o: 7 dias)
     /// </summary>
     public int InvoiceDueDayOffset { get; set; } = 7;
 }

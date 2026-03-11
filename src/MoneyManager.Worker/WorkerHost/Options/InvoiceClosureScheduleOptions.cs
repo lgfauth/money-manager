@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace TransactionSchedulerWorker.WorkerHost.Options;
 
 /// <summary>
-/// ConfiguraÁıes de agendamento para fechamento de faturas de cart„o de crÈdito
-/// Executado diariamente ‡ meia-noite e 1 minuto
+/// Configura√ß√µes de agendamento para fechamento de faturas de cart√£o de cr√©dito
+/// Executado diariamente √† meia-noite e 1 minuto
 /// </summary>
 public sealed class InvoiceClosureScheduleOptions
 {
@@ -12,24 +12,24 @@ public sealed class InvoiceClosureScheduleOptions
 
     /// <summary>
     /// Time zone ID usado para avaliar agendamento (ex: "E. South America Standard Time")
-    /// Se vazio, usa fuso hor·rio local
+    /// Se vazio, usa fuso hor√°rio local
     /// </summary>
     public string? TimeZoneId { get; init; }
 
     /// <summary>
-    /// Hora do dia para executar fechamento (padr„o: 0 = meia-noite)
+    /// Hora do dia para executar fechamento (padr√£o: 0 = meia-noite)
     /// </summary>
     [Range(0, 23)]
     public int Hour { get; init; } = 0;
 
     /// <summary>
-    /// Minuto da hora para executar (padr„o: 1 = 00:01)
+    /// Minuto da hora para executar (padr√£o: 1 = 00:01)
     /// </summary>
     [Range(0, 59)]
     public int Minute { get; init; } = 1;
 
     /// <summary>
-    /// Delay entre verificaÁıes do loop em segundos
+    /// Delay entre verifica√ß√µes do loop em segundos
     /// </summary>
     [Range(5, 3600)]
     public int LoopDelaySeconds { get; init; } = 60;

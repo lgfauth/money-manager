@@ -40,7 +40,7 @@ public class AccountDeletionService : IAccountDeletionService
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         if (user == null)
         {
-            throw new KeyNotFoundException("Usu·rio n„o encontrado");
+            throw new KeyNotFoundException("Usu√°rio n√£o encontrado");
         }
 
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
@@ -92,7 +92,7 @@ public class AccountDeletionService : IAccountDeletionService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao deletar conta do usu·rio {userId}: {ex.Message}");
+            Console.WriteLine($"Erro ao deletar conta do usu√°rio {userId}: {ex.Message}");
             throw new Exception("Erro ao deletar conta. Por favor, tente novamente.", ex);
         }
     }

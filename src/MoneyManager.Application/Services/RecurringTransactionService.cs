@@ -74,8 +74,25 @@ public class RecurringTransactionService : IRecurringTransactionService
 
     public async Task<IEnumerable<RecurringTransaction>> GetAllAsync(string userId)
     {
-        var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
-        return recurrences.Where(r => r.UserId == userId && !r.IsDeleted);
+        try
+        {
+            var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
+
+            // Defensive filtering: legacy/malformed records should not break the whole page.
+            return recurrences
+                .Where(r => r is not null)
+                .Where(r => r.UserId == userId && !r.IsDeleted)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to load recurring transactions for user {UserId}. Returning empty list to keep UI available.",
+                userId);
+
+            return [];
+        }
     }
 
     public async Task<RecurringTransaction> GetByIdAsync(string userId, string id)

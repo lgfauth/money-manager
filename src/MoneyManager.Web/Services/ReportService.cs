@@ -21,7 +21,7 @@ public class ReportService : IReportService
 
     public async Task<ReportSummary> GetReportSummaryAsync(int months = 1)
     {
-        // Data de referência (últimos X meses)
+        // Data de referÃªncia (Ãºltimos X meses)
         var referenceDate = DateTime.Now.AddMonths(-months);
         return await GetReportSummaryAsync(referenceDate, DateTime.Now);
     }
@@ -40,7 +40,7 @@ public class ReportService : IReportService
             var categoriesDict = categories.ToDictionary(c => c.Id, c => c.Name);
             var accountsList = accounts.ToList();
 
-            // Normaliza período
+            // Normaliza perÃ­odo
             var startDate = start.Date;
             var endDate = end.Date;
             if (endDate < startDate)
@@ -95,7 +95,7 @@ public class ReportService : IReportService
                 })
                 .ToList();
 
-            // Tendências mensais (últimos 6 meses a partir do fim do período)
+            // TendÃªncias mensais (Ãºltimos 6 meses a partir do fim do perÃ­odo)
             var last6Months = Enumerable.Range(0, 6)
                 .Select(i => endDate.AddMonths(-i))
                 .OrderBy(d => d)
@@ -128,7 +128,7 @@ public class ReportService : IReportService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao carregar relatórios: {ex.Message}");
+            Console.WriteLine($"Erro ao carregar relatÃ³rios: {ex.Message}");
         }
 
         return summary;

@@ -77,7 +77,7 @@ public class TransactionService : ITransactionService
         }
         else
         {
-            // Para despesas em cart„o de crÈdito, validar limite antes de criar
+            // Para despesas em cart√£o de cr√©dito, validar limite antes de criar
             if (account.Type == AccountType.CreditCard && 
                 transactionType == TransactionType.Expense &&
                 account.CreditLimit.HasValue)
@@ -91,7 +91,7 @@ public class TransactionService : ITransactionService
                     _logger.LogWarning("Credit limit exceeded for account {AccountId}: limit={Limit}, current={Current}, attempt={Attempt}",
                         account.Id, account.CreditLimit.Value, currentDebt, request.Amount);
                     throw new InvalidOperationException(
-                        $"Limite de crÈdito excedido. DisponÌvel: R$ {available:F2} | Tentando usar: R$ {request.Amount:F2}");
+                        $"Limite de cr√©dito excedido. Dispon√≠vel: R$ {available:F2} | Tentando usar: R$ {request.Amount:F2}");
                 }
             }
 
@@ -123,7 +123,7 @@ public class TransactionService : ITransactionService
             Status = (TransactionStatus)request.Status
         };
 
-        // Se for despesa em cart„o de crÈdito, vincular ‡ fatura apropriada
+        // Se for despesa em cart√£o de cr√©dito, vincular √† fatura apropriada
         if (account.Type == AccountType.CreditCard && transactionType == TransactionType.Expense)
         {
             _logger.LogDebug("Determining invoice for credit card transaction on account {AccountId}, date {Date}",
@@ -146,7 +146,7 @@ public class TransactionService : ITransactionService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to link transaction to invoice for account {AccountId}", account.Id);
-                // Continuar mesmo se falhar (n„o bloqueante)
+                // Continuar mesmo se falhar (n√£o bloqueante)
             }
         }
 
@@ -213,7 +213,7 @@ public class TransactionService : ITransactionService
         _logger.LogDebug("Applying new transaction impact for {TransactionId}", id);
         await ApplyTransactionImpact(userId, transaction);
 
-        // Gerenciar faturas se for cart„o de crÈdito
+        // Gerenciar faturas se for cart√£o de cr√©dito
         if (newAccount.Type == AccountType.CreditCard && transaction.Type == TransactionType.Expense)
         {
             try
@@ -244,7 +244,7 @@ public class TransactionService : ITransactionService
         }
         else if (!string.IsNullOrEmpty(oldInvoiceId))
         {
-            // Se a transaÁ„o estava em uma fatura mas agora n„o È mais cart„o de crÈdito (mudou conta)
+            // Se a transa√ß√£o estava em uma fatura mas agora n√£o √© mais cart√£o de cr√©dito (mudou conta)
             try
             {
                 transaction.InvoiceId = null;
@@ -283,7 +283,7 @@ public class TransactionService : ITransactionService
 
         await _unitOfWork.Transactions.UpdateAsync(transaction);
 
-        // Se a transaÁ„o estava vinculada a uma fatura, recalcular o total
+        // Se a transa√ß√£o estava vinculada a uma fatura, recalcular o total
         if (!string.IsNullOrEmpty(invoiceId))
         {
             try

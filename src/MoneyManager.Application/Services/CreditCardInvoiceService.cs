@@ -8,7 +8,7 @@ using MoneyManager.Domain.Interfaces;
 namespace MoneyManager.Application.Services;
 
 /// <summary>
-/// ImplementaÁ„o do serviÁo de gerenciamento de faturas de cart„o de crÈdito
+/// Implementa√ß√£o do servi√ßo de gerenciamento de faturas de cart√£o de cr√©dito
 /// </summary>
 public class CreditCardInvoiceService : ICreditCardInvoiceService
 {
@@ -23,13 +23,13 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         _logger = logger;
     }
 
-    // ==================== GEST√O DE FATURAS ====================
+    // ==================== GEST√ÉO DE FATURAS ====================
 
     public async Task<CreditCardInvoice> GetOrCreateOpenInvoiceAsync(string userId, string accountId)
     {
         _logger.LogDebug("Getting or creating open invoice for account {AccountId}", accountId);
 
-        // Verificar se j· existe uma fatura aberta
+        // Verificar se j√° existe uma fatura aberta
         var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(accountId);
         if (openInvoice != null)
         {
@@ -37,7 +37,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             return openInvoice;
         }
 
-        // Buscar informaÁıes do cart„o
+        // Buscar informa√ß√µes do cart√£o
         var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
         if (account == null || account.UserId != userId)
             throw new KeyNotFoundException("Account not found");
@@ -50,7 +50,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         // Criar nova fatura aberta
         var invoice = await CreateNewOpenInvoiceAsync(account);
 
-        // Atualizar referÍncia no cart„o
+        // Atualizar refer√™ncia no cart√£o
         account.CurrentOpenInvoiceId = invoice.Id;
         await _unitOfWork.Accounts.UpdateAsync(account);
         await _unitOfWork.SaveChangesAsync();
@@ -132,7 +132,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
         await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
 
-        // Buscar o cart„o e criar nova fatura aberta
+        // Buscar o cart√£o e criar nova fatura aberta
         var account = await _unitOfWork.Accounts.GetByIdAsync(invoice.AccountId);
         if (account != null)
         {
@@ -154,7 +154,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         var today = DateTime.UtcNow.Date;
         _logger.LogInformation("Processing monthly invoice closures for date: {Date}", today);
 
-        // Buscar todos os cartıes de crÈdito
+        // Buscar todos os cart√µes de cr√©dito
         var allAccounts = await _unitOfWork.Accounts.GetAllAsync();
         var creditCards = allAccounts.Where(a => a.Type == AccountType.CreditCard && !a.IsDeleted).ToList();
 
@@ -168,7 +168,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             {
                 var closingDay = card.InvoiceClosingDay ?? 1;
                 
-                // Verificar se hoje È o dia de fechamento
+                // Verificar se hoje √© o dia de fechamento
                 if (today.Day != closingDay)
                     continue;
 
@@ -195,7 +195,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
                 // Criar nova fatura aberta
                 var newInvoice = await CreateNewOpenInvoiceAsync(card);
 
-                // Atualizar cart„o
+                // Atualizar cart√£o
                 card.CurrentOpenInvoiceId = newInvoice.Id;
                 card.LastInvoiceClosedAt = DateTime.UtcNow;
                 await _unitOfWork.Accounts.UpdateAsync(card);
@@ -256,7 +256,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         await ProcessPaymentAsync(invoice, request, false);
     }
 
-    // ==================== RELAT”RIOS ====================
+    // ==================== RELAT√ìRIOS ====================
 
     public async Task<InvoiceSummaryDto> GetInvoiceSummaryAsync(string userId, string invoiceId)
     {
@@ -309,7 +309,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         });
     }
 
-    // ==================== UTILIT¡RIOS ====================
+    // ==================== UTILIT√ÅRIOS ====================
 
     public async Task<CreditCardInvoice> DetermineInvoiceForTransactionAsync(string userId, string accountId, DateTime transactionDate)
     {
@@ -323,15 +323,15 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         var closingDay = account.InvoiceClosingDay ?? 1;
         var transactionDateOnly = transactionDate.Date;
 
-        // Calcular data de fechamento do mÍs da transaÁ„o
+        // Calcular data de fechamento do m√™s da transa√ß√£o
         var closingDateThisMonth = new DateTime(
             transactionDateOnly.Year,
             transactionDateOnly.Month,
             Math.Min(closingDay, DateTime.DaysInMonth(transactionDateOnly.Year, transactionDateOnly.Month))
         );
 
-        // Se a transaÁ„o È atÈ o dia de fechamento, vai para a fatura que fecha neste mÍs
-        // Se È depois, vai para a fatura que fecha no prÛximo mÍs
+        // Se a transa√ß√£o √© at√© o dia de fechamento, vai para a fatura que fecha neste m√™s
+        // Se √© depois, vai para a fatura que fecha no pr√≥ximo m√™s
         DateTime targetClosingDate;
         if (transactionDateOnly <= closingDateThisMonth)
         {
@@ -347,14 +347,14 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             );
         }
 
-        // Buscar fatura para este perÌodo de fechamento
+        // Buscar fatura para este per√≠odo de fechamento
         var referenceMonth = targetClosingDate.ToString("yyyy-MM");
         var invoice = await _unitOfWork.CreditCardInvoices.GetByReferenceMonthAsync(accountId, referenceMonth);
 
         if (invoice != null)
             return invoice;
 
-        // Se n„o existe, criar nova fatura
+        // Se n√£o existe, criar nova fatura
         _logger.LogInformation("Creating new invoice for account {AccountId} with closing date {ClosingDate}",
             accountId, targetClosingDate);
 
@@ -396,7 +396,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (account.Type != AccountType.CreditCard)
             throw new InvalidOperationException("Account is not a credit card");
 
-        // Criar fatura "HistÛrico" de 2020 atÈ ontem
+        // Criar fatura "Hist√≥rico" de 2020 at√© ontem
         var yesterday = DateTime.Today.AddDays(-1);
         var historyStart = new DateTime(2020, 1, 1);
 
@@ -407,7 +407,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             PeriodStart = historyStart,
             PeriodEnd = yesterday,
             DueDate = yesterday,
-            TotalAmount = Math.Abs(account.Balance), // DÌvida atual
+            TotalAmount = Math.Abs(account.Balance), // D√≠vida atual
             PaidAmount = Math.Abs(account.Balance),   // Marcar como paga
             RemainingAmount = 0,
             Status = InvoiceStatus.Paid,
@@ -420,7 +420,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
         await _unitOfWork.CreditCardInvoices.AddAsync(historyInvoice);
 
-        // Vincular todas as transaÁıes antigas a esta fatura
+        // Vincular todas as transa√ß√µes antigas a esta fatura
         var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
         var oldTransactions = allTransactions
             .Where(t => t.AccountId == accountId && t.Date <= yesterday && string.IsNullOrEmpty(t.InvoiceId))
@@ -440,23 +440,23 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         return historyInvoice;
     }
 
-    // ==================== M…TODOS PRIVADOS ====================
+    // ==================== M√âTODOS PRIVADOS ====================
 
     private async Task<CreditCardInvoice> CreateNewOpenInvoiceAsync(Account account)
     {
         var today = DateTime.Today;
         var closingDay = account.InvoiceClosingDay ?? 1;
 
-        // Calcular prÛximo fechamento
+        // Calcular pr√≥ximo fechamento
         DateTime nextClosing;
         if (today.Day <= closingDay)
         {
-            // PrÛximo fechamento È este mÍs
+            // Pr√≥ximo fechamento √© este m√™s
             nextClosing = new DateTime(today.Year, today.Month, Math.Min(closingDay, DateTime.DaysInMonth(today.Year, today.Month)));
         }
         else
         {
-            // PrÛximo fechamento È mÍs que vem
+            // Pr√≥ximo fechamento √© m√™s que vem
             var nextMonth = today.AddMonths(1);
             nextClosing = new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(closingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month)));
         }
@@ -573,7 +573,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             CreatedAt = invoice.CreatedAt
         };
 
-        // Contar transaÁıes
+        // Contar transa√ß√µes
         var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
         dto.TransactionCount = allTransactions.Count(t => t.InvoiceId == invoice.Id && !t.IsDeleted);
 

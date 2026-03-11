@@ -7,7 +7,7 @@ using MoneyManager.Infrastructure.Data;
 namespace MoneyManager.Infrastructure.Repositories;
 
 /// <summary>
-/// ImplementaÁ„o do repositÛrio de faturas de cart„o de crÈdito para MongoDB
+/// Implementa√ß√£o do reposit√≥rio de faturas de cart√£o de cr√©dito para MongoDB
 /// </summary>
 public class CreditCardInvoiceRepository : Repository<CreditCardInvoice>, ICreditCardInvoiceRepository
 {

@@ -3,37 +3,37 @@ using MoneyManager.Domain.Entities;
 namespace MoneyManager.Domain.Interfaces;
 
 /// <summary>
-/// Repositório para gerenciar faturas de cartão de crédito
+/// RepositÃ³rio para gerenciar faturas de cartÃ£o de crÃ©dito
 /// </summary>
 public interface ICreditCardInvoiceRepository : IRepository<CreditCardInvoice>
 {
     /// <summary>
-    /// Busca a fatura aberta (Open) de um cartão específico
+    /// Busca a fatura aberta (Open) de um cartÃ£o especÃ­fico
     /// </summary>
     Task<CreditCardInvoice?> GetOpenInvoiceByAccountIdAsync(string accountId);
 
     /// <summary>
-    /// Busca todas as faturas de um cartão específico
+    /// Busca todas as faturas de um cartÃ£o especÃ­fico
     /// </summary>
     Task<IEnumerable<CreditCardInvoice>> GetByAccountIdAsync(string accountId);
 
     /// <summary>
-    /// Busca faturas fechadas (Closed) que ainda não foram pagas
+    /// Busca faturas fechadas (Closed) que ainda nÃ£o foram pagas
     /// </summary>
     Task<IEnumerable<CreditCardInvoice>> GetClosedUnpaidInvoicesAsync(string userId);
 
     /// <summary>
-    /// Busca faturas vencidas (Overdue) de um usuário
+    /// Busca faturas vencidas (Overdue) de um usuÃ¡rio
     /// </summary>
     Task<IEnumerable<CreditCardInvoice>> GetOverdueInvoicesAsync(string userId);
 
     /// <summary>
-    /// Busca fatura por referência de mês (ex: "2026-02")
+    /// Busca fatura por referÃªncia de mÃªs (ex: "2026-02")
     /// </summary>
     Task<CreditCardInvoice?> GetByReferenceMonthAsync(string accountId, string referenceMonth);
 
     /// <summary>
-    /// Busca faturas dentro de um período de datas
+    /// Busca faturas dentro de um perÃ­odo de datas
     /// </summary>
     Task<IEnumerable<CreditCardInvoice>> GetByPeriodAsync(string accountId, DateTime start, DateTime end);
 }

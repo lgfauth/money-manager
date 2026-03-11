@@ -4,8 +4,8 @@ using MoneyManager.Application.Services;
 namespace TransactionSchedulerWorker.WorkerHost.Services;
 
 /// <summary>
-/// Processador respons·vel por fechar faturas de cart„o de crÈdito automaticamente
-/// Executado diariamente ‡ meia-noite
+/// Processador respons√°vel por fechar faturas de cart√£o de cr√©dito automaticamente
+/// Executado diariamente √† meia-noite
 /// </summary>
 internal sealed class InvoiceClosureProcessor(
     ILogger<InvoiceClosureProcessor> logger,

@@ -4,6 +4,7 @@ using MoneyManager.Domain.Enums;
 
 namespace MoneyManager.Domain.Entities;
 
+[BsonIgnoreExtraElements]
 public class RecurringTransaction
 {
     [BsonId]

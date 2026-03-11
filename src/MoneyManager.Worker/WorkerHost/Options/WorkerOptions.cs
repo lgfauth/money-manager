@@ -7,14 +7,14 @@ public sealed class WorkerOptions
     public const string SectionName = "Worker";
 
     /// <summary>
-    /// Intervalo padr„o de execuÁ„o.
+    /// Intervalo padr√£o de execu√ß√£o.
     /// Requisito: a cada 3 horas.
     /// </summary>
     [Range(1, 24)]
     public int IntervalHours { get; init; } = 3;
 
     /// <summary>
-    /// Timeout para uma execuÁ„o (evita rodar indefinidamente).
+    /// Timeout para uma execu√ß√£o (evita rodar indefinidamente).
     /// </summary>
     [Range(1, 120)]
     public int ExecutionTimeoutMinutes { get; init; } = 10;

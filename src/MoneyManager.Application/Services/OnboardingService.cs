@@ -24,7 +24,7 @@ public class OnboardingService : IOnboardingService
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         if (user == null)
-            throw new KeyNotFoundException("Usu·rio n„o encontrado");
+            throw new KeyNotFoundException("Usu√°rio n√£o encontrado");
 
         var accounts = await _unitOfWork.Accounts.GetAllAsync();
         var userAccounts = accounts.Where(a => a.UserId == userId && !a.IsDeleted).ToList();
@@ -55,7 +55,7 @@ public class OnboardingService : IOnboardingService
         else pendingSteps.Add("Criar categorias");
 
         if (hasBudget) completedSteps++;
-        else pendingSteps.Add("Definir orÁamento");
+        else pendingSteps.Add("Definir or√ßamento");
 
         if (hasRecurring) completedSteps++;
         else pendingSteps.Add("Configurar despesas recorrentes");
@@ -80,13 +80,13 @@ public class OnboardingService : IOnboardingService
         return await Task.FromResult(new List<CategorySuggestionDto>
         {
             // Receitas
-            new CategorySuggestionDto { Name = "Sal·rio", Type = (int)CategoryType.Income, Color = "#28a745", Icon = "fa-money-bill-wave", IsDefault = true },
+            new CategorySuggestionDto { Name = "Sal√°rio", Type = (int)CategoryType.Income, Color = "#28a745", Icon = "fa-money-bill-wave", IsDefault = true },
             new CategorySuggestionDto { Name = "Freelance", Type = (int)CategoryType.Income, Color = "#17a2b8", Icon = "fa-laptop-code", IsDefault = true },
             new CategorySuggestionDto { Name = "Investimentos", Type = (int)CategoryType.Income, Color = "#20c997", Icon = "fa-chart-line", IsDefault = true },
             
             // Despesas
             new CategorySuggestionDto { Name = "Moradia", Type = (int)CategoryType.Expense, Color = "#fd7e14", Icon = "fa-home", IsDefault = true },
-            new CategorySuggestionDto { Name = "AlimentaÁ„o", Type = (int)CategoryType.Expense, Color = "#dc3545", Icon = "fa-utensils", IsDefault = true },
+            new CategorySuggestionDto { Name = "Alimenta√ß√£o", Type = (int)CategoryType.Expense, Color = "#dc3545", Icon = "fa-utensils", IsDefault = true },
             new CategorySuggestionDto { Name = "Transporte", Type = (int)CategoryType.Expense, Color = "#ffc107", Icon = "fa-car", IsDefault = true },
             new CategorySuggestionDto { Name = "Lazer", Type = (int)CategoryType.Expense, Color = "#007bff", Icon = "fa-gamepad", IsDefault = true },
         });
@@ -96,7 +96,7 @@ public class OnboardingService : IOnboardingService
     {
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         if (user == null)
-            throw new KeyNotFoundException("Usu·rio n„o encontrado");
+            throw new KeyNotFoundException("Usu√°rio n√£o encontrado");
         
         await Task.CompletedTask;
     }

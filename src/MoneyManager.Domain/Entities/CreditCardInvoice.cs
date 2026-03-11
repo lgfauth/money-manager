@@ -5,8 +5,9 @@ using MoneyManager.Domain.Enums;
 namespace MoneyManager.Domain.Entities;
 
 /// <summary>
-/// Representa uma fatura de cartão de crédito
+/// Representa uma fatura de cartÃ£o de crÃ©dito
 /// </summary>
+[BsonIgnoreExtraElements]
 public class CreditCardInvoice
 {
     [BsonId]
@@ -14,43 +15,43 @@ public class CreditCardInvoice
     public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
     /// <summary>
-    /// ID da conta (cartão de crédito) que esta fatura pertence
+    /// ID da conta (cartÃ£o de crÃ©dito) que esta fatura pertence
     /// </summary>
     [BsonElement("accountId")]
     public string AccountId { get; set; } = string.Empty;
 
     /// <summary>
-    /// ID do usuário dono do cartão
+    /// ID do usuÃ¡rio dono do cartÃ£o
     /// </summary>
     [BsonElement("userId")]
     public string UserId { get; set; } = string.Empty;
 
     /// <summary>
-    /// Data de início do período da fatura (dia seguinte ao fechamento anterior)
+    /// Data de inÃ­cio do perÃ­odo da fatura (dia seguinte ao fechamento anterior)
     /// </summary>
     [BsonElement("periodStart")]
     public DateTime PeriodStart { get; set; }
 
     /// <summary>
-    /// Data de fechamento da fatura (último dia que aceita transações)
+    /// Data de fechamento da fatura (Ãºltimo dia que aceita transaÃ§Ãµes)
     /// </summary>
     [BsonElement("periodEnd")]
     public DateTime PeriodEnd { get; set; }
 
     /// <summary>
-    /// Data de vencimento da fatura (geralmente 7 dias após o fechamento)
+    /// Data de vencimento da fatura (geralmente 7 dias apÃ³s o fechamento)
     /// </summary>
     [BsonElement("dueDate")]
     public DateTime DueDate { get; set; }
 
     /// <summary>
-    /// Valor total da fatura (soma de todas as transações)
+    /// Valor total da fatura (soma de todas as transaÃ§Ãµes)
     /// </summary>
     [BsonElement("totalAmount")]
     public decimal TotalAmount { get; set; }
 
     /// <summary>
-    /// Valor já pago da fatura
+    /// Valor jÃ¡ pago da fatura
     /// </summary>
     [BsonElement("paidAmount")]
     public decimal PaidAmount { get; set; }
@@ -80,8 +81,8 @@ public class CreditCardInvoice
     public DateTime? PaidAt { get; set; }
 
     /// <summary>
-    /// Referência para o mês/ano da fatura (ex: "2026-02" para fevereiro de 2026)
-    /// Facilita buscas e organização
+    /// ReferÃªncia para o mÃªs/ano da fatura (ex: "2026-02" para fevereiro de 2026)
+    /// Facilita buscas e organizaÃ§Ã£o
     /// </summary>
     [BsonElement("referenceMonth")]
     public string ReferenceMonth { get; set; } = string.Empty;
@@ -93,13 +94,13 @@ public class CreditCardInvoice
     public bool IsDeleted { get; set; }
 
     /// <summary>
-    /// Data de criação da fatura
+    /// Data de criaÃ§Ã£o da fatura
     /// </summary>
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// Data da última atualização
+    /// Data da Ãºltima atualizaÃ§Ã£o
     /// </summary>
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

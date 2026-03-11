@@ -5,14 +5,14 @@ using MoneyManager.Domain.Entities;
 namespace MoneyManager.Application.Services;
 
 /// <summary>
-/// ServiÁo para gerenciar faturas de cart„o de crÈdito
+/// Servi√ßo para gerenciar faturas de cart√£o de cr√©dito
 /// </summary>
 public interface ICreditCardInvoiceService
 {
-    // ==================== GEST√O DE FATURAS ====================
+    // ==================== GEST√ÉO DE FATURAS ====================
     
     /// <summary>
-    /// Busca ou cria a fatura aberta (Open) atual de um cart„o
+    /// Busca ou cria a fatura aberta (Open) atual de um cart√£o
     /// </summary>
     Task<CreditCardInvoice> GetOrCreateOpenInvoiceAsync(string userId, string accountId);
 
@@ -22,12 +22,12 @@ public interface ICreditCardInvoiceService
     Task<CreditCardInvoiceResponseDto> GetInvoiceByIdAsync(string userId, string invoiceId);
 
     /// <summary>
-    /// Busca todas as faturas de um cart„o
+    /// Busca todas as faturas de um cart√£o
     /// </summary>
     Task<IEnumerable<CreditCardInvoiceResponseDto>> GetInvoicesByAccountAsync(string userId, string accountId);
 
     /// <summary>
-    /// Busca faturas fechadas e n„o pagas (pendentes de pagamento)
+    /// Busca faturas fechadas e n√£o pagas (pendentes de pagamento)
     /// </summary>
     Task<IEnumerable<CreditCardInvoiceResponseDto>> GetPendingInvoicesAsync(string userId);
 
@@ -44,50 +44,50 @@ public interface ICreditCardInvoiceService
     Task<CreditCardInvoiceResponseDto> CloseInvoiceAsync(string userId, string invoiceId);
 
     /// <summary>
-    /// Processa fechamento autom·tico de faturas (chamado pelo Worker)
+    /// Processa fechamento autom√°tico de faturas (chamado pelo Worker)
     /// </summary>
     Task ProcessMonthlyInvoiceClosuresAsync();
 
     // ==================== PAGAMENTO DE FATURAS ====================
     
     /// <summary>
-    /// Paga uma fatura totalmente (atualiza apenas o status da fatura, n„o cria transaÁ„o)
-    /// A transaÁ„o de pagamento deve ser criada separadamente via TransactionService
+    /// Paga uma fatura totalmente (atualiza apenas o status da fatura, n√£o cria transa√ß√£o)
+    /// A transa√ß√£o de pagamento deve ser criada separadamente via TransactionService
     /// </summary>
     Task PayInvoiceAsync(string userId, PayInvoiceRequestDto request);
 
     /// <summary>
-    /// Paga uma fatura parcialmente (atualiza apenas o status da fatura, n„o cria transaÁ„o)
-    /// A transaÁ„o de pagamento deve ser criada separadamente via TransactionService
+    /// Paga uma fatura parcialmente (atualiza apenas o status da fatura, n√£o cria transa√ß√£o)
+    /// A transa√ß√£o de pagamento deve ser criada separadamente via TransactionService
     /// </summary>
     Task PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request);
 
-    // ==================== RELAT”RIOS ====================
+    // ==================== RELAT√ìRIOS ====================
     
     /// <summary>
-    /// Retorna resumo detalhado de uma fatura (com transaÁıes)
+    /// Retorna resumo detalhado de uma fatura (com transa√ß√µes)
     /// </summary>
     Task<InvoiceSummaryDto> GetInvoiceSummaryAsync(string userId, string invoiceId);
 
     /// <summary>
-    /// Retorna todas as transaÁıes de uma fatura
+    /// Retorna todas as transa√ß√µes de uma fatura
     /// </summary>
     Task<IEnumerable<TransactionResponseDto>> GetInvoiceTransactionsAsync(string userId, string invoiceId);
 
-    // ==================== UTILIT¡RIOS ====================
+    // ==================== UTILIT√ÅRIOS ====================
     
     /// <summary>
-    /// Determina a qual fatura uma transaÁ„o deve pertencer baseado na data
+    /// Determina a qual fatura uma transa√ß√£o deve pertencer baseado na data
     /// </summary>
     Task<CreditCardInvoice> DetermineInvoiceForTransactionAsync(string userId, string accountId, DateTime transactionDate);
 
     /// <summary>
-    /// Atualiza o valor total de uma fatura recalculando todas as transaÁıes vinculadas
+    /// Atualiza o valor total de uma fatura recalculando todas as transa√ß√µes vinculadas
     /// </summary>
     Task RecalculateInvoiceTotalAsync(string userId, string invoiceId);
 
     /// <summary>
-    /// Cria fatura "HistÛrico" para migraÁ„o de dados antigos
+    /// Cria fatura "Hist√≥rico" para migra√ß√£o de dados antigos
     /// </summary>
     Task<CreditCardInvoice> CreateHistoryInvoiceAsync(string userId, string accountId);
 }

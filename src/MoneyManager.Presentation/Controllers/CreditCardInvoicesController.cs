@@ -26,10 +26,10 @@ public class CreditCardInvoicesController : ControllerBase
         return User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
     }
 
-    // ==================== GEST√O DE FATURAS ====================
+    // ==================== GEST√ÉO DE FATURAS ====================
 
     /// <summary>
-    /// Busca ou cria fatura aberta de um cart„o
+    /// Busca ou cria fatura aberta de um cart√£o
     /// </summary>
     [HttpGet("accounts/{accountId}/open")]
     public async Task<IActionResult> GetOrCreateOpenInvoice(string accountId)
@@ -81,7 +81,7 @@ public class CreditCardInvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Busca todas as faturas de um cart„o
+    /// Busca todas as faturas de um cart√£o
     /// </summary>
     [HttpGet("accounts/{accountId}")]
     public async Task<IActionResult> GetByAccount(string accountId)
@@ -102,7 +102,7 @@ public class CreditCardInvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Busca faturas pendentes do usu·rio
+    /// Busca faturas pendentes do usu√°rio
     /// </summary>
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
@@ -123,7 +123,7 @@ public class CreditCardInvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Busca faturas vencidas do usu·rio
+    /// Busca faturas vencidas do usu√°rio
     /// </summary>
     [HttpGet("overdue")]
     public async Task<IActionResult> GetOverdue()
@@ -241,10 +241,10 @@ public class CreditCardInvoicesController : ControllerBase
         }
     }
 
-    // ==================== RELAT”RIOS ====================
+    // ==================== RELAT√ìRIOS ====================
 
     /// <summary>
-    /// Busca resumo de uma fatura com transaÁıes
+    /// Busca resumo de uma fatura com transa√ß√µes
     /// </summary>
     [HttpGet("{invoiceId}/summary")]
     public async Task<IActionResult> GetSummary(string invoiceId)
@@ -270,7 +270,7 @@ public class CreditCardInvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Busca transaÁıes de uma fatura
+    /// Busca transa√ß√µes de uma fatura
     /// </summary>
     [HttpGet("{invoiceId}/transactions")]
     public async Task<IActionResult> GetTransactions(string invoiceId)
@@ -295,10 +295,10 @@ public class CreditCardInvoicesController : ControllerBase
         }
     }
 
-    // ==================== UTILIT¡RIOS ====================
+    // ==================== UTILIT√ÅRIOS ====================
 
     /// <summary>
-    /// Determina a fatura para uma transaÁ„o baseado na data
+    /// Determina a fatura para uma transa√ß√£o baseado na data
     /// </summary>
     [HttpGet("accounts/{accountId}/determine")]
     public async Task<IActionResult> DetermineInvoiceForTransaction(string accountId, [FromQuery] DateTime transactionDate)
@@ -350,7 +350,7 @@ public class CreditCardInvoicesController : ControllerBase
     }
 
     /// <summary>
-    /// Cria fatura histÛrica para migraÁ„o de dados antigos
+    /// Cria fatura hist√≥rica para migra√ß√£o de dados antigos
     /// </summary>
     [HttpPost("accounts/{accountId}/history")]
     public async Task<IActionResult> CreateHistoryInvoice(string accountId)

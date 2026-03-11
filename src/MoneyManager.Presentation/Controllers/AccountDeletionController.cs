@@ -18,14 +18,14 @@ public class AccountDeletionController : ControllerBase
     }
 
     /// <summary>
-    /// Teste de conex„o - endpoint p˙blico
+    /// Teste de conex√£o - endpoint p√∫blico
     /// </summary>
     [HttpGet("test")]
     public IActionResult Test()
     {
         return Ok(new 
         { 
-            message = "AccountDeletion controller est· funcionando!",
+            message = "AccountDeletion controller est√° funcionando!",
             timestamp = DateTime.UtcNow,
             authenticated = User.Identity?.IsAuthenticated ?? false,
             userName = User.Identity?.Name ?? "anonymous"
@@ -33,7 +33,7 @@ public class AccountDeletionController : ControllerBase
     }
 
     /// <summary>
-    /// ObtÈm a contagem de dados do usu·rio antes da exclus„o
+    /// Obt√©m a contagem de dados do usu√°rio antes da exclus√£o
     /// </summary>
     [HttpGet("data-count")]
     [Authorize]
@@ -50,8 +50,8 @@ public class AccountDeletionController : ControllerBase
             
             if (string.IsNullOrEmpty(userId))
             {
-                Console.WriteLine("[AccountDeletion] UserId vazio - n„o autenticado");
-                return Unauthorized(new { message = "Usu·rio n„o autenticado" });
+                Console.WriteLine("[AccountDeletion] UserId vazio - n√£o autenticado");
+                return Unauthorized(new { message = "Usu√°rio n√£o autenticado" });
             }
 
             var count = await _accountDeletionService.GetUserDataCountAsync(userId);
@@ -60,7 +60,7 @@ public class AccountDeletionController : ControllerBase
             return Ok(new 
             { 
                 totalRecords = count,
-                message = $"VocÍ possui {count} registros que ser„o permanentemente excluÌdos."
+                message = $"Voc√™ possui {count} registros que ser√£o permanentemente exclu√≠dos."
             });
         }
         catch (Exception ex)
@@ -72,8 +72,8 @@ public class AccountDeletionController : ControllerBase
     }
 
     /// <summary>
-    /// Deleta completamente a conta do usu·rio e todos os dados relacionados
-    /// ATEN«√O: Esta aÁ„o È IRREVERSÕVEL!
+    /// Deleta completamente a conta do usu√°rio e todos os dados relacionados
+    /// ATEN√á√ÉO: Esta a√ß√£o √© IRREVERS√çVEL!
     /// </summary>
     [HttpPost("delete-account")]
     [Authorize]
@@ -83,10 +83,10 @@ public class AccountDeletionController : ControllerBase
         {
             var userId = HttpContext.GetUserId();
 
-            // Validar texto de confirmaÁ„o
+            // Validar texto de confirma√ß√£o
             if (request.ConfirmationText != "DELETAR MINHA CONTA")
             {
-                return BadRequest(new { message = "Texto de confirmaÁ„o incorreto" });
+                return BadRequest(new { message = "Texto de confirma√ß√£o incorreto" });
             }
 
             // Deletar conta

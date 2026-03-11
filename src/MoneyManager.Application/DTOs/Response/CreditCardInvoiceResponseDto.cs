@@ -3,7 +3,7 @@ using MoneyManager.Domain.Enums;
 namespace MoneyManager.Application.DTOs.Response;
 
 /// <summary>
-/// DTO de resposta para fatura de cart„o de crÈdito
+/// DTO de resposta para fatura de cart√£o de cr√©dito
 /// </summary>
 public class CreditCardInvoiceResponseDto
 {

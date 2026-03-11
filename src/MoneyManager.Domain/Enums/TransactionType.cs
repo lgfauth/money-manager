@@ -1,7 +1,7 @@
 namespace MoneyManager.Domain.Enums;
 
 /// <summary>
-/// Tipos de transações financeiras no sistema.
+/// Tipos de transaÃ§Ãµes financeiras no sistema.
 /// </summary>
 public enum TransactionType
 {
@@ -11,17 +11,17 @@ public enum TransactionType
     Income = 0,
 
     /// <summary>
-    /// Despesa (saída de dinheiro).
+    /// Despesa (saÃ­da de dinheiro).
     /// </summary>
     Expense = 1,
 
     /// <summary>
-    /// Transferência entre contas.
+    /// TransferÃªncia entre contas.
     /// </summary>
     Transfer = 2,
 
     /// <summary>
-    /// Rendimento de investimento (dividendos, juros, aluguéis).
+    /// Rendimento de investimento (dividendos, juros, aluguÃ©is).
     /// </summary>
     InvestmentYield = 3,
 

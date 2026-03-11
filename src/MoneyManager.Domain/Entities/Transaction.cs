@@ -4,6 +4,7 @@ using MoneyManager.Domain.Enums;
 
 namespace MoneyManager.Domain.Entities;
 
+[BsonIgnoreExtraElements]
 public class Transaction
 {
     [BsonId]
@@ -38,7 +39,7 @@ public class Transaction
     public string? ToAccountId { get; set; }
 
     /// <summary>
-    /// ID da fatura de cartão de crédito à qual esta transação pertence (apenas para transações em cartões)
+    /// ID da fatura de cartÃ£o de crÃ©dito Ã  qual esta transaÃ§Ã£o pertence (apenas para transaÃ§Ãµes em cartÃµes)
     /// </summary>
     [BsonElement("invoiceId")]
     public string? InvoiceId { get; set; }

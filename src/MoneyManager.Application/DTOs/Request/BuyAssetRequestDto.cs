@@ -10,32 +10,32 @@ public class BuyAssetRequestDto
     /// <summary>
     /// Quantidade de unidades compradas.
     /// </summary>
-    [Required(ErrorMessage = "A quantidade È obrigatÛria.")]
+    [Required(ErrorMessage = "A quantidade √© obrigat√≥ria.")]
     [Range(0.000001, double.MaxValue, ErrorMessage = "A quantidade deve ser maior que zero.")]
     public decimal Quantity { get; set; }
 
     /// <summary>
-    /// PreÁo unit·rio da compra.
+    /// Pre√ßo unit√°rio da compra.
     /// </summary>
-    [Required(ErrorMessage = "O preÁo È obrigatÛrio.")]
-    [Range(0.01, double.MaxValue, ErrorMessage = "O preÁo deve ser maior que zero.")]
+    [Required(ErrorMessage = "O pre√ßo √© obrigat√≥rio.")]
+    [Range(0.01, double.MaxValue, ErrorMessage = "O pre√ßo deve ser maior que zero.")]
     public decimal Price { get; set; }
 
     /// <summary>
     /// Data da compra.
     /// </summary>
-    [Required(ErrorMessage = "A data da compra È obrigatÛria.")]
+    [Required(ErrorMessage = "A data da compra √© obrigat√≥ria.")]
     public DateTime Date { get; set; } = DateTime.Today;
 
     /// <summary>
-    /// Taxas ou corretagens pagas na operaÁ„o.
+    /// Taxas ou corretagens pagas na opera√ß√£o.
     /// </summary>
-    [Range(0, double.MaxValue, ErrorMessage = "As taxas n„o podem ser negativas.")]
+    [Range(0, double.MaxValue, ErrorMessage = "As taxas n√£o podem ser negativas.")]
     public decimal Fees { get; set; } = 0;
 
     /// <summary>
-    /// DescriÁ„o ou observaÁ„o sobre a compra (opcional).
+    /// Descri√ß√£o ou observa√ß√£o sobre a compra (opcional).
     /// </summary>
-    [StringLength(500, ErrorMessage = "A descriÁ„o deve ter no m·ximo 500 caracteres.")]
+    [StringLength(500, ErrorMessage = "A descri√ß√£o deve ter no m√°ximo 500 caracteres.")]
     public string? Description { get; set; }
 }

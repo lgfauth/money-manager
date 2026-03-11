@@ -4,6 +4,7 @@ using MoneyManager.Domain.Enums;
 
 namespace MoneyManager.Domain.Entities;
 
+[BsonIgnoreExtraElements]
 public class Account
 {
     [BsonId]
@@ -36,19 +37,19 @@ public class Account
     public int? InvoiceClosingDay { get; set; } = 1;
 
     /// <summary>
-    /// Dias entre o fechamento da fatura e o vencimento (padrão: 7 dias)
+    /// Dias entre o fechamento da fatura e o vencimento (padrÃ£o: 7 dias)
     /// </summary>
     [BsonElement("invoiceDueDayOffset")]
     public int InvoiceDueDayOffset { get; set; } = 7;
 
     /// <summary>
-    /// Data/hora do último fechamento de fatura deste cartão
+    /// Data/hora do Ãºltimo fechamento de fatura deste cartÃ£o
     /// </summary>
     [BsonElement("lastInvoiceClosedAt")]
     public DateTime? LastInvoiceClosedAt { get; set; }
 
     /// <summary>
-    /// ID da fatura atualmente aberta (que está aceitando transações)
+    /// ID da fatura atualmente aberta (que estÃ¡ aceitando transaÃ§Ãµes)
     /// </summary>
     [BsonElement("currentOpenInvoiceId")]
     public string? CurrentOpenInvoiceId { get; set; }

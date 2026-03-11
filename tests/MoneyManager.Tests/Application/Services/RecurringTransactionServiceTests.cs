@@ -85,6 +85,24 @@ public class RecurringTransactionServiceTests
     }
 
     [Fact]
+    public async Task GetAllAsync_WhenRepositoryThrows_ShouldReturnEmptyList()
+    {
+        // Arrange
+        var userId = "user123";
+        var recurringRepo = Substitute.For<IRepository<RecurringTransaction>>();
+        recurringRepo.GetAllAsync().Returns(Task.FromException<IEnumerable<RecurringTransaction>>(
+            new Exception("Mongo deserialization error")));
+        _unitOfWorkMock.RecurringTransactions.Returns(recurringRepo);
+
+        // Act
+        var result = await _recurringTransactionService.GetAllAsync(userId);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result);
+    }
+
+    [Fact]
     public async Task GetByIdAsync_WithValidId_ShouldReturnRecurringTransaction()
     {
         // Arrange

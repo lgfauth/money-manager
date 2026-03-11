@@ -3,6 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MoneyManager.Domain.Entities;
 
+[BsonIgnoreExtraElements]
 public class UserSettings
 {
     [BsonId]
@@ -12,7 +13,7 @@ public class UserSettings
     [BsonElement("userId")]
     public string UserId { get; set; } = string.Empty;
 
-    // Preferências Financeiras
+    // PreferÃªncias Financeiras
     [BsonElement("currency")]
     public string Currency { get; set; } = "BRL";
 
@@ -25,7 +26,7 @@ public class UserSettings
     [BsonElement("defaultBudget")]
     public decimal? DefaultBudget { get; set; }
 
-    // Notificações
+    // NotificaÃ§Ãµes
     [BsonElement("emailNotifications")]
     public bool EmailNotifications { get; set; } = true;
 
@@ -47,7 +48,7 @@ public class UserSettings
     [BsonElement("monthlySummaryEmail")]
     public bool MonthlySummaryEmail { get; set; } = true;
 
-    // Aparência
+    // AparÃªncia
     [BsonElement("theme")]
     public string Theme { get; set; } = "auto"; // light, dark, auto
 
