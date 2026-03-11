@@ -62,9 +62,6 @@
                                     <i class="fas fa-chart-pie"></i> @Localization.Get("Navigation.Reports")
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <LanguageSelector />
-                            </li>
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle d-flex align-items-center user-menu-toggle"
                                    href="#"
@@ -194,12 +191,6 @@
             {
                 userProfile = await ProfileService.GetProfileAsync();
                 
-                // Sincronizar idioma preferido do usuário
-                if (!string.IsNullOrEmpty(userProfile?.PreferredLanguage) && 
-                    userProfile.PreferredLanguage != Localization.CurrentCulture)
-                {
-                    await Localization.SetCultureAsync(userProfile.PreferredLanguage);
-                }
             }
         }
         catch (Exception ex)

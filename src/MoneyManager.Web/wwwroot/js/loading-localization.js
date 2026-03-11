@@ -10,58 +10,11 @@
             errorDetails: 'Veja o navegador dev tools para detalhes.',
             reload: 'Recarregar',
             dismiss: '\u2716'
-        },
-        'en-US': {
-            appName: 'MoneyManager',
-            loading: 'Loading application...',
-            errorTitle: 'An unhandled exception occurred.',
-            errorDetails: 'See browser dev tools for details.',
-            reload: 'Reload',
-            dismiss: '\u2716'
-        },
-        'es-ES': {
-            appName: 'MoneyManager',
-            loading: 'Cargando aplicaci\u00F3n...',
-            errorTitle: 'Ocurri\u00F3 una excepci\u00F3n no controlada.',
-            errorDetails: 'Consulte las herramientas de desarrollo del navegador para obtener m\u00E1s detalles.',
-            reload: 'Recargar',
-            dismiss: '\u2716'
-        },
-        'fr-FR': {
-            appName: 'MoneyManager',
-            loading: 'Chargement de l\'application...',
-            errorTitle: 'Une exception non g\u00E9r\u00E9e s\'est produite.',
-            errorDetails: 'Voir les outils de d\u00E9veloppement du navigateur pour plus de d\u00E9tails.',
-            reload: 'Recharger',
-            dismiss: '\u2716'
         }
     };
 
     function detectLanguage() {
-        // 1. Try localStorage (user preference)
-        try {
-            const stored = localStorage.getItem('preferred_language');
-            if (stored && translations[stored]) {
-                return stored;
-            }
-        } catch (e) {
-            // ignore
-        }
-
-        // 2. Try browser language
-        const browserLang = navigator.language || navigator.userLanguage;
-        if (translations[browserLang]) {
-            return browserLang;
-        }
-
-        // 3. Try browser language without region (pt, en, es, fr)
-        const shortLang = browserLang.split('-')[0];
-        const matchingKey = Object.keys(translations).find(key => key.startsWith(shortLang));
-        if (matchingKey) {
-            return matchingKey;
-        }
-
-        // 4. Default to pt-BR
+        // App now supports only pt-BR.
         return 'pt-BR';
     }
 

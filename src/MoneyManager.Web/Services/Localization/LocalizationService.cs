@@ -10,10 +10,11 @@ public sealed class LocalizationService : ILocalizationService
     private readonly IWebAssemblyHostEnvironment _hostEnvironment;
     private readonly ILocalStorageService _localStorage;
     private const string LANGUAGE_KEY = "preferred_language";
+    private const string FixedCulture = "pt-BR";
 
     private Dictionary<string, object> _resources = new(StringComparer.OrdinalIgnoreCase);
 
-    public string CurrentCulture { get; private set; } = "pt-BR";
+    public string CurrentCulture { get; private set; } = FixedCulture;
 
     public event Action? OnLanguageChanged;
 
@@ -26,39 +27,35 @@ public sealed class LocalizationService : ILocalizationService
     public async Task InitializeAsync()
     {
         Console.WriteLine($"[LocalizationService] Inicializando... BaseAddress: {_hostEnvironment.BaseAddress}");
-        
-        // Tentar carregar idioma salvo no localStorage
-        var savedLanguage = await _localStorage.GetItemAsync<string>(LANGUAGE_KEY);
-        
-        if (!string.IsNullOrEmpty(savedLanguage))
-        {
-            CurrentCulture = savedLanguage;
-            Console.WriteLine($"[LocalizationService] Idioma salvo encontrado: {savedLanguage}");
-        }
-        else
-        {
-            // Detectar idioma do navegador como fallback
-            CurrentCulture = DetectBrowserLanguage();
-            Console.WriteLine($"[LocalizationService] Usando idioma padrão: {CurrentCulture}");
-        }
 
-        await LoadAsync(CurrentCulture);
+        CurrentCulture = FixedCulture;
+        await _localStorage.SetItemAsync(LANGUAGE_KEY, FixedCulture);
+        Console.WriteLine($"[LocalizationService] Idioma fixo aplicado: {CurrentCulture}");
+
+        await LoadAsync(FixedCulture);
     }
 
     public async Task SetCultureAsync(string culture)
     {
-        if (string.IsNullOrWhiteSpace(culture))
+        if (!string.Equals(culture, FixedCulture, StringComparison.OrdinalIgnoreCase))
         {
+            culture = FixedCulture;
+        }
+
+        if (string.Equals(CurrentCulture, FixedCulture, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(culture, FixedCulture, StringComparison.OrdinalIgnoreCase))
+        {
+            await _localStorage.SetItemAsync(LANGUAGE_KEY, FixedCulture);
             return;
         }
 
-        CurrentCulture = culture;
+        CurrentCulture = FixedCulture;
         
         // Salvar no localStorage
-        await _localStorage.SetItemAsync(LANGUAGE_KEY, culture);
+        await _localStorage.SetItemAsync(LANGUAGE_KEY, FixedCulture);
         
         // Recarregar recursos
-        await LoadAsync(culture);
+        await LoadAsync(FixedCulture);
         
         // Notificar mudança
         OnLanguageChanged?.Invoke();
@@ -68,7 +65,7 @@ public sealed class LocalizationService : ILocalizationService
     {
         // Por padrão, retorna pt-BR
         // TODO: Implementar detecção via JavaScript Interop se necessário
-        return "pt-BR";
+        return FixedCulture;
     }
 
     public string Get(string key)
