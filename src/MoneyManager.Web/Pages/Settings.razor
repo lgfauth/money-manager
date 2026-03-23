@@ -52,7 +52,7 @@
         }
 
         <div class="row g-4">
-            <!-- Prefer�ncias Financeiras -->
+            <!-- Preferências Financeiras -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -99,75 +99,6 @@
                         <h5 class="mb-0"><i class="fas fa-bell"></i> @Localization.Get("Settings.Notifications")</h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="emailNotifications" @bind="settings.EmailNotifications">
-                                <label class="form-check-label" for="emailNotifications">
-                                    @Localization.Get("Settings.ReceiveEmailNotifications")
-                                </label>
-                            </div>
-                        </div>
-
-                        <hr />
-
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="notifyRecurring" @bind="settings.NotifyRecurringProcessed" disabled="@(!settings.EmailNotifications)">
-                                <label class="form-check-label" for="notifyRecurring">
-                                    @Localization.Get("Settings.RecurringProcessed")
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="notifyBudget" @bind="settings.NotifyBudgetAlert" disabled="@(!settings.EmailNotifications)">
-                                <label class="form-check-label" for="notifyBudget">
-                                    @Localization.Get("Settings.BudgetAlert")
-                                </label>
-                            </div>
-                            @if (settings.NotifyBudgetAlert && settings.EmailNotifications)
-                            {
-                                <div class="mt-2">
-                                    <label class="form-label small">@Localization.Get("Settings.AlertWhenReaching")</label>
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control" min="50" max="100" @bind="settings.BudgetAlertThreshold" />
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="notifyCreditLimit" @bind="settings.NotifyCreditLimitAlert" disabled="@(!settings.EmailNotifications)">
-                                <label class="form-check-label" for="notifyCreditLimit">
-                                    @Localization.Get("Settings.CreditLimitAlert")
-                                </label>
-                            </div>
-                            @if (settings.NotifyCreditLimitAlert && settings.EmailNotifications)
-                            {
-                                <div class="mt-2">
-                                    <label class="form-label small">@Localization.Get("Settings.AlertWhenReaching")</label>
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control" min="50" max="100" @bind="settings.CreditLimitAlertThreshold" />
-                                        <span class="input-group-text">%</span>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="monthlySummary" @bind="settings.MonthlySummaryEmail" disabled="@(!settings.EmailNotifications)">
-                                <label class="form-check-label" for="monthlySummary">
-                                    @Localization.Get("Settings.MonthlySummary")
-                                </label>
-                            </div>
-                        </div>
-
-                        <hr />
-
                         <!-- Push Notifications -->
                         <div class="mb-1">
                             <h6 class="mb-1">

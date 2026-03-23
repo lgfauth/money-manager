@@ -45,13 +45,6 @@ public class UserSettingsService : IUserSettingsService
                 Currency = "BRL",
                 DateFormat = "dd/MM/yyyy",
                 MonthClosingDay = 1,
-                EmailNotifications = true,
-                NotifyRecurringProcessed = true,
-                NotifyBudgetAlert = true,
-                BudgetAlertThreshold = 80,
-                NotifyCreditLimitAlert = true,
-                CreditLimitAlertThreshold = 75,
-                MonthlySummaryEmail = true,
                 PushRecurringProcessed = true,
                 PushDailyReminder = true,
                 Theme = "auto",
@@ -73,13 +66,6 @@ public class UserSettingsService : IUserSettingsService
         existingSettings.DateFormat = settings.DateFormat;
         existingSettings.MonthClosingDay = settings.MonthClosingDay;
         existingSettings.DefaultBudget = settings.DefaultBudget;
-        existingSettings.EmailNotifications = settings.EmailNotifications;
-        existingSettings.NotifyRecurringProcessed = settings.NotifyRecurringProcessed;
-        existingSettings.NotifyBudgetAlert = settings.NotifyBudgetAlert;
-        existingSettings.BudgetAlertThreshold = settings.BudgetAlertThreshold;
-        existingSettings.NotifyCreditLimitAlert = settings.NotifyCreditLimitAlert;
-        existingSettings.CreditLimitAlertThreshold = settings.CreditLimitAlertThreshold;
-        existingSettings.MonthlySummaryEmail = settings.MonthlySummaryEmail;
         existingSettings.PushRecurringProcessed = settings.PushRecurringProcessed;
         existingSettings.PushDailyReminder = settings.PushDailyReminder;
         existingSettings.Theme = settings.Theme;

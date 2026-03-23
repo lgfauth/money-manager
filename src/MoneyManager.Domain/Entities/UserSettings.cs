@@ -26,29 +26,7 @@ public class UserSettings
     [BsonElement("defaultBudget")]
     public decimal? DefaultBudget { get; set; }
 
-    // Notificações
-    [BsonElement("emailNotifications")]
-    public bool EmailNotifications { get; set; } = true;
-
-    [BsonElement("notifyRecurringProcessed")]
-    public bool NotifyRecurringProcessed { get; set; } = true;
-
-    [BsonElement("notifyBudgetAlert")]
-    public bool NotifyBudgetAlert { get; set; } = true;
-
-    [BsonElement("budgetAlertThreshold")]
-    public int BudgetAlertThreshold { get; set; } = 80;
-
-    [BsonElement("notifyCreditLimitAlert")]
-    public bool NotifyCreditLimitAlert { get; set; } = true;
-
-    [BsonElement("creditLimitAlertThreshold")]
-    public int CreditLimitAlertThreshold { get; set; } = 75;
-
-    [BsonElement("monthlySummaryEmail")]
-    public bool MonthlySummaryEmail { get; set; } = true;
-
-    // Push Notifications
+    // Notificações Push
     [BsonElement("pushRecurringProcessed")]
     public bool PushRecurringProcessed { get; set; } = true;
 
