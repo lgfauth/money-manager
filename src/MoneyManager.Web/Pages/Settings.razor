@@ -9,6 +9,8 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IPushNotificationService PushNotificationService
+@inject System.Net.Http.HttpClient Http
 
 <PageTitle>@Localization.Get("Settings.PageTitle")</PageTitle>
 
@@ -163,6 +165,95 @@
                                 </label>
                             </div>
                         </div>
+
+                        <hr />
+
+                        <!-- Push Notifications -->
+                        <div class="mb-1">
+                            <h6 class="mb-1">
+                                <i class="fas fa-mobile-alt me-1"></i>
+                                @Localization.Get("Settings.PushNotifications")
+                            </h6>
+                            <small class="text-muted">@Localization.Get("Settings.PushNotificationsHelp")</small>
+                        </div>
+
+                        @if (pushPermission == "not-supported")
+                        {
+                            <div class="alert alert-warning py-2 mt-2 mb-0">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                @Localization.Get("Settings.PushNotSupported")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex align-items-center gap-3 mt-2 mb-3">
+                                @if (pushPermission == "granted")
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>@Localization.Get("Settings.PushActive")
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="DisablePush" disabled="@isPushLoading">
+                                        @if (isPushLoading)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        }
+                                        <i class="fas fa-bell-slash me-1"></i>@Localization.Get("Settings.PushDisable")
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="SendTestPush" disabled="@isPushLoading">
+                                        @if (isPushLoading)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        }
+                                        <i class="fas fa-paper-plane me-1"></i>@Localization.Get("Settings.PushSendTest")
+                                    </button>
+                                }
+                                else if (pushPermission == "denied")
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-ban me-1"></i>@Localization.Get("Settings.PushDenied")
+                                    </span>
+                                    <small class="text-muted">@Localization.Get("Settings.PushDeniedHelp")</small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-bell-slash me-1"></i>@Localization.Get("Settings.PushInactive")
+                                    </span>
+                                    <button class="btn btn-sm btn-primary" @onclick="EnablePush" disabled="@isPushLoading">
+                                        @if (isPushLoading)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        }
+                                        <i class="fas fa-bell me-1"></i>@Localization.Get("Settings.PushEnable")
+                                    </button>
+                                }
+                            </div>
+
+                            @if (pushPermission == "granted")
+                            {
+                                <div class="mb-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="pushRecurring"
+                                               @bind="settings.PushRecurringProcessed">
+                                        <label class="form-check-label" for="pushRecurring">
+                                            @Localization.Get("Settings.PushRecurringProcessed")
+                                        </label>
+                                    </div>
+                                    <small class="text-muted ms-4">@Localization.Get("Settings.PushRecurringProcessedHelp")</small>
+                                </div>
+
+                                <div class="mb-0">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="pushDailyReminder"
+                                               @bind="settings.PushDailyReminder">
+                                        <label class="form-check-label" for="pushDailyReminder">
+                                            @Localization.Get("Settings.PushDailyReminder")
+                                        </label>
+                                    </div>
+                                    <small class="text-muted ms-4">@Localization.Get("Settings.PushDailyReminderHelp")</small>
+                                </div>
+                            }
+                        }
                     </div>
                 </div>
             </div>
@@ -225,9 +316,14 @@
     private UserSettings settings = new();
     private decimal defaultBudgetValue = 0;
 
+    // Push notification state
+    private string pushPermission = "default";
+    private bool isPushLoading = false;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadSettings();
+        await LoadPushState();
     }
 
     private async Task LoadSettings()
@@ -276,6 +372,103 @@
         finally
         {
             isSaving = false;
+        }
+    }
+
+    private async Task LoadPushState()
+    {
+        try
+        {
+            pushPermission = await PushNotificationService.GetPermissionStateAsync();
+        }
+        catch
+        {
+            pushPermission = "not-supported";
+        }
+    }
+
+    private async Task EnablePush()
+    {
+        isPushLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var result = await PushNotificationService.InitAsync();
+
+            switch (result)
+            {
+                case "success":
+                    pushPermission = "granted";
+                    successMessage = Localization.Get("Settings.PushEnabledSuccess");
+                    break;
+                case "permission-denied":
+                    pushPermission = "denied";
+                    errorMessage = Localization.Get("Settings.PushPermissionDenied");
+                    break;
+                case "not-supported":
+                    pushPermission = "not-supported";
+                    errorMessage = Localization.Get("Settings.PushNotSupported");
+                    break;
+                default:
+                    errorMessage = Localization.Get("Settings.PushEnableError");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"{Localization.Get("Settings.PushEnableError")}: {ex.Message}";
+        }
+        finally
+        {
+            isPushLoading = false;
+        }
+    }
+
+    private async Task DisablePush()
+    {
+        isPushLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            await PushNotificationService.UnsubscribeAsync();
+            pushPermission = "default";
+            successMessage = Localization.Get("Settings.PushDisabledSuccess");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"{Localization.Get("Settings.PushDisableError")}: {ex.Message}";
+        }
+        finally
+        {
+            isPushLoading = false;
+        }
+    }
+
+    private async Task SendTestPush()
+    {
+        isPushLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var response = await Http.PostAsync("api/push/send-test", null);
+            if (response.IsSuccessStatusCode)
+                successMessage = Localization.Get("Settings.PushTestSent");
+            else
+                errorMessage = Localization.Get("Settings.PushTestError");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"{Localization.Get("Settings.PushTestError")}: {ex.Message}";
+        }
+        finally
+        {
+            isPushLoading = false;
         }
     }
 

@@ -1,4 +1,5 @@
 using MoneyManager.Application.DTOs.Request;
+using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
@@ -13,7 +14,7 @@ public interface IRecurringTransactionService
     Task<RecurringTransaction> GetByIdAsync(string userId, string id);
     Task<RecurringTransaction> UpdateAsync(string userId, string id, CreateRecurringTransactionRequestDto request);
     Task DeleteAsync(string userId, string id);
-    Task ProcessDueRecurrencesAsync();
+    Task<RecurringProcessingSummary> ProcessDueRecurrencesAsync();
     Task<DateTime> CalculateNextOccurrence(DateTime currentDate, RecurrenceFrequency frequency, int? dayOfMonth = null);
 }
 
@@ -146,9 +147,10 @@ public class RecurringTransactionService : IRecurringTransactionService
         await _unitOfWork.SaveChangesAsync();
     }
 
-    public async Task ProcessDueRecurrencesAsync()
+    public async Task<RecurringProcessingSummary> ProcessDueRecurrencesAsync()
     {
         var today = DateTime.UtcNow.Date;
+        var summary = new RecurringProcessingSummary();
         _logger.LogInformation("Starting recurring transactions processing for date: {Date}", today);
 
         var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
@@ -203,6 +205,9 @@ public class RecurringTransactionService : IRecurringTransactionService
                 _logger.LogInformation("Processed {Count} transaction(s) from recurring {RecurringId}, next occurrence: {NextDate}",
                     processedCount, recurrence.Id, recurrence.NextOccurrenceDate);
 
+                if (processedCount > 0)
+                    summary.Add(recurrence.UserId, processedCount);
+
                 if (recurrence.EndDate.HasValue && recurrence.NextOccurrenceDate > recurrence.EndDate.Value)
                 {
                     recurrence.IsActive = false;
@@ -221,6 +226,7 @@ public class RecurringTransactionService : IRecurringTransactionService
 
         await _unitOfWork.SaveChangesAsync();
         _logger.LogInformation("Recurring transactions processing completed");
+        return summary;
     }
 
     public Task<DateTime> CalculateNextOccurrence(DateTime currentDate, RecurrenceFrequency frequency, int? dayOfMonth = null)

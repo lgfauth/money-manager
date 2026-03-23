@@ -27,14 +27,21 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(InvoiceClosureScheduleOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<DailyReminderScheduleOptions>()
+            .Bind(configuration.GetSection(DailyReminderScheduleOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddSingleton<ITimeProvider>(sp => new SystemTimeProvider(TimeProvider.System));
 
         // Only recurring transactions are processed by the worker.
         services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();
         services.AddScoped<InvoiceClosureProcessor>();
+        services.AddScoped<DailyReminderProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
         services.AddHostedService<InvoiceClosureWorker>();
+        services.AddHostedService<DailyReminderWorker>();
 
         return services;
     }

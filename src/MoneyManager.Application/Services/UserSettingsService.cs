@@ -52,6 +52,8 @@ public class UserSettingsService : IUserSettingsService
                 NotifyCreditLimitAlert = true,
                 CreditLimitAlertThreshold = 75,
                 MonthlySummaryEmail = true,
+                PushRecurringProcessed = true,
+                PushDailyReminder = true,
                 Theme = "auto",
                 PrimaryColor = "#667eea"
             };
@@ -78,6 +80,8 @@ public class UserSettingsService : IUserSettingsService
         existingSettings.NotifyCreditLimitAlert = settings.NotifyCreditLimitAlert;
         existingSettings.CreditLimitAlertThreshold = settings.CreditLimitAlertThreshold;
         existingSettings.MonthlySummaryEmail = settings.MonthlySummaryEmail;
+        existingSettings.PushRecurringProcessed = settings.PushRecurringProcessed;
+        existingSettings.PushDailyReminder = settings.PushDailyReminder;
         existingSettings.Theme = settings.Theme;
         existingSettings.PrimaryColor = settings.PrimaryColor;
         existingSettings.UpdatedAt = DateTime.UtcNow;

@@ -48,6 +48,13 @@ public class UserSettings
     [BsonElement("monthlySummaryEmail")]
     public bool MonthlySummaryEmail { get; set; } = true;
 
+    // Push Notifications
+    [BsonElement("pushRecurringProcessed")]
+    public bool PushRecurringProcessed { get; set; } = true;
+
+    [BsonElement("pushDailyReminder")]
+    public bool PushDailyReminder { get; set; } = true;
+
     // Aparência
     [BsonElement("theme")]
     public string Theme { get; set; } = "auto"; // light, dark, auto

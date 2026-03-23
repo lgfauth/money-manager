@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+ï»¿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
@@ -103,7 +103,7 @@ public class PushService : IPushService
         var payload = new PushNotificationPayload
         {
             Title = "MoneyManager",
-            Body = "Notificações push estão funcionando! ??",
+            Body = "NotificaÃ§Ãµes push estÃ£o funcionando! ??",
             Icon = "/favicon.svg"
         };
 
@@ -169,3 +169,4 @@ public sealed class VapidSettings
     public string PublicKey { get; set; } = string.Empty;
     public string PrivateKey { get; set; } = string.Empty;
 }
+
