@@ -39,6 +39,11 @@ builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
 
+// Register VAPID settings and push service
+builder.Services.Configure<VapidSettings>(
+    builder.Configuration.GetSection(VapidSettings.SectionName));
+builder.Services.AddScoped<IPushService, PushService>();
+
 // Register validators
 builder.Services.AddValidatorsFromAssembly(typeof(RegisterRequestValidator).Assembly);
 

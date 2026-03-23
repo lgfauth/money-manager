@@ -83,6 +83,22 @@ public class MongoContext
                 .Ascending(b => b.UserId)
                 .Ascending(b => b.Month)
         ));
+
+        // Create push_subscriptions collection
+        if (!collectionNames.Contains("push_subscriptions"))
+        {
+            await _database.CreateCollectionAsync("push_subscriptions");
+        }
+        var pushSubsCollection = _database.GetCollection<MoneyManager.Domain.Entities.PushSubscription>("push_subscriptions");
+        await pushSubsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.PushSubscription>(
+            Builders<MoneyManager.Domain.Entities.PushSubscription>.IndexKeys
+                .Ascending(s => s.UserId)
+        ));
+        await pushSubsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.PushSubscription>(
+            Builders<MoneyManager.Domain.Entities.PushSubscription>.IndexKeys
+                .Ascending(s => s.Endpoint),
+            new CreateIndexOptions { Unique = true, Sparse = true }
+        ));
     }
 
     public async Task TestConnectionAsync()

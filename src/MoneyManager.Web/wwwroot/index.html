@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MoneyManager - Gerenciamento Financeiro</title>
     <base href="/" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MoneyManager" />
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
@@ -66,6 +73,9 @@
     <!-- Navbar (mobile) auto-collapse on navigation -->
     <script src="js/navbar.js"></script>
     
+    <!-- Push Notifications Manager -->
+    <script src="js/push-manager.js"></script>
+
     <!-- Blazor WebAssembly -->
     <script src="_framework/blazor.webassembly.js"></script>
 </body>

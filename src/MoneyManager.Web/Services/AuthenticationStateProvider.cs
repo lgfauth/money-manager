@@ -94,4 +94,17 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         // Notify that auth state might have changed after initialization
         NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
+
+    /// <summary>Returns the raw JWT stored in session storage, or null if not authenticated.</summary>
+    public async Task<string?> GetTokenAsync()
+    {
+        try
+        {
+            return await _jsRuntime.InvokeAsync<string?>("sessionStorage.getItem", TokenKey);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

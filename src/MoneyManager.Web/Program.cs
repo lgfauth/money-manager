@@ -47,6 +47,7 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
 builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
+builder.Services.AddScoped<IPushNotificationService, PushNotificationService>();
 
 // Localization (JSON in wwwroot/i18n)
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
