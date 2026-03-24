@@ -84,15 +84,25 @@ self.addEventListener('fetch', event => {
 
 // Push: receive and display notification
 self.addEventListener('push', function(event) {
-  const data = event.data ? event.data.json() : {};
-  const title = data.title || 'MoneyManager';
-  const options = {
-    body: data.body || 'Você tem uma nova notificação.',
-    icon: '/favicon.png',
-    badge: '/favicon.png'
-  };
+  let title = 'MoneyManager';
+  let body = 'Você tem uma nova notificação.';
+
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      title = data.title || title;
+      body = data.body || body;
+    } catch (e) {
+      body = event.data.text();
+    }
+  }
+
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(title, {
+      body: body,
+      icon: '/favicon.svg',
+      badge: '/favicon.svg'
+    })
   );
 });
 
