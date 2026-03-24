@@ -8,14 +8,14 @@ const CACHE_NAME = 'moneymanager-v3';
 
 // Assets to pre-cache on install (shell assets only - not API data)
 const PRECACHE_URLS = [
-  '/../',
-  '/../index.html',
-  '/../manifest.json',
-  '/../favicon.ico',
-  '/../favicon.svg',
-  '/../css/app.css',
-  '/../css/modern-theme.css',
-  '/../css/navbar.css'
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.ico',
+  '/favicon.svg',
+  '/css/app.css',
+  '/css/modern-theme.css',
+  '/css/navbar.css'
 ];
 
 // Install: pre-cache shell assets
@@ -99,8 +99,8 @@ self.addEventListener('push', event => {
   let data = {
     title: 'MoneyManager',
     body: 'Você tem uma nova notificação.',
-    icon: '/../favicon.svg',
-    url: '/../'
+    icon: '/favicon.svg',
+    url: '/'
   };
 
   if (event.data) {
@@ -113,9 +113,9 @@ self.addEventListener('push', event => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/../favicon.svg',
-    badge: '/../favicon.svg',
-    data: { url: data.url || '/../' },
+    icon: data.icon || '/favicon.svg',
+    badge: '/favicon.svg',
+    data: { url: data.url || '/' },
     requireInteraction: false,
     vibrate: [200, 100, 200]
   };
@@ -131,7 +131,7 @@ self.addEventListener('notificationclick', event => {
 
   const targetUrl = (event.notification.data && event.notification.data.url)
     ? event.notification.data.url
-    : '/../';
+    : '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
