@@ -154,7 +154,7 @@ window.pushManager = (function () {
 
         userVisibleOnly: true,
 
-        applicationServerKey: urlBase64ToUint8Array("dW1hIHZleiBldSByZWNlYsOtIHVtYSBub3RpZmljYcOnw6NvIGRvaWRhIG5vIG1ldSBjZWx1bGFyLCBuYSBtZW5zYWdlbSBlc3TDoSBlc2NyaXRvIHF1ZSBldSBnYW5oZWkgdW1hIGJvbGFkYSBuYSBsb3RlcmlhIQ==")
+        applicationServerKey: urlBase64ToUint8Array("vapidPublicKey")
 
       });
 
