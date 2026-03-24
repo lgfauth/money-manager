@@ -92,7 +92,7 @@
                 </div>
             </div>
 
-            <!-- Notifica��es -->
+            <!-- Notificações -->
             <div class="col-12 col-lg-6">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -189,7 +189,7 @@
                 </div>
             </div>
 
-            <!-- Apar�ncia -->
+            <!-- Aparência -->
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-header">
@@ -216,7 +216,7 @@
                 </div>
             </div>
 
-            <!-- Bot�es de A��o -->
+            <!-- Botões de Ação -->
             <div class="col-12">
                 <div class="d-flex gap-2 justify-content-end">
                     <button class="btn btn-outline-secondary" @onclick="LoadSettings">
@@ -270,7 +270,7 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao carregar configurações: {ex.Message}";
+            errorMessage = Localization.Get("Settings.ErrorLoading", ex.Message);
             Console.WriteLine($"Erro: {ex}");
         }
         finally
@@ -293,11 +293,11 @@
             // Apply theme
             await JSRuntime.InvokeVoidAsync("themeManager.setTheme", settings.Theme);
 
-            successMessage = "Configurações salvas com sucesso!";
+            successMessage = Localization.Get("Settings.SaveSuccess");
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erro ao salvar configurações: {ex.Message}";
+            errorMessage = Localization.Get("Settings.ErrorSaving", ex.Message);
             Console.WriteLine($"Erro: {ex}");
         }
         finally
