@@ -111,7 +111,12 @@ public sealed class LocalizationService : ILocalizationService
         try
         {
             using var httpClient = new HttpClient { BaseAddress = new Uri(_hostEnvironment.BaseAddress) };
-            var jsonString = await httpClient.GetStringAsync(path);
+            // Prevent browser HTTP cache from serving stale translations.
+            // The service worker also uses network-first for i18n/ paths.
+            var request = new HttpRequestMessage(HttpMethod.Get, path);
+            request.Headers.CacheControl = new System.Net.Http.Headers.CacheControlHeaderValue { NoCache = true };
+            var response = await httpClient.SendAsync(request);
+            var jsonString = await response.Content.ReadAsStringAsync();
             
             // Parsear como JsonDocument primeiro
             using var doc = JsonDocument.Parse(jsonString);

@@ -1,12 +1,12 @@
 /* ==========================================================
-   MoneyManager — Service Worker
+   MoneyManager ï¿½ Service Worker
    - Offline-first cache for static shell assets
    - Web Push notification handler
    ========================================================== */
 
-const CACHE_NAME = 'moneymanager-v1';
+const CACHE_NAME = 'moneymanager-v2';
 
-// Assets to pre-cache on install (shell assets only — not API data)
+// Assets to pre-cache on install (shell assets only ï¿½ not API data)
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -40,7 +40,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ?? Fetch: cache-first for same-origin static, network-first for API ??
+// ?? Fetch: network-first for i18n, cache-first for static, skip API ??
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -51,6 +51,24 @@ self.addEventListener('fetch', event => {
   // Never cache API calls
   if (url.pathname.startsWith('/api/')) return;
 
+  // Network-first for localization files: always fetch the latest translations,
+  // fall back to cache when offline.
+  if (url.pathname.startsWith('/i18n/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response && response.status === 200) {
+            const cloned = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for all other same-origin static assets.
   event.respondWith(
     caches.match(event.request)
       .then(cached => {
@@ -80,7 +98,7 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   let data = {
     title: 'MoneyManager',
-    body: 'Você tem uma nova notificação.',
+    body: 'Vocï¿½ tem uma nova notificaï¿½ï¿½o.',
     icon: '/favicon.svg',
     url: '/'
   };
