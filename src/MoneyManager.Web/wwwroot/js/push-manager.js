@@ -74,6 +74,7 @@ window.pushManager = (function () {
    */
 
   async function subscribeToPush(vapidPublicKey) {
+    console.log('[PushManager] vapidPublicKey recebido:', vapidPublicKey);
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       console.warn('[PushManager] Push not supported.');
       return null;
