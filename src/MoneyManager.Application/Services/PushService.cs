@@ -21,6 +21,9 @@ public interface IPushService
 
     /// <summary>Sends a test notification to all subscriptions of a user.</summary>
     Task SendTestAsync(string userId);
+
+    /// <summary>Returns true if the user has at least one active push subscription.</summary>
+    Task<bool> HasActiveSubscriptionAsync(string userId);
 }
 
 public class PushService : IPushService
@@ -111,6 +114,12 @@ public class PushService : IPushService
         };
 
         await SendToUserAsync(userId, payload);
+    }
+
+    public async Task<bool> HasActiveSubscriptionAsync(string userId)
+    {
+        var subs = await _unitOfWork.PushSubscriptions.GetByUserIdAsync(userId);
+        return subs.Any();
     }
 
     private async Task SendToSubscriptionsAsync(

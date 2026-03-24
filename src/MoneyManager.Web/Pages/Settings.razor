@@ -310,7 +310,26 @@
     {
         try
         {
-            pushPermission = await PushNotificationService.GetPermissionStateAsync();
+            var permission = await PushNotificationService.GetPermissionStateAsync();
+
+            // Denied / not-supported: use browser state directly
+            if (permission == "denied" || permission == "not-supported")
+            {
+                pushPermission = permission;
+                return;
+            }
+
+            // Permission is granted — confirm with the server that a subscription actually exists
+            if (permission == "granted")
+            {
+                var serverActive = await PushNotificationService.GetServerStatusAsync();
+                pushPermission = serverActive ? "granted" : "default";
+            }
+            else
+            {
+                // permission == "default": not yet requested, treat as inactive
+                pushPermission = "default";
+            }
         }
         catch
         {
@@ -365,9 +384,16 @@
 
         try
         {
-            await PushNotificationService.UnsubscribeAsync();
-            pushPermission = "default";
-            successMessage = Localization.Get("Settings.PushDisabledSuccess");
+            var success = await PushNotificationService.UnsubscribeAsync();
+            if (success)
+            {
+                pushPermission = "default";
+                successMessage = Localization.Get("Settings.PushDisabledSuccess");
+            }
+            else
+            {
+                errorMessage = Localization.Get("Settings.PushDisableError");
+            }
         }
         catch (Exception ex)
         {

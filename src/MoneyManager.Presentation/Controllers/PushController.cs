@@ -65,6 +65,15 @@ public class PushController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>Returns whether the authenticated user has at least one active push subscription.</summary>
+    [HttpGet("status")]
+    public async Task<IActionResult> GetStatus()
+    {
+        var userId = HttpContext.GetUserId();
+        var active = await _pushService.HasActiveSubscriptionAsync(userId);
+        return Ok(new { active });
+    }
+
     /// <summary>Sends a test push notification to all subscriptions of the authenticated user.</summary>
     [HttpPost("send-test")]
     public async Task<IActionResult> SendTest()

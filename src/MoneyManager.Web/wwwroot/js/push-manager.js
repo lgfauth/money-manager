@@ -75,26 +75,34 @@ window.pushManager = (function () {
 
   async function subscribeToPush(vapidPublicKey) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-
       console.warn('[PushManager] Push not supported.');
-
       return null;
     }
 
     const registration = await navigator.serviceWorker.ready;
+    console.info('[PushManager] Service worker is ready, creating push subscription...');
+
+    // Remove any stale subscription before creating a fresh one
+    try {
+      const existing = await registration.pushManager.getSubscription();
+      if (existing) {
+        console.info('[PushManager] Removing existing subscription before re-subscribing.');
+        await existing.unsubscribe();
+      }
+    } catch (err) {
+      console.warn('[PushManager] Could not remove existing subscription:', err);
+    }
 
     try {
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array("vapidPublicKey")
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
       });
 
       console.info('[PushManager] Push subscription created:', subscription.endpoint);
-
       return subscription;
     } catch (err) {
       console.error('[PushManager] Push subscription failed:', err);
-
       return null;
     }
   }
@@ -153,16 +161,38 @@ window.pushManager = (function () {
    */
 
   async function initPush(vapidPublicKey, authToken) {
+    console.info('[PushManager] initPush: starting full activation flow...');
+
+    console.info('[PushManager] Step 1: Registering service worker...');
     const registered = await registerServiceWorker();
+    if (!registered) {
+      console.warn('[PushManager] initPush: service worker registration failed.');
+      return 'not-supported';
+    }
 
-    if (!registered) return 'not-supported';
+    console.info('[PushManager] Step 2: Requesting notification permission...');
     const permission = await requestPermission();
-    if (permission !== 'granted') return 'permission-denied';
-    const subscription = await subscribeToPush(vapidPublicKey);
-    if (!subscription) return 'error';
-    const saved = await sendSubscriptionToServer(subscription, authToken);
+    if (permission !== 'granted') {
+      console.warn('[PushManager] initPush: permission not granted:', permission);
+      return 'permission-denied';
+    }
 
-    return saved ? 'success' : 'error';
+    console.info('[PushManager] Step 3: Creating push subscription...');
+    const subscription = await subscribeToPush(vapidPublicKey);
+    if (!subscription) {
+      console.error('[PushManager] initPush: push subscription creation failed.');
+      return 'error';
+    }
+
+    console.info('[PushManager] Step 4: Sending subscription to server...');
+    const saved = await sendSubscriptionToServer(subscription, authToken);
+    if (!saved) {
+      console.error('[PushManager] initPush: failed to save subscription on server.');
+      return 'error';
+    }
+
+    console.info('[PushManager] initPush: activation complete.');
+    return 'success';
   }
 
   /**
@@ -171,18 +201,33 @@ window.pushManager = (function () {
    */
 
   async function unsubscribeFromPush(authToken) {
-    if (!('serviceWorker' in navigator)) return false;
+    console.info('[PushManager] unsubscribeFromPush: starting...');
+
+    if (!('serviceWorker' in navigator)) {
+      console.warn('[PushManager] Service workers not supported.');
+      return false;
+    }
 
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
 
-    if (!subscription) return true;
+    if (!subscription) {
+      console.info('[PushManager] No active browser subscription found — already unsubscribed.');
+      return true;
+    }
 
     const endpoint = subscription.endpoint;
-    await subscription.unsubscribe();
+    console.info('[PushManager] Removing browser subscription:', endpoint);
+
+    const browserOk = await subscription.unsubscribe();
+    if (!browserOk) {
+      console.error('[PushManager] Browser failed to unsubscribe.');
+      return false;
+    }
+    console.info('[PushManager] Browser subscription removed.');
 
     try {
-      await fetch('/api/push/unsubscribe', {
+      const response = await fetch('/api/push/unsubscribe', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -190,11 +235,18 @@ window.pushManager = (function () {
         },
         body: JSON.stringify({ endpoint })
       });
-    } catch (err) {
-      console.warn('[PushManager] Could not remove subscription from server:', err);
-    }
 
-    return true;
+      if (!response.ok) {
+        console.warn('[PushManager] Server could not remove subscription:', response.status);
+        return false;
+      }
+
+      console.info('[PushManager] Subscription removed from server.');
+      return true;
+    } catch (err) {
+      console.warn('[PushManager] Could not reach server to remove subscription:', err);
+      return false;
+    }
   }
 
   /**

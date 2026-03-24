@@ -12,11 +12,14 @@ public interface IPushNotificationService
     /// </summary>
     Task<string> InitAsync();
 
-    /// <summary>Unsubscribes the current device from push notifications.</summary>
-    Task UnsubscribeAsync();
+    /// <summary>Unsubscribes the current device. Returns true on success, false on failure.</summary>
+    Task<bool> UnsubscribeAsync();
 
     /// <summary>Returns the current notification permission state.</summary>
     Task<string> GetPermissionStateAsync();
+
+    /// <summary>Returns true if the server has at least one active subscription for the current user.</summary>
+    Task<bool> GetServerStatusAsync();
 }
 
 public class PushNotificationService : IPushNotificationService
@@ -58,10 +61,10 @@ public class PushNotificationService : IPushNotificationService
         return await _js.InvokeAsync<string>("pushManager.initPush", vapidPublicKey, token);
     }
 
-    public async Task UnsubscribeAsync()
+    public async Task<bool> UnsubscribeAsync()
     {
         var token = await _authProvider.GetTokenAsync();
-        await _js.InvokeVoidAsync("pushManager.unsubscribeFromPush", token ?? string.Empty);
+        return await _js.InvokeAsync<bool>("pushManager.unsubscribeFromPush", token ?? string.Empty);
     }
 
     public async Task<string> GetPermissionStateAsync()
@@ -69,6 +72,20 @@ public class PushNotificationService : IPushNotificationService
         return await _js.InvokeAsync<string>("pushManager.getPermissionState");
     }
 
+    public async Task<bool> GetServerStatusAsync()
+    {
+        try
+        {
+            var dto = await _http.GetFromJsonAsync<PushStatusDto>("api/push/status");
+            return dto?.Active ?? false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private sealed record VapidPublicKeyDto(string PublicKey);
+    private sealed record PushStatusDto(bool Active);
 }
 
