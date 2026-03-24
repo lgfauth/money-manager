@@ -95,6 +95,9 @@ public class PushService : IPushService
     public async Task SendToUserAsync(string userId, PushNotificationPayload payload)
     {
         var subscriptions = await _unitOfWork.PushSubscriptions.GetByUserIdAsync(userId);
+
+        _logger.LogInformation("Found {Count} subscriptions for user {UserId}", subscriptions.Count(), userId);
+
         await SendToSubscriptionsAsync(subscriptions, payload);
     }
 
