@@ -5,19 +5,19 @@
 ### ? **ANTES** - Problemas identificados:
 
 ```
-Grid: 3 colunas m·ximo (col-12 col-sm-6 col-lg-4)
+Grid: 3 colunas m√°ximo (col-12 col-sm-6 col-lg-4)
 Card grande vertical:
 
 ???????????????????????????????????
-?  AlimentaÁ„o          [Despesa] ?  ? Linha 1: Nome + Badge
+?  Alimenta√ß√£o          [Despesa] ?  ? Linha 1: Nome + Badge
 ?                                 ?
 ?  ??? #667eea                    ?  ? Linha 2: Cor grande + Hex
 ?                                 ?
 ?  ????????????????????????????  ?
-?  ?    ??? Editar             ?  ?  ? Linha 3: Bot„o full-width
+?  ?    ??? Editar             ?  ?  ? Linha 3: Bot√£o full-width
 ?  ????????????????????????????  ?
 ?  ????????????????????????????  ?
-?  ?    ??? Deletar            ?  ?  ? Linha 4: Bot„o full-width
+?  ?    ??? Deletar            ?  ?  ? Linha 4: Bot√£o full-width
 ?  ????????????????????????????  ?
 ???????????????????????????????????
 Altura: ~200px
@@ -27,23 +27,23 @@ Colunas: 3 (desktop)
 **Problemas:**
 1. ?? Cards muito altos (~200px)
 2. ?? Apenas 3 cards por linha no desktop
-3. ?? EspaÁo desperdiÁado com botıes empilhados
-4. ?? Cor ocupa muito espaÁo (40x40px)
-5. ?? CÛdigo hex em linha separada
-6. ?? DifÌcil de escanear visualmente muitas categorias
+3. ?? Espa√ßo desperdi√ßado com bot√µes empilhados
+4. ?? Cor ocupa muito espa√ßo (40x40px)
+5. ?? C√≥digo hex em linha separada
+6. ?? Dif√≠cil de escanear visualmente muitas categorias
 
 ---
 
-### ? **DEPOIS** - SoluÁıes implementadas:
+### ? **DEPOIS** - Solu√ß√µes implementadas:
 
 ```
-Grid: 6 colunas m·ximo responsivo (col-6 col-md-4 col-lg-3 col-xl-2)
+Grid: 6 colunas m√°ximo responsivo (col-6 col-md-4 col-lg-3 col-xl-2)
 Card compacto horizontal:
 
 ??????????????????????????
-? ? AlimentaÁ„o          ?  ? Linha 1: Cor (badge) + Nome
+? ? Alimenta√ß√£o          ?  ? Linha 1: Cor (badge) + Nome
 ? [? Despesa]  #667EEA   ?  ? Linha 2: Badge tipo + Hex
-? [??] [???]             ?  ? Linha 3: Botıes inline
+? [??] [???]             ?  ? Linha 3: Bot√µes inline
 ??????????????????????????
 Altura: ~110px
 Colunas: 2-6 (responsivo)
@@ -51,10 +51,10 @@ Colunas: 2-6 (responsivo)
 
 **Melhorias:**
 1. ? Cards 45% mais baixos (~110px)
-2. ? 2x mais categorias visÌveis por tela
+2. ? 2x mais categorias vis√≠veis por tela
 3. ? Layout horizontal compacto
 4. ? Cor como badge circular (32x32px)
-5. ? Botıes lado a lado (inline)
+5. ? Bot√µes lado a lado (inline)
 6. ? Grid responsivo inteligente
 
 ---
@@ -69,7 +69,7 @@ col-lg-3   ?  Desktop:   4 colunas
 col-xl-2   ?  XL/Wide:   6 colunas
 ```
 
-### VisualizaÁ„o por Dispositivo:
+### Visualiza√ß√£o por Dispositivo:
 
 #### ?? **Mobile (< 768px)** - 2 colunas
 ```
@@ -113,7 +113,7 @@ col-xl-2   ?  XL/Wide:   6 colunas
 
 ```
 ??????????????????????????????????????
-? ?? AlimentaÁ„o                     ? ? Header
+? ?? Alimenta√ß√£o                     ? ? Header
 ?    ?   ?                           ?
 ?    ?   ?? Nome (h6, truncado)      ?
 ?    ?????? Badge Cor (32x32px)      ?
@@ -125,7 +125,7 @@ col-xl-2   ?  XL/Wide:   6 colunas
 ?                                    ?
 ? [?? Editar] [??? Deletar]          ? ? Actions
 ?  ?           ?                     ?
-?  ?????????????? Botıes inline      ?
+?  ?????????????? Bot√µes inline      ?
 ??????????????????????????????????????
 ```
 
@@ -135,7 +135,7 @@ col-xl-2   ?  XL/Wide:   6 colunas
 ```html
 <div class="d-flex align-items-center gap-2 mb-2">
     <span class="category-color-badge" style="background: #667eea"></span>
-    <h6 class="mb-0 text-truncate">AlimentaÁ„o</h6>
+    <h6 class="mb-0 text-truncate">Alimenta√ß√£o</h6>
 </div>
 ```
 
@@ -178,7 +178,7 @@ col-xl-2   ?  XL/Wide:   6 colunas
 
 ---
 
-## ? AnimaÁıes e InteraÁıes
+## ? Anima√ß√µes e Intera√ß√µes
 
 ### Hover Effect:
 ```css
@@ -192,8 +192,8 @@ col-xl-2   ?  XL/Wide:   6 colunas
 **Comportamento:**
 1. Card sobe 2px
 2. Sombra aumenta
-3. Borda muda para cor prim·ria (#667eea)
-4. TransiÁ„o suave (0.2s)
+3. Borda muda para cor prim√°ria (#667eea)
+4. Transi√ß√£o suave (0.2s)
 
 ### Estados Visuais:
 
@@ -216,13 +216,13 @@ Hover:
 
 ---
 
-## ?? ComparaÁ„o de EspaÁo
+## ?? Compara√ß√£o de Espa√ßo
 
-### Cen·rio: 12 Categorias
+### Cen√°rio: 12 Categorias
 
 #### ? Antes (3 colunas):
 ```
-Linhas necess·rias: 4 linhas
+Linhas necess√°rias: 4 linhas
 Altura total: ~800px
 Scroll: Muito
 
@@ -242,9 +242,9 @@ Scroll: Muito
 
 #### ? Depois (6 colunas em XL):
 ```
-Linhas necess·rias: 2 linhas
+Linhas necess√°rias: 2 linhas
 Altura total: ~240px
-Scroll: MÌnimo
+Scroll: M√≠nimo
 
 ??? ??? ??? ??? ??? ???
 ?1? ?2? ?3? ?4? ?5? ?6?
@@ -255,8 +255,8 @@ Scroll: MÌnimo
 ```
 
 **Resultado:**
-- ?? **70% menos scroll necess·rio**
-- ?? **3x mais categorias visÌveis sem scroll**
+- ?? **70% menos scroll necess√°rio**
+- ?? **3x mais categorias vis√≠veis sem scroll**
 - ?? **Melhor escaneabilidade visual**
 
 ---
@@ -272,49 +272,49 @@ Scroll: MÌnimo
 
 ### 2. **Grid Responsivo Inteligente**
 ```css
-? Mobile:  2 colunas (f·cil toque)
-? Tablet:  3 colunas (equilÌbrio)
-? Desktop: 4 colunas (Ûtimo)
-? XL:      6 colunas (m·ximo aproveitamento)
+? Mobile:  2 colunas (f√°cil toque)
+? Tablet:  3 colunas (equil√≠brio)
+? Desktop: 4 colunas (√≥timo)
+? XL:      6 colunas (m√°ximo aproveitamento)
 ```
 
 ### 3. **Tipografia Otimizada**
 ```css
 ? Nome: h6 + text-truncate (evita quebra)
-? Hex:  font-monospace 0.7rem (cÛdigo)
+? Hex:  font-monospace 0.7rem (c√≥digo)
 ? Badge: 0.7rem compacto
 ```
 
-### 4. **Botıes Inline**
+### 4. **Bot√µes Inline**
 ```css
 ? Antes: 2 linhas (d-grid gap-2)
 ? Depois: 1 linha (d-flex gap-1)
 ? Economia: 50% menos altura
 ```
 
-### 5. **InformaÁıes Hierarquizadas**
+### 5. **Informa√ß√µes Hierarquizadas**
 ```
 Linha 1: Nome (principal) ? Mais importante
-Linha 2: Tipo + CÛdigo   ? Secund·rio
-Linha 3: AÁıes           ? Terci·rio
+Linha 2: Tipo + C√≥digo   ? Secund√°rio
+Linha 3: A√ß√µes           ? Terci√°rio
 ```
 
 ---
 
-## ?? MÈtricas de Melhoria
+## ?? M√©tricas de Melhoria
 
-| MÈtrica | Antes | Depois | Melhoria |
+| M√©trica | Antes | Depois | Melhoria |
 |---------|-------|--------|----------|
 | **Altura do Card** | ~200px | ~110px | **-45%** ?? |
 | **Colunas (Desktop)** | 3 | 4-6 | **+100%** ?? |
-| **Cards VisÌveis (1080p)** | 6 | 12-18 | **+200%** ?? |
-| **Scroll Necess·rio** | Alto | Baixo | **-70%** ?? |
+| **Cards Vis√≠veis (1080p)** | 6 | 12-18 | **+200%** ?? |
+| **Scroll Necess√°rio** | Alto | Baixo | **-70%** ?? |
 | **Densidade de Info** | Baixa | Alta | **+150%** ?? |
 | **Tempo de Scan Visual** | ~8s | ~3s | **-63%** ? |
 
 ---
 
-## ?? CÛdigo CSS Destacado
+## ?? C√≥digo CSS Destacado
 
 ### Badge de Cor com Sombra e Borda:
 ```css
@@ -338,7 +338,7 @@ Linha 3: AÁıes           ? Terci·rio
 }
 ```
 
-### Botıes Compactos:
+### Bot√µes Compactos:
 ```css
 .category-item-card .btn-sm {
     font-size: 0.75rem;
@@ -348,34 +348,34 @@ Linha 3: AÁıes           ? Terci·rio
 
 ---
 
-## ?? PossÌveis Melhorias Futuras
+## ?? Poss√≠veis Melhorias Futuras
 
-### 1. **Filtros e OrdenaÁ„o**
+### 1. **Filtros e Ordena√ß√£o**
 ```html
 [Todas] [Receitas] [Despesas] | Ordenar: [A-Z ?]
 ```
 
-### 2. **Busca R·pida**
+### 2. **Busca R√°pida**
 ```html
 ?? [Pesquisar categoria...]
 ```
 
 ### 3. **Contador de Uso**
 ```
-? AlimentaÁ„o
+? Alimenta√ß√£o
 [? Despesa] #667EEA
-45 transaÁıes
+45 transa√ß√µes
 [??] [???]
 ```
 
-### 4. **Preview de TransaÁıes ao Hover**
+### 4. **Preview de Transa√ß√µes ao Hover**
 ```
 Tooltip ao hover:
 ???????????????????????
-? ⁄ltimas transaÁıes: ?
-? ï Mercado - R$ 150  ?
-? ï Padaria - R$ 25   ?
-? ï AÁougue - R$ 80   ?
+? √öltimas transa√ß√µes: ?
+? ‚Ä¢ Mercado - R$ 150  ?
+? ‚Ä¢ Padaria - R$ 25   ?
+? ‚Ä¢ A√ßougue - R$ 80   ?
 ???????????????????????
 ```
 
@@ -387,23 +387,23 @@ Arraste para reordenar prioridade
 ### 6. **Modo Compacto Toggle**
 ```
 [Grid View ??] [List View ?]
-Usu·rio escolhe visualizaÁ„o
+Usu√°rio escolhe visualiza√ß√£o
 ```
 
 ---
 
-## ? Checklist de ImplementaÁ„o
+## ? Checklist de Implementa√ß√£o
 
 - [x] Grid responsivo (2-6 colunas)
 - [x] Badge de cor circular com sombra
 - [x] Layout horizontal compacto
-- [x] Botıes inline (lado a lado)
+- [x] Bot√µes inline (lado a lado)
 - [x] Badges diferenciados por tipo (Receita/Despesa)
-- [x] Hover effect com elevaÁ„o
+- [x] Hover effect com eleva√ß√£o
 - [x] Text truncate para nomes longos
 - [x] Font monospace para hex code
-- [x] Õcones nos badges de tipo
-- [x] FunÁ„o helper GetTypeLabel()
+- [x] √çcones nos badges de tipo
+- [x] Fun√ß√£o helper GetTypeLabel()
 - [x] CSS otimizado para densidade
 - [x] Gap reduzido (g-3 em vez de g-4)
 - [x] Padding do card reduzido (p-3)
@@ -414,19 +414,19 @@ Usu·rio escolhe visualizaÁ„o
 
 ### Antes:
 ```
-?? Cards grandes e desperdiÁados
-?? 3 colunas no m·ximo
-?? Muito scroll necess·rio
-?? InformaÁıes espalhadas
+?? Cards grandes e desperdi√ßados
+?? 3 colunas no m√°ximo
+?? Muito scroll necess√°rio
+?? Informa√ß√µes espalhadas
 ```
 
 ### Depois:
 ```
 ?? Cards compactos e eficientes
-?? AtÈ 6 colunas (responsivo)
-?? MÌnimo scroll necess·rio
-?? InformaÁıes organizadas
-?? 2x mais categorias visÌveis
+?? At√© 6 colunas (responsivo)
+?? M√≠nimo scroll necess√°rio
+?? Informa√ß√µes organizadas
+?? 2x mais categorias vis√≠veis
 ?? Interface moderna e limpa
 ```
 

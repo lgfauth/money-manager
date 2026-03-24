@@ -1,8 +1,8 @@
-# ?? InstruÁıes de Teste - CorreÁ„o de Encoding
+# ?? Instru√ß√µes de Teste - Corre√ß√£o de Encoding
 
 ## ?? IMPORTANTE: Limpar Cache Antes de Testar
 
-O navegador pode ter armazenado em cache as versıes antigas dos arquivos. **OBRIGAT”RIO** limpar o cache:
+O navegador pode ter armazenado em cache as vers√µes antigas dos arquivos. **OBRIGAT√ìRIO** limpar o cache:
 
 ### Chrome/Edge:
 ```
@@ -18,7 +18,7 @@ Ctrl + Shift + Del
 ? Clicar "Limpar agora"
 ```
 
-### Alternativa: Modo AnÙnimo/Privado
+### Alternativa: Modo An√¥nimo/Privado
 ```
 Ctrl + Shift + N (Chrome/Edge)
 Ctrl + Shift + P (Firefox)
@@ -45,9 +45,9 @@ cd src/MoneyManager.Web.Host
 dotnet run
 ```
 
-Aguarde atÈ ver:
+Aguarde at√© ver:
 ```
-? DiretÛrio wwwroot encontrado
+? Diret√≥rio wwwroot encontrado
 ? Pasta _framework encontrada
 ? index.html encontrado
 ```
@@ -65,55 +65,55 @@ http://localhost:5000
 ### Teste 1: Tela de Loading (ANTES do Blazor)
 
 **O que verificar**:
-- [ ] Texto "Carregando aplicaÁ„o..." (com Á e „ corretos)
+- [ ] Texto "Carregando aplica√ß√£o..." (com √ß e √£ corretos)
 - [ ] Spinner funcionando
-- [ ] TÌtulo "MoneyManager" visÌvel
+- [ ] T√≠tulo "MoneyManager" vis√≠vel
 
 **Resultado esperado**:
 ```
 MoneyManager
-Carregando aplicaÁ„o...
+Carregando aplica√ß√£o...
 ```
 
-**? Se aparecer**: "Carregando aplica??o..." ? Cache do navegador n„o foi limpo!
+**? Se aparecer**: "Carregando aplica??o..." ? Cache do navegador n√£o foi limpo!
 
 ---
 
-### Teste 2: P·gina de Login
+### Teste 2: P√°gina de Login
 
 **O que verificar**:
-- [ ] TÌtulo "MoneyManager"
-- [ ] SubtÌtulo "FaÁa login na sua conta" (com Á)
+- [ ] T√≠tulo "MoneyManager"
+- [ ] Subt√≠tulo "Fa√ßa login na sua conta" (com √ß)
 - [ ] Campos "Email" e "Senha"
-- [ ] Bot„o "Entrar"
-- [ ] Link "N„o tem conta? Criar nova conta" (com „)
+- [ ] Bot√£o "Entrar"
+- [ ] Link "N√£o tem conta? Criar nova conta" (com √£)
 
 **Resultado esperado**:
 ```
 MoneyManager
-FaÁa login na sua conta
+Fa√ßa login na sua conta
 ```
 
 ---
 
-### Teste 3: Menu de Usu·rio (AP”S LOGIN)
+### Teste 3: Menu de Usu√°rio (AP√ìS LOGIN)
 
-**PrÈ-requisito**: Fazer login ou criar conta
+**Pr√©-requisito**: Fazer login ou criar conta
 
 **O que verificar**:
-1. **No bot„o do menu** (canto superior direito):
-   - [ ] Deve mostrar "Usu·rio" ou nome do usu·rio (com ·)
+1. **No bot√£o do menu** (canto superior direito):
+   - [ ] Deve mostrar "Usu√°rio" ou nome do usu√°rio (com √°)
 
 2. **Ao clicar no menu dropdown**:
    - [ ] "Meu Perfil"
-   - [ ] "ConfiguraÁıes" (com ı)
+   - [ ] "Configura√ß√µes" (com √µ)
    - [ ] "Sair"
 
 **Resultado esperado**:
 ```
-?? Usu·rio ?
+?? Usu√°rio ?
    - Meu Perfil
-   - ConfiguraÁıes
+   - Configura√ß√µes
    - Sair
 ```
 
@@ -121,54 +121,54 @@ FaÁa login na sua conta
 
 ---
 
-### Teste 4: Menu de NavegaÁ„o
+### Teste 4: Menu de Navega√ß√£o
 
 **O que verificar**:
 - [ ] Dashboard
 - [ ] Categorias
 - [ ] Contas
-- [ ] TransaÁıes (com ı)
+- [ ] Transa√ß√µes (com √µ)
 - [ ] Recorrentes
-- [ ] OrÁamentos (com Á)
-- [ ] RelatÛrios (com Û)
+- [ ] Or√ßamentos (com √ß)
+- [ ] Relat√≥rios (com √≥)
 
 ---
 
 ### Teste 5: Seletor de Idioma
 
 **O que verificar**:
-1. Clicar no seletor de idioma (Ìcone de bandeira/globo)
-2. Verificar opÁıes:
-   - [ ] "PortuguÍs" (com Í)
+1. Clicar no seletor de idioma (√≠cone de bandeira/globo)
+2. Verificar op√ß√µes:
+   - [ ] "Portugu√™s" (com √™)
    - [ ] "English"
-   - [ ] "EspaÒol" (com Ò)
+   - [ ] "Espa√±ol" (com √±)
 
 3. Trocar para "English" e verificar se muda
-4. Voltar para "PortuguÍs"
+4. Voltar para "Portugu√™s"
 
 ---
 
-### Teste 6: Dashboard (ApÛs Login)
+### Teste 6: Dashboard (Ap√≥s Login)
 
 **O que verificar**:
 - [ ] "Dashboard Financeiro"
-- [ ] "Vis„o geral das suas finanÁas" (com „)
-- [ ] "SALDO LÕQUIDO" (com Õ, Õ)
-- [ ] "PATRIM‘NIO TOTAL" (com ‘)
-- [ ] "Receitas do MÍs" (com Í)
-- [ ] "Despesas do MÍs" (com Í)
-- [ ] "OrÁamento Utilizado" (com Á)
+- [ ] "Vis√£o geral das suas finan√ßas" (com √£)
+- [ ] "SALDO L√çQUIDO" (com √ç, √ç)
+- [ ] "PATRIM√îNIO TOTAL" (com √î)
+- [ ] "Receitas do M√™s" (com √™)
+- [ ] "Despesas do M√™s" (com √™)
+- [ ] "Or√ßamento Utilizado" (com √ß)
 
 ---
 
-### Teste 7: P·gina de TransaÁıes
+### Teste 7: P√°gina de Transa√ß√µes
 
 **O que verificar**:
-- [ ] "TransaÁıes" (com ı)
-- [ ] "Nova TransaÁ„o" (com „)
-- [ ] "DescriÁ„o" (com Á, „)
+- [ ] "Transa√ß√µes" (com √µ)
+- [ ] "Nova Transa√ß√£o" (com √£)
+- [ ] "Descri√ß√£o" (com √ß, √£)
 - [ ] "Categoria"
-- [ ] Botıes "Editar" e "Deletar"
+- [ ] Bot√µes "Editar" e "Deletar"
 
 ---
 
@@ -180,7 +180,7 @@ FaÁa login na sua conta
 ```
 [LocalizationService] BaseAddress: http://localhost:5000/
 [LocalizationService] Carregando: i18n/pt-BR.json
-[LocalizationService] ? Carregado 13 seÁıes
+[LocalizationService] ? Carregado 13 se√ß√µes
 [LocalizationService] ? Teste Login.Title = MoneyManager
 ```
 
@@ -196,17 +196,17 @@ FaÁa login na sua conta
 
 ### Problema 1: Ainda aparece "?" no menu
 
-**SoluÁ„o**:
+**Solu√ß√£o**:
 1. Limpar cache do navegador novamente (Ctrl+Shift+Del)
 2. Fechar completamente o navegador
-3. Abrir em modo anÙnimo
+3. Abrir em modo an√¥nimo
 4. Testar novamente
 
 ### Problema 2: Tela de loading OK, mas menu errado
 
-**Causa**: O arquivo `pt-BR.json` est· com encoding incorreto
+**Causa**: O arquivo `pt-BR.json` est√° com encoding incorreto
 
-**SoluÁ„o**:
+**Solu√ß√£o**:
 ```powershell
 cd src/MoneyManager.Web/wwwroot/i18n/
 $content = Get-Content "pt-BR.json" -Raw -Encoding UTF8
@@ -215,30 +215,30 @@ $content | Out-File "pt-BR.json" -Encoding UTF8 -NoNewline
 
 ### Problema 3: Console mostra erro 404 no pt-BR.json
 
-**Causa**: Arquivo n„o est· sendo copiado para wwwroot
+**Causa**: Arquivo n√£o est√° sendo copiado para wwwroot
 
-**SoluÁ„o**:
+**Solu√ß√£o**:
 ```bash
 # Verificar se arquivo existe
 ls src/MoneyManager.Web/wwwroot/i18n/
 
-# Se n„o existir, criar o diretÛrio
+# Se n√£o existir, criar o diret√≥rio
 mkdir src/MoneyManager.Web/wwwroot/i18n/
 
 # Executar build novamente
 dotnet build
 ```
 
-### Problema 4: Funciona em dev, mas n„o em produÁ„o
+### Problema 4: Funciona em dev, mas n√£o em produ√ß√£o
 
-**Causa**: Arquivo n„o foi incluÌdo no publish
+**Causa**: Arquivo n√£o foi inclu√≠do no publish
 
-**SoluÁ„o**:
+**Solu√ß√£o**:
 ```bash
-# Fazer publish explÌcito
+# Fazer publish expl√≠cito
 dotnet publish -c Release
 
-# Verificar se JSON est· no output
+# Verificar se JSON est√° no output
 ls src/MoneyManager.Web.Host/bin/Release/net9.0/publish/wwwroot/i18n/
 ```
 
@@ -248,35 +248,35 @@ ls src/MoneyManager.Web.Host/bin/Release/net9.0/publish/wwwroot/i18n/
 
 | Local | Caractere | Deve Aparecer | ? Errado |
 |-------|-----------|---------------|-----------|
-| Loading | Á„o | aplicaÁ„o | aplica??o |
-| Menu | · | Usu·rio | Usu?rio |
-| Menu | ı | ConfiguraÁıes | Configura??es |
-| Nav | ı | TransaÁıes | Transa??es |
-| Nav | Á | OrÁamentos | Or?amentos |
-| Nav | Û | RelatÛrios | Relat?rios |
-| Dashboard | Õ | LÕQUIDO | L?QUIDO |
-| Dashboard | ‘ | PATRIM‘NIO | PATRIM?NIO |
+| Loading | √ß√£o | aplica√ß√£o | aplica??o |
+| Menu | √° | Usu√°rio | Usu?rio |
+| Menu | √µ | Configura√ß√µes | Configura??es |
+| Nav | √µ | Transa√ß√µes | Transa??es |
+| Nav | √ß | Or√ßamentos | Or?amentos |
+| Nav | √≥ | Relat√≥rios | Relat?rios |
+| Dashboard | √ç | L√çQUIDO | L?QUIDO |
+| Dashboard | √î | PATRIM√îNIO | PATRIM?NIO |
 
 ---
 
-## ? CritÈrios de Sucesso
+## ? Crit√©rios de Sucesso
 
-O teste È **BEM-SUCEDIDO** se:
+O teste √© **BEM-SUCEDIDO** se:
 
-1. ? Tela de loading mostra "Carregando aplicaÁ„o..."
-2. ? Menu de usu·rio mostra "Usu·rio" (n„o "Usu?rio")
-3. ? Menu de navegaÁ„o mostra "ConfiguraÁıes" (n„o "Configura??es")
-4. ? Todas as p·ginas mostram acentos corretamente
-5. ? Console n„o mostra erros de localizaÁ„o
+1. ? Tela de loading mostra "Carregando aplica√ß√£o..."
+2. ? Menu de usu√°rio mostra "Usu√°rio" (n√£o "Usu?rio")
+3. ? Menu de navega√ß√£o mostra "Configura√ß√µes" (n√£o "Configura??es")
+4. ? Todas as p√°ginas mostram acentos corretamente
+5. ? Console n√£o mostra erros de localiza√ß√£o
 6. ? Trocar idioma funciona sem problemas
 
 ---
 
 ## ?? Reportar Problema
 
-Se apÛs seguir todos os passos o problema persistir:
+Se ap√≥s seguir todos os passos o problema persistir:
 
-1. **Capturar screenshot** da ·rea com problema
+1. **Capturar screenshot** da √°rea com problema
 2. **Abrir Console** (F12) e copiar qualquer erro
 3. **Verificar encoding** do arquivo:
    ```powershell
@@ -284,11 +284,11 @@ Se apÛs seguir todos os passos o problema persistir:
    ```
 4. **Informar**:
    - Sistema operacional
-   - Navegador e vers„o
-   - Se È desenvolvimento ou produÁ„o
+   - Navegador e vers√£o
+   - Se √© desenvolvimento ou produ√ß√£o
    - Screenshot e logs
 
 ---
 
-**⁄ltima atualizaÁ„o**: Janeiro 2025  
-**Vers„o do documento**: 1.0
+**√öltima atualiza√ß√£o**: Janeiro 2025  
+**Vers√£o do documento**: 1.0

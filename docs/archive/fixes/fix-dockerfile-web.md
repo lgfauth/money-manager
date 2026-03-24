@@ -1,15 +1,15 @@
-# ?? CorreÁ„o Final - Dockerfile.web
+# ?? Corre√ß√£o Final - Dockerfile.web
 
 ## ? **Problema Identificado:**
 
-O Railway estava falhando no build do `Dockerfile.web` devido ‡ sintaxe incompatÌvel do Docker heredoc (`COPY <<'EOF'`).
+O Railway estava falhando no build do `Dockerfile.web` devido √† sintaxe incompat√≠vel do Docker heredoc (`COPY <<'EOF'`).
 
-## ?? **SoluÁ„o Implementada:**
+## ?? **Solu√ß√£o Implementada:**
 
-### **Antes (? Problem·tico):**
+### **Antes (? Problem√°tico):**
 
 ```dockerfile
-# Tentativa 1: Heredoc (n„o suportado em Docker antigo)
+# Tentativa 1: Heredoc (n√£o suportado em Docker antigo)
 COPY <<'EOF' /docker-entrypoint.sh
 #!/bin/sh
 ...
@@ -22,13 +22,13 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
 ```
 
 **Problemas:**
-- ? Heredoc n„o suportado pelo Docker Builder do Railway
-- ? RUN echo com m˙ltiplas linhas difÌcil de debugar
+- ? Heredoc n√£o suportado pelo Docker Builder do Railway
+- ? RUN echo com m√∫ltiplas linhas dif√≠cil de debugar
 - ? Escaping de caracteres especiais complicado
 
 ---
 
-### **Depois (? SoluÁ„o):**
+### **Depois (? Solu√ß√£o):**
 
 **1. Criado arquivo separado: `docker-entrypoint.sh`**
 
@@ -54,10 +54,10 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 ```
 
 **Vantagens:**
-- ? Sintaxe simples e compatÌvel
-- ? Script separado f·cil de editar e debugar
+- ? Sintaxe simples e compat√≠vel
+- ? Script separado f√°cil de editar e debugar
 - ? Sem problemas de escaping
-- ? Funciona em qualquer vers„o do Docker
+- ? Funciona em qualquer vers√£o do Docker
 
 ---
 
@@ -67,12 +67,12 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 money-manager/
 ??? Dockerfile.web              ? Simplificado
 ??? docker-entrypoint.sh        ? Novo arquivo
-??? nginx.conf                  ? ConfiguraÁ„o do Nginx
+??? nginx.conf                  ? Configura√ß√£o do Nginx
 ??? src/
     ??? MoneyManager.Web/
         ??? Program.cs          ? Com ApiConfigService
         ??? Services/
-            ??? ApiConfigService.cs  ? Novo serviÁo
+            ??? ApiConfigService.cs  ? Novo servi√ßo
 ```
 
 ---
@@ -80,12 +80,12 @@ money-manager/
 ## ?? **Fluxo de Build no Railway:**
 
 ```
-1. Git Push ? Railway detecta mudanÁas
+1. Git Push ? Railway detecta mudan√ßas
    ?
 2. Railway inicia build do Dockerfile.web
    ?
 3. Stage 1: Build .NET (SDK 9.0)
-   - Restaura dependÍncias
+   - Restaura depend√™ncias
    - Compila Blazor WASM
    - Publica wwwroot/
    ?
@@ -93,7 +93,7 @@ money-manager/
    - Copia arquivos publicados
    - Copia nginx.conf ?
    - Copia docker-entrypoint.sh ? (agora funciona!)
-   - Torna script execut·vel
+   - Torna script execut√°vel
    ?
 5. Deploy bem-sucedido! ?
 ```
@@ -107,7 +107,7 @@ money-manager/
 docker build -f Dockerfile.web -t moneymanager-web .
 ```
 
-### **2. Run com vari·vel de ambiente:**
+### **2. Run com vari√°vel de ambiente:**
 ```bash
 docker run -p 8080:8080 \
   -e API_URL="https://sua-api.up.railway.app" \
@@ -157,7 +157,7 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 
 ---
 
-## ? **VerificaÁıes PÛs-Deploy:**
+## ? **Verifica√ß√µes P√≥s-Deploy:**
 
 ### **1. Railway Build Logs:**
 ```
@@ -192,7 +192,7 @@ Starting nginx...
 
 ---
 
-## ?? **Checklist de ValidaÁ„o:**
+## ?? **Checklist de Valida√ß√£o:**
 
 - [x] ? docker-entrypoint.sh criado
 - [x] ? Dockerfile.web simplificado
@@ -205,7 +205,7 @@ Starting nginx...
 
 ---
 
-## ?? **PrÛximos Passos:**
+## ?? **Pr√≥ximos Passos:**
 
 1. **Aguardar Build (~5 min)**
    - Railway ? moneymanager-web ? Build Logs
@@ -214,10 +214,10 @@ Starting nginx...
    - Procurar por "Configuring Blazor WebAssembly"
    - Confirmar "? Updated index.html"
 
-3. **Testar AplicaÁ„o**
+3. **Testar Aplica√ß√£o**
    - Acessar https://money-manager-web-production.up.railway.app
    - Abrir DevTools (F12) ? Console
-   - Verificar mensagens de configuraÁ„o
+   - Verificar mensagens de configura√ß√£o
 
 4. **Testar Login/Registro**
    - Criar conta de teste
@@ -237,17 +237,17 @@ EOF
 ```
 ? Railway usa Docker Builder antigo sem suporte a heredoc
 
-### **SoluÁ„o:**
+### **Solu√ß√£o:**
 ```dockerfile
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 ```
-? Copia arquivo real do repositÛrio (compatÌvel com qualquer Docker)
+? Copia arquivo real do reposit√≥rio (compat√≠vel com qualquer Docker)
 
-### **BenefÌcios Adicionais:**
+### **Benef√≠cios Adicionais:**
 - ? Script versionado no Git
-- ? F·cil de editar e testar
+- ? F√°cil de editar e testar
 - ? Mesma funcionalidade
-- ? Mais legÌvel e manutenÌvel
+- ? Mais leg√≠vel e manuten√≠vel
 
 ---
 
@@ -260,7 +260,7 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 git ls-files | grep docker-entrypoint.sh
 ```
 
-2. **Verificar permissıes:**
+2. **Verificar permiss√µes:**
 ```bash
 git update-index --chmod=+x docker-entrypoint.sh
 ```
@@ -271,12 +271,12 @@ git update-index --chmod=+x docker-entrypoint.sh
 dos2unix docker-entrypoint.sh
 ```
 
-### **Se o container n„o iniciar:**
+### **Se o container n√£o iniciar:**
 
 1. **Ver logs do Railway**
 2. **Procurar por:**
-   - "Permission denied" ? chmod n„o funcionou
-   - "not found" ? arquivo n„o copiado
+   - "Permission denied" ? chmod n√£o funcionou
+   - "not found" ? arquivo n√£o copiado
    - "syntax error" ? problema no script
 
 ---
@@ -295,9 +295,9 @@ dos2unix docker-entrypoint.sh
 
 **ETA:** ~5 minutos
 
-**ConfianÁa:** ?? **ALTA** (soluÁ„o comprovadamente compatÌvel)
+**Confian√ßa:** ?? **ALTA** (solu√ß√£o comprovadamente compat√≠vel)
 
 ---
 
 **Data:** ${new Date().toLocaleDateString('pt-BR')}  
-**Vers„o:** 4.0 (SoluÁ„o Definitiva)
+**Vers√£o:** 4.0 (Solu√ß√£o Definitiva)

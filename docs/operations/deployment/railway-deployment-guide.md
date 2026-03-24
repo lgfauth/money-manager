@@ -1,18 +1,18 @@
 # ?? Deploy no Railway - MoneyManager
 
-## Guia Completo de Deploy com Duas AplicaÁıes
+## Guia Completo de Deploy com Duas Aplica√ß√µes
 
-Este guia explica como fazer deploy do **MoneyManager** no Railway, que contÈm:
+Este guia explica como fazer deploy do **MoneyManager** no Railway, que cont√©m:
 - ?? **API (Backend)** - MoneyManager.Presentation
 - ?? **Frontend** - MoneyManager.Web (Blazor WebAssembly)
 
 ---
 
-## ?? PrÈ-requisitos
+## ?? Pr√©-requisitos
 
 1. ? Conta no [Railway.app](https://railway.app)
 2. ? Conta no [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (banco de dados)
-3. ? RepositÛrio no GitHub com o cÛdigo
+3. ? Reposit√≥rio no GitHub com o c√≥digo
 
 ---
 
@@ -25,7 +25,7 @@ money-manager/
 ?   ??? MoneyManager.Web/             # Blazor WebAssembly (Frontend)
 ??? Dockerfile.api                     # Dockerfile para API
 ??? Dockerfile.web                     # Dockerfile para Web
-??? railway.toml                       # ConfiguraÁ„o Railway
+??? railway.toml                       # Configura√ß√£o Railway
 ```
 
 ---
@@ -39,13 +39,13 @@ money-manager/
 3. Crie um novo cluster:
    - **Nome:** `moneymanager-cluster`
    - **Provider:** AWS
-   - **Region:** `us-east-1` (ou mais prÛxima)
-   - **Tier:** M0 Sandbox (GR¡TIS)
+   - **Region:** `us-east-1` (ou mais pr√≥xima)
+   - **Tier:** M0 Sandbox (GR√ÅTIS)
 
 ### 1.2 Configurar Acesso
 
 1. **Database Access:**
-   - Crie um usu·rio:
+   - Crie um usu√°rio:
      - Username: `moneymanager`
      - Password: Gere uma senha forte
      - Role: `Atlas admin`
@@ -53,7 +53,7 @@ money-manager/
 2. **Network Access:**
    - Clique em "Add IP Address"
    - Selecione "Allow Access from Anywhere" (`0.0.0.0/0`)
-   - (Necess·rio para o Railway acessar)
+   - (Necess√°rio para o Railway acessar)
 
 ### 1.3 Obter Connection String
 
@@ -78,26 +78,26 @@ mongodb+srv://moneymanager:SUA_SENHA@cluster0.xxxxx.mongodb.net/MoneyAgent?retry
 ### 2.1 Criar Projeto no Railway
 
 1. Acesse [Railway.app](https://railway.app)
-2. FaÁa login com GitHub
+2. Fa√ßa login com GitHub
 3. Clique em "New Project"
 4. Selecione "Deploy from GitHub repo"
-5. Escolha o repositÛrio `money-manager`
+5. Escolha o reposit√≥rio `money-manager`
 
-### 2.2 Criar Dois ServiÁos
+### 2.2 Criar Dois Servi√ßos
 
-O Railway criar· automaticamente um serviÁo. VocÍ precisar· criar dois:
+O Railway criar√° automaticamente um servi√ßo. Voc√™ precisar√° criar dois:
 
-#### **ServiÁo 1: API (Backend)**
+#### **Servi√ßo 1: API (Backend)**
 
 1. No dashboard do Railway, clique em "+ New"
 2. Selecione "GitHub Repo"
 3. Escolha `money-manager`
-4. Nome do serviÁo: `moneymanager-api`
+4. Nome do servi√ßo: `moneymanager-api`
 
-**ConfiguraÁıes da API:**
+**Configura√ß√µes da API:**
 
-1. Clique no serviÁo `moneymanager-api`
-2. V· em "Settings"
+1. Clique no servi√ßo `moneymanager-api`
+2. V√° em "Settings"
 3. Configure:
 
 ```yaml
@@ -113,7 +113,7 @@ Health Check Path: /health
 Health Check Timeout: 30s
 ```
 
-4. V· em "Variables" e adicione:
+4. V√° em "Variables" e adicione:
 
 ```env
 # MongoDB
@@ -131,19 +131,19 @@ ASPNETCORE_ENVIRONMENT=Production
 ASPNETCORE_URLS=http://0.0.0.0:8080
 ```
 
-5. Clique em "Deploy" ou aguarde o deploy autom·tico
+5. Clique em "Deploy" ou aguarde o deploy autom√°tico
 
-#### **ServiÁo 2: Frontend (Blazor WebAssembly)**
+#### **Servi√ßo 2: Frontend (Blazor WebAssembly)**
 
 1. Clique em "+ New" novamente
 2. Selecione "GitHub Repo"
 3. Escolha `money-manager`
-4. Nome do serviÁo: `moneymanager-web`
+4. Nome do servi√ßo: `moneymanager-web`
 
-**ConfiguraÁıes do Frontend:**
+**Configura√ß√µes do Frontend:**
 
-1. Clique no serviÁo `moneymanager-web`
-2. V· em "Settings"
+1. Clique no servi√ßo `moneymanager-web`
+2. V√° em "Settings"
 3. Configure:
 
 ```yaml
@@ -155,10 +155,10 @@ Dockerfile Path: Dockerfile.web
 Start Command: (deixe vazio)
 ```
 
-4. V· em "Variables" e adicione:
+4. V√° em "Variables" e adicione:
 
 ```env
-# API URL (ser· preenchida apÛs o deploy da API)
+# API URL (ser√° preenchida ap√≥s o deploy da API)
 API_URL=https://moneymanager-api-production.up.railway.app
 
 # ASP.NET Core
@@ -168,13 +168,13 @@ ASPNETCORE_URLS=http://0.0.0.0:8080
 
 ---
 
-## ?? Passo 3: Criar Arquivos de ConfiguraÁ„o
+## ?? Passo 3: Criar Arquivos de Configura√ß√£o
 
-VocÍ j· possui alguns arquivos, mas vamos garantir que todos est„o corretos:
+Voc√™ j√° possui alguns arquivos, mas vamos garantir que todos est√£o corretos:
 
-### 3.1 Verificar Dockerfile.api (j· existe)
+### 3.1 Verificar Dockerfile.api (j√° existe)
 
-O arquivo `Dockerfile.api` j· est· correto! ?
+O arquivo `Dockerfile.api` j√° est√° correto! ?
 
 ### 3.2 Criar Dockerfile.web
 
@@ -189,24 +189,24 @@ WORKDIR /src
 COPY ["src/MoneyManager.Web/MoneyManager.Web.csproj", "src/MoneyManager.Web/"]
 COPY ["src/MoneyManager.Domain/MoneyManager.Domain.csproj", "src/MoneyManager.Domain/"]
 
-# Restaurar dependÍncias
+# Restaurar depend√™ncias
 RUN dotnet restore "src/MoneyManager.Web/MoneyManager.Web.csproj"
 
-# Copiar todo o cÛdigo
+# Copiar todo o c√≥digo
 COPY . .
 
 # Publicar
 WORKDIR "/src/src/MoneyManager.Web"
 RUN dotnet publish "MoneyManager.Web.csproj" -c Release -o /app/publish
 
-# Servir arquivos est·ticos com Nginx
+# Servir arquivos est√°ticos com Nginx
 FROM nginx:alpine AS final
 WORKDIR /usr/share/nginx/html
 
 # Copiar arquivos publicados
 COPY --from=build /app/publish/wwwroot .
 
-# Copiar configuraÁ„o do Nginx
+# Copiar configura√ß√£o do Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 8080
@@ -235,7 +235,7 @@ http {
             try_files $uri $uri/ /index.html =404;
         }
 
-        # Headers de seguranÁa
+        # Headers de seguran√ßa
         add_header X-Frame-Options "SAMEORIGIN" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-XSS-Protection "1; mode=block" always;
@@ -268,13 +268,13 @@ restartPolicyMaxRetries = 10
 
 ---
 
-## ?? Passo 4: Ajustar CÛdigo para ProduÁ„o
+## ?? Passo 4: Ajustar C√≥digo para Produ√ß√£o
 
 ### 4.1 Atualizar Program.cs da Web
 
 Arquivo: `src/MoneyManager.Web/Program.cs`
 
-Certifique-se de que a URL da API È configur·vel:
+Certifique-se de que a URL da API √© configur√°vel:
 
 ```csharp
 // Determinar a URL base da API
@@ -317,22 +317,22 @@ Crie `src/MoneyManager.Presentation/appsettings.Production.json`:
 }
 ```
 
-(Os valores vazios ser„o preenchidos pelas vari·veis de ambiente)
+(Os valores vazios ser√£o preenchidos pelas vari√°veis de ambiente)
 
 ---
 
-## ?? Passo 5: Conectar as AplicaÁıes
+## ?? Passo 5: Conectar as Aplica√ß√µes
 
 ### 5.1 Obter URL da API
 
-1. No Railway, clique no serviÁo `moneymanager-api`
-2. V· em "Settings" ? "Networking"
+1. No Railway, clique no servi√ßo `moneymanager-api`
+2. V√° em "Settings" ? "Networking"
 3. Clique em "Generate Domain"
 4. Copie a URL gerada (ex: `https://moneymanager-api-production.up.railway.app`)
 
 ### 5.2 Atualizar Frontend
 
-1. V· no serviÁo `moneymanager-web`
+1. V√° no servi√ßo `moneymanager-web`
 2. Em "Variables", atualize:
    ```env
    API_URL=https://moneymanager-api-production.up.railway.app
@@ -341,9 +341,9 @@ Crie `src/MoneyManager.Presentation/appsettings.Production.json`:
 
 ### 5.3 Configurar CORS na API
 
-Certifique-se de que a API permite requisiÁıes do frontend.
+Certifique-se de que a API permite requisi√ß√µes do frontend.
 
-No `Program.cs` da API, a configuraÁ„o j· est· como `AllowAll`, mas vocÍ pode restringir:
+No `Program.cs` da API, a configura√ß√£o j√° est√° como `AllowAll`, mas voc√™ pode restringir:
 
 ```csharp
 builder.Services.AddCors(options =>
@@ -378,7 +378,7 @@ app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "Production");
 
 1. Acesse: `https://moneymanager-web-production.up.railway.app`
 2. Teste o login/registro
-3. Verifique se as chamadas ‡ API funcionam
+3. Verifique se as chamadas √† API funcionam
 
 ---
 
@@ -386,13 +386,13 @@ app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "Production");
 
 ### Logs no Railway
 
-1. Clique em cada serviÁo
-2. V· na aba "Logs"
+1. Clique em cada servi√ßo
+2. V√° na aba "Logs"
 3. Monitore erros e avisos
 
-### MÈtricas
+### M√©tricas
 
-1. V· em "Metrics" em cada serviÁo
+1. V√° em "Metrics" em cada servi√ßo
 2. Monitore:
    - CPU Usage
    - Memory Usage
@@ -400,16 +400,16 @@ app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "Production");
 
 ---
 
-## ?? SeguranÁa
+## ?? Seguran√ßa
 
-### Checklist de SeguranÁa
+### Checklist de Seguran√ßa
 
-- ? Alterar `JWT__SECRETKEY` para uma chave forte e ˙nica
+- ? Alterar `JWT__SECRETKEY` para uma chave forte e √∫nica
 - ? Configurar CORS adequadamente
 - ? Usar HTTPS (Railway fornece automaticamente)
 - ? Restringir IP no MongoDB (ou usar rede privada)
-- ? N„o commitar senhas no cÛdigo
-- ? Usar vari·veis de ambiente para secrets
+- ? N√£o commitar senhas no c√≥digo
+- ? Usar vari√°veis de ambiente para secrets
 
 ---
 
@@ -417,19 +417,19 @@ app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "Production");
 
 ### Railway Free Tier
 
-- **$5 de crÈdito mensal** (gr·tis)
-- ~500 horas de execuÁ„o
-- Suficiente para 2 serviÁos pequenos
+- **$5 de cr√©dito mensal** (gr√°tis)
+- ~500 horas de execu√ß√£o
+- Suficiente para 2 servi√ßos pequenos
 
-### Plano Hobby ($5/mÍs)
+### Plano Hobby ($5/m√™s)
 
-- $5 de crÈdito + uso adicional
-- Melhor para produÁ„o
+- $5 de cr√©dito + uso adicional
+- Melhor para produ√ß√£o
 
 ### MongoDB Atlas Free Tier
 
-- **512 MB de armazenamento** (gr·tis)
-- Suficiente para comeÁar
+- **512 MB de armazenamento** (gr√°tis)
+- Suficiente para come√ßar
 
 ---
 
@@ -437,52 +437,52 @@ app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "Production");
 
 ### Erro: "Application failed to respond"
 
-**SoluÁ„o:**
-- Verifique se a porta È `8080`
+**Solu√ß√£o:**
+- Verifique se a porta √© `8080`
 - Confirme `ASPNETCORE_URLS=http://0.0.0.0:8080`
 
 ### Erro: "Cannot connect to MongoDB"
 
-**SoluÁ„o:**
+**Solu√ß√£o:**
 - Verifique a connection string
-- Confirme que `0.0.0.0/0` est· permitido no Network Access
-- Teste a conex„o localmente primeiro
+- Confirme que `0.0.0.0/0` est√° permitido no Network Access
+- Teste a conex√£o localmente primeiro
 
-### Frontend n„o encontra a API
+### Frontend n√£o encontra a API
 
-**SoluÁ„o:**
-- Verifique a vari·vel `API_URL`
-- Confirme que a API est· rodando
+**Solu√ß√£o:**
+- Verifique a vari√°vel `API_URL`
+- Confirme que a API est√° rodando
 - Verifique CORS na API
 
 ### Build falha
 
-**SoluÁ„o:**
+**Solu√ß√£o:**
 - Verifique os logs de build no Railway
-- Confirme que todos os arquivos est„o no Git
+- Confirme que todos os arquivos est√£o no Git
 - Teste o build localmente: `docker build -f Dockerfile.api .`
 
 ---
 
-## ?? Deploy Autom·tico
+## ?? Deploy Autom√°tico
 
-O Railway detecta mudanÁas no GitHub automaticamente!
+O Railway detecta mudan√ßas no GitHub automaticamente!
 
 ### Configurar Auto-Deploy
 
-1. Em cada serviÁo, v· em "Settings"
+1. Em cada servi√ßo, v√° em "Settings"
 2. Em "Source Repo", verifique:
-   - ? "Auto Deploy" est· ativado
+   - ? "Auto Deploy" est√° ativado
    - Branch: `main`
 
 Agora, a cada push no GitHub:
-1. Railway faz pull do cÛdigo
-2. Builda a aplicaÁ„o
+1. Railway faz pull do c√≥digo
+2. Builda a aplica√ß√£o
 3. Faz deploy automaticamente
 
 ---
 
-## ?? Comandos ⁄teis
+## ?? Comandos √öteis
 
 ### Testar localmente com Docker
 
@@ -508,7 +508,7 @@ railway login
 # Ver logs
 railway logs
 
-# Vari·veis
+# Vari√°veis
 railway variables
 ```
 
@@ -516,16 +516,16 @@ railway variables
 
 ## ?? Checklist Final
 
-Antes de ir para produÁ„o:
+Antes de ir para produ√ß√£o:
 
 - [ ] MongoDB Atlas configurado e testado
-- [ ] Vari·veis de ambiente definidas no Railway
+- [ ] Vari√°veis de ambiente definidas no Railway
 - [ ] API deployada e funcionando
 - [ ] Frontend deployado e funcionando
 - [ ] CORS configurado corretamente
 - [ ] JWT SecretKey alterada
 - [ ] Health checks funcionando
-- [ ] Logs sem erros crÌticos
+- [ ] Logs sem erros cr√≠ticos
 - [ ] Testes de login/registro funcionando
 - [ ] SSL/HTTPS ativo (Railway fornece)
 
@@ -545,7 +545,7 @@ Se encontrar problemas:
 
 1. Verifique os logs no Railway
 2. Teste localmente com Docker
-3. Consulte a documentaÁ„o
+3. Consulte a documenta√ß√£o
 4. Entre em contato com a equipe
 
 ---

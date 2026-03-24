@@ -1,28 +1,28 @@
-# CorreÁ„o de Problemas de CodificaÁ„o de Caracteres Especiais
+# Corre√ß√£o de Problemas de Codifica√ß√£o de Caracteres Especiais
 
 ## ?? Problema Identificado
 
-Os caracteres especiais em portuguÍs (acentos, cedilhas) estavam sendo exibidos incorretamente como "?" em v·rias partes do site:
+Os caracteres especiais em portugu√™s (acentos, cedilhas) estavam sendo exibidos incorretamente como "?" em v√°rias partes do site:
 
 ### Locais Afetados:
-1. **Tela de Loading**: "Carregando aplicaÁ„o..." ? "Carregando aplica??o..."
-2. **Menu de Usu·rio**: "Usu·rio" ? "Usu?rio"
-3. **Mensagens de Erro**: "exceÁ„o n„o tratada" ? "exce??o n?o tratada"
+1. **Tela de Loading**: "Carregando aplica√ß√£o..." ? "Carregando aplica??o..."
+2. **Menu de Usu√°rio**: "Usu√°rio" ? "Usu?rio"
+3. **Mensagens de Erro**: "exce√ß√£o n√£o tratada" ? "exce??o n?o tratada"
 
-## ? SoluÁ„o Implementada
+## ? Solu√ß√£o Implementada
 
 ### 1. Arquivo `index.html`
 
 **Problema**: Caracteres UTF-8 sendo mal interpretados pelo navegador.
 
-**SoluÁ„o**: Substituir caracteres especiais por entidades HTML numÈricas.
+**Solu√ß√£o**: Substituir caracteres especiais por entidades HTML num√©ricas.
 
-**MudanÁas**:
+**Mudan√ßas**:
 ```html
 <!-- ANTES -->
-<p class="text-muted" id="loading-text">Carregando aplicaÁ„o...</p>
+<p class="text-muted" id="loading-text">Carregando aplica√ß√£o...</p>
 <div id="blazor-error-ui">
-    Uma exceÁ„o n„o tratada ocorreu. Veja o navegador dev tools para detalhes.
+    Uma exce√ß√£o n√£o tratada ocorreu. Veja o navegador dev tools para detalhes.
     <a class="dismiss">?</a>
 </div>
 
@@ -35,23 +35,23 @@ Os caracteres especiais em portuguÍs (acentos, cedilhas) estavam sendo exibidos 
 ```
 
 **Entidades HTML utilizadas**:
-- `&#231;` = Á
-- `&#227;` = „
+- `&#231;` = √ß
+- `&#227;` = √£
 - `&#10006;` = ?
 
 ### 2. Arquivo `loading-localization.js`
 
-**Problema**: Strings JavaScript com caracteres UTF-8 n„o escapados.
+**Problema**: Strings JavaScript com caracteres UTF-8 n√£o escapados.
 
-**SoluÁ„o**: Usar sequÍncias de escape Unicode (`\uXXXX`).
+**Solu√ß√£o**: Usar sequ√™ncias de escape Unicode (`\uXXXX`).
 
-**MudanÁas**:
+**Mudan√ßas**:
 ```javascript
 // ANTES
 'pt-BR': {
     appName: 'MoneyManager',
-    loading: 'Carregando aplicaÁ„o...',
-    errorTitle: 'Uma exceÁ„o n„o tratada ocorreu.',
+    loading: 'Carregando aplica√ß√£o...',
+    errorTitle: 'Uma exce√ß√£o n√£o tratada ocorreu.',
     dismiss: '?'
 }
 
@@ -64,21 +64,21 @@ Os caracteres especiais em portuguÍs (acentos, cedilhas) estavam sendo exibidos 
 }
 ```
 
-**CÛdigos Unicode utilizados**:
-- `\u00E7` = Á
-- `\u00E3` = „
-- `\u00E1` = ·
-- `\u00ED` = Ì
-- `\u00F3` = Û
+**C√≥digos Unicode utilizados**:
+- `\u00E7` = √ß
+- `\u00E3` = √£
+- `\u00E1` = √°
+- `\u00ED` = √≠
+- `\u00F3` = √≥
 - `\u2716` = ?
 
-### 3. ConfiguraÁ„o do Servidor (Web.Host/Program.cs)
+### 3. Configura√ß√£o do Servidor (Web.Host/Program.cs)
 
-**Problema**: Arquivos JSON e JavaScript n„o eram servidos com charset UTF-8 explÌcito.
+**Problema**: Arquivos JSON e JavaScript n√£o eram servidos com charset UTF-8 expl√≠cito.
 
-**SoluÁ„o**: Adicionar `; charset=utf-8` aos tipos MIME.
+**Solu√ß√£o**: Adicionar `; charset=utf-8` aos tipos MIME.
 
-**MudanÁas**:
+**Mudan√ßas**:
 ```csharp
 // ANTES
 provider.Mappings[".json"] = "application/json";
@@ -93,11 +93,11 @@ provider.Mappings[".css"] = "text/css; charset=utf-8";
 
 ### 4. LocalizationService.cs
 
-**Problema**: HttpClient pode n„o estar decodificando corretamente o JSON com UTF-8.
+**Problema**: HttpClient pode n√£o estar decodificando corretamente o JSON com UTF-8.
 
-**SoluÁ„o**: Ler o conte˙do como bytes e decodificar explicitamente com UTF-8.
+**Solu√ß√£o**: Ler o conte√∫do como bytes e decodificar explicitamente com UTF-8.
 
-**MudanÁas**:
+**Mudan√ßas**:
 ```csharp
 // ANTES
 var jsonString = await httpClient.GetStringAsync(path);
@@ -114,7 +114,7 @@ var jsonString = System.Text.Encoding.UTF8.GetString(bytes);
 
 **Problema**: Arquivo pode ter sido salvo com encoding incorreto.
 
-**SoluÁ„o**: Reescrever o arquivo com encoding UTF-8 correto usando PowerShell.
+**Solu√ß√£o**: Reescrever o arquivo com encoding UTF-8 correto usando PowerShell.
 
 **Comando executado**:
 ```powershell
@@ -126,40 +126,40 @@ $content | Out-File "src\MoneyManager.Web\wwwroot\i18n\pt-BR.json" -Encoding UTF
 
 Todos os idiomas foram corrigidos com escape Unicode:
 
-#### PortuguÍs (pt-BR):
-- ? "aplicaÁ„o" ? `aplica\u00E7\u00E3o`
-- ? "exceÁ„o" ? `exce\u00E7\u00E3o`
-- ? "n„o" ? `n\u00E3o`
+#### Portugu√™s (pt-BR):
+- ? "aplica√ß√£o" ? `aplica\u00E7\u00E3o`
+- ? "exce√ß√£o" ? `exce\u00E7\u00E3o`
+- ? "n√£o" ? `n\u00E3o`
 
 #### Espanhol (es-ES):
-- ? "aplicaciÛn" ? `aplicaci\u00F3n`
-- ? "excepciÛn" ? `excepci\u00F3n`
-- ? "m·s" ? `m\u00E1s`
+- ? "aplicaci√≥n" ? `aplicaci\u00F3n`
+- ? "excepci√≥n" ? `excepci\u00F3n`
+- ? "m√°s" ? `m\u00E1s`
 
-#### FrancÍs (fr-FR):
-- ? "gÈrÈe" ? `g\u00E9r\u00E9e`
-- ? "dÈtails" ? `d\u00E9tails`
+#### Franc√™s (fr-FR):
+- ? "g√©r√©e" ? `g\u00E9r\u00E9e`
+- ? "d√©tails" ? `d\u00E9tails`
 
 ## ?? Resultados Esperados
 
-ApÛs essas mudanÁas, os caracteres especiais devem ser exibidos corretamente:
+Ap√≥s essas mudan√ßas, os caracteres especiais devem ser exibidos corretamente:
 
 ### ? Antes do Blazor carregar:
-- Tela de loading mostra: "Carregando aplicaÁ„o..."
-- Mensagem de erro mostra: "Uma exceÁ„o n„o tratada ocorreu."
-- Bot„o dismiss mostra: "?"
+- Tela de loading mostra: "Carregando aplica√ß√£o..."
+- Mensagem de erro mostra: "Uma exce√ß√£o n√£o tratada ocorreu."
+- Bot√£o dismiss mostra: "?"
 
 ### ? Depois do Blazor carregar:
-- Menu de usu·rio mostra: "Usu·rio"
+- Menu de usu√°rio mostra: "Usu√°rio"
 - Todos os textos do sistema devem exibir acentos corretamente
-- O arquivo `pt-BR.json` j· possui UTF-8 correto
+- O arquivo `pt-BR.json` j√° possui UTF-8 correto
 
 ## ?? Arquivos Modificados
 
 1. `src/MoneyManager.Web/wwwroot/index.html` - Entidades HTML
 2. `src/MoneyManager.Web/wwwroot/js/loading-localization.js` - Unicode escapes
 3. `src/MoneyManager.Web.Host/Program.cs` - Content-Type com charset UTF-8
-4. `src/MoneyManager.Web/Services/Localization/LocalizationService.cs` - DecodificaÁ„o explÌcita UTF-8
+4. `src/MoneyManager.Web/Services/Localization/LocalizationService.cs` - Decodifica√ß√£o expl√≠cita UTF-8
 5. `src/MoneyManager.Web/wwwroot/i18n/pt-BR.json` - Reescrito com encoding correto
 
 ## ?? Como Testar
@@ -169,36 +169,36 @@ ApÛs essas mudanÁas, os caracteres especiais devem ser exibidos corretamente:
    ```bash
    dotnet build
    ```
-3. Executar a aplicaÁ„o
+3. Executar a aplica√ß√£o
 4. Verificar:
    - Tela de loading inicial
-   - Menu dropdown do usu·rio
-   - Tentar forÁar um erro para ver a mensagem de erro
+   - Menu dropdown do usu√°rio
+   - Tentar for√ßar um erro para ver a mensagem de erro
 
-## ?? Notas TÈcnicas
+## ?? Notas T√©cnicas
 
 ### Por que usar entidades HTML no index.html?
 
-O arquivo `index.html` È servido **antes** do Blazor carregar. O servidor web pode n„o estar configurado para servir arquivos HTML com charset UTF-8, ent„o usar entidades HTML garante compatibilidade universal.
+O arquivo `index.html` √© servido **antes** do Blazor carregar. O servidor web pode n√£o estar configurado para servir arquivos HTML com charset UTF-8, ent√£o usar entidades HTML garante compatibilidade universal.
 
 ### Por que usar Unicode escapes no JavaScript?
 
 Strings JavaScript com caracteres UTF-8 podem ser mal interpretadas dependendo de:
 - Como o arquivo foi salvo pelo editor
 - Como o servidor web serve o arquivo `.js`
-- ConfiguraÁıes do navegador
+- Configura√ß√µes do navegador
 
-Unicode escapes (`\uXXXX`) s„o **sempre** interpretados corretamente, independente de encoding.
+Unicode escapes (`\uXXXX`) s√£o **sempre** interpretados corretamente, independente de encoding.
 
 ### E o arquivo pt-BR.json?
 
-O arquivo JSON de localizaÁ„o (`pt-BR.json`) j· est· correto com UTF-8 e È carregado pelo Blazor via HTTP com headers apropriados, ent„o n„o precisa de escape. O serviÁo de localizaÁ„o do Blazor lida com o encoding corretamente.
+O arquivo JSON de localiza√ß√£o (`pt-BR.json`) j√° est√° correto com UTF-8 e √© carregado pelo Blazor via HTTP com headers apropriados, ent√£o n√£o precisa de escape. O servi√ßo de localiza√ß√£o do Blazor lida com o encoding corretamente.
 
 ## ?? Status
 
 ? **Problema resolvido**  
 ? **Build passa sem erros**  
-? **CompatÌvel com todos os navegadores**
+? **Compat√≠vel com todos os navegadores**
 
 ---
 

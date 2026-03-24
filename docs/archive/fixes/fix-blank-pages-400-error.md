@@ -1,23 +1,23 @@
-# ?? CORRE«√O: P·ginas em Branco e Erro 400
+# ?? CORRE√á√ÉO: P√°ginas em Branco e Erro 400
 
 ## ?? PROBLEMAS IDENTIFICADOS
 
-### **1. P·gina de Contas em Branco**
-**Sintoma:** P·gina `/accounts` carrega mas fica totalmente branca
+### **1. P√°gina de Contas em Branco**
+**Sintoma:** P√°gina `/accounts` carrega mas fica totalmente branca
 
-### **2. Erro 400 em TransaÁıes**
+### **2. Erro 400 em Transa√ß√µes**
 **Sintoma:** 
 ```
-Erro ao carregar transaÁıes: 
+Erro ao carregar transa√ß√µes: 
 net_http_message_not_success_statuscode_reason, 400, Bad Request
 ```
 
 ---
 
-## ?? AN¡LISE DO PROBLEMA
+## ?? AN√ÅLISE DO PROBLEMA
 
 ### **Causa Raiz:**
-**Incompatibilidade entre camadas de serviÁo**
+**Incompatibilidade entre camadas de servi√ßo**
 
 ```
 ???????????????????????????????????????????????????????
@@ -38,45 +38,45 @@ net_http_message_not_success_statuscode_reason, 400, Bad Request
 ```
 
 ### **Problema:**
-- **Web.Services** ? N„o enviava `userId` (estava correto - API pega do token)
+- **Web.Services** ? N√£o enviava `userId` (estava correto - API pega do token)
 - **Accounts.razor** ? Tentava passar `userId` manualmente (estava **errado**)
 - **InvoiceDetails.razor** ? Mesmo problema
 
 ---
 
-## ? SOLU«√O IMPLEMENTADA
+## ? SOLU√á√ÉO IMPLEMENTADA
 
 ### **Arquitetura Correta:**
 
 ```
 ??????????????????????????????
 ? BLAZOR                     ?
-? - N√O passa userId         ? ? Cliente n„o sabe userId
+? - N√ÉO passa userId         ? ? Cliente n√£o sabe userId
 ? - Envia apenas request     ?
 ??????????????????????????????
             ? HTTP + JWT Token
 ??????????????????????????????
 ? API CONTROLLER             ?
-? - Extrai userId do token   ? ? Seguro e autom·tico
+? - Extrai userId do token   ? ? Seguro e autom√°tico
 ? - Chama Application layer  ?
 ??????????????????????????????
             ? userId + request
 ??????????????????????????????
 ? APPLICATION LAYER          ?
 ? - Recebe userId validado   ?
-? - Processa lÛgica          ?
+? - Processa l√≥gica          ?
 ??????????????????????????????
 ```
 
 ---
 
-## ?? MUDAN«AS REALIZADAS
+## ?? MUDAN√áAS REALIZADAS
 
 ### **1. Accounts.razor**
 
 #### **ANTES (ERRADO):**
 ```csharp
-await TransactionService.CreateAsync(transactionRequest); // Faltava userId? N„o!
+await TransactionService.CreateAsync(transactionRequest); // Faltava userId? N√£o!
 ```
 
 #### **DEPOIS (CORRETO):**
@@ -84,7 +84,7 @@ await TransactionService.CreateAsync(transactionRequest); // Faltava userId? N„o
 await TransactionService.CreateAsync(transactionRequest); // SEM userId - API pega do token
 ```
 
-**ExplicaÁ„o:** O serviÁo Web **n„o deve** passar `userId`. A API Controller j· pega do JWT automaticamente via `GetUserId()`.
+**Explica√ß√£o:** O servi√ßo Web **n√£o deve** passar `userId`. A API Controller j√° pega do JWT automaticamente via `GetUserId()`.
 
 ---
 
@@ -102,7 +102,7 @@ await TransactionService.CreateAsync(transactionRequest); // SEM userId - API pe
 
 ---
 
-### **3. Web.Services.ITransactionService (J¡ ESTAVA CORRETO)**
+### **3. Web.Services.ITransactionService (J√Å ESTAVA CORRETO)**
 
 ```csharp
 public interface ITransactionService
@@ -114,7 +114,7 @@ public interface ITransactionService
 
 ---
 
-### **4. Application.Services.ITransactionService (J¡ ESTAVA CORRETO)**
+### **4. Application.Services.ITransactionService (J√Å ESTAVA CORRETO)**
 
 ```csharp
 public interface ITransactionService
@@ -126,7 +126,7 @@ public interface ITransactionService
 
 ---
 
-### **5. TransactionsController (J¡ ESTAVA CORRETO)**
+### **5. TransactionsController (J√Å ESTAVA CORRETO)**
 
 ```csharp
 [HttpPost]
@@ -155,7 +155,7 @@ private string GetUserId()
 ### **Exemplo: Pagar Fatura**
 
 ```csharp
-// 1. BLAZOR - Usu·rio clica "Pagar"
+// 1. BLAZOR - Usu√°rio clica "Pagar"
 var transactionRequest = new CreateTransactionRequestDto
 {
     AccountId = payFromAccountId,
@@ -167,7 +167,7 @@ var transactionRequest = new CreateTransactionRequestDto
     Status = 0
 };
 
-// 2. BLAZOR - Chama serviÁo Web (SEM userId)
+// 2. BLAZOR - Chama servi√ßo Web (SEM userId)
 await TransactionService.CreateAsync(transactionRequest);
     ? HTTP POST /api/transactions + JWT Token no header
 
@@ -177,15 +177,15 @@ var userId = GetUserId(); // "user123" ? do JWT
 // 4. API CONTROLLER - Valida request
 var validation = await _validator.ValidateAsync(request);
 if (!validation.IsValid)
-    return BadRequest(validation.Errors); // ? 400 se inv·lido
+    return BadRequest(validation.Errors); // ? 400 se inv√°lido
     ?
 // 5. API CONTROLLER - Chama Application layer (COM userId)
 var result = await _transactionService.CreateAsync(userId, request);
     ?
-// 6. APPLICATION LAYER - Processa transaÁ„o
+// 6. APPLICATION LAYER - Processa transa√ß√£o
 - Valida conta pertence ao userId
 - Atualiza saldos
-- Vincula a fatura (se cart„o de crÈdito)
+- Vincula a fatura (se cart√£o de cr√©dito)
 - Salva no banco
     ?
 // 7. Retorna sucesso (201 Created)
@@ -194,39 +194,39 @@ return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
 
 ---
 
-## ?? VALIDA«√O
+## ?? VALIDA√á√ÉO
 
-### **Testes Necess·rios:**
+### **Testes Necess√°rios:**
 
-#### **1. Teste P·gina de Contas:**
+#### **1. Teste P√°gina de Contas:**
 ```
 1. Abrir /accounts
-2. ? P·gina deve carregar completamente
+2. ? P√°gina deve carregar completamente
 3. ? Lista de contas deve aparecer
-4. ? Botıes devem funcionar
+4. ? Bot√µes devem funcionar
 ```
 
-#### **2. Teste P·gina de TransaÁıes:**
+#### **2. Teste P√°gina de Transa√ß√µes:**
 ```
 1. Abrir /transactions
-2. ? Lista de transaÁıes deve carregar
+2. ? Lista de transa√ß√µes deve carregar
 3. ? Sem erro 400
-4. ? Pode criar nova transaÁ„o
+4. ? Pode criar nova transa√ß√£o
 ```
 
 #### **3. Teste Pagamento de Fatura:**
 ```
-1. Cart„o com fatura de R$ 500
+1. Cart√£o com fatura de R$ 500
 2. Clicar "Pagar Fatura"
 3. Selecionar conta e valor
 4. Clicar "Confirmar Pagamento"
-5. ? N„o deve dar erro 400
+5. ? N√£o deve dar erro 400
 6. ? Fatura deve atualizar
-7. ? TransaÁ„o deve ser criada
+7. ? Transa√ß√£o deve ser criada
 8. ? Saldos devem atualizar
 ```
 
-#### **4. Teste TransaÁıes Recorrentes:**
+#### **4. Teste Transa√ß√µes Recorrentes:**
 ```
 1. Abrir /recurring-transactions
 2. ? Lista deve carregar sem erro 400
@@ -239,30 +239,30 @@ return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
 
 | Camada | userId? | Responsabilidade |
 |--------|---------|------------------|
-| **Blazor (Web.Services)** | ? N„o | Cliente HTTP |
-| **API Controller** | ? Extrai do token | AutenticaÁ„o |
-| **Application Layer** | ? Recebe validado | LÛgica de negÛcio |
-| **Domain Layer** | ? Nas entidades | Regras de domÌnio |
+| **Blazor (Web.Services)** | ? N√£o | Cliente HTTP |
+| **API Controller** | ? Extrai do token | Autentica√ß√£o |
+| **Application Layer** | ? Recebe validado | L√≥gica de neg√≥cio |
+| **Domain Layer** | ? Nas entidades | Regras de dom√≠nio |
 
 ---
 
-## ?? SEGURAN«A
+## ?? SEGURAN√áA
 
-### **Por que N√O passar userId do cliente?**
+### **Por que N√ÉO passar userId do cliente?**
 
-1. **Cliente n„o deve confiar em si mesmo**
+1. **Cliente n√£o deve confiar em si mesmo**
    - userId vindo do cliente pode ser falsificado
-   - Qualquer um poderia se passar por outro usu·rio
+   - Qualquer um poderia se passar por outro usu√°rio
 
-2. **Token JWT È confi·vel**
+2. **Token JWT √© confi√°vel**
    - Assinado pelo servidor
-   - N„o pode ser adulterado
+   - N√£o pode ser adulterado
    - Expira automaticamente
 
-3. **PrincÌpio de Zero Trust**
+3. **Princ√≠pio de Zero Trust**
    - Servidor sempre valida identidade
-   - Cliente sÛ envia dados de negÛcio
-   - AutenticaÁ„o È responsabilidade do backend
+   - Cliente s√≥ envia dados de neg√≥cio
+   - Autentica√ß√£o √© responsabilidade do backend
 
 ### **Fluxo Seguro:**
 
@@ -271,7 +271,7 @@ Cliente envia: { amount: 100, description: "Compra" }
             ? + JWT Token
 Servidor extrai: userId = "user123" (do token assinado)
             ?
-Servidor valida: "user123" È dono da conta?
+Servidor valida: "user123" √© dono da conta?
             ?
 Servidor processa: com userId validado
 ```
@@ -282,57 +282,57 @@ Servidor processa: com userId validado
 
 ### **ANTES:**
 ```
-? P·gina de contas em branco
-? Erro 400: Bad Request nas transaÁıes
-? N„o conseguia pagar faturas
-? N„o conseguia ver transaÁıes recorrentes
+? P√°gina de contas em branco
+? Erro 400: Bad Request nas transa√ß√µes
+? N√£o conseguia pagar faturas
+? N√£o conseguia ver transa√ß√µes recorrentes
 ```
 
 ### **DEPOIS:**
 ```
-? P·gina de contas carrega normalmente
-? TransaÁıes carregam sem erro
+? P√°gina de contas carrega normalmente
+? Transa√ß√µes carregam sem erro
 ? Pagamento de faturas funciona
-? TransaÁıes recorrentes funcionam
-? SeguranÁa mantida (userId do token)
+? Transa√ß√µes recorrentes funcionam
+? Seguran√ßa mantida (userId do token)
 ```
 
 ---
 
-## ?? LI«’ES APRENDIDAS
+## ?? LI√á√ïES APRENDIDAS
 
-### **1. SeparaÁ„o de Responsabilidades:**
-- **Cliente (Blazor):** Envia dados de negÛcio
-- **API:** Gerencia autenticaÁ„o/autorizaÁ„o
-- **Application:** Executa lÛgica de negÛcio
+### **1. Separa√ß√£o de Responsabilidades:**
+- **Cliente (Blazor):** Envia dados de neg√≥cio
+- **API:** Gerencia autentica√ß√£o/autoriza√ß√£o
+- **Application:** Executa l√≥gica de neg√≥cio
 
-### **2. N„o Confiar no Cliente:**
+### **2. N√£o Confiar no Cliente:**
 - userId SEMPRE deve vir do token
 - Nunca aceitar userId do body/query/header customizado
 
-### **3. Camadas de ServiÁo:**
+### **3. Camadas de Servi√ßo:**
 - `Web.Services`: Interface HTTP (sem userId)
-- `Application.Services`: LÛgica de negÛcio (com userId)
+- `Application.Services`: L√≥gica de neg√≥cio (com userId)
 
-### **4. ValidaÁ„o em Camadas:**
-- Cliente: ValidaÁ„o de UI (UX)
-- API: ValidaÁ„o de entrada (FluentValidation)
-- Application: ValidaÁ„o de negÛcio (regras)
+### **4. Valida√ß√£o em Camadas:**
+- Cliente: Valida√ß√£o de UI (UX)
+- API: Valida√ß√£o de entrada (FluentValidation)
+- Application: Valida√ß√£o de neg√≥cio (regras)
 
 ---
 
-## ?? PR”XIMOS PASSOS
+## ?? PR√ìXIMOS PASSOS
 
-1. ? Testar todas as p·ginas localmente
+1. ? Testar todas as p√°ginas localmente
 2. ? Validar fluxo completo de pagamento
-3. ? Testar criaÁ„o de transaÁıes
+3. ? Testar cria√ß√£o de transa√ß√µes
 4. ? Verificar logs de erro no console
-5. ? Deploy e teste em produÁ„o
+5. ? Deploy e teste em produ√ß√£o
 
 ---
 
 **Status:** ? **RESOLVIDO**  
 **Build:** ? **SUCESSO**  
-**P·ginas:** ? **FUNCIONANDO**  
+**P√°ginas:** ? **FUNCIONANDO**  
 
 ?? **Sistema operacional!**

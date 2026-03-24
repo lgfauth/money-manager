@@ -1,57 +1,57 @@
-# ?? RESUMO EXECUTIVO: Plano de Cart„o de CrÈdito
+# ?? RESUMO EXECUTIVO: Plano de Cart√£o de Cr√©dito
 
 ## ? PROBLEMA ATUAL
 
-O bot„o "Pagar Fatura" **funciona**, mas n„o da forma correta:
-- Cria uma transferÍncia (conta ? cart„o)
-- Reduz o saldo do cart„o
-- **MAS:** N„o h· conceito de "fatura fechada" vs "fatura aberta"
-- **MAS:** N„o separa o que vocÍ deve AGORA vs o que vai para prÛxima fatura
-- **MAS:** N„o h· histÛrico de faturas pagas
+O bot√£o "Pagar Fatura" **funciona**, mas n√£o da forma correta:
+- Cria uma transfer√™ncia (conta ? cart√£o)
+- Reduz o saldo do cart√£o
+- **MAS:** N√£o h√° conceito de "fatura fechada" vs "fatura aberta"
+- **MAS:** N√£o separa o que voc√™ deve AGORA vs o que vai para pr√≥xima fatura
+- **MAS:** N√£o h√° hist√≥rico de faturas pagas
 
 **Exemplo do problema:**
 ```
 Hoje: 11/02/2026
 Fechamento: dia 09
-Saldo do cart„o: -R$ 2.000,00
+Saldo do cart√£o: -R$ 2.000,00
 
 Quando clica "Pagar Fatura":
 - Sistema mostra: R$ 2.000,00 (tudo misturado)
 - Correto seria:
   * Fatura fechada (09/01-09/02): R$ 1.200,00  ? Deve pagar AGORA
-  * Fatura atual (10/02-09/03): R$ 800,00      ? Vai vencer em marÁo
+  * Fatura atual (10/02-09/03): R$ 800,00      ? Vai vencer em mar√ßo
 ```
 
 ---
 
-## ? SOLU«√O PROPOSTA
+## ? SOLU√á√ÉO PROPOSTA
 
 ### **1. Criar Entidade "Fatura" (`CreditCardInvoice`)**
 ```
 Cada fatura tem:
-- PerÌodo (ex: 10/01 a 09/02)
+- Per√≠odo (ex: 10/01 a 09/02)
 - Vencimento (ex: 17/02)
 - Valor total
 - Status (Aberta, Fechada, Paga, Vencida)
-- Lista de transaÁıes vinculadas
+- Lista de transa√ß√µes vinculadas
 ```
 
 ### **2. Worker Fecha Faturas Automaticamente**
 ```
-Todo dia ‡s 08:00:
-- Verifica se È dia de fechamento de algum cart„o
+Todo dia √†s 08:00:
+- Verifica se √© dia de fechamento de algum cart√£o
 - Fecha a fatura atual
-- Cria nova fatura aberta para prÛximo perÌodo
+- Cria nova fatura aberta para pr√≥ximo per√≠odo
 ```
 
 ### **3. Modificar "Pagar Fatura"**
 ```
-ANTES: Mostra saldo total do cart„o
+ANTES: Mostra saldo total do cart√£o
 DEPOIS: Mostra lista de faturas FECHADAS pendentes
 
 Exemplo:
 ???????????????????????????????????????????
-? Faturas Pendentes - Cart„o Nubank       ?
+? Faturas Pendentes - Cart√£o Nubank       ?
 ???????????????????????????????????????????
 ? ?? Fatura Jan/2026 - VENCIDA            ?
 ?    Vencimento: 17/01/2026               ?
@@ -65,133 +65,133 @@ Exemplo:
 ???????????????????????????????????????????
 ```
 
-### **4. Dashboard do Cart„o (Nova P·gina)**
+### **4. Dashboard do Cart√£o (Nova P√°gina)**
 ```
 Tela com 3 cards principais:
 ??????????????????????????????????????????????????????????
 ? Fatura Atual     ? Fatura Fechada   ? Limite          ?
-? (Aberta)         ? (A Vencer)       ? DisponÌvel      ?
+? (Aberta)         ? (A Vencer)       ? Dispon√≠vel      ?
 ??????????????????????????????????????????????????????????
 ? Fecha: 09/03     ? Vence: 17/02     ? Limite: 5.000   ?
 ? R$ 450,00        ? R$ 800,00        ? Usado: 1.250    ?
 ? [Ver]            ? [PAGAR]          ? Livre: 3.750    ?
 ??????????????????????????????????????????????????????????
 
-+ HistÛrico de faturas (tabela)
-+ Gr·fico de gastos por mÍs
++ Hist√≥rico de faturas (tabela)
++ Gr√°fico de gastos por m√™s
 ```
 
 ---
 
-## ?? IMPLEMENTA«√O EM FASES
+## ?? IMPLEMENTA√á√ÉO EM FASES
 
 ### **MVP (2-3 semanas):**
 1. Criar entidade `CreditCardInvoice`
-2. ServiÁo de gest„o de faturas
-3. Modificar criaÁ„o de transaÁıes (vincular ‡ fatura)
+2. Servi√ßo de gest√£o de faturas
+3. Modificar cria√ß√£o de transa√ß√µes (vincular √† fatura)
 4. Modificar "Pagar Fatura" (mostrar faturas fechadas)
 
-### **Vers„o Completa (4-6 semanas):**
+### **Vers√£o Completa (4-6 semanas):**
 5. Worker para fechar faturas automaticamente
-6. Dashboard do cart„o
-7. Limite de crÈdito
-8. Alertas e notificaÁıes
+6. Dashboard do cart√£o
+7. Limite de cr√©dito
+8. Alertas e notifica√ß√µes
 
 ---
 
-## ?? DECIS’ES NECESS¡RIAS
+## ?? DECIS√ïES NECESS√ÅRIAS
 
-### **1. MigraÁ„o de Dados Antigos**
+### **1. Migra√ß√£o de Dados Antigos**
 ```
-TransaÁıes existentes n„o tÍm InvoiceId.
+Transa√ß√µes existentes n√£o t√™m InvoiceId.
 
-OpÁ„o A (Recomendada):
-- Criar UMA fatura "HistÛrico" com tudo antes de hoje
+Op√ß√£o A (Recomendada):
+- Criar UMA fatura "Hist√≥rico" com tudo antes de hoje
 - Marcar como "Paga"
-- Novas transaÁıes usam sistema de faturas
+- Novas transa√ß√µes usam sistema de faturas
 
-OpÁ„o B:
-- Deixar transaÁıes antigas sem fatura
-- Sistema novo sÛ para transaÁıes novas
+Op√ß√£o B:
+- Deixar transa√ß√µes antigas sem fatura
+- Sistema novo s√≥ para transa√ß√µes novas
 
-OpÁ„o C:
+Op√ß√£o C:
 - Criar faturas retroativas (complexo, trabalhoso)
 ```
 
 **Sua escolha:** [ ] A  [ ] B  [ ] C
 
-### **2. Limite de CrÈdito**
+### **2. Limite de Cr√©dito**
 ```
-Adicionar campo CreditLimit no cart„o?
+Adicionar campo CreditLimit no cart√£o?
 
 Se sim:
-- Validar ao criar transaÁ„o
-- Mostrar limite disponÌvel no dashboard
-- Alertar quando prÛximo do limite
+- Validar ao criar transa√ß√£o
+- Mostrar limite dispon√≠vel no dashboard
+- Alertar quando pr√≥ximo do limite
 
-Se n„o:
+Se n√£o:
 - Pode adicionar depois
 ```
 
-**Sua escolha:** [ ] Sim, desde o inÌcio  [ ] N„o, depois
+**Sua escolha:** [ ] Sim, desde o in√≠cio  [ ] N√£o, depois
 
 ### **3. Vencimento da Fatura**
 ```
-Quantos dias apÛs o fechamento?
+Quantos dias ap√≥s o fechamento?
 ```
 
-**Sua escolha:** [___] dias (padr„o: 7 dias)
+**Sua escolha:** [___] dias (padr√£o: 7 dias)
 
-### **4. Worker - Hor·rio de Fechamento**
+### **4. Worker - Hor√°rio de Fechamento**
 ```
 Faturas devem fechar automaticamente:
-- Todo dia ‡s 00:01 (logo apÛs meia-noite)
-- OU junto com processamento de recorrÍncias (08:00)
+- Todo dia √†s 00:01 (logo ap√≥s meia-noite)
+- OU junto com processamento de recorr√™ncias (08:00)
 ```
 
 **Sua escolha:** [ ] 00:01  [ ] 08:00  [ ] Outro: ____
 
 ---
 
-## ?? ESFOR«O vs VALOR
+## ?? ESFOR√áO vs VALOR
 
-| Item | EsforÁo | Valor para Usu·rio | Prioridade |
+| Item | Esfor√ßo | Valor para Usu√°rio | Prioridade |
 |------|---------|-------------------|------------|
-| Entidade Invoice | 2 dias | ????? | ?? CRÕTICO |
-| ServiÁo de Faturas | 3 dias | ????? | ?? CRÕTICO |
-| Modificar "Pagar Fatura" | 2 dias | ????? | ?? CRÕTICO |
+| Entidade Invoice | 2 dias | ????? | ?? CR√çTICO |
+| Servi√ßo de Faturas | 3 dias | ????? | ?? CR√çTICO |
+| Modificar "Pagar Fatura" | 2 dias | ????? | ?? CR√çTICO |
 | Worker Fechar Faturas | 2 dias | ???? | ?? ALTA |
-| Dashboard do Cart„o | 4 dias | ???? | ?? ALTA |
-| Limite de CrÈdito | 1 dia | ??? | ?? M…DIA |
-| HistÛrico/RelatÛrios | 3 dias | ??? | ?? M…DIA |
-| NotificaÁıes | 2 dias | ?? | ? BAIXA |
+| Dashboard do Cart√£o | 4 dias | ???? | ?? ALTA |
+| Limite de Cr√©dito | 1 dia | ??? | ?? M√âDIA |
+| Hist√≥rico/Relat√≥rios | 3 dias | ??? | ?? M√âDIA |
+| Notifica√ß√µes | 2 dias | ?? | ? BAIXA |
 
-**Total MVP:** ~7 dias ˙teis  
-**Total Completo:** ~19 dias ˙teis
+**Total MVP:** ~7 dias √∫teis  
+**Total Completo:** ~19 dias √∫teis
 
 ---
 
-## ?? PR”XIMOS PASSOS
+## ?? PR√ìXIMOS PASSOS
 
 **Se aprovar:**
-1. Responder as 4 decisıes acima
+1. Responder as 4 decis√µes acima
 2. Eu crio a branch `feature/credit-card-invoices`
-3. Implemento a Fase 1 (Entidade + MigraÁ„o)
-4. VocÍ testa e aprova
+3. Implemento a Fase 1 (Entidade + Migra√ß√£o)
+4. Voc√™ testa e aprova
 5. Continuo para Fase 2...
 
 **Se quiser ajustar:**
 1. Me diga o que mudar no plano
-2. Eu reviso e crio vers„o 2.0
-3. Voltamos para aprovaÁ„o
+2. Eu reviso e crio vers√£o 2.0
+3. Voltamos para aprova√ß√£o
 
 **Se preferir simplificar:**
-1. Me diga qual parte È mais importante
+1. Me diga qual parte √© mais importante
 2. Eu crio um plano MVP menor
 3. Implementamos em 1 semana
 
 ---
 
-**DocumentaÁ„o completa:** `docs/CREDIT_CARD_FLOW_ANALYSIS.md`
+**Documenta√ß√£o completa:** `docs/CREDIT_CARD_FLOW_ANALYSIS.md`
 
-**Aguardando suas decisıes para comeÁar! ??**
+**Aguardando suas decis√µes para come√ßar! ??**

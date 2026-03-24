@@ -1,12 +1,12 @@
-# ?? SOLU«√O FINAL - URL da API no Blazor WASM
+# ?? SOLU√á√ÉO FINAL - URL da API no Blazor WASM
 
 ## ? Problema Resolvido
 
-O erro `net_uri_BadFormat` foi causado porque o Blazor WebAssembly n„o conseguia carregar a URL da API antes de inicializar.
+O erro `net_uri_BadFormat` foi causado porque o Blazor WebAssembly n√£o conseguia carregar a URL da API antes de inicializar.
 
-## ?? SoluÁ„o Implementada
+## ?? Solu√ß√£o Implementada
 
-**Abordagem:** Injetar a URL da API diretamente no `index.html` durante a inicializaÁ„o do container.
+**Abordagem:** Injetar a URL da API diretamente no `index.html` durante a inicializa√ß√£o do container.
 
 ### Arquivos Modificados:
 
@@ -16,7 +16,7 @@ O erro `net_uri_BadFormat` foi causado porque o Blazor WebAssembly n„o conseguia
 
 ---
 
-## ?? MudanÁas Detalhadas
+## ?? Mudan√ßas Detalhadas
 
 ### 1. index.html - Placeholder JavaScript
 
@@ -34,11 +34,11 @@ Adicionado antes dos scripts do Blazor:
 ### 2. Program.cs - Leitura Simplificada
 
 ```csharp
-// Build tempor·rio para obter JSRuntime
+// Build tempor√°rio para obter JSRuntime
 var tempHost = builder.Build();
 var jsRuntime = tempHost.Services.GetRequiredService<IJSRuntime>();
 
-// Ler da vari·vel JS injetada
+// Ler da vari√°vel JS injetada
 var apiUrl = "https://localhost:5001"; // Default
 try
 {
@@ -51,9 +51,9 @@ try
 catch { /* usa default */ }
 ```
 
-### 3. Dockerfile.web - SubstituiÁ„o em Runtime
+### 3. Dockerfile.web - Substitui√ß√£o em Runtime
 
-O script de inicializaÁ„o agora:
+O script de inicializa√ß√£o agora:
 ```sh
 sed -i "s|__API_URL__|$API_URL|g" /usr/share/nginx/html/index.html
 ```
@@ -70,7 +70,7 @@ git commit -m "fix: injetar URL da API no index.html"
 git push origin main
 ```
 
-### Passo 2: Configurar Vari·vel (Se ainda n„o fez)
+### Passo 2: Configurar Vari√°vel (Se ainda n√£o fez)
 
 No Railway ? **moneymanager-web** ? **Variables**:
 
@@ -82,11 +82,11 @@ API_URL=https://moneymanager-api-production.up.railway.app
 
 ### Passo 3: Aguardar Deploy
 
-O Railway far· o rebuild automaticamente (~3-5 minutos).
+O Railway far√° o rebuild automaticamente (~3-5 minutos).
 
 ---
 
-## ? VerificaÁ„o
+## ? Verifica√ß√£o
 
 ### 1. Ver Logs do Container
 
@@ -118,7 +118,7 @@ Procure por:
 </script>
 ```
 
-**N√O deve ter** `__API_URL__`!
+**N√ÉO deve ter** `__API_URL__`!
 
 ### 3. Console do Navegador
 
@@ -129,10 +129,10 @@ Deve aparecer:
 [MoneyManager] API URL configurada: https://moneymanager-api-production.up.railway.app
 ```
 
-### 4. Testar AplicaÁ„o
+### 4. Testar Aplica√ß√£o
 
 1. O site deve carregar normalmente
-2. N„o mais erro de `net_uri_BadFormat`
+2. N√£o mais erro de `net_uri_BadFormat`
 3. Login/Registro devem funcionar (se a API estiver OK)
 
 ---
@@ -145,7 +145,7 @@ Deve aparecer:
 ?????????????????????????????????????????
 ?   docker-entrypoint.sh executa        ?
 ?   ?                                   ?
-?   LÍ $API_URL do Railway              ?
+?   L√™ $API_URL do Railway              ?
 ?   ?                                   ?
 ?   Substitui __API_URL__ no index.html ?
 ?   ?                                   ?
@@ -153,7 +153,7 @@ Deve aparecer:
 ?????????????????????????????????????????
 
 ?????????????????????????????????????????
-? 2. Usu·rio Acessa o Site              ?
+? 2. Usu√°rio Acessa o Site              ?
 ?????????????????????????????????????????
 ?   Navegador carrega index.html        ?
 ?   ?                                   ?
@@ -161,11 +161,11 @@ Deve aparecer:
 ?   ?                                   ?
 ?   Blazor WASM inicia                  ?
 ?   ?                                   ?
-?   Program.cs lÍ window.blazorConfig   ?
+?   Program.cs l√™ window.blazorConfig   ?
 ?   ?                                   ?
 ?   HttpClient configurado com URL      ?
 ?   ?                                   ?
-?   ? AplicaÁ„o funciona!              ?
+?   ? Aplica√ß√£o funciona!              ?
 ?????????????????????????????????????????
 ```
 
@@ -173,10 +173,10 @@ Deve aparecer:
 
 ## ?? Se o Problema Persistir
 
-### Verificar SubstituiÁ„o
+### Verificar Substitui√ß√£o
 
 1. Ver logs do container (deve mostrar "Updated index.html")
-2. Inspecionar cÛdigo-fonte no navegador
+2. Inspecionar c√≥digo-fonte no navegador
 3. Verificar console do navegador
 
 ### Testar Localmente
@@ -192,9 +192,9 @@ docker run -p 8080:8080 -e API_URL="https://sua-api.url" test-web
 http://localhost:8080
 ```
 
-### ForÁar Rebuild
+### For√ßar Rebuild
 
-Se o Railway n„o detectou as mudanÁas:
+Se o Railway n√£o detectou as mudan√ßas:
 
 ```bash
 railway up
@@ -213,38 +213,38 @@ Railway ? moneymanager-web ? Deployments ? Redeploy
 - [x] `Program.cs` lendo de `window.blazorConfig`
 - [x] `Dockerfile.web` substituindo placeholder
 - [ ] Commit e push realizados
-- [ ] Deploy autom·tico concluÌdo
-- [ ] Logs mostram configuraÁ„o correta
+- [ ] Deploy autom√°tico conclu√≠do
+- [ ] Logs mostram configura√ß√£o correta
 - [ ] Site carrega sem erros
 - [ ] Console mostra URL correta
 
 ---
 
-## ?? PrÛximos Passos
+## ?? Pr√≥ximos Passos
 
-ApÛs corrigir o frontend:
+Ap√≥s corrigir o frontend:
 
-1. ? Verificar se a **API tambÈm est· funcionando**
+1. ? Verificar se a **API tamb√©m est√° funcionando**
 2. ? Testar **Login/Registro**
-3. ? Verificar **CORS** se houver erro de conex„o
+3. ? Verificar **CORS** se houver erro de conex√£o
 4. ? Testar funcionalidades principais
 
 ---
 
-## ?? Vantagens Desta SoluÁ„o
+## ?? Vantagens Desta Solu√ß√£o
 
 ? **Simples:** Apenas um placeholder no HTML  
-? **Confi·vel:** SubstituiÁ„o em runtime  
-? **FlexÌvel:** F·cil mudar a URL sem rebuild  
-? **VisÌvel:** Logs mostram o que est· acontecendo  
-? **Test·vel:** F·cil verificar se funcionou  
+? **Confi√°vel:** Substitui√ß√£o em runtime  
+? **Flex√≠vel:** F√°cil mudar a URL sem rebuild  
+? **Vis√≠vel:** Logs mostram o que est√° acontecendo  
+? **Test√°vel:** F√°cil verificar se funcionou  
 
 ---
 
-**Status:** ? SoluÁ„o implementada e pronta para deploy  
+**Status:** ? Solu√ß√£o implementada e pronta para deploy  
 **Data:** ${new Date().toLocaleDateString('pt-BR')}  
-**Vers„o:** 2.0 (SoluÁ„o Final)
+**Vers√£o:** 2.0 (Solu√ß√£o Final)
 
 ---
 
-**FA«A O COMMIT E PUSH AGORA! ??**
+**FA√áA O COMMIT E PUSH AGORA! ??**

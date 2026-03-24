@@ -1,4 +1,4 @@
-# ?? CORREÇÃO: Dependência Circular no Worker
+# ?? CORREÃ‡ÃƒO: DependÃªncia Circular no Worker
 
 ## ?? PROBLEMA IDENTIFICADO
 
@@ -12,23 +12,23 @@ TransactionService
 ```
 
 ### **Causa:**
-- `TransactionService` precisava de `ICreditCardInvoiceService` (para vincular transações a faturas)
-- `CreditCardInvoiceService` precisava de `ITransactionService` (para criar transações de pagamento)
-- **Dependência circular impediu a inicialização do Worker** ??
+- `TransactionService` precisava de `ICreditCardInvoiceService` (para vincular transaÃ§Ãµes a faturas)
+- `CreditCardInvoiceService` precisava de `ITransactionService` (para criar transaÃ§Ãµes de pagamento)
+- **DependÃªncia circular impediu a inicializaÃ§Ã£o do Worker** ??
 
 ---
 
-## ? SOLUÇÃO IMPLEMENTADA
+## ? SOLUÃ‡ÃƒO IMPLEMENTADA
 
-### **Princípio:**
-**Separação de Responsabilidades**
+### **PrincÃ­pio:**
+**SeparaÃ§Ã£o de Responsabilidades**
 - `CreditCardInvoiceService` deve **apenas gerenciar faturas** (status, totais, etc)
-- `TransactionService` deve **criar transações**
-- A **orquestração** (pagar fatura + criar transação) fica na camada de apresentação
+- `TransactionService` deve **criar transaÃ§Ãµes**
+- A **orquestraÃ§Ã£o** (pagar fatura + criar transaÃ§Ã£o) fica na camada de apresentaÃ§Ã£o
 
 ---
 
-## ?? MUDANÇAS REALIZADAS
+## ?? MUDANÃ‡AS REALIZADAS
 
 ### **1. CreditCardInvoiceService.cs**
 
@@ -47,7 +47,7 @@ TransactionService
 // ANTES:
 public async Task<Transaction> PayInvoiceAsync(...)
 {
-    // Criava transação via _transactionService
+    // Criava transaÃ§Ã£o via _transactionService
     var transaction = await _transactionService.CreateAsync(...);
     return transaction;
 }
@@ -60,7 +60,7 @@ public async Task PayInvoiceAsync(...)
     invoice.Status = InvoiceStatus.Paid;
     await _unitOfWork.SaveChangesAsync();
     
-    // ?? Transação deve ser criada pelo chamador
+    // ?? TransaÃ§Ã£o deve ser criada pelo chamador
 }
 ```
 
@@ -72,20 +72,20 @@ public async Task PayInvoiceAsync(...)
 ```csharp
 /// <summary>
 /// Paga uma fatura totalmente 
-/// (atualiza apenas o status da fatura, NÃO cria transação)
-/// A transação de pagamento deve ser criada separadamente via TransactionService
+/// (atualiza apenas o status da fatura, NÃƒO cria transaÃ§Ã£o)
+/// A transaÃ§Ã£o de pagamento deve ser criada separadamente via TransactionService
 /// </summary>
 Task PayInvoiceAsync(string userId, PayInvoiceRequestDto request);
 
 /// <summary>
 /// Paga uma fatura parcialmente
-/// (atualiza apenas o status da fatura, NÃO cria transação)
-/// A transação de pagamento deve ser criada separadamente via TransactionService
+/// (atualiza apenas o status da fatura, NÃƒO cria transaÃ§Ã£o)
+/// A transaÃ§Ã£o de pagamento deve ser criada separadamente via TransactionService
 /// </summary>
 Task PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request);
 ```
 
-**Mudança:** Removido `Task<Transaction>` ? Agora retorna `Task` (void)
+**MudanÃ§a:** Removido `Task<Transaction>` ? Agora retorna `Task` (void)
 
 ---
 
@@ -103,7 +103,7 @@ else
     await InvoiceService.PayPartialInvoiceAsync(userId, request);
 }
 
-// PASSO 2: Criar transação de pagamento
+// PASSO 2: Criar transaÃ§Ã£o de pagamento
 var description = $"Pagamento fatura {selectedInvoiceToPay.ReferenceMonth}";
 if (invoicePaymentAmount < selectedInvoiceToPay.RemainingAmount)
     description += $" (Parcial: R$ {invoicePaymentAmount:F2})";
@@ -124,7 +124,7 @@ await TransactionService.CreateAsync(transactionRequest);
 
 ---
 
-### **4. InvoiceDetails.razor** (Página de Detalhes)
+### **4. InvoiceDetails.razor** (PÃ¡gina de Detalhes)
 
 #### **Adicionado:**
 ```razor
@@ -138,31 +138,31 @@ Mesmo fluxo em 2 etapas do Accounts.razor
 
 ## ?? RESULTADO
 
-### **? Benefícios:**
+### **? BenefÃ­cios:**
 
-1. **Dependência circular resolvida** 
+1. **DependÃªncia circular resolvida** 
    - Worker inicia sem erros
    - DI funciona corretamente
 
-2. **Separação de responsabilidades clara**
+2. **SeparaÃ§Ã£o de responsabilidades clara**
    ```
    CreditCardInvoiceService ? Gerencia faturas
-   TransactionService ? Cria transações
-   UI/Controller ? Orquestra as duas operações
+   TransactionService ? Cria transaÃ§Ãµes
+   UI/Controller ? Orquestra as duas operaÃ§Ãµes
    ```
 
-3. **Código mais testável**
-   - Cada serviço tem responsabilidade única
-   - Fácil mockar dependências em testes
+3. **CÃ³digo mais testÃ¡vel**
+   - Cada serviÃ§o tem responsabilidade Ãºnica
+   - FÃ¡cil mockar dependÃªncias em testes
 
 4. **Flexibilidade**
-   - UI pode decidir se cria transação ou não
-   - Pode adicionar validações extras antes do pagamento
-   - Pode criar transações com descrições customizadas
+   - UI pode decidir se cria transaÃ§Ã£o ou nÃ£o
+   - Pode adicionar validaÃ§Ãµes extras antes do pagamento
+   - Pode criar transaÃ§Ãµes com descriÃ§Ãµes customizadas
 
 ---
 
-## ?? GRAFO DE DEPENDÊNCIAS CORRIGIDO
+## ?? GRAFO DE DEPENDÃŠNCIAS CORRIGIDO
 
 ### **ANTES (Circular):**
 ```
@@ -184,16 +184,16 @@ ICreditCardInvoiceService ? IUnitOfWork
 
 ---
 
-## ?? VALIDAÇÃO
+## ?? VALIDAÃ‡ÃƒO
 
 ### **Build:**
 ```bash
-? Compilação bem-sucedida
-? Sem erros de dependência circular
+? CompilaÃ§Ã£o bem-sucedida
+? Sem erros de dependÃªncia circular
 ? Worker pode iniciar
 ```
 
-### **Testes Necessários:**
+### **Testes NecessÃ¡rios:**
 
 #### **1. Teste Worker:**
 ```bash
@@ -210,9 +210,9 @@ dotnet run --project src/MoneyManager.Worker
 2. Acessar modal "Pagar Fatura"
 3. Selecionar conta e pagar R$ 100
 4. ? Fatura deve mudar para "Paga"
-5. ? Transação de pagamento deve ser criada
+5. ? TransaÃ§Ã£o de pagamento deve ser criada
 6. ? Saldo da conta pagadora deve diminuir R$ 100
-7. ? Saldo do cartão deve aumentar R$ 100
+7. ? Saldo do cartÃ£o deve aumentar R$ 100
 ```
 
 #### **3. Teste Pagamento Parcial:**
@@ -222,34 +222,34 @@ dotnet run --project src/MoneyManager.Worker
 3. ? Status: "Parcialmente Paga"
 4. ? RemainingAmount: R$ 300
 5. ? PaidAmount: R$ 200
-6. ? Transação de R$ 200 criada
+6. ? TransaÃ§Ã£o de R$ 200 criada
 ```
 
 ---
 
-## ?? LIÇÕES APRENDIDAS
+## ?? LIÃ‡Ã•ES APRENDIDAS
 
-### **1. Evitar Dependências Circulares:**
-- Serviços não devem depender uns dos outros reciprocamente
+### **1. Evitar DependÃªncias Circulares:**
+- ServiÃ§os nÃ£o devem depender uns dos outros reciprocamente
 - Se A precisa de B e B precisa de A, revisar responsabilidades
 
-### **2. Princípio da Responsabilidade Única:**
-- Cada serviço deve ter **uma** responsabilidade clara
+### **2. PrincÃ­pio da Responsabilidade Ãšnica:**
+- Cada serviÃ§o deve ter **uma** responsabilidade clara
 - `InvoiceService` ? Faturas
-- `TransactionService` ? Transações
-- UI/Controller ? Orquestração
+- `TransactionService` ? TransaÃ§Ãµes
+- UI/Controller ? OrquestraÃ§Ã£o
 
-### **3. Orquestração na Camada Superior:**
-- Operações complexas (pagar fatura + criar transação) devem ser orquestradas na camada de apresentação
-- Serviços devem ser simples e focados
+### **3. OrquestraÃ§Ã£o na Camada Superior:**
+- OperaÃ§Ãµes complexas (pagar fatura + criar transaÃ§Ã£o) devem ser orquestradas na camada de apresentaÃ§Ã£o
+- ServiÃ§os devem ser simples e focados
 
-### **4. Documentação:**
-- Comentar claramente quando um método **não** faz algo esperado
-- Exemplo: "?? Não cria transação, deve ser feito separadamente"
+### **4. DocumentaÃ§Ã£o:**
+- Comentar claramente quando um mÃ©todo **nÃ£o** faz algo esperado
+- Exemplo: "?? NÃ£o cria transaÃ§Ã£o, deve ser feito separadamente"
 
 ---
 
-## ?? PRÓXIMOS PASSOS
+## ?? PRÃ“XIMOS PASSOS
 
 ### **Testar Localmente:**
 ```bash
@@ -269,7 +269,7 @@ dotnet run --project src/MoneyManager.Web.Host
 1. ? Verificar que Worker inicia sem erros
 2. ? Testar pagamento completo
 3. ? Testar pagamento parcial
-4. ? Validar transações criadas corretamente
+4. ? Validar transaÃ§Ãµes criadas corretamente
 
 ---
 
@@ -277,10 +277,10 @@ dotnet run --project src/MoneyManager.Web.Host
 
 | Antes | Depois |
 |-------|--------|
-| ? Dependência circular | ? Dependências lineares |
-| ? Worker não inicia | ? Worker funciona |
-| ? Responsabilidades misturadas | ? Separação clara |
-| ? Difícil testar | ? Fácil testar |
+| ? DependÃªncia circular | ? DependÃªncias lineares |
+| ? Worker nÃ£o inicia | ? Worker funciona |
+| ? Responsabilidades misturadas | ? SeparaÃ§Ã£o clara |
+| ? DifÃ­cil testar | ? FÃ¡cil testar |
 
 **Status:** ? **RESOLVIDO**  
 **Build:** ? **SUCESSO**  

@@ -1,38 +1,38 @@
-# ?? RESUMO: Worker com Execução Inicial
+# ?? RESUMO: Worker com ExecuÃ§Ã£o Inicial
 
-## ? Alteração Aplicada
+## ? AlteraÃ§Ã£o Aplicada
 
-O worker agora **executa IMEDIATAMENTE ao iniciar** antes de aguardar o horário agendado.
+O worker agora **executa IMEDIATAMENTE ao iniciar** antes de aguardar o horÃ¡rio agendado.
 
-### **Fluxo de Execução**
+### **Fluxo de ExecuÃ§Ã£o**
 
 ```
 1. Worker inicia (deploy no Railway)
    ?
 2. ? EXECUTA IMEDIATAMENTE (0-30 segundos)
-   - Processa TODAS recorrências vencidas
-   - Cria transações do backlog (dias 1-10 fev)
+   - Processa TODAS recorrÃªncias vencidas
+   - Cria transaÃ§Ãµes do backlog (dias 1-10 fev)
    - Loga resultado
    ?
-3. ?? Aguarda próximo horário agendado (08:00)
+3. ?? Aguarda prÃ³ximo horÃ¡rio agendado (08:00)
    ?
-4. ?? Todo dia às 08:00 executa novamente
+4. ?? Todo dia Ã s 08:00 executa novamente
 ```
 
 ---
 
 ## ?? Vantagens
 
-### **Antes (só executava às 08:00):**
-? Se configurasse às 10:00, teria que esperar até amanhã 08:00
+### **Antes (sÃ³ executava Ã s 08:00):**
+? Se configurasse Ã s 10:00, teria que esperar atÃ© amanhÃ£ 08:00
 ? Sem feedback imediato se estava funcionando
 ? Backlog acumulado por dias
 
-### **Agora (executa ao iniciar + horário agendado):**
-? Deploy às 10:00 ? executa em 30 segundos
-? Feedback imediato nos logs se está OK
+### **Agora (executa ao iniciar + horÃ¡rio agendado):**
+? Deploy Ã s 10:00 ? executa em 30 segundos
+? Feedback imediato nos logs se estÃ¡ OK
 ? Backlog processado imediatamente
-? Depois continua executando todo dia às 08:00
+? Depois continua executando todo dia Ã s 08:00
 
 ---
 
@@ -45,79 +45,79 @@ O worker agora **executa IMEDIATAMENTE ao iniciar** antes de aguardar o horário 
 [2025-02-10 10:15:30] TransactionSchedulerWorker INICIADO
 [2025-02-10 10:15:30] Agendado para 08:00 (TimeZone: E. South America Standard Time)
 [2025-02-10 10:15:30] ========================================
-[2025-02-10 10:15:30] STARTUP EXECUTION: Processando recorrências vencidas imediatamente...
+[2025-02-10 10:15:30] STARTUP EXECUTION: Processando recorrÃªncias vencidas imediatamente...
 [2025-02-10 10:15:30] Iniciando processamento em 2025-02-10T13:15:30Z
 [2025-02-10 10:15:31] Starting recurring transactions processing for date: 2025-02-10
 [2025-02-10 10:15:31] Found 15 due recurring transactions to process
 [2025-02-10 10:15:32] Processed 3 transaction(s) from recurring netflix-rec, next occurrence: 2025-03-05
 [2025-02-10 10:15:32] Processed 2 transaction(s) from recurring parcela-notebook-rec, next occurrence: 2025-03-10
 [2025-02-10 10:15:33] Processed 1 transaction(s) from recurring aluguel-rec, next occurrence: 2025-03-10
-... (processa todas as 15 recorrências)
+... (processa todas as 15 recorrÃªncias)
 [2025-02-10 10:15:35] Recurring transactions processing completed
 [2025-02-10 10:15:35] Processamento finalizado em 2025-02-10T13:15:35Z
-[2025-02-10 10:15:35] STARTUP EXECUTION: Concluída com sucesso. Aguardando próximo horário agendado.
+[2025-02-10 10:15:35] STARTUP EXECUTION: ConcluÃ­da com sucesso. Aguardando prÃ³ximo horÃ¡rio agendado.
 [2025-02-10 10:16:05] DEBUG: Schedule check: Now=2025-02-10 10:16:05 | NextRun=2025-02-11 08:00:00 | AlreadyRan=False
 ```
 
 ### **Se houver erro:**
 
 ```
-[2025-02-10 10:15:35] STARTUP EXECUTION: Falhou. Worker continuará tentando no horário agendado.
+[2025-02-10 10:15:35] STARTUP EXECUTION: Falhou. Worker continuarÃ¡ tentando no horÃ¡rio agendado.
 [2025-02-10 10:15:35] ERROR: MongoConnectionException: Unable to connect to MongoDB...
 ```
 
-Neste caso, você saberá **imediatamente** que há problema de configuração!
+Neste caso, vocÃª saberÃ¡ **imediatamente** que hÃ¡ problema de configuraÃ§Ã£o!
 
 ---
 
-## ?? Teste Rápido
+## ?? Teste RÃ¡pido
 
-1. **Faça commit e push**
+1. **FaÃ§a commit e push**
    ```sh
    git add .
    git commit -m "feat: add immediate startup execution to worker"
    git push origin main
    ```
 
-2. **Configure variáveis no Railway**
-   (se ainda não fez)
+2. **Configure variÃ¡veis no Railway**
+   (se ainda nÃ£o fez)
 
-3. **Faça Redeploy**
+3. **FaÃ§a Redeploy**
    
 4. **Acompanhe os logs em tempo real**
    - Railway ? Worker ? Logs
-   - Em 30-60 segundos deve aparecer "STARTUP EXECUTION: Concluída com sucesso"
+   - Em 30-60 segundos deve aparecer "STARTUP EXECUTION: ConcluÃ­da com sucesso"
 
-5. **Verifique as transações**
+5. **Verifique as transaÃ§Ãµes**
    - Acesse `/transactions` no app
    - Filtre por fevereiro/2025
-   - Deve ter várias transações "(Recorrente)" dos dias passados
+   - Deve ter vÃ¡rias transaÃ§Ãµes "(Recorrente)" dos dias passados
 
 ---
 
-## ?? Cenários
+## ?? CenÃ¡rios
 
-### **Cenário 1: Primeiro Deploy (hoje 10/02 às 10:15)**
+### **CenÃ¡rio 1: Primeiro Deploy (hoje 10/02 Ã s 10:15)**
 ```
 10:15 ? Worker sobe e executa
-10:15 ? Cria transações dos dias 01, 05, 07, 10 (recorrências vencidas)
+10:15 ? Cria transaÃ§Ãµes dos dias 01, 05, 07, 10 (recorrÃªncias vencidas)
 10:15 ? Aguarda
-AMANHÃ 08:00 ? Executa novamente (dia 11)
+AMANHÃƒ 08:00 ? Executa novamente (dia 11)
 ```
 
-### **Cenário 2: Worker já rodou hoje mas você fez redeploy**
+### **CenÃ¡rio 2: Worker jÃ¡ rodou hoje mas vocÃª fez redeploy**
 ```
 10:15 ? Worker sobe e executa
-10:15 ? Não encontra recorrências vencidas (já foram processadas)
+10:15 ? NÃ£o encontra recorrÃªncias vencidas (jÃ¡ foram processadas)
 10:15 ? "Found 0 due recurring transactions to process"
 10:15 ? Aguarda
-AMANHÃ 08:00 ? Executa e processa dia 11
+AMANHÃƒ 08:00 ? Executa e processa dia 11
 ```
 
-### **Cenário 3: Worker offline por 5 dias**
+### **CenÃ¡rio 3: Worker offline por 5 dias**
 ```
 15/02 08:00 ? Worker volta e executa
-15/02 08:00 ? Cria transações dos dias 11, 12, 13, 14, 15 (backlog)
+15/02 08:00 ? Cria transaÃ§Ãµes dos dias 11, 12, 13, 14, 15 (backlog)
 15/02 08:00 ? Aguarda
 16/02 08:00 ? Executa e processa dia 16
 ```
@@ -133,8 +133,8 @@ cd src/MoneyManager.Worker
 dotnet run
 ```
 
-Ele vai executar localmente e processar as recorrências vencidas imediatamente!
+Ele vai executar localmente e processar as recorrÃªncias vencidas imediatamente!
 
 ---
 
-**Status:** Código pronto ? | Docs atualizados ? | Pronto para deploy! ??
+**Status:** CÃ³digo pronto ? | Docs atualizados ? | Pronto para deploy! ??

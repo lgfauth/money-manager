@@ -1,8 +1,8 @@
-# ?? Exclus„o Completa de Conta - LGPD Compliance
+# ?? Exclus√£o Completa de Conta - LGPD Compliance
 
 ## ? **Recurso Implementado**
 
-Sistema completo de exclus„o de conta do usu·rio em conformidade com a **LGPD (Lei Geral de ProteÁ„o de Dados)**, implementando o **direito ao esquecimento**.
+Sistema completo de exclus√£o de conta do usu√°rio em conformidade com a **LGPD (Lei Geral de Prote√ß√£o de Dados)**, implementando o **direito ao esquecimento**.
 
 ---
 
@@ -10,23 +10,23 @@ Sistema completo de exclus„o de conta do usu·rio em conformidade com a **LGPD (L
 
 ### **1. Backend (API)**
 
-#### **ServiÁo de Exclus„o (`AccountDeletionService`)**
-- ? Valida senha do usu·rio antes da exclus„o
-- ? Deleta **todos** os dados do usu·rio em cascata:
-  - TransaÁıes Recorrentes
-  - OrÁamentos
-  - TransaÁıes
+#### **Servi√ßo de Exclus√£o (`AccountDeletionService`)**
+- ? Valida senha do usu√°rio antes da exclus√£o
+- ? Deleta **todos** os dados do usu√°rio em cascata:
+  - Transa√ß√µes Recorrentes
+  - Or√ßamentos
+  - Transa√ß√µes
   - Contas
   - Categorias
-  - Perfil do Usu·rio
-- ? Retorna contagem de registros antes da exclus„o
+  - Perfil do Usu√°rio
+- ? Retorna contagem de registros antes da exclus√£o
 - ? Tratamento de erros robusto
 
 #### **Controller (`AccountDeletionController`)**
-- ? **GET** `/api/accountdeletion/data-count` - ObtÈm quantidade de dados
-- ? **POST** `/api/accountdeletion/delete-account` - Executa exclus„o
+- ? **GET** `/api/accountdeletion/data-count` - Obt√©m quantidade de dados
+- ? **POST** `/api/accountdeletion/delete-account` - Executa exclus√£o
 
-#### **DTO de RequisiÁ„o**
+#### **DTO de Requisi√ß√£o**
 ```csharp
 public class DeleteAccountRequestDto
 {
@@ -39,52 +39,52 @@ public class DeleteAccountRequestDto
 
 ### **2. Frontend (Blazor WebAssembly)**
 
-#### **P·gina de Perfil Atualizada**
-- ? Nova seÁ„o "Zona de Perigo" (card vermelho)
-- ? Lista de todos os dados que ser„o excluÌdos
-- ? ConfirmaÁ„o em m˙ltiplas etapas:
-  1. Bot„o inicial "Quero Excluir Minha Conta"
-  2. ExibiÁ„o da quantidade de registros
+#### **P√°gina de Perfil Atualizada**
+- ? Nova se√ß√£o "Zona de Perigo" (card vermelho)
+- ? Lista de todos os dados que ser√£o exclu√≠dos
+- ? Confirma√ß√£o em m√∫ltiplas etapas:
+  1. Bot√£o inicial "Quero Excluir Minha Conta"
+  2. Exibi√ß√£o da quantidade de registros
   3. Campo de senha
-  4. Campo de confirmaÁ„o (texto exato: "DELETAR MINHA CONTA")
-  5. Checkbox de entendimento das consequÍncias
-  6. Bot„o final de confirmaÁ„o
+  4. Campo de confirma√ß√£o (texto exato: "DELETAR MINHA CONTA")
+  5. Checkbox de entendimento das consequ√™ncias
+  6. Bot√£o final de confirma√ß√£o
 
-#### **P·gina de ConfirmaÁ„o (`AccountDeleted.razor`)**
-- ? Mensagem de sucesso apÛs exclus„o
-- ? InformaÁ„o sobre conformidade LGPD
-- ? OpÁıes para criar nova conta ou fazer login
+#### **P√°gina de Confirma√ß√£o (`AccountDeleted.razor`)**
+- ? Mensagem de sucesso ap√≥s exclus√£o
+- ? Informa√ß√£o sobre conformidade LGPD
+- ? Op√ß√µes para criar nova conta ou fazer login
 
 ---
 
-## ?? **Medidas de SeguranÁa**
+## ?? **Medidas de Seguran√ßa**
 
-### **ProteÁ„o Contra Exclusıes Acidentais:**
+### **Prote√ß√£o Contra Exclus√µes Acidentais:**
 
-1. **VerificaÁ„o de Senha**
-   - Usu·rio deve confirmar com sua senha atual
+1. **Verifica√ß√£o de Senha**
+   - Usu√°rio deve confirmar com sua senha atual
    - BCrypt valida a senha no backend
 
-2. **Texto de ConfirmaÁ„o**
-   - Usu·rio deve digitar exatamente: `DELETAR MINHA CONTA`
-   - Previne exclus„o por erro de digitaÁ„o
+2. **Texto de Confirma√ß√£o**
+   - Usu√°rio deve digitar exatamente: `DELETAR MINHA CONTA`
+   - Previne exclus√£o por erro de digita√ß√£o
 
-3. **Checkbox de ConfirmaÁ„o**
-   - DeclaraÁ„o de entendimento das consequÍncias
-   - Bot„o sÛ È habilitado quando todos os requisitos s„o atendidos
+3. **Checkbox de Confirma√ß√£o**
+   - Declara√ß√£o de entendimento das consequ√™ncias
+   - Bot√£o s√≥ √© habilitado quando todos os requisitos s√£o atendidos
 
 4. **Visual de Alerta**
-   - Card vermelho com Ìcone de alerta
-   - Texto em vermelho e negrito: "IRREVERSÕVEL"
-   - Lista clara de todos os dados que ser„o excluÌdos
+   - Card vermelho com √≠cone de alerta
+   - Texto em vermelho e negrito: "IRREVERS√çVEL"
+   - Lista clara de todos os dados que ser√£o exclu√≠dos
 
 ---
 
-## ?? **Fluxo de Exclus„o**
+## ?? **Fluxo de Exclus√£o**
 
 ```mermaid
 sequenceDiagram
-    participant U as Usu·rio
+    participant U as Usu√°rio
     participant F as Frontend
     participant A as API
     participant DB as MongoDB
@@ -94,15 +94,15 @@ sequenceDiagram
     A->>DB: Consulta contagem de registros
     DB-->>A: Total: 127 registros
     A-->>F: { totalRecords: 127 }
-    F-->>U: Exibe formul·rio de confirmaÁ„o
+    F-->>U: Exibe formul√°rio de confirma√ß√£o
     
-    U->>F: Preenche senha e confirmaÁ„o
+    U->>F: Preenche senha e confirma√ß√£o
     U->>F: Marca checkbox
-    U->>F: Clica "Confirmar Exclus„o Permanente"
+    U->>F: Clica "Confirmar Exclus√£o Permanente"
     
     F->>A: POST /api/accountdeletion/delete-account
     Note over A: Valida senha
-    Note over A: Valida texto de confirmaÁ„o
+    Note over A: Valida texto de confirma√ß√£o
     
     A->>DB: DELETE RecurringTransactions WHERE userId
     A->>DB: DELETE Budgets WHERE userId
@@ -111,7 +111,7 @@ sequenceDiagram
     A->>DB: DELETE Categories WHERE userId
     A->>DB: DELETE User WHERE id
     
-    DB-->>A: Todos os dados excluÌdos
+    DB-->>A: Todos os dados exclu√≠dos
     A-->>F: { deleted: true }
     F->>F: Faz logout
     F-->>U: Redireciona para /account-deleted
@@ -119,27 +119,27 @@ sequenceDiagram
 
 ---
 
-## ?? **Dados ExcluÌdos**
+## ?? **Dados Exclu√≠dos**
 
-Quando o usu·rio confirma a exclus„o, os seguintes dados s„o **permanentemente removidos**:
+Quando o usu√°rio confirma a exclus√£o, os seguintes dados s√£o **permanentemente removidos**:
 
-| Tipo de Dado | DescriÁ„o |
+| Tipo de Dado | Descri√ß√£o |
 |--------------|-----------|
-| **TransaÁıes Recorrentes** | Todas as despesas/receitas configuradas como recorrentes |
-| **OrÁamentos** | Todos os orÁamentos mensais criados |
-| **TransaÁıes** | HistÛrico completo de receitas e despesas |
-| **Contas** | Contas banc·rias, carteiras, cartıes de crÈdito, investimentos |
-| **Categorias** | Categorias personalizadas criadas pelo usu·rio |
+| **Transa√ß√µes Recorrentes** | Todas as despesas/receitas configuradas como recorrentes |
+| **Or√ßamentos** | Todos os or√ßamentos mensais criados |
+| **Transa√ß√µes** | Hist√≥rico completo de receitas e despesas |
+| **Contas** | Contas banc√°rias, carteiras, cart√µes de cr√©dito, investimentos |
+| **Categorias** | Categorias personalizadas criadas pelo usu√°rio |
 | **Perfil** | Dados pessoais, foto, telefone, email |
-| **ConfiguraÁıes** | PreferÍncias e configuraÁıes do usu·rio |
+| **Configura√ß√µes** | Prefer√™ncias e configura√ß√µes do usu√°rio |
 
 **Total estimado:** Varia conforme o uso, pode ser de centenas a milhares de registros.
 
 ---
 
-## ?? **Interface do Usu·rio**
+## ?? **Interface do Usu√°rio**
 
-### **SeÁ„o "Zona de Perigo" na P·gina de Perfil**
+### **Se√ß√£o "Zona de Perigo" na P√°gina de Perfil**
 
 ```
 ????????????????????????????????????????????????????????????
@@ -148,32 +148,32 @@ Quando o usu·rio confirma a exclus„o, os seguintes dados s„o **permanentemente r
 ?                                                           ?
 ? Excluir Conta Permanentemente                            ?
 ?                                                           ?
-? Esta aÁ„o È IRREVERSÕVEL. Todos os seus dados ser„o      ?
-? permanentemente excluÌdos, incluindo:                     ?
+? Esta a√ß√£o √© IRREVERS√çVEL. Todos os seus dados ser√£o      ?
+? permanentemente exclu√≠dos, incluindo:                     ?
 ?                                                           ?
-? ï Todas as suas contas e saldos                          ?
-? ï Todas as transaÁıes registradas                        ?
-? ï Todas as categorias personalizadas                     ?
-? ï Todos os orÁamentos criados                            ?
-? ï Todas as transaÁıes recorrentes                        ?
-? ï Seu perfil e configuraÁıes                             ?
+? ‚Ä¢ Todas as suas contas e saldos                          ?
+? ‚Ä¢ Todas as transa√ß√µes registradas                        ?
+? ‚Ä¢ Todas as categorias personalizadas                     ?
+? ‚Ä¢ Todos os or√ßamentos criados                            ?
+? ‚Ä¢ Todas as transa√ß√µes recorrentes                        ?
+? ‚Ä¢ Seu perfil e configura√ß√µes                             ?
 ?                                                           ?
 ? [Quero Excluir Minha Conta]                             ?
 ?                                                           ?
 ????????????????????????????????????????????????????????????
 ```
 
-### **Formul·rio de ConfirmaÁ„o**
+### **Formul√°rio de Confirma√ß√£o**
 
 ```
 ????????????????????????????????????????????????????????????
-? ?? ConfirmaÁ„o de Exclus„o                               ?
+? ?? Confirma√ß√£o de Exclus√£o                               ?
 ????????????????????????????????????????????????????????????
 ?                                                           ?
-? Esta aÁ„o N√O pode ser desfeita!                         ?
+? Esta a√ß√£o N√ÉO pode ser desfeita!                         ?
 ?                                                           ?
-? VocÍ possui 127 registros que ser„o permanentemente      ?
-? excluÌdos.                                               ?
+? Voc√™ possui 127 registros que ser√£o permanentemente      ?
+? exclu√≠dos.                                               ?
 ?                                                           ?
 ? Digite sua senha para continuar:                         ?
 ? [____________________________________________]            ?
@@ -181,10 +181,10 @@ Quando o usu·rio confirma a exclus„o, os seguintes dados s„o **permanentemente r
 ? Digite exatamente "DELETAR MINHA CONTA" para confirmar: ?
 ? [____________________________________________]            ?
 ?                                                           ?
-? ? Eu entendo que esta aÁ„o È permanente e todos os      ?
-?   meus dados ser„o excluÌdos                             ?
+? ? Eu entendo que esta a√ß√£o √© permanente e todos os      ?
+?   meus dados ser√£o exclu√≠dos                             ?
 ?                                                           ?
-? [??? Confirmar Exclus„o Permanente] [? Cancelar]        ?
+? [??? Confirmar Exclus√£o Permanente] [? Cancelar]        ?
 ?                                                           ?
 ????????????????????????????????????????????????????????????
 ```
@@ -195,61 +195,61 @@ Quando o usu·rio confirma a exclus„o, os seguintes dados s„o **permanentemente r
 
 ### **Artigos Atendidos:**
 
-? **Art. 18, VI** - Direito ‡ eliminaÁ„o dos dados pessoais tratados
+? **Art. 18, VI** - Direito √† elimina√ß√£o dos dados pessoais tratados
 
-> "… assegurado ao titular, mediante requisiÁ„o ao controlador, o direito de obter do controlador, em relaÁ„o aos dados do titular por ele tratados, a imediato: VI - eliminaÁ„o dos dados pessoais tratados com o consentimento do titular..."
+> "√â assegurado ao titular, mediante requisi√ß√£o ao controlador, o direito de obter do controlador, em rela√ß√£o aos dados do titular por ele tratados, a imediato: VI - elimina√ß√£o dos dados pessoais tratados com o consentimento do titular..."
 
-? **Art. 16** - EliminaÁ„o dos dados tratados com consentimento
+? **Art. 16** - Elimina√ß√£o dos dados tratados com consentimento
 
-> "Os dados pessoais ser„o eliminados apÛs o tÈrmino de seu tratamento..."
+> "Os dados pessoais ser√£o eliminados ap√≥s o t√©rmino de seu tratamento..."
 
 ### **Garantias Implementadas:**
 
-1. ? **Exclus„o Completa e Permanente**
-   - Todos os dados pessoais s„o removidos do banco de dados
-   - N„o h· cÛpia, backup ou retenÁ„o dos dados
+1. ? **Exclus√£o Completa e Permanente**
+   - Todos os dados pessoais s√£o removidos do banco de dados
+   - N√£o h√° c√≥pia, backup ou reten√ß√£o dos dados
 
-2. ? **ConfirmaÁ„o do Titular**
-   - M˙ltiplos nÌveis de confirmaÁ„o
-   - VerificaÁ„o de identidade via senha
+2. ? **Confirma√ß√£o do Titular**
+   - M√∫ltiplos n√≠veis de confirma√ß√£o
+   - Verifica√ß√£o de identidade via senha
 
-3. ? **TransparÍncia**
-   - Usu·rio È informado exatamente quais dados ser„o excluÌdos
+3. ? **Transpar√™ncia**
+   - Usu√°rio √© informado exatamente quais dados ser√£o exclu√≠dos
    - Contagem precisa de registros afetados
 
 4. ? **Irreversibilidade**
-   - Aviso claro de que a aÁ„o n„o pode ser desfeita
-   - N„o h· perÌodo de "recuperaÁ„o" dos dados
+   - Aviso claro de que a a√ß√£o n√£o pode ser desfeita
+   - N√£o h√° per√≠odo de "recupera√ß√£o" dos dados
 
 ---
 
 ## ?? **Como Testar**
 
-### **1. Acesse a P·gina de Perfil**
+### **1. Acesse a P√°gina de Perfil**
 ```
 https://money-manager-web-production.up.railway.app/profile
 ```
 
-### **2. Role atÈ o final da p·gina**
-Procure pela seÁ„o "Zona de Perigo" (card vermelho)
+### **2. Role at√© o final da p√°gina**
+Procure pela se√ß√£o "Zona de Perigo" (card vermelho)
 
 ### **3. Clique em "Quero Excluir Minha Conta"**
-O sistema ir·:
-- Consultar quantos registros vocÍ possui
-- Exibir o formul·rio de confirmaÁ„o
+O sistema ir√°:
+- Consultar quantos registros voc√™ possui
+- Exibir o formul√°rio de confirma√ß√£o
 
-### **4. Preencha o Formul·rio**
+### **4. Preencha o Formul√°rio**
 - Digite sua senha
 - Digite: `DELETAR MINHA CONTA` (exato)
-- Marque o checkbox de confirmaÁ„o
+- Marque o checkbox de confirma√ß√£o
 
-### **5. Confirme a Exclus„o**
-- Clique em "Confirmar Exclus„o Permanente"
+### **5. Confirme a Exclus√£o**
+- Clique em "Confirmar Exclus√£o Permanente"
 - Aguarde o processamento (pode levar alguns segundos)
 
-### **6. VocÍ ser· redirecionado**
-- Para a p·gina de confirmaÁ„o `/account-deleted`
-- Com mensagem de sucesso e opÁıes para criar nova conta
+### **6. Voc√™ ser√° redirecionado**
+- Para a p√°gina de confirma√ß√£o `/account-deleted`
+- Com mensagem de sucesso e op√ß√µes para criar nova conta
 
 ---
 
@@ -286,17 +286,17 @@ src/MoneyManager.Web/
 
 ### **Status:**
 ```
-? CÛdigo commitado e pushed para o repositÛrio
+? C√≥digo commitado e pushed para o reposit√≥rio
 ? Build da API: Aguardando (~5 min)
 ? Build do Frontend: Aguardando (~5 min)
 ? Deploy no Railway em andamento
 ```
 
-### **ApÛs o Deploy:**
+### **Ap√≥s o Deploy:**
 1. Aguarde ~10 minutos para ambos os deploys completarem
 2. Acesse sua conta no MoneyManager
-3. V· para Perfil ? Role atÈ "Zona de Perigo"
-4. Teste o fluxo de exclus„o (crie uma conta de teste primeiro!)
+3. V√° para Perfil ? Role at√© "Zona de Perigo"
+4. Teste o fluxo de exclus√£o (crie uma conta de teste primeiro!)
 
 ---
 
@@ -304,60 +304,60 @@ src/MoneyManager.Web/
 
 ### **Para Desenvolvedores:**
 
-1. **N„o h· recuperaÁ„o de dados**
-   - ApÛs a exclus„o, n„o h· como reverter
-   - N„o h· backup autom·tico dos dados excluÌdos
-   - O usu·rio deve ser claramente avisado
+1. **N√£o h√° recupera√ß√£o de dados**
+   - Ap√≥s a exclus√£o, n√£o h√° como reverter
+   - N√£o h√° backup autom√°tico dos dados exclu√≠dos
+   - O usu√°rio deve ser claramente avisado
 
 2. **Teste com contas de teste**
    - Nunca teste com dados reais
-   - Crie contas de teste especÌficas para validaÁ„o
+   - Crie contas de teste espec√≠ficas para valida√ß√£o
 
 3. **Logs de Auditoria (Futuro)**
    - Considere adicionar logs de quando/quem deletou a conta
    - Para fins de auditoria e compliance
    - Armazenar apenas: userId (hash), timestamp, IP
 
-### **Para Usu·rios:**
+### **Para Usu√°rios:**
 
-?? **ATEN«√O:** Esta aÁ„o È permanente e irreversÌvel!
+?? **ATEN√á√ÉO:** Esta a√ß√£o √© permanente e irrevers√≠vel!
 
-- Todos os seus dados ser„o excluÌdos
-- N„o h· como recuperar apÛs a confirmaÁ„o
+- Todos os seus dados ser√£o exclu√≠dos
+- N√£o h√° como recuperar ap√≥s a confirma√ß√£o
 - Considere fazer backup/exportar seus dados antes
 
 ---
 
-## ?? **ReferÍncias**
+## ?? **Refer√™ncias**
 
 - [LGPD - Lei 13.709/2018](http://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm)
-- [ANPD - Autoridade Nacional de ProteÁ„o de Dados](https://www.gov.br/anpd/)
-- [Guia de Boas Pr·ticas LGPD](https://www.gov.br/anpd/pt-br/assuntos/noticias)
+- [ANPD - Autoridade Nacional de Prote√ß√£o de Dados](https://www.gov.br/anpd/)
+- [Guia de Boas Pr√°ticas LGPD](https://www.gov.br/anpd/pt-br/assuntos/noticias)
 
 ---
 
-## ? **Checklist de ImplementaÁ„o**
+## ? **Checklist de Implementa√ß√£o**
 
-- [x] ? ServiÁo de exclus„o no backend
+- [x] ? Servi√ßo de exclus√£o no backend
 - [x] ? Controller da API
-- [x] ? ValidaÁ„o de senha
-- [x] ? ValidaÁ„o de texto de confirmaÁ„o
-- [x] ? Exclus„o em cascata de todos os dados
-- [x] ? ServiÁo no frontend
-- [x] ? Interface do usu·rio na p·gina de Perfil
-- [x] ? M˙ltiplos nÌveis de confirmaÁ„o
-- [x] ? P·gina de confirmaÁ„o pÛs-exclus„o
-- [x] ? Logout autom·tico apÛs exclus„o
-- [x] ? DocumentaÁ„o completa
-- [x] ? Commit e push para repositÛrio
+- [x] ? Valida√ß√£o de senha
+- [x] ? Valida√ß√£o de texto de confirma√ß√£o
+- [x] ? Exclus√£o em cascata de todos os dados
+- [x] ? Servi√ßo no frontend
+- [x] ? Interface do usu√°rio na p√°gina de Perfil
+- [x] ? M√∫ltiplos n√≠veis de confirma√ß√£o
+- [x] ? P√°gina de confirma√ß√£o p√≥s-exclus√£o
+- [x] ? Logout autom√°tico ap√≥s exclus√£o
+- [x] ? Documenta√ß√£o completa
+- [x] ? Commit e push para reposit√≥rio
 - [ ] ? Deploy no Railway (~10 min)
 - [ ] ? Teste end-to-end
-- [ ] ? ValidaÁ„o em produÁ„o
+- [ ] ? Valida√ß√£o em produ√ß√£o
 
 ---
 
 **Data:** 16/12/2024  
-**Vers„o:** 1.0  
+**Vers√£o:** 1.0  
 **Status:** ? Implementado e Aguardando Deploy  
 **Conformidade LGPD:** ? 100%
 
@@ -365,6 +365,6 @@ src/MoneyManager.Web/
 
 ## ?? **Resultado**
 
-O MoneyManager agora est· em **total conformidade com a LGPD**, oferecendo aos usu·rios o direito ao esquecimento de forma segura, transparente e irreversÌvel.
+O MoneyManager agora est√° em **total conformidade com a LGPD**, oferecendo aos usu√°rios o direito ao esquecimento de forma segura, transparente e irrevers√≠vel.
 
-O sistema garante que todos os dados pessoais sejam completamente removidos quando solicitado, protegendo tanto o usu·rio quanto a aplicaÁ„o de questıes legais relacionadas ‡ privacidade de dados.
+O sistema garante que todos os dados pessoais sejam completamente removidos quando solicitado, protegendo tanto o usu√°rio quanto a aplica√ß√£o de quest√µes legais relacionadas √† privacidade de dados.

@@ -1,14 +1,14 @@
 # ?? Quick Start - Railway Deploy
 
-## ?? Checklist Rápido
+## ?? Checklist RÃ¡pido
 
 ### 1?? MongoDB Atlas (5 minutos)
 
 ```bash
 1. Acesse: https://www.mongodb.com/cloud/atlas
-2. Criar conta grátis
+2. Criar conta grÃ¡tis
 3. Criar cluster M0 (Free)
-4. Database Access ? Criar usuário
+4. Database Access ? Criar usuÃ¡rio
 5. Network Access ? Permitir 0.0.0.0/0
 6. Connect ? Copiar connection string
 ```
@@ -22,7 +22,7 @@ mongodb+srv://usuario:senha@cluster0.xxxxx.mongodb.net/MoneyAgent?retryWrites=tr
 
 ### 2?? Railway Setup (10 minutos)
 
-#### Serviço 1: API
+#### ServiÃ§o 1: API
 
 ```bash
 1. Railway ? New Project ? GitHub Repo ? money-manager
@@ -49,7 +49,7 @@ ASPNETCORE_URLS=http://0.0.0.0:8080
 6. Copiar URL (ex: https://moneymanager-api-production.up.railway.app)
 ```
 
-#### Serviço 2: Frontend
+#### ServiÃ§o 2: Frontend
 
 ```bash
 1. Railway ? New ? GitHub Repo ? money-manager
@@ -88,7 +88,7 @@ https://moneymanager-web-production.up.railway.app
 
 ---
 
-## ?? Comandos Úteis
+## ?? Comandos Ãšteis
 
 ### Testar Localmente
 
@@ -126,21 +126,21 @@ railway up
 
 ---
 
-## ?? Troubleshooting Rápido
+## ?? Troubleshooting RÃ¡pido
 
-### Problema: API não sobe
+### Problema: API nÃ£o sobe
 
 ```bash
 # Verificar logs no Railway
 Railway ? moneymanager-api ? Logs
 
 # Checklist:
-? MONGODB__CONNECTIONSTRING está correto?
+? MONGODB__CONNECTIONSTRING estÃ¡ correto?
 ? Porta 8080 configurada?
 ? Dockerfile.api existe na raiz?
 ```
 
-### Problema: Frontend não encontra API
+### Problema: Frontend nÃ£o encontra API
 
 ```bash
 # Verificar no console do navegador (F12)
@@ -148,18 +148,18 @@ Railway ? moneymanager-api ? Logs
 
 # Checklist:
 ? API_URL configurada?
-? API está rodando?
+? API estÃ¡ rodando?
 ? CORS configurado na API?
 ```
 
-### Problema: MongoDB não conecta
+### Problema: MongoDB nÃ£o conecta
 
 ```bash
 # Testar connection string localmente
 mongosh "mongodb+srv://usuario:senha@cluster.mongodb.net/MoneyAgent"
 
 # Checklist:
-? Usuário e senha corretos?
+? UsuÃ¡rio e senha corretos?
 ? 0.0.0.0/0 liberado no Network Access?
 ? Nome do banco correto (MoneyAgent)?
 ```
@@ -182,7 +182,7 @@ mongosh "mongodb+srv://usuario:senha@cluster.mongodb.net/MoneyAgent"
 
 ```bash
 ?? Memory > 500MB ? Considerar upgrade
-?? CPU > 80% ? Otimizar código
+?? CPU > 80% ? Otimizar cÃ³digo
 ?? Requests failing ? Verificar logs
 ```
 
@@ -191,25 +191,25 @@ mongosh "mongodb+srv://usuario:senha@cluster.mongodb.net/MoneyAgent"
 ## ?? Custos
 
 ### Free Tier
-- Railway: $5 crédito/mês (grátis)
-- MongoDB Atlas: 512MB (grátis)
-- **Total: $0/mês** ?
+- Railway: $5 crÃ©dito/mÃªs (grÃ¡tis)
+- MongoDB Atlas: 512MB (grÃ¡tis)
+- **Total: $0/mÃªs** ?
 
-### Produção
-- Railway Hobby: $5/mês
-- MongoDB Atlas M2: $9/mês
-- **Total: ~$14/mês**
+### ProduÃ§Ã£o
+- Railway Hobby: $5/mÃªs
+- MongoDB Atlas M2: $9/mÃªs
+- **Total: ~$14/mÃªs**
 
 ---
 
-## ?? Segurança - Checklist
+## ?? SeguranÃ§a - Checklist
 
 ```bash
 ? JWT Secret alterado
 ? CORS configurado
 ? HTTPS ativo (Railway fornece)
 ? MongoDB protegido
-? Variáveis de ambiente usadas
+? VariÃ¡veis de ambiente usadas
 ? .env no .gitignore
 ```
 
@@ -217,7 +217,7 @@ mongosh "mongodb+srv://usuario:senha@cluster.mongodb.net/MoneyAgent"
 
 ## ?? URLs Finais
 
-Após o deploy:
+ApÃ³s o deploy:
 
 ```
 API:      https://moneymanager-api-production.up.railway.app
@@ -229,17 +229,17 @@ Frontend: https://moneymanager-web-production.up.railway.app
 
 ---
 
-## ?? Próximos Passos
+## ?? PrÃ³ximos Passos
 
-1. ? Configurar domínio customizado (opcional)
+1. ? Configurar domÃ­nio customizado (opcional)
 2. ? Configurar CI/CD com GitHub Actions
-3. ? Monitorar logs e métricas
+3. ? Monitorar logs e mÃ©tricas
 4. ? Fazer backup do MongoDB
 5. ? Configurar alertas
 
 ---
 
-## ?? Links Úteis
+## ?? Links Ãšteis
 
 - [Railway Docs](https://docs.railway.app)
 - [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
@@ -249,9 +249,9 @@ Frontend: https://moneymanager-web-production.up.railway.app
 
 **Tempo total estimado: ~20 minutos** ??
 
-**Dificuldade: ????? (Intermediário)**
+**Dificuldade: ????? (IntermediÃ¡rio)**
 
 ---
 
 Criado por: Equipe MoneyManager  
-Última atualização: ${new Date().toLocaleDateString('pt-BR')}
+Ãšltima atualizaÃ§Ã£o: ${new Date().toLocaleDateString('pt-BR')}

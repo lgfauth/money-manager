@@ -1,29 +1,29 @@
 # ?? PASSO A PASSO: Configurar Worker no Railway
 
 ## ?? **Problema Atual**
-Railway está executando a API em vez do Worker.
+Railway estÃ¡ executando a API em vez do Worker.
 
-## ? **Solução em 5 Passos**
+## ? **SoluÃ§Ã£o em 5 Passos**
 
 ---
 
 ### **1?? Acesse o Railway Dashboard**
 ```
-https://railway.app ? Seu Projeto ? Serviço "Worker"
+https://railway.app ? Seu Projeto ? ServiÃ§o "Worker"
 ```
 
 ---
 
-### **2?? Vá em Settings**
+### **2?? VÃ¡ em Settings**
 ```
-Clique na aba "Settings" (ícone de engrenagem)
+Clique na aba "Settings" (Ã­cone de engrenagem)
 ```
 
 ---
 
-### **3?? Procure a seção "Build"**
+### **3?? Procure a seÃ§Ã£o "Build"**
 
-Você verá algo como:
+VocÃª verÃ¡ algo como:
 ```
 ? Custom Build Command
 ? Custom Start Command
@@ -34,12 +34,12 @@ Você verá algo como:
 
 ### **4?? Configure o Dockerfile**
 
-**Opção A (Melhor):** Se houver campo "Dockerfile Path":
+**OpÃ§Ã£o A (Melhor):** Se houver campo "Dockerfile Path":
 ```
 Dockerfile Path: Dockerfile.worker
 ```
 
-**Opção B:** Se não houver, use Custom Build/Start:
+**OpÃ§Ã£o B:** Se nÃ£o houver, use Custom Build/Start:
 ```
 Custom Build Command:
    docker build -f Dockerfile.worker -t worker . && docker cp $(docker create worker):/app /app
@@ -48,7 +48,7 @@ Custom Start Command:
    dotnet /app/MoneyManager.Worker.dll
 ```
 
-**Opção C (Mais Simples):** Build direto:
+**OpÃ§Ã£o C (Mais Simples):** Build direto:
 ```
 Build Command:
    dotnet publish src/MoneyManager.Worker/MoneyManager.Worker.csproj -c Release -o /opt/render/project/src/out
@@ -61,8 +61,8 @@ Start Command:
 
 ### **5?? Salvar e Redeploy**
 
-1. Clique em **"Save Changes"** (no final da página)
-2. Clique em **"Redeploy"** (botão no topo direito)
+1. Clique em **"Save Changes"** (no final da pÃ¡gina)
+2. Clique em **"Redeploy"** (botÃ£o no topo direito)
 3. Aguarde o build (1-2 minutos)
 
 ---
@@ -71,54 +71,54 @@ Start Command:
 
 ### **Aba Logs do Worker:**
 
-**? SE APARECER ISTO (errado - é a API):**
+**? SE APARECER ISTO (errado - Ã© a API):**
 ```
 Now listening on: http://0.0.0.0:8080
 Request starting HTTP/1.1 GET /health
 ```
 
-**? SE APARECER ISTO (correto - é o Worker):**
+**? SE APARECER ISTO (correto - Ã© o Worker):**
 ```
 ========================================
 TransactionSchedulerWorker INICIADO
 Agendado para 08:00 (TimeZone: E. South America Standard Time)
 ========================================
-STARTUP EXECUTION: Processando recorrências vencidas imediatamente...
+STARTUP EXECUTION: Processando recorrÃªncias vencidas imediatamente...
 ```
 
 ---
 
 ## ?? **Plano B: Root Directory**
 
-Se não funcionar, tente configurar o **Root Directory**:
+Se nÃ£o funcionar, tente configurar o **Root Directory**:
 
 Railway ? Worker ? Settings ? **Root Directory**:
 ```
 / 
 ```
-(barra, indicando raiz do repositório)
+(barra, indicando raiz do repositÃ³rio)
 
 Depois **Redeploy**.
 
 ---
 
-## ?? **Ainda Não Funciona?**
+## ?? **Ainda NÃ£o Funciona?**
 
-Se o Railway continuar confundindo, **crie um serviço novo**:
+Se o Railway continuar confundindo, **crie um serviÃ§o novo**:
 
 1. Railway Dashboard ? **"+ New Service"**
 2. **"GitHub Repo"** ? Selecione `lgfauth/money-manager`
 3. Nome: **"MoneyManager-Worker"**
 4. Settings:
    - **Dockerfile Path:** `Dockerfile.worker`
-   - **Variáveis:** (copie as mesmas da API)
+   - **VariÃ¡veis:** (copie as mesmas da API)
 5. Deploy
 
-Depois **delete o serviço Worker antigo**.
+Depois **delete o serviÃ§o Worker antigo**.
 
 ---
 
-## ?? **Resumo das Configurações Corretas**
+## ?? **Resumo das ConfiguraÃ§Ãµes Corretas**
 
 | Campo | Valor |
 |-------|-------|
@@ -135,13 +135,13 @@ Depois **delete o serviço Worker antigo**.
 
 ## ?? **Resultado Esperado**
 
-Após configurar corretamente, **em 2 minutos** você verá:
+ApÃ³s configurar corretamente, **em 2 minutos** vocÃª verÃ¡:
 
-1. Build concluído
-2. Logs mostrando worker (não API)
-3. "STARTUP EXECUTION: Concluída com sucesso"
-4. Transações sendo criadas no banco
+1. Build concluÃ­do
+2. Logs mostrando worker (nÃ£o API)
+3. "STARTUP EXECUTION: ConcluÃ­da com sucesso"
+4. TransaÃ§Ãµes sendo criadas no banco
 
 ---
 
-**Dica:** Se tiver dúvida sobre qual configuração o Railway está usando, veja o **"Build Logs"** na primeira execução.
+**Dica:** Se tiver dÃºvida sobre qual configuraÃ§Ã£o o Railway estÃ¡ usando, veja o **"Build Logs"** na primeira execuÃ§Ã£o.

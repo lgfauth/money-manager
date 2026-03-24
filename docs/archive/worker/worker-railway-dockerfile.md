@@ -1,22 +1,22 @@
-# ?? SOLU«√O: Railway Est· Subindo a API em Vez do Worker
+# ?? SOLU√á√ÉO: Railway Est√° Subindo a API em Vez do Worker
 
 ## Problema Identificado
 
-O log mostra que o Railway est· executando a **API** (ASP.NET Core) e n„o o **Worker**:
+O log mostra que o Railway est√° executando a **API** (ASP.NET Core) e n√£o o **Worker**:
 
 ```
-? Now listening on: http://0.0.0.0:8080  ? Isso È a API
+? Now listening on: http://0.0.0.0:8080  ? Isso √© a API
 ? Request starting HTTP/1.1 GET /health  ? Health check da API
 ? Falta: TransactionSchedulerWorker INICIADO ? Log esperado do worker
 ```
 
 ---
 
-## ? SoluÁ„o R·pida (2 minutos)
+## ? Solu√ß√£o R√°pida (2 minutos)
 
 ### **No Railway Dashboard:**
 
-1. **V· em:** Seu Projeto ? ServiÁo **Worker** ? **Settings**
+1. **V√° em:** Seu Projeto ? Servi√ßo **Worker** ? **Settings**
 
 2. **Procure:** "Docker" ou "Dockerfile Path"
 
@@ -25,7 +25,7 @@ O log mostra que o Railway est· executando a **API** (ASP.NET Core) e n„o o **Wo
    Dockerfile Path: Dockerfile.worker
    ```
 
-4. **Se n„o houver essa opÁ„o, v· em "Build":**
+4. **Se n√£o houver essa op√ß√£o, v√° em "Build":**
    - **Custom Build Command:**
      ```bash
      docker build -f Dockerfile.worker -t worker .
@@ -41,11 +41,11 @@ O log mostra que o Railway est· executando a **API** (ASP.NET Core) e n„o o **Wo
 
 ---
 
-## ?? Alternativa: Separar os ServiÁos
+## ?? Alternativa: Separar os Servi√ßos
 
 Se o Railway continuar confundindo os dois projetos:
 
-### **OpÁ„o A: Usar nixpacks.toml**
+### **Op√ß√£o A: Usar nixpacks.toml**
 
 Crie na raiz:
 
@@ -65,7 +65,7 @@ cmd = "dotnet out/MoneyManager.Worker.dll"
 
 Salve como `nixpacks.toml` e commit.
 
-### **OpÁ„o B: Build Command ExplÌcito**
+### **Op√ß√£o B: Build Command Expl√≠cito**
 
 No Railway ? Worker ? Settings ? Build:
 
@@ -79,14 +79,14 @@ Start Command:
 
 ---
 
-## ?? ValidaÁ„o
+## ?? Valida√ß√£o
 
-ApÛs fazer o redeploy, os logs devem mostrar:
+Ap√≥s fazer o redeploy, os logs devem mostrar:
 
 ```
 ? TransactionSchedulerWorker INICIADO
 ? Agendado para 08:00 (TimeZone: E. South America Standard Time)
-? STARTUP EXECUTION: Processando recorrÍncias vencidas imediatamente...
+? STARTUP EXECUTION: Processando recorr√™ncias vencidas imediatamente...
 ```
 
 Se continuar mostrando:
@@ -94,23 +94,23 @@ Se continuar mostrando:
 ? Now listening on: http://0.0.0.0:8080
 ```
 
-Ent„o o Railway ainda est· buildando o projeto errado.
+Ent√£o o Railway ainda est√° buildando o projeto errado.
 
 ---
 
 ## ?? Se Nada Funcionar
 
-**SoluÁ„o definitiva:** Criar 2 serviÁos separados no Railway:
+**Solu√ß√£o definitiva:** Criar 2 servi√ßos separados no Railway:
 
-1. **ServiÁo 1:** API
+1. **Servi√ßo 1:** API
    - Root Directory: `src/MoneyManager.Presentation`
-   - Dockerfile: `Dockerfile` (da raiz ou criar especÌfico)
+   - Dockerfile: `Dockerfile` (da raiz ou criar espec√≠fico)
 
-2. **ServiÁo 2:** Worker
+2. **Servi√ßo 2:** Worker
    - Root Directory: `/` (raiz)
    - Dockerfile: `Dockerfile.worker`
 
-Assim o Railway n„o confunde qual projeto buildar.
+Assim o Railway n√£o confunde qual projeto buildar.
 
 ---
 
@@ -118,10 +118,10 @@ Assim o Railway n„o confunde qual projeto buildar.
 
 - [ ] Railway ? Worker ? Settings ? Dockerfile Path = `Dockerfile.worker`
 - [ ] OU Railway ? Worker ? Build Command ajustado
-- [ ] Vari·veis de ambiente configuradas (MongoDB, Schedule, etc.)
+- [ ] Vari√°veis de ambiente configuradas (MongoDB, Schedule, etc.)
 - [ ] Redeploy feito
 - [ ] Logs mostram "TransactionSchedulerWorker INICIADO"
 
 ---
 
-**IMPORTANTE:** O Railway precisa saber que o Worker È um projeto diferente da API. Use o `Dockerfile.worker` que j· existe no repo!
+**IMPORTANTE:** O Railway precisa saber que o Worker √© um projeto diferente da API. Use o `Dockerfile.worker` que j√° existe no repo!

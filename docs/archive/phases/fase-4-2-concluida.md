@@ -1,6 +1,6 @@
-# ? FASE 4.2 CONCLUÕDA: Modal de Pagamento com Lista de Faturas
+# ? FASE 4.2 CONCLU√çDA: Modal de Pagamento com Lista de Faturas
 
-## ?? RESUMO DA IMPLEMENTA«√O
+## ?? RESUMO DA IMPLEMENTA√á√ÉO
 
 ### **Status:** ? **COMPLETO**
 ### **Tempo:** ~3 horas
@@ -12,19 +12,19 @@
 
 ### **1. Modal Completo de Faturas Pendentes** ?
 
-#### **SubstituiÁ„o do Modal Simples:**
-- ? **Antes:** Modal simples com valor total do cart„o
+#### **Substitui√ß√£o do Modal Simples:**
+- ? **Antes:** Modal simples com valor total do cart√£o
 - ? **Agora:** Modal completo com lista de faturas pen dentes
 
 #### **Funcionalidades:**
 - ? **Loading State** - Spinner ao carregar faturas
 - ? **Lista de Faturas** - Cards organizados por data de vencimento
-- ? **Filtro Autom·tico** - SÛ mostra faturas n„o pagas (Closed, PartiallyPaid, Overdue)
-- ? **SeleÁ„o de Fatura** - Bot„o "Pagar" em cada fatura
-- ? **Formul·rio de Pagamento** - Aparece ao selecionar uma fatura
-- ? **Pagamento Total/Parcial** - Bot„o adapta o texto automaticamente
+- ? **Filtro Autom√°tico** - S√≥ mostra faturas n√£o pagas (Closed, PartiallyPaid, Overdue)
+- ? **Sele√ß√£o de Fatura** - Bot√£o "Pagar" em cada fatura
+- ? **Formul√°rio de Pagamento** - Aparece ao selecionar uma fatura
+- ? **Pagamento Total/Parcial** - Bot√£o adapta o texto automaticamente
 - ? **Feedback Visual** - Badges coloridos de status
-- ? **Alertas de Vencimento** - "Vence em X dias" ou "Vencida h· X dias"
+- ? **Alertas de Vencimento** - "Vence em X dias" ou "Vencida h√° X dias"
 
 ---
 
@@ -34,10 +34,10 @@
 ```
 ????????????????????????????????????????????????????????????
 ? ?? Fatura 2026-02            [FECHADA] (badge amarelo)  ?
-? PerÌodo: 10/01 a 09/02/2026                              ?
+? Per√≠odo: 10/01 a 09/02/2026                              ?
 ? ? Vencimento: 17/02/2026                                ?
 ?                                                           ?
-? Valor Total          Status        TransaÁıes   [AÁıes]  ?
+? Valor Total          Status        Transa√ß√µes   [A√ß√µes]  ?
 ? R$ 1.250,00         Fechada           15        [Pagar]  ?
 ? ? Pago: R$ 0,00                                          ?
 ? ? Restante: R$ 1.250,00                                  ?
@@ -45,7 +45,7 @@
 ????????????????????????????????????????????????????????????
 ```
 
-### **Formul·rio de Pagamento:**
+### **Formul√°rio de Pagamento:**
 ```
 ????????????????????????????????????????????????????????????
 ? ?? Pagamento da Fatura 2026-02                           ?
@@ -60,9 +60,9 @@
 
 ---
 
-## ?? C”DIGO IMPLEMENTADO
+## ?? C√ìDIGO IMPLEMENTADO
 
-### **Vari·veis Adicionadas:**
+### **Vari√°veis Adicionadas:**
 ```csharp
 private string userId = string.Empty;
 private bool isLoadingInvoices;
@@ -70,7 +70,7 @@ private List<CreditCardInvoiceResponseDto>? pendingInvoices;
 private CreditCardInvoiceResponseDto? selectedInvoiceToPay;
 ```
 
-### **MÈtodos Principais:**
+### **M√©todos Principais:**
 
 #### **1. LoadPendingInvoices():**
 ```csharp
@@ -83,9 +83,9 @@ private CreditCardInvoiceResponseDto? selectedInvoiceToPay;
 #### **2. SelectInvoiceToPay(invoice):**
 ```csharp
 - Define selectedInvoiceToPay
-- PrÈ-preenche valor com RemainingAmount
+- Pr√©-preenche valor com RemainingAmount
 - Reseta conta pagadora
-- Mostra formul·rio de pagamento
+- Mostra formul√°rio de pagamento
 ```
 
 #### **3. ConfirmInvoicePayment():**
@@ -94,13 +94,13 @@ private CreditCardInvoiceResponseDto? selectedInvoiceToPay;
 - Cria PayInvoiceRequestDto
 - Chama PayInvoiceAsync() ou PayPartialInvoiceAsync()
 - Recarrega faturas e contas
-- Fecha modal se n„o houver mais pendÍncias
+- Fecha modal se n√£o houver mais pend√™ncias
 ```
 
 #### **4. GetInvoiceStatusBadgeClass() e GetInvoiceStatusLabel():**
 ```csharp
 - Retorna classe CSS do badge (bg-danger, bg-warning, etc)
-- Retorna label em portuguÍs (Fechada, Vencida, etc)
+- Retorna label em portugu√™s (Fechada, Vencida, etc)
 - Considera isOverdue para override
 ```
 
@@ -111,7 +111,7 @@ private CreditCardInvoiceResponseDto? selectedInvoiceToPay;
 | Status | Badge | Cor | Quando |
 |--------|-------|-----|--------|
 | **Open** | Aberta | ?? Azul (`bg-info`) | Fatura ainda aberta |
-| **Closed** | Fechada | ?? Amarelo (`bg-warning`) | Fechou mas n„o pagou |
+| **Closed** | Fechada | ?? Amarelo (`bg-warning`) | Fechou mas n√£o pagou |
 | **Paid** | Paga | ?? Verde (`bg-success`) | Totalmente paga |
 | **PartiallyPaid** | Parc. Paga | ?? Amarelo (`bg-warning`) | Pagou parcial |
 | **Overdue** | **VENCIDA** | ?? Vermelho (`bg-danger`) | Passou do vencimento |
@@ -122,14 +122,14 @@ private CreditCardInvoiceResponseDto? selectedInvoiceToPay;
 
 ## ?? FLUXO COMPLETO
 
-### **1. Usu·rio clica "Pagar Fatura"**
+### **1. Usu√°rio clica "Pagar Fatura"**
 ```
-ShowPayInvoice(creditCard) È chamado:
+ShowPayInvoice(creditCard) √© chamado:
   ? Define selectedCard
-  ? Reseta vari·veis
+  ? Reseta vari√°veis
   ? Chama LoadPendingInvoices()
      ? Busca faturas via InvoiceService
-     ? Filtra n„o pagas
+     ? Filtra n√£o pagas
      ? Ordena por vencimento
   ? Mostra modal
 ```
@@ -144,22 +144,22 @@ ShowPayInvoice(creditCard) È chamado:
 
 @else
   ? Foreach em pendingInvoices
-     ? Card com informaÁıes
+     ? Card com informa√ß√µes
      ? Badge de status
-     ? Bot„o "Pagar"
+     ? Bot√£o "Pagar"
 ```
 
-### **3. Usu·rio clica "Pagar" em uma fatura**
+### **3. Usu√°rio clica "Pagar" em uma fatura**
 ```
-SelectInvoiceToPay(invoice) È chamado:
+SelectInvoiceToPay(invoice) √© chamado:
   ? Define selectedInvoiceToPay
-  ? PrÈ-preenche valor
-  ? Mostra formul·rio de pagamento abaixo
+  ? Pr√©-preenche valor
+  ? Mostra formul√°rio de pagamento abaixo
 ```
 
-### **4. Usu·rio preenche e confirma**
+### **4. Usu√°rio preenche e confirma**
 ```
-ConfirmInvoicePayment() È chamado:
+ConfirmInvoicePayment() √© chamado:
   ? Valida campos
   ? Cria PayInvoiceRequestDto
   ? if (valor >= restante)
@@ -173,23 +173,23 @@ ConfirmInvoicePayment() È chamado:
 
 ---
 
-## ?? VALIDA«’ES IMPLEMENTADAS
+## ?? VALIDA√á√ïES IMPLEMENTADAS
 
-### **No Formul·rio de Pagamento:**
+### **No Formul√°rio de Pagamento:**
 ```csharp
-? Conta pagadora obrigatÛria
+? Conta pagadora obrigat√≥ria
 ? Valor > 0
-? Valor n„o pode exceder restante
-? Conta pagadora n„o pode ser cart„o
+? Valor n√£o pode exceder restante
+? Conta pagadora n√£o pode ser cart√£o
 ? Feedback visual de erro (alert danger)
 ```
 
 ### **Comportamento Inteligente:**
 ```csharp
-? Bot„o muda texto: "Pagar Totalmente" vs "Pagar Parcialmente"
-? Fecha modal se n„o houver mais faturas pendentes
-? MantÈm modal aberto se ainda houver pendÍncias
-? Limpa seleÁ„o apÛs pagamento bem-sucedido
+? Bot√£o muda texto: "Pagar Totalmente" vs "Pagar Parcialmente"
+? Fecha modal se n√£o houver mais faturas pendentes
+? Mant√©m modal aberto se ainda houver pend√™ncias
+? Limpa sele√ß√£o ap√≥s pagamento bem-sucedido
 ```
 
 ---
@@ -210,52 +210,52 @@ Adicionado:
 
 Modificado:
 ~ ShowPayInvoice() - agora async e chama LoadPendingInvoices()
-~ CancelPayInvoice() - limpa novas vari·veis
+~ CancelPayInvoice() - limpa novas vari√°veis
 
 Removido:
-- PayInvoice() - substituÌdo por ConfirmInvoicePayment()
-- Modal simples de pagamento - substituÌdo por modal completo
+- PayInvoice() - substitu√≠do por ConfirmInvoicePayment()
+- Modal simples de pagamento - substitu√≠do por modal completo
 ```
 
 **Total:** ~300 linhas de HTML + ~150 linhas de C#
 
 ---
 
-## ?? VALIDA«√O
+## ?? VALIDA√á√ÉO
 
 ### **Build:**
 ```
-? CompilaÁ„o bem-sucedida
+? Compila√ß√£o bem-sucedida
 ? Sem erros
 ? Sem warnings
 ```
 
-### **Testes Manuais Necess·rios:**
+### **Testes Manuais Necess√°rios:**
 
-#### **Cen·rio 1: Cart„o sem faturas**
-1. Criar cart„o novo
+#### **Cen√°rio 1: Cart√£o sem faturas**
+1. Criar cart√£o novo
 2. Clicar "Pagar Fatura"
 3. ? Deve mostrar "Nenhuma fatura pendente!"
 
-#### **Cen·rio 2: Cart„o com 1 fatura fechada**
-1. Criar despesa em cart„o
+#### **Cen√°rio 2: Cart√£o com 1 fatura fechada**
+1. Criar despesa em cart√£o
 2. Fechar fatura manualmente ou via worker
 3. Clicar "Pagar Fatura"
 4. ? Deve listar 1 fatura com status "Fechada"
 5. Clicar "Pagar"
-6. ? Deve mostrar formul·rio abaixo
+6. ? Deve mostrar formul√°rio abaixo
 7. Preencher e confirmar
 8. ? Deve pagar e fechar modal
 
-#### **Cen·rio 3: Cart„o com m˙ltiplas faturas**
-1. Criar 3 faturas (fevereiro, marÁo, abril)
+#### **Cen√°rio 3: Cart√£o com m√∫ltiplas faturas**
+1. Criar 3 faturas (fevereiro, mar√ßo, abril)
 2. Clicar "Pagar Fatura"
 3. ? Deve listar 3 faturas ordenadas por vencimento
-4. Pagar a do meio (marÁo)
+4. Pagar a do meio (mar√ßo)
 5. ? Deve recarregar e mostrar 2 faturas (fev + abr)
 6. Modal deve continuar aberto
 
-#### **Cen·rio 4: Pagamento parcial**
+#### **Cen√°rio 4: Pagamento parcial**
 1. Fatura de R$ 1.000
 2. Pagar R$ 400
 3. ? Status muda para "Parc. Paga"
@@ -264,30 +264,30 @@ Removido:
 6. ? Status muda para "Paga"
 7. ? Fatura desaparece da lista
 
-#### **Cen·rio 5: Fatura vencida**
+#### **Cen√°rio 5: Fatura vencida**
 1. Criar fatura com vencimento ontem
 2. Clicar "Pagar Fatura"
 3. ? Badge vermelho "VENCIDA"
-4. ? Texto "Vencida h· 1 dias"
+4. ? Texto "Vencida h√° 1 dias"
 5. ? Card com borda vermelha
 
 ---
 
-## ?? PR”XIMOS PASSOS (Restante da FASE 4)
+## ?? PR√ìXIMOS PASSOS (Restante da FASE 4)
 
-### **FASE 4.3: P·gina de Detalhes da Fatura** ?
+### **FASE 4.3: P√°gina de Detalhes da Fatura** ?
 - Criar `InvoiceDetails.razor`
-- Mostrar transaÁıes da fatura
+- Mostrar transa√ß√µes da fatura
 - Total por categoria
-- Bot„o "Voltar" e "Pagar"
+- Bot√£o "Voltar" e "Pagar"
 
-### **FASE 4.4: Dashboard do Cart„o** ?
+### **FASE 4.4: Dashboard do Cart√£o** ?
 - Criar `CreditCardDashboard.razor`
 - Cards: Atual / Fechada / Limite
-- HistÛrico de faturas
-- Gr·ficos
+- Hist√≥rico de faturas
+- Gr√°ficos
 
-### **FASE 4.5: Componentes Reutiliz·veis** ?
+### **FASE 4.5: Componentes Reutiliz√°veis** ?
 - `InvoiceCard.razor`
 - `InvoiceTransactionsList.razor`
 - `InvoiceStatusBadge.razor`
@@ -299,24 +299,24 @@ Removido:
 | Fase | Sub-tarefa | Status | %
 |------|-----------|--------|----
 | **FASE 4** | Interface Visual | ?? | 70%
-| 4.1 | Formul·rio Cart„o | ? | 100%
+| 4.1 | Formul√°rio Cart√£o | ? | 100%
 | 4.2 | **Modal Pagamento** | ? | **100%**
 | 4.3 | Detalhes Fatura | ? | 0%
-| 4.4 | Dashboard Cart„o | ? | 0%
+| 4.4 | Dashboard Cart√£o | ? | 0%
 | 4.5 | Componentes | ? | 0%
 
 ---
 
-## ?? CONCLUS√O FASE 4.2
+## ?? CONCLUS√ÉO FASE 4.2
 
 ? **Modal de pagamento totalmente funcional!**  
 ? **Lista de faturas pendentes implementada**  
 ? **Pagamento total e parcial funcionando**  
 ? **Interface intuitiva e responsiva**  
 ? **Badges e alertas visuais**  
-? **ValidaÁıes completas**  
+? **Valida√ß√µes completas**  
 
-**Pronto para usar em produÁ„o!**
+**Pronto para usar em produ√ß√£o!**
 
 ---
 
@@ -324,19 +324,19 @@ Removido:
 
 | Fase | Status | Funcionalidade |
 |------|--------|----------------|
-| **FASE 1** | ? | FundaÁ„o (Entidades, Repos) |
-| **FASE 2** | ? | ServiÁo de Gest„o |
-| **FASE 3** | ? | IntegraÁ„o + Workers |
-| **FASE 4.1** | ? | Form Cart„o + Limite |
+| **FASE 1** | ? | Funda√ß√£o (Entidades, Repos) |
+| **FASE 2** | ? | Servi√ßo de Gest√£o |
+| **FASE 3** | ? | Integra√ß√£o + Workers |
+| **FASE 4.1** | ? | Form Cart√£o + Limite |
 | **FASE 4.2** | ? | **Modal de Pagamento** |
 
 **Total Implementado:** Backend 100% + Frontend 70%
 
 ---
 
-**PrÛximo Comando:**
+**Pr√≥ximo Comando:**
 ```
-"Iniciar FASE 4.3: P·gina de Detalhes da Fatura"
+"Iniciar FASE 4.3: P√°gina de Detalhes da Fatura"
 ```
 
 **Ou:**

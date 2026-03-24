@@ -1,31 +1,31 @@
-# ?? DIAGN”STICO COMPLETO - LocalizationService
+# ?? DIAGN√ìSTICO COMPLETO - LocalizationService
 
 ## ?? PROBLEMA PERSISTENTE
 
-Mesmo apÛs as correÁıes, a aplicaÁ„o continua tentando carregar do Railway:
+Mesmo ap√≥s as corre√ß√µes, a aplica√ß√£o continua tentando carregar do Railway:
 ```
 BaseAddress: https://money-manager.up.railway.app/
 ```
 
-## ?? POSSÕVEIS CAUSAS:
+## ?? POSS√çVEIS CAUSAS:
 
-### 1. VocÍ est· executando o projeto errado:
+### 1. Voc√™ est√° executando o projeto errado:
 ```sh
 ? dotnet run --project src/MoneyManager.Web.Host
 ? dotnet run --project src/MoneyManager.Web
 ```
 
 ### 2. Cache do Blazor WebAssembly:
-O navegador pode estar usando a vers„o antiga em cache.
+O navegador pode estar usando a vers√£o antiga em cache.
 
-### 3. ConfiguraÁ„o de ambiente:
+### 3. Configura√ß√£o de ambiente:
 O `IWebAssemblyHostEnvironment.BaseAddress` pode estar sendo definido incorretamente.
 
 ---
 
-## ? SOLU«’ES APLICADAS:
+## ? SOLU√á√ïES APLICADAS:
 
-### AtualizaÁ„o 1: Caminho Relativo + Fallback
+### Atualiza√ß√£o 1: Caminho Relativo + Fallback
 ```csharp
 // Tenta caminho relativo primeiro
 using var httpClient = new HttpClient { 
@@ -36,19 +36,19 @@ dict = await httpClient.GetFromJsonAsync<Dictionary<string, object>>("i18n/pt-BR
 // Se falhar, tenta caminho absoluto
 ```
 
-### AtualizaÁ„o 2: Logs Detalhados
+### Atualiza√ß√£o 2: Logs Detalhados
 ```
 [LocalizationService] BaseAddress original: ...
 [LocalizationService] Tentando carregar: i18n/pt-BR.json (relativo)
 [LocalizationService] ? Arquivo carregado com sucesso!
-[LocalizationService] SeÁıes disponÌveis: Common, Login, Register, Dashboard, Reports
+[LocalizationService] Se√ß√µes dispon√≠veis: Common, Login, Register, Dashboard, Reports
 ```
 
 ---
 
 ## ?? PASSOS PARA RESOLVER:
 
-### 1?? PARE a aplicaÁ„o (Ctrl+C)
+### 1?? PARE a aplica√ß√£o (Ctrl+C)
 
 ### 2?? LIMPE TUDO:
 ```sh
@@ -63,12 +63,12 @@ Remove-Item -Recurse -Force src/MoneyManager.Web/bin
 dotnet build src/MoneyManager.Web
 ```
 
-### 3?? VERIFIQUE qual projeto est· executando:
+### 3?? VERIFIQUE qual projeto est√° executando:
 ```sh
 # CORRETO - Execute APENAS o projeto Web
 dotnet run --project src/MoneyManager.Web/MoneyManager.Web.csproj
 
-# N√O execute o Web.Host em desenvolvimento
+# N√ÉO execute o Web.Host em desenvolvimento
 ```
 
 ### 4?? LIMPE o cache do navegador:
@@ -77,11 +77,11 @@ dotnet run --project src/MoneyManager.Web/MoneyManager.Web.csproj
 - Time range: "All time"
 - Clear data
 
-### 5?? ABRA o navegador em AN‘NIMO:
+### 5?? ABRA o navegador em AN√îNIMO:
 - **Chrome:** Ctrl+Shift+N
 - **Edge:** Ctrl+Shift+P
 
-Isso garante que n„o h· cache.
+Isso garante que n√£o h√° cache.
 
 ### 6?? VERIFIQUE os logs no console:
 Deve aparecer:
@@ -93,38 +93,38 @@ Deve aparecer:
 
 ---
 
-## ?? CHECKLIST DE VERIFICA«√O:
+## ?? CHECKLIST DE VERIFICA√á√ÉO:
 
-- [ ] Parou a aplicaÁ„o (Ctrl+C)
+- [ ] Parou a aplica√ß√£o (Ctrl+C)
 - [ ] Executou `dotnet clean`
 - [ ] Deletou pastas obj/bin
 - [ ] Executou `dotnet build src/MoneyManager.Web`
 - [ ] Limpou cache do navegador
 - [ ] Executou `dotnet run --project src/MoneyManager.Web`
-- [ ] Abriu em aba anÙnima
+- [ ] Abriu em aba an√¥nima
 - [ ] Verificou logs no console (F12)
 
 ---
 
-## ?? ARQUIVO pt-BR.json EST¡ CORRETO:
+## ?? ARQUIVO pt-BR.json EST√Å CORRETO:
 
-? ValidaÁ„o JSON passou
+? Valida√ß√£o JSON passou
 ? Linha 291 corrigida
 ? Encoding UTF-8
-? 13 seÁıes completas
+? 13 se√ß√µes completas
 
 ---
 
-## ?? SE AINDA N√O FUNCIONAR:
+## ?? SE AINDA N√ÉO FUNCIONAR:
 
-### Alternativa 1: Hardcode Tempor·rio
+### Alternativa 1: Hardcode Tempor√°rio
 Adicione ao `Program.cs`:
 ```csharp
 // ANTES da linha: await localization.InitializeAsync();
 if (builder.HostEnvironment.BaseAddress.Contains("railway"))
 {
-    Console.WriteLine("?? FOR«ANDO localhost para desenvolvimento");
-    // ForÁa localhost
+    Console.WriteLine("?? FOR√áANDO localhost para desenvolvimento");
+    // For√ßa localhost
 }
 ```
 
@@ -154,10 +154,10 @@ Se nada funcionar, podemos embedar o JSON como recurso:
 
 ---
 
-## ?? PR”XIMO PASSO:
+## ?? PR√ìXIMO PASSO:
 
 Execute os passos acima e me envie:
-1. ? Output do comando que vocÍ usou para executar
+1. ? Output do comando que voc√™ usou para executar
 2. ? Primeira linha do console: `[LocalizationService] BaseAddress original:`
 3. ? Screenshot do erro (se ainda houver)
 

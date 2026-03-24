@@ -1,9 +1,9 @@
-# ?? CORRE«√O: P·gina de Accounts n„o Carrega (404 em arquivos est·ticos)
+# ?? CORRE√á√ÉO: P√°gina de Accounts n√£o Carrega (404 em arquivos est√°ticos)
 
 ## ?? PROBLEMA IDENTIFICADO
 
 ### **Sintoma:**
-P·gina `/accounts` fica totalmente em branco, sem renderizar.
+P√°gina `/accounts` fica totalmente em branco, sem renderizar.
 
 ### **Logs do Railway:**
 ```
@@ -18,25 +18,25 @@ GET /appsettings.Production.json HTTP/1.1 ? 304
 ```
 
 ### **Causa Raiz:**
-O projeto **MoneyManager.Web.Host** est· tentando servir arquivos est·ticos do **MoneyManager.Web/wwwroot**, mas em **produÁ„o (Railway)** esses arquivos **n„o s„o copiados** automaticamente durante o publish.
+O projeto **MoneyManager.Web.Host** est√° tentando servir arquivos est√°ticos do **MoneyManager.Web/wwwroot**, mas em **produ√ß√£o (Railway)** esses arquivos **n√£o s√£o copiados** automaticamente durante o publish.
 
 ---
 
-## ?? AN¡LISE T…CNICA
+## ?? AN√ÅLISE T√âCNICA
 
 ### **Arquitetura:**
 
 ```
 MoneyManager.Web.Host (ASP.NET Core)
-??? Program.cs ? Serve arquivos est·ticos
-??? [SEM wwwroot prÛprio]
+??? Program.cs ? Serve arquivos est√°ticos
+??? [SEM wwwroot pr√≥prio]
     
 MoneyManager.Web (Blazor WebAssembly)
 ??? wwwroot/
 ?   ??? index.html
 ?   ??? _framework/ ? Blazor WASM binaries
 ?   ??? i18n/
-?   ?   ??? pt-BR.json ? Arquivos de localizaÁ„o
+?   ?   ??? pt-BR.json ? Arquivos de localiza√ß√£o
 ?   ?   ??? es-ES.json
 ?   ??? css/
 ?   ??? js/
@@ -44,18 +44,18 @@ MoneyManager.Web (Blazor WebAssembly)
 
 ### **Problema:**
 1. **Desenvolvimento:** `Web.Host` usa path relativo para `../MoneyManager.Web/wwwroot` ? ? Funciona
-2. **ProduÁ„o (Publish):** Path relativo **n„o existe** ? ? 404 em todos os arquivos
+2. **Produ√ß√£o (Publish):** Path relativo **n√£o existe** ? ? 404 em todos os arquivos
 
 ---
 
-## ? SOLU«√O IMPLEMENTADA
+## ? SOLU√á√ÉO IMPLEMENTADA
 
 ### **1. MoneyManager.Web.Host.csproj**
 
 Adicionado **MSBuild targets** para copiar automaticamente o `wwwroot` do Blazor:
 
 ```xml
-<!-- Copiar wwwroot do MoneyManager.Web apÛs o build do Blazor -->
+<!-- Copiar wwwroot do MoneyManager.Web ap√≥s o build do Blazor -->
 <Target Name="CopyBlazorWwwroot" AfterTargets="Build">
   <PropertyGroup>
     <BlazorWwwrootPath>..\MoneyManager.Web\bin\$(Configuration)\$(TargetFramework)\wwwroot</BlazorWwwrootPath>
@@ -74,7 +74,7 @@ Adicionado **MSBuild targets** para copiar automaticamente o `wwwroot` do Blazor
         OverwriteReadOnlyFiles="true" />
 </Target>
 
-<!-- Copiar para o publish tambÈm -->
+<!-- Copiar para o publish tamb√©m -->
 <Target Name="CopyBlazorWwwrootOnPublish" AfterTargets="Publish">
   <PropertyGroup>
     <BlazorWwwrootPath>..\MoneyManager.Web\bin\$(Configuration)\$(TargetFramework)\publish\wwwroot</BlazorWwwrootPath>
@@ -95,18 +95,18 @@ Adicionado **MSBuild targets** para copiar automaticamente o `wwwroot` do Blazor
 ```
 
 **O que faz:**
-- **AfterTargets="Build":** Copia arquivos apÛs cada build local
+- **AfterTargets="Build":** Copia arquivos ap√≥s cada build local
 - **AfterTargets="Publish":** Copia arquivos durante `dotnet publish`
-- **RecursiveDir:** MantÈm estrutura de pastas (`_framework/`, `i18n/`, etc)
+- **RecursiveDir:** Mant√©m estrutura de pastas (`_framework/`, `i18n/`, etc)
 
 ---
 
 ### **2. Program.cs (Web.Host)**
 
-Ajustado para usar **wwwroot local em produÁ„o**:
+Ajustado para usar **wwwroot local em produ√ß√£o**:
 
 ```csharp
-// Em produÁ„o, usa wwwroot local (copiado pelo build)
+// Em produ√ß√£o, usa wwwroot local (copiado pelo build)
 // Em desenvolvimento, usa path relativo ao projeto Blazor
 var wwwrootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
 
@@ -124,15 +124,15 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // ProduÁ„o: usa wwwroot local (copiado pelo publish)
+    // Produ√ß√£o: usa wwwroot local (copiado pelo publish)
     Console.WriteLine($"[PROD] Usando wwwroot local: {wwwrootPath}");
 }
 ```
 
-**BenefÌcios:**
-- **Desenvolvimento:** Hot reload funciona (arquivos n„o s„o copiados)
-- **ProduÁ„o:** Arquivos est„o no mesmo diretÛrio do execut·vel
-- **Debug:** Logs mostram qual caminho est· sendo usado
+**Benef√≠cios:**
+- **Desenvolvimento:** Hot reload funciona (arquivos n√£o s√£o copiados)
+- **Produ√ß√£o:** Arquivos est√£o no mesmo diret√≥rio do execut√°vel
+- **Debug:** Logs mostram qual caminho est√° sendo usado
 
 ---
 
@@ -155,7 +155,7 @@ provider.Mappings[".blat"] = "application/octet-stream";  // ? NOVO
 
 ## ?? COMO FAZER DEPLOY
 
-### **OpÁ„o 1: Publish Local + Upload**
+### **Op√ß√£o 1: Publish Local + Upload**
 
 ```bash
 # 1. Navegar para a pasta do projeto Host
@@ -176,33 +176,33 @@ ls ./publish/wwwroot
 # etc...
 
 # 4. Upload para Railway (se manual)
-# Ou commit e push (se deploy autom·tico)
+# Ou commit e push (se deploy autom√°tico)
 ```
 
 ---
 
-### **OpÁ„o 2: Deploy Autom·tico Railway**
+### **Op√ß√£o 2: Deploy Autom√°tico Railway**
 
-Se o Railway est· configurado para build autom·tico:
+Se o Railway est√° configurado para build autom√°tico:
 
 ```bash
-# 1. Commit as mudanÁas
+# 1. Commit as mudan√ßas
 git add .
 git commit -m "fix: copy Blazor wwwroot to Web.Host on publish"
 
-# 2. Push para o repositÛrio
+# 2. Push para o reposit√≥rio
 git push origin main
 
 # 3. Railway vai:
 #    - Detectar MoneyManager.Web.Host.csproj
 #    - Rodar dotnet publish
 #    - Copiar wwwroot automaticamente (via target MSBuild)
-#    - Deploy com arquivos est·ticos corretos
+#    - Deploy com arquivos est√°ticos corretos
 ```
 
 ---
 
-### **OpÁ„o 3: Build Multi-Stage (Railway)**
+### **Op√ß√£o 3: Build Multi-Stage (Railway)**
 
 Se usar Dockerfile customizado:
 
@@ -221,7 +221,7 @@ COPY ["src/MoneyManager.Infrastructure/MoneyManager.Infrastructure.csproj", "Mon
 # Restore
 RUN dotnet restore "MoneyManager.Web.Host/MoneyManager.Web.Host.csproj"
 
-# Copiar cÛdigo-fonte
+# Copiar c√≥digo-fonte
 COPY src/ .
 
 # Build e Publish
@@ -241,7 +241,7 @@ ENTRYPOINT ["dotnet", "MoneyManager.Web.Host.dll"]
 
 ---
 
-## ?? VALIDA«√O
+## ?? VALIDA√á√ÉO
 
 ### **1. Verificar Build Local**
 
@@ -249,7 +249,7 @@ ENTRYPOINT ["dotnet", "MoneyManager.Web.Host.dll"]
 cd src/MoneyManager.Web.Host
 dotnet build
 
-# Deve mostrar na saÌda:
+# Deve mostrar na sa√≠da:
 # Copiando Blazor wwwroot de: ..\MoneyManager.Web\bin\Debug\net9.0\wwwroot
 # Para: bin\Debug\net9.0\wwwroot
 
@@ -295,20 +295,20 @@ dotnet MoneyManager.Web.Host.dll
 
 # Abrir navegador em http://localhost:5000
 # Verificar console do navegador (F12):
-# - N√O deve ter erros 404
+# - N√ÉO deve ter erros 404
 # - Arquivos i18n/pt-BR.json devem carregar (200)
-# - P·gina /accounts deve renderizar
+# - P√°gina /accounts deve renderizar
 ```
 
 ---
 
 ### **4. Verificar Logs do Railway**
 
-ApÛs deploy, verificar nos logs:
+Ap√≥s deploy, verificar nos logs:
 
 ```
 ? [PROD] Usando wwwroot local: /app/wwwroot
-? DiretÛrio wwwroot encontrado: /app/wwwroot
+? Diret√≥rio wwwroot encontrado: /app/wwwroot
 ? Pasta _framework encontrada
 ? index.html encontrado
 
@@ -322,21 +322,21 @@ Response status: 200  ? ? SUCESSO!
 
 | Item | Antes | Depois |
 |------|-------|--------|
-| **Build Local** | ? wwwroot n„o copiado | ? Copiado automaticamente |
-| **Publish** | ? wwwroot ausente | ? IncluÌdo no publish |
+| **Build Local** | ? wwwroot n√£o copiado | ? Copiado automaticamente |
+| **Publish** | ? wwwroot ausente | ? Inclu√≠do no publish |
 | **Development** | ? Funciona (path relativo) | ? Funciona (hot reload) |
 | **Production** | ? 404 em todos os arquivos | ? 200 em todos os arquivos |
 | **i18n/pt-BR.json** | ? 404 | ? 200 |
 | **_framework/*.wasm** | ? 404 | ? 200 |
-| **P·gina /accounts** | ? Branco | ? Renderiza |
+| **P√°gina /accounts** | ? Branco | ? Renderiza |
 
 ---
 
 ## ?? TROUBLESHOOTING
 
-### **Problema: Ainda d· 404 apÛs deploy**
+### **Problema: Ainda d√° 404 ap√≥s deploy**
 
-**SoluÁ„o:**
+**Solu√ß√£o:**
 1. Verificar se o build copiou os arquivos:
    ```bash
    # No Railway, acessar console e executar:
@@ -344,31 +344,31 @@ Response status: 200  ? ? SUCESSO!
    ls -la /app/wwwroot/i18n
    ```
 
-2. Se a pasta n„o existir:
+2. Se a pasta n√£o existir:
    ```bash
-   # Verificar se o target MSBuild est· rodando:
+   # Verificar se o target MSBuild est√° rodando:
    dotnet publish -v detailed
    
    # Procurar por:
    # "Copiando Blazor wwwroot de:"
    ```
 
-3. Se o target n„o rodar:
+3. Se o target n√£o rodar:
    - Verificar se `.csproj` tem os targets corretos
    - Verificar se o Blazor Web foi buildado antes do Host
 
 ---
 
-### **Problema: Hot reload n„o funciona em dev**
+### **Problema: Hot reload n√£o funciona em dev**
 
-**SoluÁ„o:**
-O cÛdigo j· est· preparado:
-- Em **desenvolvimento:** Usa path relativo (sem cÛpia)
-- Em **produÁ„o:** Usa wwwroot local (copiado)
+**Solu√ß√£o:**
+O c√≥digo j√° est√° preparado:
+- Em **desenvolvimento:** Usa path relativo (sem c√≥pia)
+- Em **produ√ß√£o:** Usa wwwroot local (copiado)
 
 Se ainda houver problema:
 ```bash
-# ForÁar rebuild do Blazor
+# For√ßar rebuild do Blazor
 cd src/MoneyManager.Web
 dotnet build
 
@@ -381,7 +381,7 @@ dotnet build
 
 ### **Problema: Arquivos antigos em cache**
 
-**SoluÁ„o:**
+**Solu√ß√£o:**
 ```bash
 # Limpar build anterior
 dotnet clean
@@ -389,7 +389,7 @@ dotnet clean
 # Rebuild tudo
 dotnet build
 
-# Ou forÁar copy:
+# Ou for√ßar copy:
 cd src/MoneyManager.Web.Host
 dotnet msbuild /t:CopyBlazorWwwroot
 ```
@@ -398,18 +398,18 @@ dotnet msbuild /t:CopyBlazorWwwroot
 
 ## ?? CHECKLIST DE DEPLOY
 
-Antes de fazer deploy para produÁ„o:
+Antes de fazer deploy para produ√ß√£o:
 
 - [ ] ? Build local sem erros
 - [ ] ? Logs mostram "Copiando Blazor wwwroot"
-- [ ] ? `bin/Debug/net9.0/wwwroot/` contÈm arquivos
-- [ ] ? `publish/wwwroot/` contÈm arquivos apÛs publish
+- [ ] ? `bin/Debug/net9.0/wwwroot/` cont√©m arquivos
+- [ ] ? `publish/wwwroot/` cont√©m arquivos ap√≥s publish
 - [ ] ? Teste local com `dotnet MoneyManager.Web.Host.dll`
-- [ ] ? P·gina `/accounts` renderiza localmente
-- [ ] ? Commit e push das mudanÁas
+- [ ] ? P√°gina `/accounts` renderiza localmente
+- [ ] ? Commit e push das mudan√ßas
 - [ ] ? Aguardar deploy no Railway
 - [ ] ? Verificar logs do Railway (wwwroot encontrado?)
-- [ ] ? Testar `/accounts` em produÁ„o
+- [ ] ? Testar `/accounts` em produ√ß√£o
 - [ ] ? Verificar console do navegador (F12) - sem 404
 
 ---
@@ -420,7 +420,7 @@ Antes de fazer deploy para produÁ„o:
 
 ```
 [PROD] Usando wwwroot local: /app/wwwroot
-? DiretÛrio wwwroot encontrado: /app/wwwroot
+? Diret√≥rio wwwroot encontrado: /app/wwwroot
 ? Pasta _framework encontrada
 ? index.html encontrado
 

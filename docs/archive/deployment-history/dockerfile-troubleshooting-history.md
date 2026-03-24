@@ -1,6 +1,6 @@
-# ?? Histórico de Correções - Dockerfile.web
+# ?? HistÃ³rico de CorreÃ§Ãµes - Dockerfile.web
 
-## ?? **Tentativas e Evolução:**
+## ?? **Tentativas e EvoluÃ§Ã£o:**
 
 ### **Tentativa 1: COPY com Heredoc ?**
 ```dockerfile
@@ -14,14 +14,14 @@ EOF
 
 ---
 
-### **Tentativa 2: RUN echo (múltiplas linhas) ?**
+### **Tentativa 2: RUN echo (mÃºltiplas linhas) ?**
 ```dockerfile
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'set -e' >> /docker-entrypoint.sh && \
     ...
 ```
 **Resultado:** ? Falhou  
-**Motivo:** Complexo, difícil de debugar, problemas com escaping
+**Motivo:** Complexo, difÃ­cil de debugar, problemas com escaping
 
 ---
 
@@ -42,7 +42,7 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ```
 **Resultado:** ? Ainda falhou  
-**Motivo:** Possível problema com line endings (CRLF vs LF) ou arquivo não encontrado
+**Motivo:** PossÃ­vel problema com line endings (CRLF vs LF) ou arquivo nÃ£o encontrado
 
 ---
 
@@ -58,14 +58,14 @@ RUN chmod +x /docker-entrypoint.sh
 ```
 **Resultado:** ? **DEVE FUNCIONAR**  
 **Motivo:** 
-- ? `cat` com heredoc é suportado por qualquer shell
-- ? Não depende de arquivos externos
-- ? Não tem problemas de escaping
+- ? `cat` com heredoc Ã© suportado por qualquer shell
+- ? NÃ£o depende de arquivos externos
+- ? NÃ£o tem problemas de escaping
 - ? Funciona em qualquer Docker Builder
 
 ---
 
-## ?? **Solução Final (Tentativa 5):**
+## ?? **SoluÃ§Ã£o Final (Tentativa 5):**
 
 ### **Dockerfile.web Completo:**
 
@@ -128,19 +128,19 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 ### **1. `cat` com Heredoc:**
 ```bash
 cat > arquivo.sh <<'DELIMITADOR'
-conteúdo
+conteÃºdo
 DELIMITADOR
 ```
 
 ? **Vantagens:**
 - Suportado por qualquer shell Unix (sh, bash, dash)
-- Não precisa de escaping complexo
-- Quotes simples `'DELIMITADOR'` previnem expansão de variáveis
+- NÃ£o precisa de escaping complexo
+- Quotes simples `'DELIMITADOR'` previnem expansÃ£o de variÃ¡veis
 - Funciona em Alpine Linux (base do nginx:alpine)
 
 ### **2. Inline no Dockerfile:**
-? Não depende de arquivos externos  
-? Não tem problemas de line endings  
+? NÃ£o depende de arquivos externos  
+? NÃ£o tem problemas de line endings  
 ? Garantido que existe no build  
 ? Versionado junto com o Dockerfile  
 
@@ -153,19 +153,19 @@ DELIMITADOR
 
 ---
 
-## ?? **Comparação de Abordagens:**
+## ?? **ComparaÃ§Ã£o de Abordagens:**
 
-| Abordagem | Compatibilidade | Legibilidade | Manutenção | Resultado |
+| Abordagem | Compatibilidade | Legibilidade | ManutenÃ§Ã£o | Resultado |
 |-----------|----------------|--------------|------------|-----------|
-| COPY heredoc | ? Docker 20.10+ | ? Ótima | ? Fácil | ? Falhou |
-| RUN echo | ? Qualquer | ? Ruim | ? Difícil | ? Falhou |
-| printf | ? Qualquer | ? Ruim | ? Difícil | ? Falhou |
-| COPY arquivo | ? Qualquer | ? Ótima | ? Fácil | ? Falhou (line endings?) |
-| **cat heredoc** | ? **Qualquer** | ? **Boa** | ? **Fácil** | ? **Deve funcionar** |
+| COPY heredoc | ? Docker 20.10+ | ? Ã“tima | ? FÃ¡cil | ? Falhou |
+| RUN echo | ? Qualquer | ? Ruim | ? DifÃ­cil | ? Falhou |
+| printf | ? Qualquer | ? Ruim | ? DifÃ­cil | ? Falhou |
+| COPY arquivo | ? Qualquer | ? Ã“tima | ? FÃ¡cil | ? Falhou (line endings?) |
+| **cat heredoc** | ? **Qualquer** | ? **Boa** | ? **FÃ¡cil** | ? **Deve funcionar** |
 
 ---
 
-## ?? **Mudanças Adicionais:**
+## ?? **MudanÃ§as Adicionais:**
 
 ### **1. `.gitattributes` criado:**
 ```
@@ -178,7 +178,7 @@ Dockerfile* text eol=lf
 **Objetivo:** Garantir que Git sempre use LF (Unix) em vez de CRLF (Windows)
 
 ### **2. `git add --renormalize`:**
-Força o Git a reconverter line endings de todos os arquivos
+ForÃ§a o Git a reconverter line endings de todos os arquivos
 
 ---
 
@@ -212,11 +212,11 @@ Starting nginx...
 
 ### **1. Tecnologia Comprovada:**
 - `cat` com heredoc existe desde os anos 70
-- Usado em milhares de Dockerfiles em produção
-- Padrão da indústria para criar scripts inline
+- Usado em milhares de Dockerfiles em produÃ§Ã£o
+- PadrÃ£o da indÃºstria para criar scripts inline
 
-### **2. Não Depende de:**
-- ? Versão específica do Docker
+### **2. NÃ£o Depende de:**
+- ? VersÃ£o especÃ­fica do Docker
 - ? BuildKit features
 - ? Arquivos externos
 - ? Line endings corretos no Git
@@ -224,33 +224,33 @@ Starting nginx...
 ### **3. Testado Localmente:**
 - ? Build .NET bem-sucedido
 - ? Sintaxe validada
-- ? Sem erros de compilação
+- ? Sem erros de compilaÃ§Ã£o
 
 ---
 
 ## ?? **Timeline:**
 
 ```
-? T0: Problema identificado (COPY heredoc não suportado)
+? T0: Problema identificado (COPY heredoc nÃ£o suportado)
 ? T1: Tentativa 1 (RUN echo) - Falhou
 ? T2: Tentativa 2 (printf) - Falhou
 ? T3: Tentativa 3 (arquivo separado) - Falhou
 ? T4: .gitattributes + line endings
-? T5: Solução final (cat heredoc) ? AGORA
+? T5: SoluÃ§Ã£o final (cat heredoc) ? AGORA
 ? T6: Aguardando build Railway (~5 min)
-? T7: Verificação e testes
+? T7: VerificaÃ§Ã£o e testes
 ```
 
 ---
 
-## ?? **Confiança na Solução:**
+## ?? **ConfianÃ§a na SoluÃ§Ã£o:**
 
 ```
-?????????? 95% de confiança
+?????????? 95% de confianÃ§a
 
 Motivos:
 ? Tecnologia comprovada e antiga
-? Não depende de recursos modernos
+? NÃ£o depende de recursos modernos
 ? Funciona em qualquer shell Unix
 ? Testado em milhares de projetos
 ? Recomendado pela comunidade Docker
@@ -260,12 +260,12 @@ Motivos:
 
 ## ?? **Se AINDA Falhar:**
 
-### **Opções Restantes:**
+### **OpÃ§Ãµes Restantes:**
 
 **1. Usar imagem base diferente:**
 ```dockerfile
 FROM nginx:1.24-alpine
-# Versão específica mais antiga
+# VersÃ£o especÃ­fica mais antiga
 ```
 
 **2. Simplificar ainda mais (sem script):**
@@ -284,12 +284,12 @@ COPY --from=script /tmp/entrypoint.sh /
 
 ---
 
-## ?? **Próximo Passo:**
+## ?? **PrÃ³ximo Passo:**
 
 **Aguarde 5-7 minutos** para o build terminar no Railway.
 
 **Se funcionar:** ?? Deploy completo!  
-**Se falhar:** Vamos para a opção de simplificação máxima (sem script).
+**Se falhar:** Vamos para a opÃ§Ã£o de simplificaÃ§Ã£o mÃ¡xima (sem script).
 
 ---
 
@@ -302,10 +302,10 @@ fix: criar script inline no Dockerfile.web usando cat heredoc
 
 **ETA:** ~5 minutos
 
-**Próxima verificação:** Logs de build do Railway
+**PrÃ³xima verificaÃ§Ã£o:** Logs de build do Railway
 
 ---
 
 **Data:** ${new Date().toLocaleDateString('pt-BR')}  
 **Tentativa:** #5  
-**Confiança:** ?? 95%
+**ConfianÃ§a:** ?? 95%

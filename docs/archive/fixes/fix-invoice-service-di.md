@@ -1,4 +1,4 @@
-# ?? CORREÇÃO: InvoiceService não registrado no DI
+# ?? CORREÃ‡ÃƒO: InvoiceService nÃ£o registrado no DI
 
 ## ?? PROBLEMA IDENTIFICADO
 
@@ -10,14 +10,14 @@ System.InvalidOperationException: Cannot provide a value for property 'InvoiceSe
 ```
 
 ### **Causa:**
-A página `Accounts.razor` estava injetando `MoneyManager.Application.Services.ICreditCardInvoiceService`, mas:
+A pÃ¡gina `Accounts.razor` estava injetando `MoneyManager.Application.Services.ICreditCardInvoiceService`, mas:
 1. **Blazor WebAssembly** roda no navegador (client-side)
-2. Não pode usar diretamente serviços da camada **Application** (que são server-side)
-3. O serviço não estava registrado no container de DI do Blazor
+2. NÃ£o pode usar diretamente serviÃ§os da camada **Application** (que sÃ£o server-side)
+3. O serviÃ§o nÃ£o estava registrado no container de DI do Blazor
 
 ---
 
-## ? SOLUÇÃO IMPLEMENTADA
+## ? SOLUÃ‡ÃƒO IMPLEMENTADA
 
 ### **Arquitetura Correta:**
 
@@ -44,7 +44,7 @@ A página `Accounts.razor` estava injetando `MoneyManager.Application.Services.IC
 
 ---
 
-## ?? MUDANÇAS REALIZADAS
+## ?? MUDANÃ‡AS REALIZADAS
 
 ### **1. Criado ICreditCardInvoiceService (Web)**
 **Arquivo:** `src/MoneyManager.Web/Services/ICreditCardInvoiceService.cs`
@@ -52,7 +52,7 @@ A página `Accounts.razor` estava injetando `MoneyManager.Application.Services.IC
 ```csharp
 public interface ICreditCardInvoiceService
 {
-    // Gestão de Faturas
+    // GestÃ£o de Faturas
     Task<CreditCardInvoice> GetOrCreateOpenInvoiceAsync(string accountId);
     Task<CreditCardInvoiceResponseDto> GetInvoiceByIdAsync(string invoiceId);
     Task<IEnumerable<CreditCardInvoiceResponseDto>> GetInvoicesByAccountAsync(string accountId);
@@ -66,18 +66,18 @@ public interface ICreditCardInvoiceService
     Task PayInvoiceAsync(PayInvoiceRequestDto request);
     Task PayPartialInvoiceAsync(PayInvoiceRequestDto request);
     
-    // Relatórios
+    // RelatÃ³rios
     Task<InvoiceSummaryDto> GetInvoiceSummaryAsync(string invoiceId);
     Task<IEnumerable<TransactionResponseDto>> GetInvoiceTransactionsAsync(string invoiceId);
     
-    // Utilitários
+    // UtilitÃ¡rios
     Task<CreditCardInvoice> DetermineInvoiceForTransactionAsync(string accountId, DateTime transactionDate);
     Task RecalculateInvoiceTotalAsync(string invoiceId);
     Task<CreditCardInvoice> CreateHistoryInvoiceAsync(string accountId);
 }
 ```
 
-**Diferença:** Interface **sem `userId`** - API Controller pega do token JWT automaticamente.
+**DiferenÃ§a:** Interface **sem `userId`** - API Controller pega do token JWT automaticamente.
 
 ---
 
@@ -107,7 +107,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         response.EnsureSuccessStatusCode();
     }
     
-    // ... demais métodos
+    // ... demais mÃ©todos
 }
 ```
 
@@ -124,7 +124,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
-// ... outros serviços
+// ... outros serviÃ§os
 builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>(); // ? NOVO
 ```
 
@@ -207,7 +207,7 @@ MoneyManager.Application/
 
 ## ?? FLUXO COMPLETO
 
-### **Exemplo: Usuário Paga Fatura**
+### **Exemplo: UsuÃ¡rio Paga Fatura**
 
 ```
 1. USER clica "Pagar Fatura" em Accounts.razor
@@ -247,17 +247,17 @@ MoneyManager.Application/
 
 ### **Blazor WebAssembly:**
 - Roda **no navegador** (JavaScript/WASM)
-- Não tem acesso direto ao banco de dados
-- Não pode usar Entity Framework diretamente
+- NÃ£o tem acesso direto ao banco de dados
+- NÃ£o pode usar Entity Framework diretamente
 - Precisa fazer chamadas HTTP para a API
 
 ### **API Controller:**
 - Roda **no servidor** (.NET)
 - Tem acesso ao banco de dados
-- Gerencia autenticação/autorização (JWT)
-- Executa lógica de negócio
+- Gerencia autenticaÃ§Ã£o/autorizaÃ§Ã£o (JWT)
+- Executa lÃ³gica de negÃ³cio
 
-### **Separação Correta:**
+### **SeparaÃ§Ã£o Correta:**
 ```
 CLIENT (Browser)              SERVER (.NET)
 ????????????????????         ????????????????????
@@ -270,16 +270,16 @@ CLIENT (Browser)              SERVER (.NET)
 
 ---
 
-## ? VALIDAÇÃO
+## ? VALIDAÃ‡ÃƒO
 
 ### **Build:**
 ```bash
-? Compilação bem-sucedida
+? CompilaÃ§Ã£o bem-sucedida
 ? Sem erros de DI
 ? Interfaces corretas
 ```
 
-### **Testes Necessários:**
+### **Testes NecessÃ¡rios:**
 
 #### **1. Teste Local:**
 ```bash
@@ -292,28 +292,28 @@ cd src/MoneyManager.Web
 dotnet run
 
 # 3. Abrir http://localhost:5001/accounts
-# 4. ? Página deve carregar sem erros
-# 5. ? Console não deve mostrar "InvoiceService not registered"
+# 4. ? PÃ¡gina deve carregar sem erros
+# 5. ? Console nÃ£o deve mostrar "InvoiceService not registered"
 ```
 
-#### **2. Teste Produção:**
+#### **2. Teste ProduÃ§Ã£o:**
 ```
 1. Deploy para Railway
 2. Acessar https://money-manager.railway.app/accounts
-3. ? Página carrega
+3. ? PÃ¡gina carrega
 4. ? Lista de contas aparece
 5. ? Modal de pagamento funciona
 ```
 
 ---
 
-## ?? RESUMO DAS MUDANÇAS
+## ?? RESUMO DAS MUDANÃ‡AS
 
-| Arquivo | Mudança | Motivo |
+| Arquivo | MudanÃ§a | Motivo |
 |---------|---------|--------|
 | **Web/Services/ICreditCardInvoiceService.cs** | ? Criado | Interface client-side |
 | **Web/Services/CreditCardInvoiceService.cs** | ? Criado | HTTP client implementation |
-| **Web/Program.cs** | Adicionado registro DI | Injetar serviço |
+| **Web/Program.cs** | Adicionado registro DI | Injetar serviÃ§o |
 | **Web/Pages/Accounts.razor** | Namespace ajustado | Usar Web.Services |
 | **Web/Pages/InvoiceDetails.razor** | Namespace ajustado | Usar Web.Services |
 
@@ -351,17 +351,17 @@ git push origin main
 ```
 ? Sem erros "Cannot provide a value for property 'InvoiceService'"
 ? Sem erros 404 de API
-? Página /accounts carrega completamente
+? PÃ¡gina /accounts carrega completamente
 ? Modal de pagamento funciona
 ? Lista de faturas carrega
 ```
 
 ### **Funcionalidades:**
 - ? Ver lista de contas
-- ? Ver faturas de cartão
+- ? Ver faturas de cartÃ£o
 - ? Pagar faturas (total/parcial)
 - ? Ver detalhes de fatura
-- ? Dashboard do cartão
+- ? Dashboard do cartÃ£o
 
 ---
 

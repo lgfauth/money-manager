@@ -7,23 +7,23 @@ O Blazor WebAssembly estava mostrando o erro:
 AggregateException_ctor_DefaultMessage (net_uri_BadFormat)
 ```
 
-**Causa:** A aplicaÁ„o n„o estava conseguindo ler a URL da API corretamente porque:
-1. Blazor WASM roda no **navegador do cliente** (n„o tem acesso a vari·veis de ambiente do servidor)
-2. O placeholder `#{API_URL}#` no `appsettings.Production.json` n„o estava sendo substituÌdo
+**Causa:** A aplica√ß√£o n√£o estava conseguindo ler a URL da API corretamente porque:
+1. Blazor WASM roda no **navegador do cliente** (n√£o tem acesso a vari√°veis de ambiente do servidor)
+2. O placeholder `#{API_URL}#` no `appsettings.Production.json` n√£o estava sendo substitu√≠do
 
-## ? SoluÁ„o Implementada
+## ? Solu√ß√£o Implementada
 
 ### Arquivos Modificados
 
-1. **`Dockerfile.web`** - Atualizado para usar script de inicializaÁ„o
-2. **`src/MoneyManager.Web/Program.cs`** - Atualizado para ler configuraÁ„o corretamente
+1. **`Dockerfile.web`** - Atualizado para usar script de inicializa√ß√£o
+2. **`src/MoneyManager.Web/Program.cs`** - Atualizado para ler configura√ß√£o corretamente
 3. **`src/MoneyManager.Web/wwwroot/appsettings.json`** - Criado (novo arquivo)
 
 ### O que foi feito
 
-**1. Dockerfile.web** - Agora usa Alpine Linux + script de inicializaÁ„o:
+**1. Dockerfile.web** - Agora usa Alpine Linux + script de inicializa√ß√£o:
 ```dockerfile
-# Cria script que substitui #{API_URL}# pelo valor real da vari·vel
+# Cria script que substitui #{API_URL}# pelo valor real da vari√°vel
 COPY <<'EOF' /docker-entrypoint.sh
 #!/bin/sh
 API_URL=${API_URL:-"https://localhost:5001"}
@@ -32,7 +32,7 @@ exec nginx -g 'daemon off;'
 EOF
 ```
 
-**2. Program.cs** - Carrega configuraÁ„o do arquivo JSON:
+**2. Program.cs** - Carrega configura√ß√£o do arquivo JSON:
 ```csharp
 // Tenta carregar appsettings.Production.json primeiro
 var productionConfig = await http.GetFromJsonAsync<Dictionary<string, string>>("appsettings.Production.json");
@@ -61,10 +61,10 @@ git commit -m "fix: configurar URL da API no Blazor WebAssembly"
 git push origin main
 ```
 
-### Passo 2: Verificar Vari·vel no Railway
+### Passo 2: Verificar Vari√°vel no Railway
 
-1. Acesse o serviÁo **moneymanager-web** no Railway
-2. V· em **Variables**
+1. Acesse o servi√ßo **moneymanager-web** no Railway
+2. V√° em **Variables**
 3. Certifique-se de que existe:
 
 ```env
@@ -80,7 +80,7 @@ API_URL=https://sua-api.up.railway.app
 
 ### Passo 3: Redeploy
 
-O Railway detectar· as mudanÁas automaticamente e far· o rebuild. Se n„o:
+O Railway detectar√° as mudan√ßas automaticamente e far√° o rebuild. Se n√£o:
 
 ```bash
 # Usando Railway CLI
@@ -92,11 +92,11 @@ Railway ? moneymanager-web ? Deployments ? Redeploy
 
 ---
 
-## ? VerificaÁ„o
+## ? Verifica√ß√£o
 
-### 1. Verificar ConfiguraÁ„o no Browser
+### 1. Verificar Configura√ß√£o no Browser
 
-ApÛs o deploy, acesse:
+Ap√≥s o deploy, acesse:
 ```
 https://seu-app.up.railway.app/appsettings.Production.json
 ```
@@ -108,7 +108,7 @@ Deve mostrar:
 }
 ```
 
-**N√O deve ter** `#{API_URL}#` !
+**N√ÉO deve ter** `#{API_URL}#` !
 
 ### 2. Verificar Console do Navegador
 
@@ -119,12 +119,12 @@ Deve aparecer:
 API URL configurada: https://sua-api.up.railway.app
 ```
 
-### 3. Testar AplicaÁ„o
+### 3. Testar Aplica√ß√£o
 
 1. Acesse o site
 2. Deve carregar normalmente
 3. Tente fazer login/registro
-4. Verifique se as chamadas ‡ API funcionam
+4. Verifique se as chamadas √† API funcionam
 
 ---
 
@@ -177,8 +177,8 @@ src/MoneyManager.Web/
 ??? Program.cs                              ? Atualizado ?
 ??? wwwroot/
     ??? appsettings.json                    ? Novo ?
-    ??? appsettings.Production.json         ? J· existe
-        (contÈm: "ApiUrl": "#{API_URL}#")
+    ??? appsettings.Production.json         ? J√° existe
+        (cont√©m: "ApiUrl": "#{API_URL}#")
 ```
 
 ```
@@ -187,15 +187,15 @@ Dockerfile.web                              ? Atualizado ?
 
 ---
 
-## ?? Checklist de CorreÁ„o
+## ?? Checklist de Corre√ß√£o
 
-- [x] `Dockerfile.web` atualizado com script de inicializaÁ„o
-- [x] `Program.cs` atualizado para ler configuraÁ„o
+- [x] `Dockerfile.web` atualizado com script de inicializa√ß√£o
+- [x] `Program.cs` atualizado para ler configura√ß√£o
 - [x] `appsettings.json` criado no wwwroot
-- [ ] Commit e push das mudanÁas
-- [ ] Vari·vel `API_URL` configurada no Railway
+- [ ] Commit e push das mudan√ßas
+- [ ] Vari√°vel `API_URL` configurada no Railway
 - [ ] Redeploy realizado
-- [ ] AplicaÁ„o carregando corretamente
+- [ ] Aplica√ß√£o carregando corretamente
 - [ ] Login/Registro funcionando
 
 ---
@@ -208,7 +208,7 @@ Dockerfile.web                              ? Atualizado ?
 ???????????????????????????????????????????????????????
 ?    docker-entrypoint.sh executa                     ?
 ?    ?                                                ?
-?    LÍ vari·vel API_URL do Railway                  ?
+?    L√™ vari√°vel API_URL do Railway                  ?
 ?    ?                                                ?
 ?    Substitui #{API_URL}# no appsettings.Production  ?
 ?    ?                                                ?
@@ -216,7 +216,7 @@ Dockerfile.web                              ? Atualizado ?
 ???????????????????????????????????????????????????????
 
 ???????????????????????????????????????????????????????
-? 2. Usu·rio acessa o site                           ?
+? 2. Usu√°rio acessa o site                           ?
 ???????????????????????????????????????????????????????
 ?    Blazor WASM carrega no navegador                ?
 ?    ?                                                ?
@@ -224,25 +224,25 @@ Dockerfile.web                              ? Atualizado ?
 ?    ?                                                ?
 ?    Busca appsettings.Production.json                ?
 ?    ?                                                ?
-?    LÍ ApiUrl (j· substituÌdo!)                      ?
+?    L√™ ApiUrl (j√° substitu√≠do!)                      ?
 ?    ?                                                ?
 ?    Configura HttpClient com a URL correta           ?
 ?    ?                                                ?
-?    ? AplicaÁ„o funciona!                           ?
+?    ? Aplica√ß√£o funciona!                           ?
 ???????????????????????????????????????????????????????
 ```
 
 ---
 
-## ?? PrÛximos Passos
+## ?? Pr√≥ximos Passos
 
-ApÛs corrigir o frontend:
+Ap√≥s corrigir o frontend:
 1. Testar login/registro
-2. Verificar se h· erros na API (mencionado pelo usu·rio)
-3. Configurar CORS se necess·rio
+2. Verificar se h√° erros na API (mencionado pelo usu√°rio)
+3. Configurar CORS se necess√°rio
 
 ---
 
 **Criado por:** Equipe MoneyManager  
 **Data:** ${new Date().toLocaleDateString('pt-BR')}  
-**Status:** ? SoluÁ„o implementada, aguardando deploy
+**Status:** ? Solu√ß√£o implementada, aguardando deploy

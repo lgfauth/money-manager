@@ -1,4 +1,4 @@
-# ?? API de Investimentos - Documentação
+# ?? API de Investimentos - DocumentaÃ§Ã£o
 
 ## Base URL
 
@@ -9,11 +9,11 @@ Development: https://localhost:5001
 
 ---
 
-## ?? Autenticação
+## ?? AutenticaÃ§Ã£o
 
-Todos os endpoints requerem autenticação via JWT.
+Todos os endpoints requerem autenticaÃ§Ã£o via JWT.
 
-### Header Obrigatório
+### Header ObrigatÃ³rio
 
 ```http
 Authorization: Bearer {your_jwt_token}
@@ -38,7 +38,7 @@ Content-Type: application/json
   "user": {
     "id": "user_123",
     "email": "usuario@exemplo.com",
-    "name": "João Silva"
+    "name": "JoÃ£o Silva"
   }
 }
 ```
@@ -76,16 +76,16 @@ Authorization: Bearer {token}
     "profitLoss": 250.00,
     "profitLossPercentage": 7.69,
     "lastPriceUpdate": "2025-02-13T15:30:00Z",
-    "notes": "Primeira compra de ações",
+    "notes": "Primeira compra de aÃ§Ãµes",
     "createdAt": "2025-01-15T10:00:00Z",
     "updatedAt": "2025-02-13T15:30:00Z"
   }
 ]
 ```
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `200 OK` - Sucesso
-- `401 Unauthorized` - Token inválido/expirado
+- `401 Unauthorized` - Token invÃ¡lido/expirado
 - `500 Internal Server Error` - Erro no servidor
 
 ---
@@ -122,11 +122,11 @@ GET /api/investment-assets/{id}
 }
 ```
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `200 OK` - Sucesso
-- `404 Not Found` - Ativo não encontrado
-- `401 Unauthorized` - Token inválido
-- `403 Forbidden` - Ativo pertence a outro usuário
+- `404 Not Found` - Ativo nÃ£o encontrado
+- `401 Unauthorized` - Token invÃ¡lido
+- `403 Forbidden` - Ativo pertence a outro usuÃ¡rio
 
 ---
 
@@ -147,26 +147,26 @@ Content-Type: application/json
   "initialQuantity": 100.0,
   "initialPrice": 32.50,
   "initialFees": 10.00,
-  "notes": "Primeira compra de ações"
+  "notes": "Primeira compra de aÃ§Ãµes"
 }
 ```
 
 **Campos:**
-- `accountId` (obrigatório) - ID da conta de investimento
-- `assetType` (obrigatório) - Tipo do ativo (enum)
-  - `0` = Stock (Ações)
+- `accountId` (obrigatÃ³rio) - ID da conta de investimento
+- `assetType` (obrigatÃ³rio) - Tipo do ativo (enum)
+  - `0` = Stock (AÃ§Ãµes)
   - `1` = FixedIncome (Renda Fixa)
   - `2` = RealEstate (FIIs)
   - `3` = Crypto (Criptomoedas)
   - `4` = Fund (Fundos)
   - `5` = ETF
   - `6` = Other (Outros)
-- `name` (obrigatório) - Nome do ativo
-- `ticker` (opcional) - Código do ativo para cotações automáticas
+- `name` (obrigatÃ³rio) - Nome do ativo
+- `ticker` (opcional) - CÃ³digo do ativo para cotaÃ§Ãµes automÃ¡ticas
 - `initialQuantity` (opcional, default: 0) - Quantidade inicial
-- `initialPrice` (opcional, default: 0) - Preço inicial
+- `initialPrice` (opcional, default: 0) - PreÃ§o inicial
 - `initialFees` (opcional, default: 0) - Taxas da compra inicial
-- `notes` (opcional) - Observações
+- `notes` (opcional) - ObservaÃ§Ãµes
 
 **Response 201 Created:**
 ```json
@@ -185,23 +185,23 @@ Content-Type: application/json
   "profitLoss": -10.00,
   "profitLossPercentage": -0.31,
   "lastPriceUpdate": "2025-02-13T10:00:00Z",
-  "notes": "Primeira compra de ações",
+  "notes": "Primeira compra de aÃ§Ãµes",
   "createdAt": "2025-02-13T10:00:00Z",
   "updatedAt": "2025-02-13T10:00:00Z"
 }
 ```
 
-**Validações:**
-- Conta deve existir e pertencer ao usuário
+**ValidaÃ§Ãµes:**
+- Conta deve existir e pertencer ao usuÃ¡rio
 - Conta deve ser do tipo "Investment"
-- Nome não pode ser vazio
-- Quantidade e preço não podem ser negativos
+- Nome nÃ£o pode ser vazio
+- Quantidade e preÃ§o nÃ£o podem ser negativos
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `201 Created` - Ativo criado com sucesso
-- `400 Bad Request` - Validação falhou
-- `404 Not Found` - Conta não encontrada
-- `401 Unauthorized` - Token inválido
+- `400 Bad Request` - ValidaÃ§Ã£o falhou
+- `404 Not Found` - Conta nÃ£o encontrada
+- `401 Unauthorized` - Token invÃ¡lido
 
 ---
 
@@ -217,7 +217,7 @@ Content-Type: application/json
 {
   "name": "Petrobras PN - Atualizado",
   "ticker": "PETR4",
-  "notes": "Estratégia de longo prazo"
+  "notes": "EstratÃ©gia de longo prazo"
 }
 ```
 
@@ -227,15 +227,15 @@ Content-Type: application/json
   "id": "64a1b2c3d4e5f6789012345",
   "name": "Petrobras PN - Atualizado",
   "ticker": "PETR4",
-  "notes": "Estratégia de longo prazo",
+  "notes": "EstratÃ©gia de longo prazo",
   ...
 }
 ```
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `200 OK` - Atualizado com sucesso
-- `404 Not Found` - Ativo não encontrado
-- `400 Bad Request` - Validação falhou
+- `404 Not Found` - Ativo nÃ£o encontrado
+- `400 Bad Request` - ValidaÃ§Ã£o falhou
 
 ---
 
@@ -247,11 +247,11 @@ DELETE /api/investment-assets/{id}
 
 **Response 204 No Content**
 
-> **Nota:** Soft delete - o registro não é removido do banco, apenas marcado como deletado.
+> **Nota:** Soft delete - o registro nÃ£o Ã© removido do banco, apenas marcado como deletado.
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `204 No Content` - Deletado com sucesso
-- `404 Not Found` - Ativo não encontrado
+- `404 Not Found` - Ativo nÃ£o encontrado
 
 ---
 
@@ -274,11 +274,11 @@ Content-Type: application/json
 ```
 
 **Campos:**
-- `quantity` (obrigatório) - Quantidade a comprar
-- `price` (obrigatório) - Preço unitário
+- `quantity` (obrigatÃ³rio) - Quantidade a comprar
+- `price` (obrigatÃ³rio) - PreÃ§o unitÃ¡rio
 - `fees` (opcional, default: 0) - Taxas (corretagem, emolumentos)
-- `date` (obrigatório) - Data da operação
-- `description` (opcional) - Descrição da operação
+- `date` (obrigatÃ³rio) - Data da operaÃ§Ã£o
+- `description` (opcional) - DescriÃ§Ã£o da operaÃ§Ã£o
 
 **Response 200 OK:**
 ```json
@@ -296,27 +296,27 @@ Content-Type: application/json
 ```
 
 **O que acontece:**
-1. ? Calcula novo preço médio ponderado
+1. ? Calcula novo preÃ§o mÃ©dio ponderado
 2. ? Atualiza quantidade total
 3. ? Cria `InvestmentTransaction` (tipo Buy)
 4. ? Cria `Transaction` regular (tipo InvestmentBuy)
 5. ? Debita saldo da conta: `-R$ 1.755,00`
-6. ? Atualiza lucro/prejuízo
+6. ? Atualiza lucro/prejuÃ­zo
 
-**Cálculo do Preço Médio:**
+**CÃ¡lculo do PreÃ§o MÃ©dio:**
 ```
-Preço Médio Anterior: R$ 32,50 (100 ações)
-Nova Compra: 50 ações @ R$ 35,00 + R$ 5,00 taxas = R$ 1.755,00
+PreÃ§o MÃ©dio Anterior: R$ 32,50 (100 aÃ§Ãµes)
+Nova Compra: 50 aÃ§Ãµes @ R$ 35,00 + R$ 5,00 taxas = R$ 1.755,00
 
-Novo Preço Médio = (R$ 3.250,00 + R$ 1.755,00) / (100 + 50)
+Novo PreÃ§o MÃ©dio = (R$ 3.250,00 + R$ 1.755,00) / (100 + 50)
                  = R$ 5.005,00 / 150
                  = R$ 33,50
 ```
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `200 OK` - Compra registrada
-- `404 Not Found` - Ativo não encontrado
-- `400 Bad Request` - Validação falhou (quantidade/preço inválidos)
+- `404 Not Found` - Ativo nÃ£o encontrado
+- `400 Bad Request` - ValidaÃ§Ã£o falhou (quantidade/preÃ§o invÃ¡lidos)
 - `402 Payment Required` - Saldo insuficiente na conta
 
 ---
@@ -335,7 +335,7 @@ Content-Type: application/json
   "price": 38.00,
   "fees": 5.00,
   "date": "2025-02-13T14:00:00Z",
-  "description": "Realização de lucro"
+  "description": "RealizaÃ§Ã£o de lucro"
 }
 ```
 
@@ -355,33 +355,33 @@ Content-Type: application/json
 ```
 
 **O que acontece:**
-1. ? Valida quantidade disponível
-2. ? Calcula lucro/prejuízo da venda
-3. ? Reduz quantidade (preço médio não muda!)
+1. ? Valida quantidade disponÃ­vel
+2. ? Calcula lucro/prejuÃ­zo da venda
+3. ? Reduz quantidade (preÃ§o mÃ©dio nÃ£o muda!)
 4. ? Cria `InvestmentTransaction` (tipo Sell)
 5. ? Cria `Transaction` regular (tipo InvestmentSell)
 6. ? Credita saldo da conta: `+R$ 1.895,00`
 
-**Cálculo do Lucro:**
+**CÃ¡lculo do Lucro:**
 ```
 Quantidade Vendida: 50
-Preço de Venda: R$ 38,00
-Preço Médio: R$ 33,50
+PreÃ§o de Venda: R$ 38,00
+PreÃ§o MÃ©dio: R$ 33,50
 Taxas: R$ 5,00
 
-Lucro = (R$ 38,00 - R$ 33,50) × 50 - R$ 5,00
-      = R$ 4,50 × 50 - R$ 5,00
+Lucro = (R$ 38,00 - R$ 33,50) Ã— 50 - R$ 5,00
+      = R$ 4,50 Ã— 50 - R$ 5,00
       = R$ 225,00 - R$ 5,00
       = R$ 220,00
 ```
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `200 OK` - Venda registrada
-- `400 Bad Request` - Quantidade insuficiente ou validação falhou
+- `400 Bad Request` - Quantidade insuficiente ou validaÃ§Ã£o falhou
 
 ---
 
-### 8. Ajustar Preço
+### 8. Ajustar PreÃ§o
 
 ```http
 POST /api/investment-assets/{id}/adjust-price
@@ -415,9 +415,9 @@ Content-Type: application/json
 3. ? Cria `InvestmentTransaction` (tipo MarketAdjustment)
 4. ? Atualiza `LastPriceUpdate`
 
-**Códigos de Status:**
-- `200 OK` - Preço ajustado
-- `400 Bad Request` - Preço negativo
+**CÃ³digos de Status:**
+- `200 OK` - PreÃ§o ajustado
+- `400 Bad Request` - PreÃ§o negativo
 
 ---
 
@@ -485,13 +485,13 @@ GET /api/investment-assets/summary
 }
 ```
 
-**Códigos de Status:**
+**CÃ³digos de Status:**
 - `200 OK` - Sucesso
-- `401 Unauthorized` - Token inválido
+- `401 Unauthorized` - Token invÃ¡lido
 
 ---
 
-### 10. Atualizar Preços Manualmente
+### 10. Atualizar PreÃ§os Manualmente
 
 ```http
 POST /api/investment-assets/update-prices
@@ -500,7 +500,7 @@ POST /api/investment-assets/update-prices
 **Response 200 OK:**
 ```json
 {
-  "message": "Preços atualizados com sucesso",
+  "message": "PreÃ§os atualizados com sucesso",
   "timestamp": "2025-02-13T15:35:00Z",
   "total": 14,
   "updated": 12,
@@ -523,15 +523,15 @@ POST /api/investment-assets/update-prices
 }
 ```
 
-**Códigos de Status:**
-- `200 OK` - Atualização concluída
-- `503 Service Unavailable` - API Brapi indisponível
+**CÃ³digos de Status:**
+- `200 OK` - AtualizaÃ§Ã£o concluÃ­da
+- `503 Service Unavailable` - API Brapi indisponÃ­vel
 
 ---
 
 ## ?? Endpoints - InvestmentTransactions
 
-### 1. Listar Transações
+### 1. Listar TransaÃ§Ãµes
 
 ```http
 GET /api/investment-transactions?startDate=2025-01-01&endDate=2025-12-31
@@ -571,12 +571,12 @@ GET /api/investment-transactions?startDate=2025-01-01&endDate=2025-12-31
 - `2` = Dividend (Dividendo)
 - `3` = Interest (Juros)
 - `4` = YieldPayment (Rendimento/Aluguel)
-- `5` = MarketAdjustment (Ajuste de Preço)
+- `5` = MarketAdjustment (Ajuste de PreÃ§o)
 - `6` = Fee (Taxa)
 
 ---
 
-### 2. Transações por Ativo
+### 2. TransaÃ§Ãµes por Ativo
 
 ```http
 GET /api/investment-transactions/asset/{assetId}
@@ -622,19 +622,19 @@ Content-Type: application/json
   "amount": 150.00,
   "yieldType": 2,
   "date": "2025-02-10T00:00:00Z",
-  "description": "Dividendos PETR4 - Referência 2024"
+  "description": "Dividendos PETR4 - ReferÃªncia 2024"
 }
 ```
 
 **Campos:**
-- `assetId` (obrigatório) - ID do ativo
-- `amount` (obrigatório) - Valor líquido recebido
-- `yieldType` (obrigatório) - Tipo de rendimento
+- `assetId` (obrigatÃ³rio) - ID do ativo
+- `amount` (obrigatÃ³rio) - Valor lÃ­quido recebido
+- `yieldType` (obrigatÃ³rio) - Tipo de rendimento
   - `2` = Dividend
   - `3` = Interest
   - `4` = YieldPayment (Aluguel de FII)
-- `date` (obrigatório) - Data do recebimento
-- `description` (opcional) - Descrição
+- `date` (obrigatÃ³rio) - Data do recebimento
+- `description` (opcional) - DescriÃ§Ã£o
 
 **Response 200 OK:**
 ```json
@@ -645,7 +645,7 @@ Content-Type: application/json
   "transactionType": 2,
   "amount": 150.00,
   "date": "2025-02-10T00:00:00Z",
-  "description": "Dividendos PETR4 - Referência 2024"
+  "description": "Dividendos PETR4 - ReferÃªncia 2024"
 }
 ```
 
@@ -658,7 +658,7 @@ Content-Type: application/json
 
 ## ?? Endpoints - InvestmentReports
 
-### 1. Relatório de Vendas (IR)
+### 1. RelatÃ³rio de Vendas (IR)
 
 ```http
 GET /api/investment-reports/sales/{year}
@@ -705,7 +705,7 @@ GET /api/investment-reports/sales/{year}
 
 ---
 
-### 2. Relatório de Rendimentos
+### 2. RelatÃ³rio de Rendimentos
 
 ```http
 GET /api/investment-reports/yields/{year}
@@ -757,8 +757,8 @@ GET /api/investment-reports/consolidated?start=2025-01-01&end=2025-12-31
 ```
 
 **Query Parameters:**
-- `start` (obrigatório) - Data inicial (YYYY-MM-DD)
-- `end` (obrigatório) - Data final
+- `start` (obrigatÃ³rio) - Data inicial (YYYY-MM-DD)
+- `end` (obrigatÃ³rio) - Data final
 
 **Response 200 OK:**
 ```json
@@ -789,15 +789,15 @@ GET /api/investment-reports/consolidated?start=2025-01-01&end=2025-12-31
 
 ---
 
-## ?? Códigos de Erro
+## ?? CÃ³digos de Erro
 
 ### 400 Bad Request
 ```json
 {
-  "message": "Erro de validação",
+  "message": "Erro de validaÃ§Ã£o",
   "errors": {
     "Quantity": ["Quantidade deve ser maior que zero"],
-    "Price": ["Preço deve ser maior que zero"]
+    "Price": ["PreÃ§o deve ser maior que zero"]
   }
 }
 ```
@@ -805,21 +805,21 @@ GET /api/investment-reports/consolidated?start=2025-01-01&end=2025-12-31
 ### 401 Unauthorized
 ```json
 {
-  "message": "Token inválido ou expirado"
+  "message": "Token invÃ¡lido ou expirado"
 }
 ```
 
 ### 403 Forbidden
 ```json
 {
-  "message": "Você não tem permissão para acessar este recurso"
+  "message": "VocÃª nÃ£o tem permissÃ£o para acessar este recurso"
 }
 ```
 
 ### 404 Not Found
 ```json
 {
-  "message": "Ativo de investimento não encontrado"
+  "message": "Ativo de investimento nÃ£o encontrado"
 }
 ```
 
@@ -836,9 +836,9 @@ GET /api/investment-reports/consolidated?start=2025-01-01&end=2025-12-31
 ## ?? Rate Limiting
 
 ### Limites
-- **Geral:** 100 requisições/minuto por usuário
-- **Update Prices:** 1 requisição/minuto
-- **Reports:** 10 requisições/minuto
+- **Geral:** 100 requisiÃ§Ãµes/minuto por usuÃ¡rio
+- **Update Prices:** 1 requisiÃ§Ã£o/minuto
+- **Reports:** 10 requisiÃ§Ãµes/minuto
 
 ### Headers de Resposta
 ```
@@ -850,7 +850,7 @@ X-RateLimit-Reset: 1613216400
 ### Erro 429 Too Many Requests
 ```json
 {
-  "message": "Limite de requisições excedido",
+  "message": "Limite de requisiÃ§Ãµes excedido",
   "retryAfter": 60
 }
 ```
@@ -859,24 +859,24 @@ X-RateLimit-Reset: 1613216400
 
 ## ?? Notas Importantes
 
-### Preço Médio Ponderado
+### PreÃ§o MÃ©dio Ponderado
 - Calculado automaticamente em compras
-- **Não muda** em vendas
-- Inclui taxas no cálculo
+- **NÃ£o muda** em vendas
+- Inclui taxas no cÃ¡lculo
 
 ### Soft Delete
-- Registros deletados não são removidos
+- Registros deletados nÃ£o sÃ£o removidos
 - Campo `IsDeleted` marcado como `true`
-- Não aparecem em listagens normais
+- NÃ£o aparecem em listagens normais
 
-### Transações Vinculadas
-- Toda operação de investimento cria duas transações:
-  1. `InvestmentTransaction` (histórico do ativo)
+### TransaÃ§Ãµes Vinculadas
+- Toda operaÃ§Ã£o de investimento cria duas transaÃ§Ãµes:
+  1. `InvestmentTransaction` (histÃ³rico do ativo)
   2. `Transaction` regular (impacta saldo da conta)
 - Vinculadas via `LinkedTransactionId`
 
-### Atualização de Cotações
-- Automática: 3x/dia (12h, 15h, 18h)
+### AtualizaÃ§Ã£o de CotaÃ§Ãµes
+- AutomÃ¡tica: 3x/dia (12h, 15h, 18h)
 - Manual: via endpoint `/update-prices`
 - Cache: 15 minutos
 - Somente ativos com `ticker` configurado
@@ -933,5 +933,5 @@ Acesse: https://localhost:5001/swagger
 
 ---
 
-**Versão da API:** 1.0.0
-**Última atualização:** 13/02/2025
+**VersÃ£o da API:** 1.0.0
+**Ãšltima atualizaÃ§Ã£o:** 13/02/2025

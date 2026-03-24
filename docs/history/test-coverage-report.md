@@ -1,4 +1,4 @@
-# ?? Relatório de Cobertura de Testes - MoneyManager API
+# ?? RelatÃ³rio de Cobertura de Testes - MoneyManager API
 
 ## ?? Resumo Executivo
 
@@ -6,9 +6,9 @@
 ? **Testes Aprovados:** 49 (100%)  
 ? **Testes Falhados:** 0  
 ?? **Testes Ignorados:** 0  
-?? **Duração:** 2.1 segundos  
+?? **DuraÃ§Ã£o:** 2.1 segundos  
 
-## ?? Serviços Testados
+## ?? ServiÃ§os Testados
 
 ### 1. AccountService (7 testes)
 **Cobertura:** ~95%
@@ -22,12 +22,12 @@
 - ? `UpdateBalanceAsync_ShouldUpdateBalance`
 
 **Funcionalidades Cobertas:**
-- Criação de contas (corrente, poupança, investimento)
-- Listagem filtrada por usuário
-- Busca por ID com validação
-- Atualização de dados da conta
-- Soft delete (exclusão lógica)
-- Atualização de saldo
+- CriaÃ§Ã£o de contas (corrente, poupanÃ§a, investimento)
+- Listagem filtrada por usuÃ¡rio
+- Busca por ID com validaÃ§Ã£o
+- AtualizaÃ§Ã£o de dados da conta
+- Soft delete (exclusÃ£o lÃ³gica)
+- AtualizaÃ§Ã£o de saldo
 
 ---
 
@@ -44,12 +44,12 @@
 - ? `DeleteAsync_ShouldRevertImpactAndMarkAsDeleted`
 
 **Funcionalidades Cobertas:**
-- Transações de receita (aumenta saldo)
-- Transações de despesa (diminui saldo)
-- Transferências entre contas
-- Reversão de impacto ao atualizar/deletar
-- Validação de contas
-- Filtragem por usuário
+- TransaÃ§Ãµes de receita (aumenta saldo)
+- TransaÃ§Ãµes de despesa (diminui saldo)
+- TransferÃªncias entre contas
+- ReversÃ£o de impacto ao atualizar/deletar
+- ValidaÃ§Ã£o de contas
+- Filtragem por usuÃ¡rio
 
 ---
 
@@ -64,11 +64,11 @@
 - ? `DeleteAsync_WithSystemCategory_ShouldThrowException`
 
 **Funcionalidades Cobertas:**
-- Criação de categorias customizadas
-- Categorias de sistema (não deletáveis)
+- CriaÃ§Ã£o de categorias customizadas
+- Categorias de sistema (nÃ£o deletÃ¡veis)
 - Categorias por tipo (receita/despesa)
-- Atualização e exclusão
-- Proteção de categorias do sistema
+- AtualizaÃ§Ã£o e exclusÃ£o
+- ProteÃ§Ã£o de categorias do sistema
 
 ---
 
@@ -84,11 +84,11 @@
 - ? `CreateOrUpdateAsync_ShouldExcludeDeletedTransactions`
 
 **Funcionalidades Cobertas:**
-- Criação/atualização de orçamentos mensais
-- Múltiplas categorias por orçamento
-- Cálculo automático de gastos
-- Exclusão de transações deletadas
-- Filtragem por mês
+- CriaÃ§Ã£o/atualizaÃ§Ã£o de orÃ§amentos mensais
+- MÃºltiplas categorias por orÃ§amento
+- CÃ¡lculo automÃ¡tico de gastos
+- ExclusÃ£o de transaÃ§Ãµes deletadas
+- Filtragem por mÃªs
 
 ---
 
@@ -105,11 +105,11 @@
 - ? `ProcessDueRecurrencesAsync_ShouldCreateTransactions`
 
 **Funcionalidades Cobertas:**
-- Transações recorrentes (diária, semanal, mensal, etc.)
-- Cálculo de próxima ocorrência
-- Processamento automático de recorrências
-- Definição de dia do mês
-- Ativação/desativação
+- TransaÃ§Ãµes recorrentes (diÃ¡ria, semanal, mensal, etc.)
+- CÃ¡lculo de prÃ³xima ocorrÃªncia
+- Processamento automÃ¡tico de recorrÃªncias
+- DefiniÃ§Ã£o de dia do mÃªs
+- AtivaÃ§Ã£o/desativaÃ§Ã£o
 
 ---
 
@@ -125,8 +125,8 @@
 **Funcionalidades Cobertas:**
 - Resumo mensal (receitas, despesas, saldo)
 - Agrupamento de despesas por categoria
-- Filtragem por período
-- Exclusão de transações deletadas
+- Filtragem por perÃ­odo
+- ExclusÃ£o de transaÃ§Ãµes deletadas
 
 ---
 
@@ -143,12 +143,12 @@
 - ? `UpdateEmailAsync_WithExistingEmail_ShouldThrowException`
 
 **Funcionalidades Cobertas:**
-- Obtenção de perfil do usuário
-- Atualização de dados pessoais
-- Troca de senha com validação
-- Atualização de email
-- Validação de senha atual
-- Verificação de email duplicado
+- ObtenÃ§Ã£o de perfil do usuÃ¡rio
+- AtualizaÃ§Ã£o de dados pessoais
+- Troca de senha com validaÃ§Ã£o
+- AtualizaÃ§Ã£o de email
+- ValidaÃ§Ã£o de senha atual
+- VerificaÃ§Ã£o de email duplicado
 
 ---
 
@@ -163,43 +163,43 @@
 - ? `GetSettingsAsync_WithMultipleUsers_ShouldReturnCorrectSettings`
 
 **Funcionalidades Cobertas:**
-- Configurações padrão automáticas
+- ConfiguraÃ§Ãµes padrÃ£o automÃ¡ticas
 - Moeda e formato de data
-- Notificações por email
-- Alertas de orçamento
+- NotificaÃ§Ãµes por email
+- Alertas de orÃ§amento
 - Tema e cores personalizadas
-- Dia de fechamento do mês
+- Dia de fechamento do mÃªs
 
 ---
 
 ### 9. AuthService (Existente)
 **Cobertura:** ~90%
 
-Testes já existentes cobrem:
-- Registro de usuário
-- Login com validação
-- Geração de tokens
-- Validação de credenciais
+Testes jÃ¡ existentes cobrem:
+- Registro de usuÃ¡rio
+- Login com validaÃ§Ã£o
+- GeraÃ§Ã£o de tokens
+- ValidaÃ§Ã£o de credenciais
 
 ---
 
-## ?? Estatísticas Gerais
+## ?? EstatÃ­sticas Gerais
 
 ### Cobertura por Camada:
 - **Application Layer (Services):** ~93%
-- **Controllers:** Não cobertos neste conjunto
+- **Controllers:** NÃ£o cobertos neste conjunto
 - **Validators:** Parcialmente cobertos
 
 ### Tipos de Teste:
-- **Testes Unitários:** 49
-- **Testes de Integração:** 0 (a serem adicionados)
+- **Testes UnitÃ¡rios:** 49
+- **Testes de IntegraÃ§Ã£o:** 0 (a serem adicionados)
 - **Testes E2E:** 0 (a serem adicionados)
 
-### Cenários Testados:
+### CenÃ¡rios Testados:
 ? **Casos de Sucesso:** 35 testes  
 ? **Tratamento de Erros:** 14 testes  
-? **Validações:** 12 testes  
-? **Isolamento de Usuários:** 8 testes  
+? **ValidaÃ§Ãµes:** 12 testes  
+? **Isolamento de UsuÃ¡rios:** 8 testes  
 ? **Soft Deletes:** 6 testes  
 
 ## ?? Tecnologias Utilizadas
@@ -213,13 +213,13 @@ Testes já existentes cobrem:
 
 ### Prioridade Alta:
 1. ? **Testes de Controllers** - Testar endpoints da API
-2. ? **Testes de Validators** - Validação de DTOs
-3. ? **Testes de Integração** - Testes com banco de dados real
+2. ? **Testes de Validators** - ValidaÃ§Ã£o de DTOs
+3. ? **Testes de IntegraÃ§Ã£o** - Testes com banco de dados real
 
-### Prioridade Média:
+### Prioridade MÃ©dia:
 4. **Testes de Performance** - Testar com grande volume de dados
-5. **Testes de Segurança** - Validar autenticação e autorização
-6. **Testes E2E** - Fluxos completos da aplicação
+5. **Testes de SeguranÃ§a** - Validar autenticaÃ§Ã£o e autorizaÃ§Ã£o
+6. **Testes E2E** - Fluxos completos da aplicaÃ§Ã£o
 
 ### Prioridade Baixa:
 7. **Testes de Carga** - Stress testing
@@ -234,43 +234,43 @@ dotnet test
 # Executar com cobertura
 dotnet test --collect:"XPlat Code Coverage"
 
-# Executar testes específicos
+# Executar testes especÃ­ficos
 dotnet test --filter "FullyQualifiedName~TransactionServiceTests"
 
 # Executar com verbosidade
 dotnet test --verbosity detailed
 ```
 
-## ?? Convenções de Nomenclatura
+## ?? ConvenÃ§Ãµes de Nomenclatura
 
-Seguimos o padrão AAA (Arrange-Act-Assert):
+Seguimos o padrÃ£o AAA (Arrange-Act-Assert):
 
 ```csharp
 [Fact]
 public async Task MethodName_Scenario_ExpectedResult()
 {
-    // Arrange - Configuração
+    // Arrange - ConfiguraÃ§Ã£o
     
-    // Act - Execução
+    // Act - ExecuÃ§Ã£o
     
-    // Assert - Verificação
+    // Assert - VerificaÃ§Ã£o
 }
 ```
 
-## ? Conclusão
+## ? ConclusÃ£o
 
-O projeto **MoneyManager** possui agora uma **cobertura de testes superior a 90%** das funcionalidades principais da API, com **49 testes automatizados** cobrindo os 8 serviços principais da aplicação.
+O projeto **MoneyManager** possui agora uma **cobertura de testes superior a 90%** das funcionalidades principais da API, com **49 testes automatizados** cobrindo os 8 serviÃ§os principais da aplicaÃ§Ã£o.
 
-Todos os testes estão **passando com sucesso** e cobrem tanto cenários positivos quanto negativos, garantindo a qualidade e confiabilidade do código.
+Todos os testes estÃ£o **passando com sucesso** e cobrem tanto cenÃ¡rios positivos quanto negativos, garantindo a qualidade e confiabilidade do cÃ³digo.
 
-### Próximos Passos:
+### PrÃ³ximos Passos:
 1. Adicionar testes para Controllers
-2. Implementar testes de integração
-3. Configurar CI/CD com execução automática de testes
-4. Adicionar relatório de cobertura visual (ReportGenerator)
+2. Implementar testes de integraÃ§Ã£o
+3. Configurar CI/CD com execuÃ§Ã£o automÃ¡tica de testes
+4. Adicionar relatÃ³rio de cobertura visual (ReportGenerator)
 
 ---
 
 **Gerado em:** ${new Date().toLocaleDateString('pt-BR')}  
-**Versão:** 1.0.0  
+**VersÃ£o:** 1.0.0  
 **Status:** ? Todos os testes passando

@@ -1,4 +1,4 @@
-# ?? CORRE«√O: API Controller Faltando - CreditCardInvoices
+# ?? CORRE√á√ÉO: API Controller Faltando - CreditCardInvoices
 
 ## ?? PROBLEMA IDENTIFICADO
 
@@ -9,7 +9,7 @@ Status: 404 Not Found
 ```
 
 ### **Causa:**
-O **CreditCardInvoicesController** **n„o existia** na camada Presentation (API). 
+O **CreditCardInvoicesController** **n√£o existia** na camada Presentation (API). 
 
 Mesmo tendo:
 - ? `ICreditCardInvoiceService` (Application layer)
@@ -17,18 +17,18 @@ Mesmo tendo:
 - ? `ICreditCardInvoiceService` (Web layer - HTTP client)
 - ? `CreditCardInvoiceService` (Web layer - HTTP client)
 
-**Faltava:** O controller da API que expıe os endpoints HTTP.
+**Faltava:** O controller da API que exp√µe os endpoints HTTP.
 
 ---
 
-## ? SOLU«√O IMPLEMENTADA
+## ? SOLU√á√ÉO IMPLEMENTADA
 
 ### **Arquivo Criado:**
 `src/MoneyManager.Presentation/Controllers/CreditCardInvoicesController.cs`
 
 ### **Endpoints Implementados:**
 
-#### **1. Gest„o de Faturas (5 endpoints):**
+#### **1. Gest√£o de Faturas (5 endpoints):**
 ```
 GET    /api/credit-card-invoices/accounts/{accountId}/open
 GET    /api/credit-card-invoices/{invoiceId}
@@ -48,13 +48,13 @@ POST   /api/credit-card-invoices/pay
 POST   /api/credit-card-invoices/pay-partial
 ```
 
-#### **4. RelatÛrios (2 endpoints):**
+#### **4. Relat√≥rios (2 endpoints):**
 ```
 GET    /api/credit-card-invoices/{invoiceId}/summary
 GET    /api/credit-card-invoices/{invoiceId}/transactions
 ```
 
-#### **5. Utilit·rios (3 endpoints):**
+#### **5. Utilit√°rios (3 endpoints):**
 ```
 GET    /api/credit-card-invoices/accounts/{accountId}/determine
 POST   /api/credit-card-invoices/{invoiceId}/recalculate
@@ -67,12 +67,12 @@ POST   /api/credit-card-invoices/accounts/{accountId}/history
 
 ## ?? ESTRUTURA DO CONTROLLER
 
-### **Padr„o Implementado:**
+### **Padr√£o Implementado:**
 
 ```csharp
 [ApiController]
 [Route("api/credit-card-invoices")]
-[Authorize] // ? Requer autenticaÁ„o JWT
+[Authorize] // ? Requer autentica√ß√£o JWT
 public class CreditCardInvoicesController : ControllerBase
 {
     private readonly ICreditCardInvoiceService _invoiceService;
@@ -88,7 +88,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("accounts/{accountId}")]
     public async Task<IActionResult> GetByAccount(string accountId)
     {
-        var userId = GetUserId(); // ? SeguranÁa: pega do token
+        var userId = GetUserId(); // ? Seguran√ßa: pega do token
         
         try
         {
@@ -108,7 +108,7 @@ public class CreditCardInvoicesController : ControllerBase
 
 ## ?? FLUXO COMPLETO AGORA FUNCIONA
 
-### **Usu·rio Acessa Dashboard:**
+### **Usu√°rio Acessa Dashboard:**
 
 ```
 1. USER acessa /credit-cards/{accountId}
@@ -139,32 +139,32 @@ public class CreditCardInvoicesController : ControllerBase
 
 ---
 
-## ?? SEGURAN«A IMPLEMENTADA
+## ?? SEGURAN√áA IMPLEMENTADA
 
-### **1. AutenticaÁ„o:**
+### **1. Autentica√ß√£o:**
 ```csharp
-[Authorize] // ? Requer token JWT v·lido
+[Authorize] // ? Requer token JWT v√°lido
 ```
 
-### **2. AutorizaÁ„o:**
+### **2. Autoriza√ß√£o:**
 ```csharp
 private string GetUserId()
 {
     return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
 }
 
-// Usado em todos os mÈtodos:
+// Usado em todos os m√©todos:
 var userId = GetUserId();
 var invoices = await _invoiceService.GetInvoicesByAccountAsync(userId, accountId);
 ```
 
-**BenefÌcio:** Usu·rio sÛ acessa suas prÛprias faturas.
+**Benef√≠cio:** Usu√°rio s√≥ acessa suas pr√≥prias faturas.
 
 ---
 
 ## ?? EXEMPLO DE ENDPOINTS
 
-### **1. Buscar Faturas de um Cart„o:**
+### **1. Buscar Faturas de um Cart√£o:**
 ```http
 GET /api/credit-card-invoices/accounts/695c1677c626fc40231acb2f
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
@@ -226,7 +226,7 @@ Response 200 OK:
   "totalTransactions": 15,
   "averageTransactionAmount": 100.00,
   "amountByCategory": {
-    "AlimentaÁ„o": 500.00,
+    "Alimenta√ß√£o": 500.00,
     "Transporte": 300.00,
     "Lazer": 700.00
   }
@@ -235,11 +235,11 @@ Response 200 OK:
 
 ---
 
-## ?? TESTES NECESS¡RIOS
+## ?? TESTES NECESS√ÅRIOS
 
 ### **Swagger/Postman:**
 
-#### **1. AutenticaÁ„o:**
+#### **1. Autentica√ß√£o:**
 ```bash
 # 1. Login
 POST https://money-manager-api.railway.app/api/auth/login
@@ -263,31 +263,31 @@ Authorization: Bearer {token}
 
 # ? Deve retornar 200 OK com lista de faturas
 # ? Sem token: 401 Unauthorized
-# ? AccountId de outro usu·rio: 200 OK com array vazio
+# ? AccountId de outro usu√°rio: 200 OK com array vazio
 ```
 
 ---
 
 ### **Blazor (Navegador):**
 
-#### **1. Dashboard do Cart„o:**
+#### **1. Dashboard do Cart√£o:**
 ```
 1. Login em https://money-manager.railway.app
 2. Acessar /accounts
-3. Clicar em "Dashboard" de um cart„o
+3. Clicar em "Dashboard" de um cart√£o
 4. ? Deve carregar:
    - Card "Fatura Atual (Aberta)"
    - Card "Fatura a Vencer"
-   - Card "Limite de CrÈdito"
-   - HistÛrico de faturas (tabela)
-5. ? N„o deve ter erro 404
+   - Card "Limite de Cr√©dito"
+   - Hist√≥rico de faturas (tabela)
+5. ? N√£o deve ter erro 404
 6. ? Dados devem aparecer
 ```
 
 #### **2. Pagamento de Fatura:**
 ```
 1. No dashboard, clicar "Pagar" em uma fatura
-2. Preencher formul·rio
+2. Preencher formul√°rio
 3. Clicar "Confirmar Pagamento"
 4. ? Deve funcionar sem erro 404
 5. ? Fatura deve atualizar status
@@ -330,13 +330,13 @@ Authorization: Bearer {token}
 
 ---
 
-## ? VALIDA«√O
+## ? VALIDA√á√ÉO
 
 ### **Build:**
 ```bash
-? CompilaÁ„o bem-sucedida
+? Compila√ß√£o bem-sucedida
 ? Controller criado
-? 13 endpoints disponÌveis
+? 13 endpoints dispon√≠veis
 ```
 
 ### **Logs Esperados:**
@@ -354,12 +354,12 @@ Authorization: Bearer {token}
 
 - [x] ? Controller criado
 - [x] ? Endpoints implementados
-- [x] ? AutorizaÁ„o configurada
+- [x] ? Autoriza√ß√£o configurada
 - [x] ? Logs implementados
 - [x] ? Error handling implementado
 - [ ] Commit e push
 - [ ] Deploy Railway
-- [ ] Testar endpoints em produÁ„o
+- [ ] Testar endpoints em produ√ß√£o
 
 ### **Commit Sugerido:**
 
@@ -398,21 +398,21 @@ git push origin main
 
 ## ?? ENDPOINTS RESUMO
 
-| MÈtodo | Rota | FunÁ„o |
+| M√©todo | Rota | Fun√ß√£o |
 |--------|------|--------|
 | **GET** | `/api/credit-card-invoices/accounts/{id}/open` | Busca/cria fatura aberta |
 | **GET** | `/api/credit-card-invoices/{id}` | Busca fatura por ID |
-| **GET** | `/api/credit-card-invoices/accounts/{id}` | Lista faturas do cart„o |
+| **GET** | `/api/credit-card-invoices/accounts/{id}` | Lista faturas do cart√£o |
 | **GET** | `/api/credit-card-invoices/pending` | Lista faturas pendentes |
 | **GET** | `/api/credit-card-invoices/overdue` | Lista faturas vencidas |
 | **POST** | `/api/credit-card-invoices/{id}/close` | Fecha fatura |
 | **POST** | `/api/credit-card-invoices/pay` | Paga fatura (total) |
 | **POST** | `/api/credit-card-invoices/pay-partial` | Paga fatura (parcial) |
 | **GET** | `/api/credit-card-invoices/{id}/summary` | Resumo da fatura |
-| **GET** | `/api/credit-card-invoices/{id}/transactions` | TransaÁıes da fatura |
+| **GET** | `/api/credit-card-invoices/{id}/transactions` | Transa√ß√µes da fatura |
 | **GET** | `/api/credit-card-invoices/accounts/{id}/determine` | Determina fatura |
 | **POST** | `/api/credit-card-invoices/{id}/recalculate` | Recalcula total |
-| **POST** | `/api/credit-card-invoices/accounts/{id}/history` | Cria fatura histÛrica |
+| **POST** | `/api/credit-card-invoices/accounts/{id}/history` | Cria fatura hist√≥rica |
 
 ---
 
@@ -430,8 +430,8 @@ git push origin main
 ? GET /api/credit-card-invoices/accounts/{id} ? 200 OK
 ? Dashboard carrega com todos os dados
 ? Cards principais aparecem
-? HistÛrico de faturas carrega
-? Botıes funcionam
+? Hist√≥rico de faturas carrega
+? Bot√µes funcionam
 ```
 
 ---

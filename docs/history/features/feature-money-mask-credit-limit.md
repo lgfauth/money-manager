@@ -1,9 +1,9 @@
-# ? MELHORIA: M·scara Monet·ria no Limite do Cart„o
+# ? MELHORIA: M√°scara Monet√°ria no Limite do Cart√£o
 
-## ?? MUDAN«A IMPLEMENTADA
+## ?? MUDAN√áA IMPLEMENTADA
 
 ### **Campo Afetado:**
-`Limite de crÈdito (R$)` - No cadastro/ediÁ„o de cart„o de crÈdito
+`Limite de cr√©dito (R$)` - No cadastro/edi√ß√£o de cart√£o de cr√©dito
 
 ### **Antes:**
 ```html
@@ -12,44 +12,44 @@
 ```
 
 **Problema:**
-- Campo numÈrico sem formataÁ„o
-- Usu·rio digitava: `5000.50`
-- N„o seguia padr„o monet·rio brasileiro
+- Campo num√©rico sem formata√ß√£o
+- Usu√°rio digitava: `5000.50`
+- N√£o seguia padr√£o monet√°rio brasileiro
 
 ### **Depois:**
 ```html
 <MoneyInput @bind-Value="creditLimitAmount" Placeholder="0,00" />
 ```
 
-**BenefÌcio:**
-- FormataÁ„o autom·tica: `R$ 5.000,50`
+**Benef√≠cio:**
+- Formata√ß√£o autom√°tica: `R$ 5.000,50`
 - Separador de milhares
-- VÌrgula para decimais
-- ExperiÍncia consistente com outros campos monet·rios
+- V√≠rgula para decimais
+- Experi√™ncia consistente com outros campos monet√°rios
 
 ---
 
-## ?? IMPLEMENTA«√O T…CNICA
+## ?? IMPLEMENTA√á√ÉO T√âCNICA
 
-### **Vari·veis Adicionadas:**
+### **Vari√°veis Adicionadas:**
 ```csharp
 private decimal? creditLimitInput;      // Valor nullable para o banco
-private decimal creditLimitAmount = 0m; // Valor n„o-nullable para MoneyInput
+private decimal creditLimitAmount = 0m; // Valor n√£o-nullable para MoneyInput
 ```
 
-### **SincronizaÁ„o em ShowAddModal():**
+### **Sincroniza√ß√£o em ShowAddModal():**
 ```csharp
 creditLimitInput = null;
 creditLimitAmount = 0m;
 ```
 
-### **SincronizaÁ„o em BeginEditAccount():**
+### **Sincroniza√ß√£o em BeginEditAccount():**
 ```csharp
 creditLimitInput = acc.CreditLimit;
 creditLimitAmount = acc.CreditLimit ?? 0m;
 ```
 
-### **SincronizaÁ„o em CreateAccount():**
+### **Sincroniza√ß√£o em CreateAccount():**
 ```csharp
 if (creditLimitAmount > 0)
 {
@@ -61,7 +61,7 @@ else
 }
 ```
 
-### **SincronizaÁ„o em CancelAdd():**
+### **Sincroniza√ß√£o em CancelAdd():**
 ```csharp
 creditLimitInput = null;
 creditLimitAmount = 0m;
@@ -71,51 +71,51 @@ creditLimitAmount = 0m;
 
 ## ?? COMPORTAMENTO
 
-### **Cen·rio 1: Novo Cart„o COM Limite**
+### **Cen√°rio 1: Novo Cart√£o COM Limite**
 ```
-1. Usu·rio clica "Nova Conta"
-2. Seleciona "Cart„o de CrÈdito"
-3. Campo "Limite de crÈdito" aparece
-4. Usu·rio digita: 5000
+1. Usu√°rio clica "Nova Conta"
+2. Seleciona "Cart√£o de Cr√©dito"
+3. Campo "Limite de cr√©dito" aparece
+4. Usu√°rio digita: 5000
 5. MoneyInput formata: R$ 5.000,00
 6. Ao salvar: CreditLimit = 5000.00
 ```
 
-### **Cen·rio 2: Novo Cart„o SEM Limite**
+### **Cen√°rio 2: Novo Cart√£o SEM Limite**
 ```
-1. Usu·rio clica "Nova Conta"
-2. Seleciona "Cart„o de CrÈdito"
-3. Campo "Limite de crÈdito" aparece vazio (R$ 0,00)
-4. Usu·rio deixa em branco ou 0
+1. Usu√°rio clica "Nova Conta"
+2. Seleciona "Cart√£o de Cr√©dito"
+3. Campo "Limite de cr√©dito" aparece vazio (R$ 0,00)
+4. Usu√°rio deixa em branco ou 0
 5. Ao salvar: CreditLimit = null (sem limite)
 ```
 
-### **Cen·rio 3: Editar Cart„o COM Limite**
+### **Cen√°rio 3: Editar Cart√£o COM Limite**
 ```
-1. Cart„o existente com limite R$ 3.500,00
-2. Usu·rio clica "Editar"
+1. Cart√£o existente com limite R$ 3.500,00
+2. Usu√°rio clica "Editar"
 3. Campo carrega: R$ 3.500,00 formatado
-4. Usu·rio altera para: 4000
+4. Usu√°rio altera para: 4000
 5. MoneyInput formata: R$ 4.000,00
 6. Ao salvar: CreditLimit = 4000.00
 ```
 
-### **Cen·rio 4: Editar Cart„o PARA SEM Limite**
+### **Cen√°rio 4: Editar Cart√£o PARA SEM Limite**
 ```
-1. Cart„o existente com limite R$ 3.500,00
-2. Usu·rio clica "Editar"
+1. Cart√£o existente com limite R$ 3.500,00
+2. Usu√°rio clica "Editar"
 3. Campo carrega: R$ 3.500,00
-4. Usu·rio zera o campo: R$ 0,00
+4. Usu√°rio zera o campo: R$ 0,00
 5. Ao salvar: CreditLimit = null (remove limite)
 ```
 
 ---
 
-## ? VALIDA«√O
+## ? VALIDA√á√ÉO
 
 ### **Build:**
 ```
-? CompilaÁ„o bem-sucedida
+? Compila√ß√£o bem-sucedida
 ? Sem erros de binding
 ? MoneyInput funcionando
 ```
@@ -123,23 +123,23 @@ creditLimitAmount = 0m;
 ### **Teste Manual:**
 1. Acessar `/accounts`
 2. Clicar "Nova Conta"
-3. Selecionar "Cart„o de CrÈdito"
+3. Selecionar "Cart√£o de Cr√©dito"
 4. Verificar campos:
    - ? "Fechamento da fatura (dia)"
-   - ? "Limite de crÈdito (R$)" com MoneyInput
-   - ? "Dias atÈ vencimento"
+   - ? "Limite de cr√©dito (R$)" com MoneyInput
+   - ? "Dias at√© vencimento"
 5. Digitar limite: `5000`
-6. Verificar formataÁ„o: `R$ 5.000,00`
-7. Salvar e verificar no card do cart„o
+6. Verificar formata√ß√£o: `R$ 5.000,00`
+7. Salvar e verificar no card do cart√£o
 
 ---
 
-## ?? COMPARA«√O
+## ?? COMPARA√á√ÉO
 
 ### **Antes:**
 ```
 Campo: [5000.50]
-Usu·rio digita n˙mero simples
+Usu√°rio digita n√∫mero simples
 Sem separador de milhares
 Ponto para decimal (EN-US)
 ```
@@ -147,26 +147,26 @@ Ponto para decimal (EN-US)
 ### **Depois:**
 ```
 Campo: [R$ 5.000,50]
-FormataÁ„o autom·tica
+Formata√ß√£o autom√°tica
 Separador de milhares (.)
-VÌrgula para decimal (,)
-Padr„o monet·rio brasileiro
+V√≠rgula para decimal (,)
+Padr√£o monet√°rio brasileiro
 ```
 
 ---
 
 ## ?? COMPONENTE MoneyInput
 
-**J· utilizado em:**
+**J√° utilizado em:**
 - Saldo inicial de contas
-- Valor de transaÁıes
+- Valor de transa√ß√µes
 - Valor de pagamento de faturas
-- Limite de orÁamentos
+- Limite de or√ßamentos
 
-**Agora tambÈm em:**
-- ? Limite de crÈdito do cart„o
+**Agora tamb√©m em:**
+- ? Limite de cr√©dito do cart√£o
 
-**ConsistÍncia:** Todos os campos monet·rios do sistema agora usam a mesma formataÁ„o!
+**Consist√™ncia:** Todos os campos monet√°rios do sistema agora usam a mesma formata√ß√£o!
 
 ---
 
@@ -201,33 +201,33 @@ git push origin main
 
 ## ? RESULTADO FINAL
 
-### **Formul·rio de Cart„o:**
+### **Formul√°rio de Cart√£o:**
 ```
 ???????????????????????????????????????????????
 ? Nova Conta                                  ?
 ???????????????????????????????????????????????
 ? Nome: [Nubank                            ]  ?
-? Tipo: [Cart„o de CrÈdito          ?]       ?
+? Tipo: [Cart√£o de Cr√©dito          ?]       ?
 ?                                             ?
 ? Fechamento: [10] (dia)                      ?
 ? Limite: [R$ 5.000,00] ? FORMATADO!         ?
-? Vencimento: [7] dias apÛs                   ?
+? Vencimento: [7] dias ap√≥s                   ?
 ?                                             ?
 ? [Salvar] [Cancelar]                         ?
 ???????????????????????????????????????????????
 ```
 
-### **Card do Cart„o (apÛs salvar):**
+### **Card do Cart√£o (ap√≥s salvar):**
 ```
 ??????????????????????????????????
 ? ?? Nubank                      ?
 ?                                ?
 ? Saldo: R$ -450,00              ?
-? Tipo: Cart„o de CrÈdito        ?
+? Tipo: Cart√£o de Cr√©dito        ?
 ? Fechamento: dia 10             ?
-? Vencimento: 7 dias apÛs        ?
+? Vencimento: 7 dias ap√≥s        ?
 ? Limite: R$ 5.000,00 ?         ?
-? DisponÌvel: R$ 4.550,00 ?     ?
+? Dispon√≠vel: R$ 4.550,00 ?     ?
 ?                                ?
 ? [Dashboard] [Pagar] [Editar]   ?
 ??????????????????????????????????

@@ -1,20 +1,20 @@
-# ? FASE 4 - CorreÁ„o de Encoding em Profile, Settings e NavMenu - EM PROGRESSO
+# ? FASE 4 - Corre√ß√£o de Encoding em Profile, Settings e NavMenu - EM PROGRESSO
 
 ## ?? Objetivo:
 
-Corrigir todos os problemas de encoding UTF-8 nas p·ginas de **Usu·rio (Profile.razor)**, **ConfiguraÁıes (Settings.razor)** e **Menu de NavegaÁ„o (NavMenu.razor)**.
+Corrigir todos os problemas de encoding UTF-8 nas p√°ginas de **Usu√°rio (Profile.razor)**, **Configura√ß√µes (Settings.razor)** e **Menu de Navega√ß√£o (NavMenu.razor)**.
 
 ---
 
 ## ?? Status Atual:
 
-### 1. Arquivo `pt-BR.json` ? CONCLUÕDO
-- ? Adicionadas todas as labels necess·rias para Profile
-- ? Adicionadas todas as labels necess·rias para Settings  
+### 1. Arquivo `pt-BR.json` ? CONCLU√çDO
+- ? Adicionadas todas as labels necess√°rias para Profile
+- ? Adicionadas todas as labels necess√°rias para Settings  
 - ? Adicionada label "User" em Navigation
 
-### 2. Profile.razor ?? PARCIALMENTE CONCLUÕDO
-**Labels substituÌdas com sucesso:**
+### 2. Profile.razor ?? PARCIALMENTE CONCLU√çDO
+**Labels substitu√≠das com sucesso:**
 - ? PageTitle
 - ? Title  
 - ? Subtitle
@@ -42,7 +42,7 @@ Corrigir todos os problemas de encoding UTF-8 nas p·ginas de **Usu·rio (Profile.
 - ? Cancel button (delete confirmation)
 
 **Ainda com encoding incorreto:**
-- ? Coment·rios HTML (linhas 53, 83, 247)
+- ? Coment√°rios HTML (linhas 53, 83, 247)
 - ? Delete Account title (linha 254)
 - ? Delete Warning paragraph (linhas 255-257)
 - ? Delete items list (linhas 258-264)
@@ -53,40 +53,40 @@ Corrigir todos os problemas de encoding UTF-8 nas p·ginas de **Usu·rio (Profile.
 - ? Deleting e ConfirmDeletion button text (linhas 297-304)
 - ? C# code error messages (linhas 383, 422, 456)
 
-### 3. Settings.razor ? N√O INICIADO
-Todo o arquivo precisa de correÁ„o de encoding
+### 3. Settings.razor ? N√ÉO INICIADO
+Todo o arquivo precisa de corre√ß√£o de encoding
 
-### 4. NavMenu.razor ? N√O INICIADO
-Todos os labels de navegaÁ„o precisam de correÁ„o
+### 4. NavMenu.razor ? N√ÉO INICIADO
+Todos os labels de navega√ß√£o precisam de corre√ß√£o
 
 ---
 
-## ?? CorreÁıes Restantes Necess·rias:
+## ?? Corre√ß√µes Restantes Necess√°rias:
 
-### Profile.razor - CorreÁıes Restantes:
+### Profile.razor - Corre√ß√µes Restantes:
 
-#### 1. Coment·rios HTML (3 ocorrÍncias):
+#### 1. Coment√°rios HTML (3 ocorr√™ncias):
 ```razor
-<!-- InformaÁıes do Perfil --> (linha 53)
-<!-- Editar InformaÁıes Pessoais --> (linha 83)
-<!-- SeÁ„o PERIGOSA: Exclus„o de Conta (LGPD) --> (linha 247)
+<!-- Informa√ß√µes do Perfil --> (linha 53)
+<!-- Editar Informa√ß√µes Pessoais --> (linha 83)
+<!-- Se√ß√£o PERIGOSA: Exclus√£o de Conta (LGPD) --> (linha 247)
 ```
-**SoluÁ„o:** Remover ou deixar em inglÍs (coment·rios n„o aparecem para usu·rio)
+**Solu√ß√£o:** Remover ou deixar em ingl√™s (coment√°rios n√£o aparecem para usu√°rio)
 
 #### 2. Delete Account Section (linhas 254-310):
 Substituir:
 ```razor
 <h6 class="text-danger fw-bold">Excluir Conta Permanentemente</h6>
 <p class="text-muted mb-3">
-    Esta aÁ„o È <strong>IRREVERSÕVEL</strong>. Todos os seus dados ser„o permanentemente excluÌdos, incluindo:
+    Esta a√ß√£o √© <strong>IRREVERS√çVEL</strong>. Todos os seus dados ser√£o permanentemente exclu√≠dos, incluindo:
 </p>
 <ul class="text-muted mb-4">
     <li>Todas as suas contas e saldos</li>
-    <li>Todas as transaÁıes registradas</li>
+    <li>Todas as transa√ß√µes registradas</li>
     <li>Todas as categorias personalizadas</li>
-    <li>Todos os orÁamentos criados</li>
-    <li>Todas as transaÁıes recorrentes</li>
-    <li>Seu perfil e configuraÁıes</li>
+    <li>Todos os or√ßamentos criados</li>
+    <li>Todas as transa√ß√µes recorrentes</li>
+    <li>Seu perfil e configura√ß√µes</li>
 </ul>
 ```
 
@@ -110,10 +110,10 @@ Por:
 Substituir:
 ```razor
 <h6 class="alert-heading">
-    <i class="fas fa-exclamation-circle"></i> ConfirmaÁ„o de Exclus„o
+    <i class="fas fa-exclamation-circle"></i> Confirma√ß√£o de Exclus√£o
 </h6>
-<p><strong>Esta aÁ„o N√O pode ser desfeita!</strong></p>
-<p class="mb-3">VocÍ possui <strong class="fs-5">@dataCount</strong> registros que ser„o permanentemente excluÌdos.</p>
+<p><strong>Esta a√ß√£o N√ÉO pode ser desfeita!</strong></p>
+<p class="mb-3">Voc√™ possui <strong class="fs-5">@dataCount</strong> registros que ser√£o permanentemente exclu√≠dos.</p>
 ```
 
 Por:
@@ -122,14 +122,14 @@ Por:
     <i class="fas fa-exclamation-circle"></i> @Localization.Get("Profile.DeleteConfirmation")
 </h6>
 <p><strong>@Localization.Get("Profile.CannotUndo")</strong></p>
-<p class="mb-3">VocÍ possui <strong class="fs-5">@dataCount</strong> registros que ser„o permanentemente excluÌdos.</p>
+<p class="mb-3">Voc√™ possui <strong class="fs-5">@dataCount</strong> registros que ser√£o permanentemente exclu√≠dos.</p>
 ```
 
 #### 4. Understand Consequences Checkbox (linhas 288-290):
 Substituir:
 ```razor
 <label class="form-check-label" for="understandCheck">
-    Eu entendo que esta aÁ„o È permanente e todos os meus dados ser„o excluÌdos
+    Eu entendo que esta a√ß√£o √© permanente e todos os meus dados ser√£o exclu√≠dos
 </label>
 ```
 
@@ -150,7 +150,7 @@ Substituir:
 }
 else
 {
-    <span><i class="fas fa-trash-alt"></i> Confirmar Exclus„o Permanente</span>
+    <span><i class="fas fa-trash-alt"></i> Confirmar Exclus√£o Permanente</span>
 }
 ```
 
@@ -171,13 +171,13 @@ else
 Substituir hardcoded error messages:
 ```csharp
 // Linha 383:
-errorMessage = "As senhas n„o coincidem";
+errorMessage = "As senhas n√£o coincidem";
 
 // Linha 422:
-errorMessage = $"Erro ao carregar informaÁıes: {ex.Message}";
+errorMessage = $"Erro ao carregar informa√ß√µes: {ex.Message}";
 
 // Linha 456:
-// Redireciona para p·gina de confirmaÁ„o
+// Redireciona para p√°gina de confirma√ß√£o
 Nav.NavigateTo("/account-deleted", true);
 ```
 
@@ -196,25 +196,25 @@ Nav.NavigateTo("/account-deleted", true);
 
 ---
 
-### Settings.razor - Todas as CorreÁıes Necess·rias:
+### Settings.razor - Todas as Corre√ß√µes Necess√°rias:
 
 Substituir TODOS os textos hardcoded por chamadas ao `Localization.Get()`:
 
-1. **TÌtulo e subtÌtulo** (linhas 11-13)
+1. **T√≠tulo e subt√≠tulo** (linhas 11-13)
 2. **Loading** (linha 22)
-3. **PreferÍncias Financeiras** (linha 46)
+3. **Prefer√™ncias Financeiras** (linha 46)
 4. **Moeda** (linhas 49-54)
 5. **Formato de Data** (linhas 57-63)
-6. **Dia de Fechamento do MÍs** (linhas 66-69)
-7. **OrÁamento Mensal Padr„o** (linhas 72-75)
-8. **NotificaÁıes** (linhas 82-84, 90-136)
-9. **AparÍncia** (linhas 142-163)
-10. **Botıes** (linhas 170-184)
+6. **Dia de Fechamento do M√™s** (linhas 66-69)
+7. **Or√ßamento Mensal Padr√£o** (linhas 72-75)
+8. **Notifica√ß√µes** (linhas 82-84, 90-136)
+9. **Apar√™ncia** (linhas 142-163)
+10. **Bot√µes** (linhas 170-184)
 
-**Exemplo de substituiÁ„o (PreferÍncias Financeiras):**
+**Exemplo de substitui√ß√£o (Prefer√™ncias Financeiras):**
 ```razor
 <!-- ANTES: -->
-<h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> PreferÍncias Financeiras</h5>
+<h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> Prefer√™ncias Financeiras</h5>
 
 <!-- DEPOIS: -->
 <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> @Localization.Get("Settings.FinancialPreferences")</h5>
@@ -222,15 +222,15 @@ Substituir TODOS os textos hardcoded por chamadas ao `Localization.Get()`:
 
 ---
 
-### NavMenu.razor - CorreÁıes Necess·rias:
+### NavMenu.razor - Corre√ß√µes Necess√°rias:
 
-Substituir TODOS os labels de navegaÁ„o:
+Substituir TODOS os labels de navega√ß√£o:
 
 ```razor
 <!-- ANTES: -->
-<span>TransaÁıes</span>
-<span>OrÁamentos</span>
-<span>RelatÛrios</span>
+<span>Transa√ß√µes</span>
+<span>Or√ßamentos</span>
+<span>Relat√≥rios</span>
 
 <!-- DEPOIS: -->
 <span>@Localization.Get("Navigation.Transactions")</span>
@@ -240,7 +240,7 @@ Substituir TODOS os labels de navegaÁ„o:
 
 ---
 
-## ?? Labels DisponÌveis em pt-BR.json:
+## ?? Labels Dispon√≠veis em pt-BR.json:
 
 ### Profile (57 labels):
 - PageTitle, Title, Subtitle
@@ -285,25 +285,25 @@ Substituir TODOS os labels de navegaÁ„o:
 
 ## ? Como Completar:
 
-### OpÁ„o 1: Manual (Recomendado para aprender)
+### Op√ß√£o 1: Manual (Recomendado para aprender)
 1. Abrir cada arquivo (.razor)
 2. Localizar os textos com encoding incorreto
 3. Substituir por `@Localization.Get("Namespace.LabelName")`
 4. Salvar e testar
 
-### OpÁ„o 2: Script PowerShell (R·pido)
+### Op√ß√£o 2: Script PowerShell (R√°pido)
 ```powershell
-# Criar script de substituiÁ„o autom·tica
-# (Exemplo - adaptar conforme necess·rio)
+# Criar script de substitui√ß√£o autom√°tica
+# (Exemplo - adaptar conforme necess√°rio)
 
 $profilePath = "src\MoneyManager.Web\Pages\Profile.razor"
 $content = Get-Content $profilePath -Raw -Encoding UTF8
 
-# Substituir textos especÌficos
+# Substituir textos espec√≠ficos
 $replacements = @{
     'Excluir Conta Permanentemente' = '@Localization.Get("Profile.DeleteAccount")'
     'Confirma.*o de Exclus.*o' = '@Localization.Get("Profile.DeleteConfirmation")'
-    # ... adicionar mais substituiÁıes
+    # ... adicionar mais substitui√ß√µes
 }
 
 foreach ($key in $replacements.Keys) {
@@ -315,22 +315,22 @@ $content | Set-Content $profilePath -Encoding UTF8 -NoNewline
 
 ---
 
-## ?? Prioridade de ExecuÁ„o:
+## ?? Prioridade de Execu√ß√£o:
 
-1. ? **CONCLUÕDO:** pt-BR.json expandido com todas as labels
-2. ?? **EM PROGRESSO:** Profile.razor (~70% concluÌdo)
-3. ? **PENDENTE:** Settings.razor (0% concluÌdo)
-4. ? **PENDENTE:** NavMenu.razor (0% concluÌdo)
+1. ? **CONCLU√çDO:** pt-BR.json expandido com todas as labels
+2. ?? **EM PROGRESSO:** Profile.razor (~70% conclu√≠do)
+3. ? **PENDENTE:** Settings.razor (0% conclu√≠do)
+4. ? **PENDENTE:** NavMenu.razor (0% conclu√≠do)
 
 ---
 
 ## ?? Como Testar:
 
-ApÛs cada correÁ„o:
+Ap√≥s cada corre√ß√£o:
 1. Executar: `dotnet run --project src/MoneyManager.Web`
-2. Navegar para a p·gina corrigida
+2. Navegar para a p√°gina corrigida
 3. Verificar se todos os acentos aparecem corretamente
-4. Testar todas as funcionalidades (botıes, forms, modals)
+4. Testar todas as funcionalidades (bot√µes, forms, modals)
 
 **Resultado Esperado:** ? ZERO caracteres quebrados!
 
@@ -340,12 +340,12 @@ ApÛs cada correÁ„o:
 
 | Arquivo | Status | Progresso |
 |---------|--------|-----------|
-| pt-BR.json | ? ConcluÌdo | 100% |
+| pt-BR.json | ? Conclu√≠do | 100% |
 | Profile.razor | ?? Em Progresso | 70% |
 | Settings.razor | ? Pendente | 0% |
 | NavMenu.razor | ? Pendente | 0% |
 
-**Total Geral:** ~43% concluÌdo
+**Total Geral:** ~43% conclu√≠do
 
 ---
 
@@ -353,4 +353,4 @@ ApÛs cada correÁ„o:
 **Autor:** GitHub Copilot  
 **Status:** ?? **EM PROGRESSO**
 
-**PrÛximo Passo:** Completar Profile.razor, depois Settings.razor, depois NavMenu.razor
+**Pr√≥ximo Passo:** Completar Profile.razor, depois Settings.razor, depois NavMenu.razor

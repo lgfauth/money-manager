@@ -5,8 +5,8 @@
 ### **API (Backend) - ? RESOLVIDO**
 
 1. ? **ForwardedHeaders configurado** - API reconhece proxy HTTPS
-2. ? **Swagger forÁando HTTPS** - RequisiÁıes corretas
-3. ? **MongoDB logs melhorados** - DiagnÛstico claro
+2. ? **Swagger for√ßando HTTPS** - Requisi√ß√µes corretas
+3. ? **MongoDB logs melhorados** - Diagn√≥stico claro
 4. ? **Endpoint /api/discover-ip** - Para descobrir IP do Railway
 5. ? **MongoDB conectado** - 0.0.0.0/0 liberado no Atlas
 
@@ -16,11 +16,11 @@
 
 ### **Frontend (Blazor WASM) - ?? CORRIGIDO**
 
-1. ? **Dockerfile simplificado** - Removido heredoc (incompatÌvel com Docker antigo)
-2. ? **Script de inicializaÁ„o** - Criado com `RUN echo`
-3. ? **ApiConfigService criado** - Leitura din‚mica da URL da API
+1. ? **Dockerfile simplificado** - Removido heredoc (incompat√≠vel com Docker antigo)
+2. ? **Script de inicializa√ß√£o** - Criado com `RUN echo`
+3. ? **ApiConfigService criado** - Leitura din√¢mica da URL da API
 4. ? **Program.cs simplificado** - Removido build duplo
-5. ? **HttpClient factory** - ConfiguraÁ„o com URL din‚mica
+5. ? **HttpClient factory** - Configura√ß√£o com URL din√¢mica
 
 **Status:** ? **AGUARDANDO DEPLOY** (~5 minutos)
 
@@ -38,11 +38,11 @@
 
 ---
 
-## ?? **PrÛximos Passos:**
+## ?? **Pr√≥ximos Passos:**
 
 ### **1. Aguardar Deploy no Railway** (~5 min)
 
-**API:** ? J· deployada e funcionando  
+**API:** ? J√° deployada e funcionando  
 **Frontend:** ? Deploy em andamento
 
 Acompanhe em:
@@ -52,9 +52,9 @@ Railway ? moneymanager-web ? Build Logs
 
 ---
 
-### **2. Verificar Vari·veis de Ambiente**
+### **2. Verificar Vari√°veis de Ambiente**
 
-#### **API (j· configurado):**
+#### **API (j√° configurado):**
 ```env
 MONGODB__CONNECTIONSTRING=mongodb+srv://...
 MONGODB__DATABASENAME=MoneyAgent
@@ -66,23 +66,23 @@ JWT__SECRETKEY=...
 API_URL=https://money-manager-production-6120.up.railway.app
 ```
 
-?? **Certifique-se de que `API_URL` est· definido no Railway!**
+?? **Certifique-se de que `API_URL` est√° definido no Railway!**
 
 ---
 
 ### **3. Testar o Frontend**
 
-ApÛs o deploy, acesse:
+Ap√≥s o deploy, acesse:
 ```
 https://money-manager-web-production.up.railway.app
 ```
 
 **O que deve acontecer:**
 
-1. ? Site carrega (n„o mais erro `net_uri_BadFormat`)
+1. ? Site carrega (n√£o mais erro `net_uri_BadFormat`)
 2. ? Console mostra: `[MoneyManager] API URL from config: https://...`
 3. ? Login/Registro funcionam
-4. ? Chamadas ‡ API s„o bem-sucedidas
+4. ? Chamadas √† API s√£o bem-sucedidas
 
 ---
 
@@ -111,7 +111,7 @@ Starting nginx...
 
 ## ?? **Se o Build Falhar:**
 
-### **PossÌvel Erro 1: Dockerfile syntax**
+### **Poss√≠vel Erro 1: Dockerfile syntax**
 
 Se ainda der erro de sintaxe no Dockerfile, tente:
 
@@ -121,16 +121,16 @@ Builder: Dockerfile
 Dockerfile Path: Dockerfile.web
 ```
 
-### **PossÌvel Erro 2: Missing files**
+### **Poss√≠vel Erro 2: Missing files**
 
 Se faltar arquivos (nginx.conf, index.html), verifique:
 ```
 Build Logs ? procure por "COPY failed" ou "not found"
 ```
 
-### **PossÌvel Erro 3: Compilation error**
+### **Poss√≠vel Erro 3: Compilation error**
 
-Se houver erro de compilaÁ„o C#:
+Se houver erro de compila√ß√£o C#:
 ```
 Build Logs ? procure por "error CS..."
 ```
@@ -140,7 +140,7 @@ Build Logs ? procure por "error CS..."
 ## ?? **Checklist de Deploy:**
 
 ### **API:**
-- [x] ? CÛdigo atualizado
+- [x] ? C√≥digo atualizado
 - [x] ? Deploy bem-sucedido
 - [x] ? MongoDB conectado
 - [x] ? Swagger funcionando
@@ -175,7 +175,7 @@ App: https://money-manager-web-production.up.railway.app
 
 ---
 
-## ?? **Fluxo de ConfiguraÁ„o:**
+## ?? **Fluxo de Configura√ß√£o:**
 
 ```
 ???????????????????????????????????????
@@ -183,7 +183,7 @@ App: https://money-manager-web-production.up.railway.app
 ???????????????????????????????????????
 ?   docker-entrypoint.sh executa      ?
 ?   ?                                 ?
-?   LÍ $API_URL do Railway            ?
+?   L√™ $API_URL do Railway            ?
 ?   ?                                 ?
 ?   Substitui __API_URL__ no index    ?
 ?   ?                                 ?
@@ -191,7 +191,7 @@ App: https://money-manager-web-production.up.railway.app
 ???????????????????????????????????????
 
 ???????????????????????????????????????
-? 2. Usu·rio Acessa Site              ?
+? 2. Usu√°rio Acessa Site              ?
 ???????????????????????????????????????
 ?   index.html carrega                ?
 ?   ?                                 ?
@@ -199,11 +199,11 @@ App: https://money-manager-web-production.up.railway.app
 ?   ?                                 ?
 ?   Blazor WASM inicia                ?
 ?   ?                                 ?
-?   ApiConfigService lÍ config        ?
+?   ApiConfigService l√™ config        ?
 ?   ?                                 ?
 ?   HttpClient configurado            ?
 ?   ?                                 ?
-?   ? AplicaÁ„o funciona!            ?
+?   ? Aplica√ß√£o funciona!            ?
 ???????????????????????????????????????
 ```
 
@@ -212,42 +212,42 @@ App: https://money-manager-web-production.up.railway.app
 ## ?? **Melhorias Implementadas:**
 
 ### **Robustez:**
-? Script de inicializaÁ„o compatÌvel com Docker antigo  
-? ConfiguraÁ„o din‚mica da API URL  
+? Script de inicializa√ß√£o compat√≠vel com Docker antigo  
+? Configura√ß√£o din√¢mica da API URL  
 ? Logs claros em cada etapa  
-? Fallbacks para valores padr„o  
+? Fallbacks para valores padr√£o  
 
-### **DiagnÛstico:**
-? Logs do MongoDB na inicializaÁ„o  
+### **Diagn√≥stico:**
+? Logs do MongoDB na inicializa√ß√£o  
 ? Endpoint de descoberta de IP  
-? Console mostra configuraÁ„o carregada  
+? Console mostra configura√ß√£o carregada  
 ? Mensagens claras de erro  
 
 ### **Simplicidade:**
-? Dockerfile sem sintaxe avanÁada  
+? Dockerfile sem sintaxe avan√ßada  
 ? Program.cs mais simples  
-? ServiÁo dedicado para configuraÁ„o  
+? Servi√ßo dedicado para configura√ß√£o  
 
 ---
 
 ## ?? **Se Precisar de Ajuda:**
 
-### **API n„o funciona:**
+### **API n√£o funciona:**
 1. Verificar logs no Railway
 2. Testar endpoint /health
-3. Verificar vari·veis de ambiente
+3. Verificar vari√°veis de ambiente
 4. Verificar MongoDB Atlas (0.0.0.0/0)
 
-### **Frontend n„o carrega:**
+### **Frontend n√£o carrega:**
 1. Verificar logs do build
-2. Verificar vari·vel API_URL
+2. Verificar vari√°vel API_URL
 3. Inspecionar console do navegador (F12)
 4. Verificar Network tab (chamadas falhando?)
 
-### **Login n„o funciona:**
+### **Login n√£o funciona:**
 1. Verificar console do navegador
 2. Ver Network tab ? POST /api/Auth/login
-3. Verificar se API_URL est· correta
+3. Verificar se API_URL est√° correta
 4. Verificar CORS na API
 
 ---
@@ -256,12 +256,12 @@ App: https://money-manager-web-production.up.railway.app
 
 ```
 Agora             Deploy iniciado ?
-+2 min            Railway detecta mudanÁas ?
++2 min            Railway detecta mudan√ßas ?
 +3 min            Build inicia ?
 +5 min            Build completa ?
 +6 min            Deploy realizado ?
-+7 min            Site disponÌvel ?
-+8 min            Testar aplicaÁ„o ?
++7 min            Site dispon√≠vel ?
++8 min            Testar aplica√ß√£o ?
 ```
 
 ---
@@ -283,4 +283,4 @@ MongoDB:  ?? CONECTADO
 ---
 
 **Data:** ${new Date().toLocaleDateString('pt-BR')}  
-**Vers„o:** 3.0 (Final)
+**Vers√£o:** 3.0 (Final)

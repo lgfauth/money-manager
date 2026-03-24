@@ -1,6 +1,6 @@
 # ? FASE 4 EM PROGRESSO: Interface Visual (UI)
 
-## ?? RESUMO DA IMPLEMENTA«√O
+## ?? RESUMO DA IMPLEMENTA√á√ÉO
 
 ### **Status:** ?? **EM ANDAMENTO** (50% completo)
 ### **Tempo:** ~2 horas
@@ -10,41 +10,41 @@
 
 ## ?? O QUE FOI IMPLEMENTADO
 
-### **1. Formul·rio de Cadastro de Cart„o Atualizado** ?
+### **1. Formul√°rio de Cadastro de Cart√£o Atualizado** ?
 
 #### **Novos Campos Adicionados:**
-- ? **Limite de CrÈdito** (R$)
-  - Input numÈrico com decimais
+- ? **Limite de Cr√©dito** (R$)
+  - Input num√©rico com decimais
   - Opcional (pode ficar em branco)
-  - Hint: "Deixe em branco se n„o quiser limite"
+  - Hint: "Deixe em branco se n√£o quiser limite"
 
-- ? **Dias atÈ Vencimento**
-  - Input numÈrico (1-30 dias)
-  - Valor padr„o: 7 dias
+- ? **Dias at√© Vencimento**
+  - Input num√©rico (1-30 dias)
+  - Valor padr√£o: 7 dias
   - Hint: "Dias entre fechamento e vencimento"
 
-#### **ExibiÁ„o no Card do Cart„o:**
-- ? Mostra "Vencimento: X dias apÛs fechamento"
+#### **Exibi√ß√£o no Card do Cart√£o:**
+- ? Mostra "Vencimento: X dias ap√≥s fechamento"
 - ? Mostra "Limite: R$ X.XXX,XX"
-- ? Calcula e mostra "DisponÌvel: R$ X.XXX,XX"
+- ? Calcula e mostra "Dispon√≠vel: R$ X.XXX,XX"
   ```csharp
   var used = Math.Abs(account.Balance);
   var available = account.CreditLimit.Value - used;
   ```
 
-#### **CÛdigo Implementado:**
+#### **C√≥digo Implementado:**
 ```razor
 @if (newAccount.Type == AccountType.CreditCard)
 {
     <div class="col-12 col-md-3">
-        <label class="form-label">Limite de crÈdito (R$)</label>
+        <label class="form-label">Limite de cr√©dito (R$)</label>
         <input type="number" step="0.01" class="form-control" @bind="creditLimitInput" placeholder="0,00" />
-        <small class="text-muted">Deixe em branco se n„o quiser limite.</small>
+        <small class="text-muted">Deixe em branco se n√£o quiser limite.</small>
     </div>
     <div class="col-12 col-md-3">
-        <label class="form-label">Dias atÈ vencimento</label>
+        <label class="form-label">Dias at√© vencimento</label>
         <input type="number" class="form-control" min="1" max="30" @bind="newAccount.InvoiceDueDayOffset" />
-        <small class="text-muted">Dias entre fechamento e vencimento (padr„o: 7).</small>
+        <small class="text-muted">Dias entre fechamento e vencimento (padr√£o: 7).</small>
     </div>
 }
 ```
@@ -55,19 +55,19 @@
 
 ### **2. Modal "Pagar Fatura" com Lista de Faturas** ?
 
-**Status:** Preparado mas n„o finalizado
+**Status:** Preparado mas n√£o finalizado
 
 **O que precisa:**
 - Transformar modal simples em lista de faturas pendentes
 - Buscar faturas via `InvoiceService.GetPendingInvoicesAsync()`
 - Mostrar cards de faturas com:
-  - PerÌodo (dd/MM a dd/MM/yyyy)
+  - Per√≠odo (dd/MM a dd/MM/yyyy)
   - Valor total
   - Valor restante
   - Status (badge colorido)
-  - Dias atÈ vencimento
-  - N˙mero de transaÁıes
-  - Bot„o "Pagar"
+  - Dias at√© vencimento
+  - N√∫mero de transa√ß√µes
+  - Bot√£o "Pagar"
 
 **Estrutura Sugerida:**
 ```razor
@@ -89,7 +89,7 @@
                     
                     @if (selectedInvoiceToPay != null)
                     {
-                        <!-- Formul·rio de pagamento -->
+                        <!-- Formul√°rio de pagamento -->
                     }
                 </div>
             </div>
@@ -100,22 +100,22 @@
 
 ---
 
-### **3. P·gina de Detalhes da Fatura** ?
+### **3. P√°gina de Detalhes da Fatura** ?
 
 **Arquivo:** `src/MoneyManager.Web/Pages/InvoiceDetails.razor` (criar)
 
 **Route:** `@page "/invoices/{InvoiceId}"`
 
 **Funcionalidades:**
-- Header com informaÁıes da fatura
-- Lista de transaÁıes da fatura
-- Total por categoria (gr·fico de pizza)
-- HistÛrico de pagamentos
-- Bot„o "Pagar" se n„o estiver paga
+- Header com informa√ß√µes da fatura
+- Lista de transa√ß√µes da fatura
+- Total por categoria (gr√°fico de pizza)
+- Hist√≥rico de pagamentos
+- Bot√£o "Pagar" se n√£o estiver paga
 
 ---
 
-### **4. Componente de Lista de TransaÁıes da Fatura** ?
+### **4. Componente de Lista de Transa√ß√µes da Fatura** ?
 
 **Arquivo:** `src/MoneyManager.Web/Components/InvoiceTransactionsList.razor` (criar)
 
@@ -126,24 +126,24 @@
 
 ---
 
-### **5. Dashboard do Cart„o** ?
+### **5. Dashboard do Cart√£o** ?
 
 **Arquivo:** `src/MoneyManager.Web/Pages/CreditCardDashboard.razor` (criar)
 
 **Route:** `@page "/credit-cards/{AccountId}"`
 
-**SeÁıes:**
+**Se√ß√µes:**
 - Card "Fatura Atual (Aberta)"
 - Card "Fatura Fechada (A Vencer)"
-- Card "Limite DisponÌvel"
-- Gr·fico de gastos por mÍs
-- HistÛrico de faturas (tabela)
+- Card "Limite Dispon√≠vel"
+- Gr√°fico de gastos por m√™s
+- Hist√≥rico de faturas (tabela)
 
 ---
 
-## ?? C”DIGO ADICIONAL NECESS¡RIO
+## ?? C√ìDIGO ADICIONAL NECESS√ÅRIO
 
-### **Vari·veis no @code (Accounts.razor):**
+### **Vari√°veis no @code (Accounts.razor):**
 ```csharp
 private bool isLoadingInvoices;
 private List<CreditCardInvoiceResponseDto>? pendingInvoices;
@@ -219,14 +219,14 @@ private static string GetInvoiceStatusBadgeClass(InvoiceStatus status, bool isOv
 ### **Modificados:**
 ```
 src/MoneyManager.Web/Pages/Accounts.razor
-??? + Limite de crÈdito (input)
-??? + Dias atÈ vencimento (input)
-??? + ExibiÁ„o de limite disponÌvel no card
+??? + Limite de cr√©dito (input)
+??? + Dias at√© vencimento (input)
+??? + Exibi√ß√£o de limite dispon√≠vel no card
 ??? + InvoiceService injetado
-??? + creditLimitInput vari·vel
-??? + SincronizaÁ„o limite com Account
+??? + creditLimitInput vari√°vel
+??? + Sincroniza√ß√£o limite com Account
 
-src/MoneyManager.Domain/Entities/Account.cs (j· feito na FASE 1)
+src/MoneyManager.Domain/Entities/Account.cs (j√° feito na FASE 1)
 ??? + CreditLimit (decimal?)
 ??? + InvoiceDueDayOffset (int, default 7)
 ??? + LastInvoiceClosedAt (DateTime?)
@@ -237,52 +237,52 @@ src/MoneyManager.Domain/Entities/Account.cs (j· feito na FASE 1)
 ```
 src/MoneyManager.Web/Pages/
 ??? InvoiceDetails.razor (detalhes da fatura)
-??? CreditCardDashboard.razor (dashboard do cart„o)
+??? CreditCardDashboard.razor (dashboard do cart√£o)
 
 src/MoneyManager.Web/Components/
-??? InvoiceTransactionsList.razor (lista transaÁıes)
+??? InvoiceTransactionsList.razor (lista transa√ß√µes)
 ??? InvoiceStatusBadge.razor (badge status)
 ```
 
 ---
 
-## ?? VALIDA«√O
+## ?? VALIDA√á√ÉO
 
 ### **Build:**
 ```
-? CompilaÁ„o bem-sucedida
+? Compila√ß√£o bem-sucedida
 ? Sem erros
 ? Sem warnings
 ```
 
-### **Testes Manuais Necess·rios:**
-1. Criar cart„o com limite
+### **Testes Manuais Necess√°rios:**
+1. Criar cart√£o com limite
 2. Verificar se limite aparece no card
-3. Editar cart„o e alterar limite
+3. Editar cart√£o e alterar limite
 4. Criar despesa e validar limite
 5. Clicar em "Pagar Fatura" (ainda mostra modal antigo)
 
 ---
 
-## ?? PR”XIMOS PASSOS
+## ?? PR√ìXIMOS PASSOS
 
 ### **Passo 1: Completar Modal de Pagamento**
 - Substituir modal simples por lista de faturas
-- Adicionar mÈtodos LoadPendingInvoices, SelectInvoiceToPay
+- Adicionar m√©todos LoadPendingInvoices, SelectInvoiceToPay
 - Implementar ConfirmInvoicePayment com InvoiceService
 
-### **Passo 2: Criar P·gina de Detalhes**
+### **Passo 2: Criar P√°gina de Detalhes**
 - Novo arquivo InvoiceDetails.razor
 - Buscar fatura via InvoiceService.GetInvoiceSummaryAsync()
-- Mostrar transaÁıes, categorias, pagamentos
+- Mostrar transa√ß√µes, categorias, pagamentos
 
-### **Passo 3: Criar Dashboard do Cart„o**
+### **Passo 3: Criar Dashboard do Cart√£o**
 - Novo arquivo CreditCardDashboard.razor
 - 3 cards principais (atual, fechada, limite)
-- HistÛrico de faturas
-- Gr·ficos
+- Hist√≥rico de faturas
+- Gr√°ficos
 
-### **Passo 4: Componentes Reutiliz·veis**
+### **Passo 4: Componentes Reutiliz√°veis**
 - InvoiceTransactionsList
 - InvoiceStatusBadge
 - InvoiceCard
@@ -292,22 +292,22 @@ src/MoneyManager.Web/Components/
 ## ?? MELHORIAS SUGERIDAS
 
 ### **UX:**
-- AnimaÁ„o de loading ao buscar faturas
+- Anima√ß√£o de loading ao buscar faturas
 - Tooltips explicativos
-- ConfirmaÁ„o antes de pagar
-- Toast de sucesso apÛs pagamento
+- Confirma√ß√£o antes de pagar
+- Toast de sucesso ap√≥s pagamento
 
-### **ValidaÁıes:**
-- Validar se valor do pagamento È v·lido
+### **Valida√ß√µes:**
+- Validar se valor do pagamento √© v√°lido
 - Validar se tem saldo na conta pagadora
 - Alertar se pagamento parcial
 - Mostrar quanto falta pagar
 
 ### **Visual:**
 - Badge colorido de status (verde=paga, vermelho=vencida, amarelo=fechada)
-- Õcones indicando tipo de fatura
+- √çcones indicando tipo de fatura
 - Progress bar de quanto foi pago
-- Gr·fico de gastos por categoria
+- Gr√°fico de gastos por categoria
 
 ---
 
@@ -316,10 +316,10 @@ src/MoneyManager.Web/Components/
 | Fase | Sub-tarefa | Status | %
 |------|-----------|--------|----
 | **FASE 4** | Interface Visual | ?? | 50%
-| 4.1 | Formul·rio Cart„o | ? | 100%
+| 4.1 | Formul√°rio Cart√£o | ? | 100%
 | 4.2 | Modal Pagamento | ? | 20%
 | 4.3 | Detalhes Fatura | ? | 0%
-| 4.4 | Dashboard Cart„o | ? | 0%
+| 4.4 | Dashboard Cart√£o | ? | 0%
 | 4.5 | Componentes | ? | 0%
 
 ---
@@ -328,25 +328,25 @@ src/MoneyManager.Web/Components/
 
 | Fase | Status | Funcionalidade |
 |------|--------|----------------|
-| **FASE 1** | ? | FundaÁ„o (Entidades, Repos) |
-| **FASE 2** | ? | ServiÁo de Gest„o |
-| **FASE 3** | ? | IntegraÁ„o + Workers |
+| **FASE 1** | ? | Funda√ß√£o (Entidades, Repos) |
+| **FASE 2** | ? | Servi√ßo de Gest√£o |
+| **FASE 3** | ? | Integra√ß√£o + Workers |
 | **FASE 4** | ?? | Interface Visual (50%) |
 
 **Total Implementado:** Backend 100% + Frontend 50%
 
 ---
 
-**PrÛximo Comando:**
+**Pr√≥ximo Comando:**
 ```
 "Continuar FASE 4: Completar modal de pagamento de faturas"
 ```
 
 ---
 
-**Estimativa para Conclus„o da FASE 4:**
+**Estimativa para Conclus√£o da FASE 4:**
 - Modal de Pagamento: 2 horas
-- P·gina Detalhes: 3 horas
+- P√°gina Detalhes: 3 horas
 - Dashboard: 4 horas
 - Componentes: 2 horas
 - **Total:** ~11 horas (2 dias)

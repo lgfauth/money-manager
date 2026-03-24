@@ -1,64 +1,64 @@
-# ?? AN¡LISE COMPLETA: Fluxo de Cart„o de CrÈdito
+# ?? AN√ÅLISE COMPLETA: Fluxo de Cart√£o de Cr√©dito
 
-## ?? SITUA«√O ATUAL
+## ?? SITUA√á√ÉO ATUAL
 
 ### **O que existe hoje:**
 
-1. **Cadastro de Cart„o:**
-   - ? Nome do cart„o
+1. **Cadastro de Cart√£o:**
+   - ? Nome do cart√£o
    - ? Dia de fechamento da fatura
-   - ? Saldo (representa dÌvida atual)
+   - ? Saldo (representa d√≠vida atual)
    - ? InitialBalance (saldo inicial quando criado)
 
-2. **CriaÁ„o de Despesas:**
-   - ? TransaÁıes normais no cart„o
-   - ? Compras parceladas (1™ parcela imediata + recorrÍncia)
-   - ? Saldo do cart„o aumenta automaticamente (dÌvida cresce)
+2. **Cria√ß√£o de Despesas:**
+   - ? Transa√ß√µes normais no cart√£o
+   - ? Compras parceladas (1¬™ parcela imediata + recorr√™ncia)
+   - ? Saldo do cart√£o aumenta automaticamente (d√≠vida cresce)
 
-3. **Bot„o "Pagar Fatura":**
+3. **Bot√£o "Pagar Fatura":**
    - ? Abre modal para pagamento
    - ? Permite escolher conta pagadora
    - ? Permite definir valor do pagamento
-   - ? Cria uma **transferÍncia** (conta ? cart„o)
-   - ? **Reduz o saldo do cart„o** (paga a dÌvida)
+   - ? Cria uma **transfer√™ncia** (conta ? cart√£o)
+   - ? **Reduz o saldo do cart√£o** (paga a d√≠vida)
 
-### **? O QUE EST¡ FALTANDO/ERRADO:**
+### **? O QUE EST√Å FALTANDO/ERRADO:**
 
 #### **Problema 1: Sem Conceito de "Fatura"**
 ```
 Sistema atual:
-- N„o h· separaÁ„o entre "fatura atual" e "fatura anterior"
-- N„o h· rastreamento do perÌodo da fatura
-- N„o h· conceito de "fatura fechada" vs "fatura aberta"
+- N√£o h√° separa√ß√£o entre "fatura atual" e "fatura anterior"
+- N√£o h√° rastreamento do per√≠odo da fatura
+- N√£o h√° conceito de "fatura fechada" vs "fatura aberta"
 ```
 
-#### **Problema 2: Pagamento N„o Considera PerÌodo**
+#### **Problema 2: Pagamento N√£o Considera Per√≠odo**
 ```
 Quando clica "Pagar Fatura":
-- Sistema mostra o SALDO TOTAL do cart„o
-- N„o mostra apenas o que est· na "fatura vencida"
-- TransaÁıes apÛs o fechamento se misturam com anteriores
+- Sistema mostra o SALDO TOTAL do cart√£o
+- N√£o mostra apenas o que est√° na "fatura vencida"
+- Transa√ß√µes ap√≥s o fechamento se misturam com anteriores
 ```
 
-#### **Problema 3: Sem HistÛrico de Faturas**
+#### **Problema 3: Sem Hist√≥rico de Faturas**
 ```
-- N„o h· registro de faturas pagas
-- N„o h· relatÛrio de "qual foi o valor da fatura de janeiro"
-- N„o h· controle de vencimento
+- N√£o h√° registro de faturas pagas
+- N√£o h√° relat√≥rio de "qual foi o valor da fatura de janeiro"
+- N√£o h√° controle de vencimento
 ```
 
-#### **Problema 4: Confus„o de Nomenclatura**
+#### **Problema 4: Confus√£o de Nomenclatura**
 ```
-"Saldo" do cart„o atualmente = DÌvida total acumulada
-N„o diferencia:
+"Saldo" do cart√£o atualmente = D√≠vida total acumulada
+N√£o diferencia:
 - Fatura vencida (precisa pagar agora)
 - Fatura atual (ainda aberta, vai fechar no dia X)
-- Fatura futura (compras que v„o para prÛxima)
+- Fatura futura (compras que v√£o para pr√≥xima)
 ```
 
 ---
 
-## ?? PLANO DE A«√O: ImplementaÁ„o Real de Cart„o de CrÈdito
+## ?? PLANO DE A√á√ÉO: Implementa√ß√£o Real de Cart√£o de Cr√©dito
 
 ### **FASE 1: Adicionar Entidade "Invoice" (Fatura)**
 
@@ -67,13 +67,13 @@ N„o diferencia:
 public class CreditCardInvoice
 {
     public string Id { get; set; }
-    public string AccountId { get; set; }  // ID do cart„o
+    public string AccountId { get; set; }  // ID do cart√£o
     public string UserId { get; set; }
     
-    // PerÌodo da fatura
-    public DateTime PeriodStart { get; set; }    // Data de inÌcio (fechamento anterior + 1)
+    // Per√≠odo da fatura
+    public DateTime PeriodStart { get; set; }    // Data de in√≠cio (fechamento anterior + 1)
     public DateTime PeriodEnd { get; set; }      // Data de fechamento desta fatura
-    public DateTime DueDate { get; set; }        // Data de vencimento (geralmente 7-10 dias apÛs fechamento)
+    public DateTime DueDate { get; set; }        // Data de vencimento (geralmente 7-10 dias ap√≥s fechamento)
     
     // Valores
     public decimal TotalAmount { get; set; }     // Valor total da fatura
@@ -93,8 +93,8 @@ public class CreditCardInvoice
 
 public enum InvoiceStatus
 {
-    Open = 0,           // Fatura aberta (ainda aceitando transaÁıes)
-    Closed = 1,         // Fatura fechada (n„o aceita mais transaÁıes)
+    Open = 0,           // Fatura aberta (ainda aceitando transa√ß√µes)
+    Closed = 1,         // Fatura fechada (n√£o aceita mais transa√ß√µes)
     Paid = 2,           // Fatura paga completamente
     PartiallyPaid = 3,  // Fatura parcialmente paga
     Overdue = 4         // Fatura vencida (passou da data de vencimento)
@@ -104,32 +104,32 @@ public enum InvoiceStatus
 #### **1.2 Modificar Entidade `Transaction`**
 ```csharp
 // Adicionar campo:
-public string? InvoiceId { get; set; }  // Vincula transaÁ„o ‡ fatura
+public string? InvoiceId { get; set; }  // Vincula transa√ß√£o √† fatura
 ```
 
-#### **1.3 Modificar Entidade `Account` (Cart„o)**
+#### **1.3 Modificar Entidade `Account` (Cart√£o)**
 ```csharp
 // Adicionar campos:
-public DateTime? LastInvoiceClosedAt { get; set; }  // ⁄ltima vez que fatura fechou
+public DateTime? LastInvoiceClosedAt { get; set; }  // √öltima vez que fatura fechou
 public string? CurrentOpenInvoiceId { get; set; }   // Fatura aberta atual
 public int InvoiceDueDayOffset { get; set; } = 7;   // Dias entre fechamento e vencimento
 ```
 
 ---
 
-### **FASE 2: ServiÁo de Gest„o de Faturas**
+### **FASE 2: Servi√ßo de Gest√£o de Faturas**
 
 #### **2.1 Criar `ICreditCardInvoiceService`**
 ```csharp
 public interface ICreditCardInvoiceService
 {
-    // Gest„o de faturas
+    // Gest√£o de faturas
     Task<CreditCardInvoice> GetCurrentOpenInvoiceAsync(string userId, string accountId);
     Task<CreditCardInvoice> GetInvoiceByIdAsync(string userId, string invoiceId);
     Task<IEnumerable<CreditCardInvoice>> GetInvoicesByAccountAsync(string userId, string accountId);
     Task<IEnumerable<CreditCardInvoice>> GetOverdueInvoicesAsync(string userId);
     
-    // Fechamento autom·tico de faturas
+    // Fechamento autom√°tico de faturas
     Task<CreditCardInvoice> CloseInvoiceAsync(string userId, string invoiceId);
     Task ProcessMonthlyInvoiceClosuresAsync();  // Worker executa todo dia
     
@@ -137,39 +137,39 @@ public interface ICreditCardInvoiceService
     Task<Transaction> PayInvoiceAsync(string userId, PayInvoiceRequestDto request);
     Task<Transaction> PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request);
     
-    // RelatÛrios
+    // Relat√≥rios
     Task<InvoiceSummaryDto> GetInvoiceSummaryAsync(string userId, string invoiceId);
     Task<IEnumerable<Transaction>> GetInvoiceTransactionsAsync(string userId, string invoiceId);
 }
 ```
 
-#### **2.2 LÛgica de Fechamento Autom·tico**
+#### **2.2 L√≥gica de Fechamento Autom√°tico**
 ```
-Worker roda TODO DIA ‡s 08:00:
-1. Busca todos os cartıes de crÈdito ativos
-2. Para cada cart„o:
-   - Verifica se hoje È o dia de fechamento
+Worker roda TODO DIA √†s 08:00:
+1. Busca todos os cart√µes de cr√©dito ativos
+2. Para cada cart√£o:
+   - Verifica se hoje √© o dia de fechamento
    - Se sim:
      a) Busca fatura aberta atual
-     b) Calcula valor total das transaÁıes
+     b) Calcula valor total das transa√ß√µes
      c) Marca fatura como "Closed"
-     d) Cria nova fatura "Open" para prÛximo perÌodo
-     e) Vincula transaÁıes futuras ‡ nova fatura
+     d) Cria nova fatura "Open" para pr√≥ximo per√≠odo
+     e) Vincula transa√ß√µes futuras √† nova fatura
 ```
 
 ---
 
-### **FASE 3: Ajustar Fluxo de TransaÁıes**
+### **FASE 3: Ajustar Fluxo de Transa√ß√µes**
 
-#### **3.1 Ao Criar TransaÁ„o em Cart„o:**
+#### **3.1 Ao Criar Transa√ß√£o em Cart√£o:**
 ```csharp
 // TransactionService.CreateAsync()
 if (account.Type == AccountType.CreditCard)
 {
-    // 1. Determinar a qual fatura esta transaÁ„o pertence
+    // 1. Determinar a qual fatura esta transa√ß√£o pertence
     var invoice = await DetermineInvoiceForTransaction(account, transaction.Date);
     
-    // 2. Vincular transaÁ„o ‡ fatura
+    // 2. Vincular transa√ß√£o √† fatura
     transaction.InvoiceId = invoice.Id;
     
     // 3. Atualizar total da fatura
@@ -178,13 +178,13 @@ if (account.Type == AccountType.CreditCard)
 }
 ```
 
-#### **3.2 Determinar Fatura da TransaÁ„o:**
+#### **3.2 Determinar Fatura da Transa√ß√£o:**
 ```csharp
 private async Task<CreditCardInvoice> DetermineInvoiceForTransaction(Account card, DateTime transactionDate)
 {
     // Regra:
-    // - Se transaÁ„o for atÈ o dia de fechamento ? Fatura atual (que vai fechar)
-    // - Se transaÁ„o for apÛs o fechamento ? PrÛxima fatura
+    // - Se transa√ß√£o for at√© o dia de fechamento ? Fatura atual (que vai fechar)
+    // - Se transa√ß√£o for ap√≥s o fechamento ? Pr√≥xima fatura
     
     var closingDay = card.InvoiceClosingDay ?? 1;
     var currentMonth = DateTime.Today;
@@ -192,12 +192,12 @@ private async Task<CreditCardInvoice> DetermineInvoiceForTransaction(Account car
     
     if (transactionDate.Date <= closingDateThisMonth)
     {
-        // Entra na fatura que fecha neste mÍs
+        // Entra na fatura que fecha neste m√™s
         return await GetOrCreateInvoiceForPeriod(card, closingDateThisMonth);
     }
     else
     {
-        // Entra na fatura que fecha no prÛximo mÍs
+        // Entra na fatura que fecha no pr√≥ximo m√™s
         var nextClosing = closingDateThisMonth.AddMonths(1);
         return await GetOrCreateInvoiceForPeriod(card, nextClosing);
     }
@@ -208,18 +208,18 @@ private async Task<CreditCardInvoice> DetermineInvoiceForTransaction(Account car
 
 ### **FASE 4: Modificar "Pagar Fatura"**
 
-#### **4.1 Novo Fluxo do Bot„o:**
+#### **4.1 Novo Fluxo do Bot√£o:**
 ```
 Ao clicar "Pagar Fatura":
-1. Buscar faturas FECHADAS e N√O PAGAS do cart„o
+1. Buscar faturas FECHADAS e N√ÉO PAGAS do cart√£o
 2. Mostrar lista de faturas pendentes:
    - Fatura Jan/2026 - Vencimento 17/01 - R$ 1.250,00 - STATUS: VENCIDA
    - Fatura Fev/2026 - Vencimento 17/02 - R$ 890,50 - STATUS: FECHADA
-3. Usu·rio seleciona qual fatura quer pagar
-4. Usu·rio escolhe:
+3. Usu√°rio seleciona qual fatura quer pagar
+4. Usu√°rio escolhe:
    - Pagar total
    - Pagar parcial (informar valor)
-5. Sistema cria transaÁ„o de PAGAMENTO (n„o transferÍncia)
+5. Sistema cria transa√ß√£o de PAGAMENTO (n√£o transfer√™ncia)
 6. Atualiza status da fatura
 ```
 
@@ -238,7 +238,7 @@ Ao clicar "Pagar Fatura":
                 </span>
             </div>
             <div class="invoice-body">
-                <p>PerÌodo: @invoice.PeriodStart.ToString("dd/MM") a @invoice.PeriodEnd.ToString("dd/MM")</p>
+                <p>Per√≠odo: @invoice.PeriodStart.ToString("dd/MM") a @invoice.PeriodEnd.ToString("dd/MM")</p>
                 <p>Vencimento: @invoice.DueDate.ToString("dd/MM/yyyy")</p>
                 <h4>Valor: R$ @invoice.TotalAmount.ToString("F2")</h4>
                 @if (invoice.PaidAmount > 0)
@@ -262,7 +262,7 @@ Ao clicar "Pagar Fatura":
 
 ---
 
-### **FASE 5: Dashboard de Cart„o (Nova P·gina)**
+### **FASE 5: Dashboard de Cart√£o (Nova P√°gina)**
 
 #### **5.1 Criar `/credit-card-details/{accountId}`**
 ```razor
@@ -272,10 +272,10 @@ Ao clicar "Pagar Fatura":
     <div class="col-md-4">
         <div class="card">
             <h5>Fatura Atual (Aberta)</h5>
-            <p>PerÌodo: @currentInvoice.PeriodStart - @currentInvoice.PeriodEnd</p>
+            <p>Per√≠odo: @currentInvoice.PeriodStart - @currentInvoice.PeriodEnd</p>
             <p>Fecha em: @currentInvoice.PeriodEnd.ToString("dd/MM")</p>
             <h3>R$ @currentInvoice.TotalAmount.ToString("F2")</h3>
-            <button>Ver LanÁamentos</button>
+            <button>Ver Lan√ßamentos</button>
         </div>
     </div>
     
@@ -290,7 +290,7 @@ Ao clicar "Pagar Fatura":
     
     <div class="col-md-4">
         <div class="card">
-            <h5>Limite DisponÌvel</h5>
+            <h5>Limite Dispon√≠vel</h5>
             <p>Limite Total: R$ @card.CreditLimit.ToString("F2")</p>
             <p>Usado: R$ @usedLimit.ToString("F2")</p>
             <h3 class="text-success">R$ @availableLimit.ToString("F2")</h3>
@@ -300,16 +300,16 @@ Ao clicar "Pagar Fatura":
 
 <div class="row mt-4">
     <div class="col-12">
-        <h4>HistÛrico de Faturas</h4>
+        <h4>Hist√≥rico de Faturas</h4>
         <table>
             <thead>
                 <tr>
-                    <th>MÍs/Ano</th>
-                    <th>PerÌodo</th>
+                    <th>M√™s/Ano</th>
+                    <th>Per√≠odo</th>
                     <th>Valor</th>
                     <th>Vencimento</th>
                     <th>Status</th>
-                    <th>AÁıes</th>
+                    <th>A√ß√µes</th>
                 </tr>
             </thead>
             <tbody>
@@ -338,14 +338,14 @@ Ao clicar "Pagar Fatura":
 
 ---
 
-### **FASE 6: Adicionar Limite de CrÈdito (Opcional)**
+### **FASE 6: Adicionar Limite de Cr√©dito (Opcional)**
 
 #### **6.1 Modificar `Account`:**
 ```csharp
-public decimal? CreditLimit { get; set; }  // Limite do cart„o
+public decimal? CreditLimit { get; set; }  // Limite do cart√£o
 ```
 
-#### **6.2 ValidaÁ„o ao Criar TransaÁ„o:**
+#### **6.2 Valida√ß√£o ao Criar Transa√ß√£o:**
 ```csharp
 if (account.Type == AccountType.CreditCard && account.CreditLimit.HasValue)
 {
@@ -355,7 +355,7 @@ if (account.Type == AccountType.CreditCard && account.CreditLimit.HasValue)
     if (newTotal > account.CreditLimit.Value)
     {
         throw new InvalidOperationException(
-            $"Limite de crÈdito excedido. DisponÌvel: R$ {account.CreditLimit.Value - totalUsed:F2}"
+            $"Limite de cr√©dito excedido. Dispon√≠vel: R$ {account.CreditLimit.Value - totalUsed:F2}"
         );
     }
 }
@@ -363,127 +363,127 @@ if (account.Type == AccountType.CreditCard && account.CreditLimit.HasValue)
 
 ---
 
-## ?? CRONOGRAMA DE IMPLEMENTA«√O
+## ?? CRONOGRAMA DE IMPLEMENTA√á√ÉO
 
-### **Sprint 1: FundaÁ„o (3-5 dias)**
+### **Sprint 1: Funda√ß√£o (3-5 dias)**
 - [ ] Criar entidade `CreditCardInvoice`
-- [ ] Criar migraÁ„o/seeds para MongoDB
+- [ ] Criar migra√ß√£o/seeds para MongoDB
 - [ ] Adicionar `InvoiceId` em `Transaction`
-- [ ] Criar repositÛrio `ICreditCardInvoiceRepository`
-- [ ] Criar testes unit·rios para entidade
+- [ ] Criar reposit√≥rio `ICreditCardInvoiceRepository`
+- [ ] Criar testes unit√°rios para entidade
 
-### **Sprint 2: ServiÁo de Faturas (5-7 dias)**
+### **Sprint 2: Servi√ßo de Faturas (5-7 dias)**
 - [ ] Implementar `CreditCardInvoiceService`
-- [ ] LÛgica de determinaÁ„o de fatura para transaÁ„o
-- [ ] LÛgica de fechamento autom·tico de fatura
+- [ ] L√≥gica de determina√ß√£o de fatura para transa√ß√£o
+- [ ] L√≥gica de fechamento autom√°tico de fatura
 - [ ] Worker task para fechar faturas automaticamente
-- [ ] Testes unit·rios do serviÁo
+- [ ] Testes unit√°rios do servi√ßo
 
-### **Sprint 3: IntegraÁ„o com TransaÁıes (3-4 dias)**
+### **Sprint 3: Integra√ß√£o com Transa√ß√µes (3-4 dias)**
 - [ ] Modificar `TransactionService.CreateAsync()`
-- [ ] Vincular transaÁıes a faturas ao criar
+- [ ] Vincular transa√ß√µes a faturas ao criar
 - [ ] Atualizar total da fatura automaticamente
-- [ ] Testes de integraÁ„o
+- [ ] Testes de integra√ß√£o
 
 ### **Sprint 4: Interface de Pagamento (4-5 dias)**
 - [ ] Modificar modal "Pagar Fatura"
 - [ ] Listar faturas pendentes
 - [ ] Implementar pagamento total/parcial
-- [ ] Atualizar status da fatura apÛs pagamento
-- [ ] ValidaÁıes e feedback visual
+- [ ] Atualizar status da fatura ap√≥s pagamento
+- [ ] Valida√ß√µes e feedback visual
 
-### **Sprint 5: Dashboard do Cart„o (5-7 dias)**
-- [ ] Criar p·gina `/credit-card-details`
+### **Sprint 5: Dashboard do Cart√£o (5-7 dias)**
+- [ ] Criar p√°gina `/credit-card-details`
 - [ ] Card de fatura atual (aberta)
 - [ ] Card de fatura fechada (a vencer)
-- [ ] HistÛrico de faturas
+- [ ] Hist√≥rico de faturas
 - [ ] Detalhes de fatura individual
-- [ ] Gr·ficos e relatÛrios
+- [ ] Gr√°ficos e relat√≥rios
 
 ### **Sprint 6: Funcionalidades Extras (3-5 dias)**
-- [ ] Adicionar limite de crÈdito
+- [ ] Adicionar limite de cr√©dito
 - [ ] Alertas de vencimento
-- [ ] NotificaÁıes de fatura fechada
+- [ ] Notifica√ß√µes de fatura fechada
 - [ ] Exportar fatura para PDF
 - [ ] Melhorias de UX
 
 ---
 
-## ?? BENEFÕCIOS DA IMPLEMENTA«√O
+## ?? BENEF√çCIOS DA IMPLEMENTA√á√ÉO
 
-### **Para o Usu·rio:**
-? Vis„o clara de quanto deve pagar AGORA vs futuro  
-? HistÛrico completo de faturas anteriores  
+### **Para o Usu√°rio:**
+? Vis√£o clara de quanto deve pagar AGORA vs futuro  
+? Hist√≥rico completo de faturas anteriores  
 ? Controle de vencimentos  
 ? Pagamento parcial de faturas  
-? RelatÛrios mensais detalhados  
+? Relat√≥rios mensais detalhados  
 
 ### **Para o Sistema:**
 ? Rastreabilidade completa  
-? Dados estruturados para relatÛrios  
-? AutomaÁ„o de fechamento de faturas  
-? PrevenÁ„o de erros (limite de crÈdito)  
-? Conformidade com fluxo real de cartıes  
+? Dados estruturados para relat√≥rios  
+? Automa√ß√£o de fechamento de faturas  
+? Preven√ß√£o de erros (limite de cr√©dito)  
+? Conformidade com fluxo real de cart√µes  
 
 ---
 
-## ?? PONTOS DE ATEN«√O
+## ?? PONTOS DE ATEN√á√ÉO
 
-### **1. MigraÁ„o de Dados Existentes**
+### **1. Migra√ß√£o de Dados Existentes**
 ```
-TransaÁıes antigas n„o tÍm InvoiceId:
-- OpÁ„o A: Criar faturas retroativas (complexo)
-- OpÁ„o B: Marcar como "legacy" e n„o vincular
-- OpÁ„o C: Criar UMA fatura "histÛrico" e vincular todas
+Transa√ß√µes antigas n√£o t√™m InvoiceId:
+- Op√ß√£o A: Criar faturas retroativas (complexo)
+- Op√ß√£o B: Marcar como "legacy" e n√£o vincular
+- Op√ß√£o C: Criar UMA fatura "hist√≥rico" e vincular todas
 ```
 
 ### **2. Timezone**
 ```
-Fechamento de fatura ‡s 23:59:59 do dia X:
+Fechamento de fatura √†s 23:59:59 do dia X:
 - Usar sempre Date sem hora
-- Worker processa ‡s 00:01 do dia seguinte
+- Worker processa √†s 00:01 do dia seguinte
 ```
 
 ### **3. Parcelamento**
 ```
 Compra parcelada em 12x:
-- 1™ parcela vai para fatura do mÍs da compra
-- 2™ em diante v„o para faturas futuras (recorrÍncia)
-- Cada parcela deve vincular ‡ fatura correta
+- 1¬™ parcela vai para fatura do m√™s da compra
+- 2¬™ em diante v√£o para faturas futuras (recorr√™ncia)
+- Cada parcela deve vincular √† fatura correta
 ```
 
 ### **4. Performance**
 ```
-HistÛrico de faturas pode crescer muito:
-- Implementar paginaÁ„o
+Hist√≥rico de faturas pode crescer muito:
+- Implementar pagina√ß√£o
 - Considerar arquivamento de faturas antigas (>2 anos)
 ```
 
 ---
 
-## ?? RECOMENDA«√O FINAL
+## ?? RECOMENDA√á√ÉO FINAL
 
-**Abordagem Sugerida:** ImplementaÁ„o incremental em sprints
+**Abordagem Sugerida:** Implementa√ß√£o incremental em sprints
 
 **Prioridade Alta:**
 1. Entidade `CreditCardInvoice`
-2. ServiÁo b·sico de faturas
+2. Servi√ßo b√°sico de faturas
 3. Modificar "Pagar Fatura" para usar faturas
 
-**Prioridade MÈdia:**
+**Prioridade M√©dia:**
 4. Worker para fechar faturas automaticamente
-5. Dashboard do cart„o
-6. HistÛrico de faturas
+5. Dashboard do cart√£o
+6. Hist√≥rico de faturas
 
 **Prioridade Baixa:**
-7. Limite de crÈdito
-8. NotificaÁıes e alertas
-9. ExportaÁ„o PDF
+7. Limite de cr√©dito
+8. Notifica√ß√µes e alertas
+9. Exporta√ß√£o PDF
 
 ---
 
 **Estimativa Total:** 4-6 semanas de desenvolvimento full-time
 
-**MVP (MÌnimo Vi·vel):** Sprints 1-4 (2-3 semanas)
+**MVP (M√≠nimo Vi√°vel):** Sprints 1-4 (2-3 semanas)
 
-**Vers„o Completa:** Todos os sprints (4-6 semanas)
+**Vers√£o Completa:** Todos os sprints (4-6 semanas)

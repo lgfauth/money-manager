@@ -1,27 +1,27 @@
-# ?? Melhorias de UX - Formul·rio de OrÁamentos
+# ?? Melhorias de UX - Formul√°rio de Or√ßamentos
 
 ## ?? Antes vs Depois
 
 ### ? **ANTES** - Problemas identificados:
 
-1. **Select m˙ltiplo confuso**
-   - Usu·rio precisava segurar Ctrl para selecionar categorias
-   - N„o era intuitivo ou responsivo mobile
-   - DifÌcil visualizar o que estava selecionado
+1. **Select m√∫ltiplo confuso**
+   - Usu√°rio precisava segurar Ctrl para selecionar categorias
+   - N√£o era intuitivo ou responsivo mobile
+   - Dif√≠cil visualizar o que estava selecionado
 
 2. **Fluxo de 2 cliques**
-   - Usu·rio tinha que clicar "Adicionar Item(s)" primeiro
-   - Depois clicar "Salvar OrÁamento"
+   - Usu√°rio tinha que clicar "Adicionar Item(s)" primeiro
+   - Depois clicar "Salvar Or√ßamento"
    - Processo lento e confuso
 
 3. **Sem feedback visual**
    - Lista simples de itens adicionados
-   - N„o dava para editar valores depois de adicionar
-   - N„o dava para remover itens
+   - N√£o dava para editar valores depois de adicionar
+   - N√£o dava para remover itens
 
 4. **Layout ruim**
    - Modal pequeno (modal-lg)
-   - EspaÁo mal aproveitado
+   - Espa√ßo mal aproveitado
    - Campos horizontais confusos
 
 ---
@@ -30,21 +30,21 @@
 
 ### ?? **1. Interface Visual em 3 Etapas**
 
-#### **Etapa 1: Escolher o MÍs**
-- ? Campo de mÍs grande e destacado
-- ? Bot„o "Copiar do MÍs Anterior" para agilizar
-- ? Layout claro com numeraÁ„o visual (badge com n˙mero)
+#### **Etapa 1: Escolher o M√™s**
+- ? Campo de m√™s grande e destacado
+- ? Bot√£o "Copiar do M√™s Anterior" para agilizar
+- ? Layout claro com numera√ß√£o visual (badge com n√∫mero)
 
 ```razor
 <span class="badge bg-primary me-2">1</span>
-Escolha o mÍs do orÁamento
+Escolha o m√™s do or√ßamento
 ```
 
 #### **Etapa 2: Selecionar Categorias**
-- ? **Cards clic·veis** em vez de select m˙ltiplo
+- ? **Cards clic√°veis** em vez de select m√∫ltiplo
 - ? Grid responsivo (2, 3 ou 4 colunas conforme tela)
-- ? Feedback visual instant‚neo (verde quando selecionado)
-- ? Õcones de check/circle para indicar seleÁ„o
+- ? Feedback visual instant√¢neo (verde quando selecionado)
+- ? √çcones de check/circle para indicar sele√ß√£o
 - ? Hover effect para melhor UX
 
 ```razor
@@ -53,7 +53,7 @@ Escolha o mÍs do orÁamento
      @onclick="() => ToggleCategorySelection(category.Id)">
 ```
 
-**CSS com animaÁıes:**
+**CSS com anima√ß√µes:**
 ```css
 .category-card {
     transition: all 0.2s ease;
@@ -66,11 +66,11 @@ Escolha o mÍs do orÁamento
 ```
 
 #### **Etapa 3: Definir Valores**
-- ? **Tabela edit·vel** com todos os itens
+- ? **Tabela edit√°vel** com todos os itens
 - ? Input de valor direto na tabela (MoneyInput)
-- ? Bot„o de remover individual por item
+- ? Bot√£o de remover individual por item
 - ? **Total planejado** calculado automaticamente
-- ? ValidaÁ„o: n„o permite salvar com valores zerados
+- ? Valida√ß√£o: n√£o permite salvar com valores zerados
 
 ```razor
 <tfoot class="table-light">
@@ -87,15 +87,15 @@ Escolha o mÍs do orÁamento
 
 ### ?? **2. Funcionalidades Novas**
 
-#### ? **Copiar do MÍs Anterior**
-- Usu·rio pode clicar em um bot„o e copiar todo o orÁamento do mÍs anterior
-- Perfeito para orÁamentos mensais recorrentes
+#### ? **Copiar do M√™s Anterior**
+- Usu√°rio pode clicar em um bot√£o e copiar todo o or√ßamento do m√™s anterior
+- Perfeito para or√ßamentos mensais recorrentes
 - Economiza tempo e evita retrabalho
 
 ```csharp
 private async Task CopyFromPreviousMonth()
 {
-    // Calcula o mÍs anterior
+    // Calcula o m√™s anterior
     var previousMonth = selectedDate.AddMonths(-1);
     var previousBudget = await BudgetService.GetByIdAsync(previousMonthString);
     
@@ -108,8 +108,8 @@ private async Task CopyFromPreviousMonth()
 }
 ```
 
-#### ? **Toggle de SeleÁ„o (Clique para adicionar/remover)**
-- Um clique adiciona a categoria com valor padr„o de R$ 500
+#### ? **Toggle de Sele√ß√£o (Clique para adicionar/remover)**
+- Um clique adiciona a categoria com valor padr√£o de R$ 500
 - Outro clique remove a categoria
 - Simples e intuitivo
 
@@ -120,21 +120,21 @@ private void ToggleCategorySelection(string categoryId)
     
     if (existingItem != null)
     {
-        newBudget.Items.Remove(existingItem); // Remove se j· existe
+        newBudget.Items.Remove(existingItem); // Remove se j√° existe
     }
     else
     {
         newBudget.Items.Add(new BudgetItem 
         { 
             CategoryId = categoryId, 
-            LimitAmount = 500m // Valor padr„o
+            LimitAmount = 500m // Valor padr√£o
         });
     }
 }
 ```
 
-#### ? **RemoÁ„o Individual de Itens**
-- Bot„o de lixeira em cada linha da tabela
+#### ? **Remo√ß√£o Individual de Itens**
+- Bot√£o de lixeira em cada linha da tabela
 - Remove instantaneamente
 - Atualiza o total automaticamente
 
@@ -154,7 +154,7 @@ private void RemoveBudgetItem(int index)
 ### ?? **3. Responsividade Melhorada**
 
 - ? Modal extra-large (modal-xl) para melhor aproveitamento
-- ? Modal scrollable para conte˙do longo
+- ? Modal scrollable para conte√∫do longo
 - ? Grid de categorias responsivo:
   - Mobile: 2 colunas
   - Tablet: 3 colunas
@@ -166,12 +166,12 @@ private void RemoveBudgetItem(int index)
 
 ---
 
-### ? **4. ValidaÁıes e Feedback**
+### ? **4. Valida√ß√µes e Feedback**
 
-#### ValidaÁıes implementadas:
-1. ? N„o permite salvar sem itens
-2. ? N„o permite salvar com valores zerados
-3. ? Desabilita botıes durante operaÁıes (isBusy)
+#### Valida√ß√µes implementadas:
+1. ? N√£o permite salvar sem itens
+2. ? N√£o permite salvar com valores zerados
+3. ? Desabilita bot√µes durante opera√ß√µes (isBusy)
 4. ? Mensagens de erro claras
 
 ```razor
@@ -180,28 +180,28 @@ disabled="@(isBusy || newBudget.Items == null || !newBudget.Items.Any() || newBu
 
 #### Feedback visual:
 - ? Cards verdes quando selecionados
-- ? Õcone de check para confirmaÁ„o
+- ? √çcone de check para confirma√ß√£o
 - ? Total planejado em destaque
-- ? Hover effects em todos os elementos clic·veis
+- ? Hover effects em todos os elementos clic√°veis
 
 ---
 
-## ?? ComparaÁ„o de Fluxo
+## ?? Compara√ß√£o de Fluxo
 
 ### Antes (5 passos):
-1. Selecionar mÍs
+1. Selecionar m√™s
 2. Segurar Ctrl + clicar categorias no select
 3. Digitar valor
 4. Clicar "Adicionar Item(s)"
 5. Repetir 2-4 para cada categoria
-6. Clicar "Salvar OrÁamento"
+6. Clicar "Salvar Or√ßamento"
 
 ### Depois (3 passos):
-1. Selecionar mÍs (ou copiar do mÍs anterior)
+1. Selecionar m√™s (ou copiar do m√™s anterior)
 2. Clicar nas categorias desejadas (cards visuais)
 3. Ajustar valores na tabela e salvar
 
-**ReduÁ„o de ~50% no n˙mero de interaÁıes!** ??
+**Redu√ß√£o de ~50% no n√∫mero de intera√ß√µes!** ??
 
 ---
 
@@ -210,52 +210,52 @@ disabled="@(isBusy || newBudget.Items == null || !newBudget.Items.Any() || newBu
 ### Design System consistente:
 - ? Badges numerados para etapas
 - ? Cards com bordas coloridas
-- ? Õcones Font Awesome
+- ? √çcones Font Awesome
 - ? Cores do Bootstrap
-- ? AnimaÁıes suaves (transform, box-shadow)
+- ? Anima√ß√µes suaves (transform, box-shadow)
 
 ### Hierarquia visual clara:
-- TÌtulos com badges numerados
+- T√≠tulos com badges numerados
 - Cards agrupados por etapa
 - Tabela com totalizador em destaque
-- Botıes de aÁ„o no rodapÈ
+- Bot√µes de a√ß√£o no rodap√©
 
 ---
 
-## ?? PossÌveis Melhorias Futuras
+## ?? Poss√≠veis Melhorias Futuras
 
-1. **Sugestıes Inteligentes**
-   - Calcular mÈdia de gastos dos ˙ltimos 3 meses
+1. **Sugest√µes Inteligentes**
+   - Calcular m√©dia de gastos dos √∫ltimos 3 meses
    - Sugerir valores automaticamente
 
-2. **Modo R·pido**
+2. **Modo R√°pido**
    - "Distribuir valor total igualmente entre categorias"
-   - "Aplicar percentuais" (ex: 50% alimentaÁ„o, 30% transporte, 20% lazer)
+   - "Aplicar percentuais" (ex: 50% alimenta√ß√£o, 30% transporte, 20% lazer)
 
-3. **VisualizaÁ„o**
-   - Gr·fico de pizza mostrando distribuiÁ„o do orÁamento
-   - ComparaÁ„o com mÍs anterior
+3. **Visualiza√ß√£o**
+   - Gr√°fico de pizza mostrando distribui√ß√£o do or√ßamento
+   - Compara√ß√£o com m√™s anterior
 
 4. **Copiar de Modelo**
-   - Salvar templates de orÁamento
-   - "OrÁamento Conservador", "OrÁamento Liberal", etc.
+   - Salvar templates de or√ßamento
+   - "Or√ßamento Conservador", "Or√ßamento Liberal", etc.
 
 ---
 
 ## ? Resultado Final
 
 ### UX Score:
-- **Antes:** 4/10 (confuso, muitos cliques, n„o intuitivo)
-- **Depois:** 9/10 (visual, r·pido, intuitivo, responsivo)
+- **Antes:** 4/10 (confuso, muitos cliques, n√£o intuitivo)
+- **Depois:** 9/10 (visual, r√°pido, intuitivo, responsivo)
 
 ### Principais conquistas:
 ? Interface visual moderna
-? ReduÁ„o de cliques
-? Feedback instant‚neo
+? Redu√ß√£o de cliques
+? Feedback instant√¢neo
 ? Mobile-friendly
-? ValidaÁıes inteligentes
-? FunÁ„o "Copiar do mÍs anterior"
-? EdiÁ„o inline na tabela
+? Valida√ß√µes inteligentes
+? Fun√ß√£o "Copiar do m√™s anterior"
+? Edi√ß√£o inline na tabela
 ? Total calculado automaticamente
 
 ---

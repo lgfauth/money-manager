@@ -1,26 +1,26 @@
-# ?? CORRE«√O: Encoding UTF-8 em Arquivos Blazor
+# ?? CORRE√á√ÉO: Encoding UTF-8 em Arquivos Blazor
 
 ## ?? PROBLEMA IDENTIFICADO
 
 ### **Sintoma:**
-Caracteres especiais e acentos aparecem como `?` (caractere de substituiÁ„o):
-- `Cart„o` ? `Cart?o`
-- `CrÈdito` ? `Cr?dito`
-- `PerÌodo` ? `Per?odo`
-- `TransaÁıes` ? `Transa??es`
-- `HistÛrico` ? `Hist?rico`
+Caracteres especiais e acentos aparecem como `?` (caractere de substitui√ß√£o):
+- `Cart√£o` ? `Cart?o`
+- `Cr√©dito` ? `Cr?dito`
+- `Per√≠odo` ? `Per?odo`
+- `Transa√ß√µes` ? `Transa??es`
+- `Hist√≥rico` ? `Hist?rico`
 
 ### **Causa:**
-Arquivos `.razor` foram salvos com encoding **incorreto** (provavelmente Latin-1, Windows-1252 ou ANSI) ao invÈs de **UTF-8**.
+Arquivos `.razor` foram salvos com encoding **incorreto** (provavelmente Latin-1, Windows-1252 ou ANSI) ao inv√©s de **UTF-8**.
 
 ---
 
-## ? SOLU«√O APLICADA (DEFINITIVA)
+## ? SOLU√á√ÉO APLICADA (DEFINITIVA)
 
 ### **Problema Identificado:**
-Os arquivos estavam sendo salvos com **UTF-8 com BOM** (Byte Order Mark), o que causa problemas de renderizaÁ„o no navegador.
+Os arquivos estavam sendo salvos com **UTF-8 com BOM** (Byte Order Mark), o que causa problemas de renderiza√ß√£o no navegador.
 
-### **SoluÁ„o Final:**
+### **Solu√ß√£o Final:**
 Converter todos os arquivos `.razor` para **UTF-8 sem BOM**.
 
 ### **Arquivos Corrigidos (18 arquivos):**
@@ -55,21 +55,21 @@ Get-ChildItem -Path "src\MoneyManager.Web\Pages" -Filter "*.razor" | ForEach-Obj
 }
 ```
 
-**MudanÁas:**
-- Todos os arquivos agora s„o **UTF-8 sem BOM**
+**Mudan√ßas:**
+- Todos os arquivos agora s√£o **UTF-8 sem BOM**
 - Todos os acentos e caracteres especiais corretos
-- RenderizaÁ„o correta no navegador
+- Renderiza√ß√£o correta no navegador
 
 ---
 
 ## ?? OUTROS ARQUIVOS AFETADOS
 
-Arquivos que tambÈm precisam de correÁ„o:
+Arquivos que tamb√©m precisam de corre√ß√£o:
 ```
 src\MoneyManager.Web\Pages\AccountDeleted.razor
 src\MoneyManager.Web\Pages\AdminMigration.razor
-src\MoneyManager.Web\Pages\Accounts.razor (possÌvel)
-src\MoneyManager.Web\Pages\InvoiceDetails.razor (possÌvel)
+src\MoneyManager.Web\Pages\Accounts.razor (poss√≠vel)
+src\MoneyManager.Web\Pages\InvoiceDetails.razor (poss√≠vel)
 ... outros arquivos .razor
 ```
 
@@ -98,11 +98,11 @@ Get-ChildItem -Path "src\MoneyManager.Web\Pages" -Filter "*.razor" -Recurse | Fo
 }
 ```
 
-**?? AVISO:** Execute com cuidado, faÁa backup antes!
+**?? AVISO:** Execute com cuidado, fa√ßa backup antes!
 
 ---
 
-## ?? CORRE«√O DEFINITIVA (EDITORCONFIG)
+## ?? CORRE√á√ÉO DEFINITIVA (EDITORCONFIG)
 
 Adicionar no arquivo `.editorconfig` na raiz do projeto:
 
@@ -129,22 +129,22 @@ indent_size = 2
 
 ---
 
-## ?? VALIDA«√O
+## ?? VALIDA√á√ÉO
 
 ### **Antes:**
 ```html
-<h1>Cart„o Nubank</h1>          ? Mostra: Cart?o Nubank
-<p>Cart„o de CrÈdito</p>        ? Mostra: Cart?o de Cr?dito
-<th>PerÌodo</th>                 ? Mostra: Per?odo
-<th>TransaÁıes</th>              ? Mostra: Transa??es
+<h1>Cart√£o Nubank</h1>          ? Mostra: Cart?o Nubank
+<p>Cart√£o de Cr√©dito</p>        ? Mostra: Cart?o de Cr?dito
+<th>Per√≠odo</th>                 ? Mostra: Per?odo
+<th>Transa√ß√µes</th>              ? Mostra: Transa??es
 ```
 
 ### **Depois:**
 ```html
-<h1>Cart„o Nubank</h1>          ? Mostra: Cart„o Nubank
-<p>Cart„o de CrÈdito</p>        ? Mostra: Cart„o de CrÈdito
-<th>PerÌodo</th>                 ? Mostra: PerÌodo
-<th>TransaÁıes</th>              ? Mostra: TransaÁıes
+<h1>Cart√£o Nubank</h1>          ? Mostra: Cart√£o Nubank
+<p>Cart√£o de Cr√©dito</p>        ? Mostra: Cart√£o de Cr√©dito
+<th>Per√≠odo</th>                 ? Mostra: Per√≠odo
+<th>Transa√ß√µes</th>              ? Mostra: Transa√ß√µes
 ```
 
 ---
@@ -155,14 +155,14 @@ indent_size = 2
 dotnet build
 ```
 
-? CompilaÁ„o bem-sucedida (encoding n„o afeta compilaÁ„o)
+? Compila√ß√£o bem-sucedida (encoding n√£o afeta compila√ß√£o)
 
 ---
 
-## ?? PR”XIMOS PASSOS
+## ?? PR√ìXIMOS PASSOS
 
 1. **Testar localmente:** Acessar `/credit-cards/{id}` e verificar acentos
-2. **Corrigir outros arquivos** se necess·rio
+2. **Corrigir outros arquivos** se necess√°rio
 3. **Adicionar .editorconfig** para evitar problema futuro
 4. **Commit e deploy**
 
@@ -179,11 +179,11 @@ git commit -m "fix: correct UTF-8 encoding in CreditCardDashboard.razor
 - Recreated file with proper UTF-8 encoding
 
 Fixed text:
-- Cart„o ? was showing as Cart?o
-- CrÈdito ? was showing as Cr?dito
-- PerÌodo ? was showing as Per?odo
-- TransaÁıes ? was showing as Transa??es
-- HistÛrico ? was showing as Hist?rico
+- Cart√£o ? was showing as Cart?o
+- Cr√©dito ? was showing as Cr?dito
+- Per√≠odo ? was showing as Per?odo
+- Transa√ß√µes ? was showing as Transa??es
+- Hist√≥rico ? was showing as Hist?rico
 
 Affects:
 - /credit-cards/{id} page
@@ -197,11 +197,11 @@ git push origin main
 
 ## ? RESULTADO FINAL
 
-### **Dashboard do Cart„o:**
-- ? TÌtulo: "Dashboard do Cart„o"
-- ? SubtÌtulo: "Cart„o de CrÈdito"
-- ? Cards: "PerÌodo", "TransaÁıes"
-- ? Tabela: "MÍs/Ano", "PerÌodo", "TransaÁıes", "AÁıes"
+### **Dashboard do Cart√£o:**
+- ? T√≠tulo: "Dashboard do Cart√£o"
+- ? Subt√≠tulo: "Cart√£o de Cr√©dito"
+- ? Cards: "Per√≠odo", "Transa√ß√µes"
+- ? Tabela: "M√™s/Ano", "Per√≠odo", "Transa√ß√µes", "A√ß√µes"
 - ? Todos os acentos corretos
 
 ---

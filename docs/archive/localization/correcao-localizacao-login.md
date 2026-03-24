@@ -1,4 +1,4 @@
-# ?? CORRE«√O - Problema de LocalizaÁ„o na Tela de Login
+# ?? CORRE√á√ÉO - Problema de Localiza√ß√£o na Tela de Login
 
 ## ?? Problema Identificado:
 
@@ -18,13 +18,13 @@ Na tela de Login, em vez de aparecer os textos traduzidos, apareciam as **chaves
 "LanguageSelector": "Seletor de Idioma","Idioma",  ? DUPLICADO
 ```
 
-**Erro TÈcnico:**
+**Erro T√©cnico:**
 ```
 ExpectedSeparatorAfterPropertyNameNotFound
 Path: $.Settings | LineNumber: 291 | BytesPositionInLine: 52
 ```
 
-### 2. URL Incorreta (SECUND¡RIO):
+### 2. URL Incorreta (SECUND√ÅRIO):
 O `LocalizationService` estava tentando carregar de:
 ```
 ? https://money-manager-api.up.railway.app/i18n/pt-BR.json
@@ -35,7 +35,7 @@ Em vez de:
 ? https://localhost:7001/i18n/pt-BR.json
 ```
 
-## ? CorreÁıes Aplicadas:
+## ? Corre√ß√µes Aplicadas:
 
 ### 1. Corrigido pt-BR.json:
 ```json
@@ -48,16 +48,16 @@ Em vez de:
 
 ### 2. Melhorado LocalizationService:
 - ? Usa `IWebAssemblyHostEnvironment.BaseAddress`
-- ? Cria `HttpClient` dedicado para arquivos est·ticos
+- ? Cria `HttpClient` dedicado para arquivos est√°ticos
 - ? Logs detalhados para debug
 - ? Tratamento de erros melhorado
 
-### 3. Adicionado InicializaÁ„o nas P·ginas P˙blicas:
+### 3. Adicionado Inicializa√ß√£o nas P√°ginas P√∫blicas:
 **Login.razor e Register.razor:**
 ```csharp
 protected override async Task OnInitializedAsync()
 {
-    // Garantir que LocalizationService est· inicializado
+    // Garantir que LocalizationService est√° inicializado
     if (string.IsNullOrEmpty(Localization.CurrentCulture))
     {
         await Localization.InitializeAsync();
@@ -68,17 +68,17 @@ protected override async Task OnInitializedAsync()
 
 ## ?? Arquivos Modificados:
 
-| Arquivo | MudanÁa |
+| Arquivo | Mudan√ßa |
 |---------|---------|
 | `pt-BR.json` | Corrigido erro de sintaxe JSON |
 | `LocalizationService.cs` | Usa BaseAddress correto + logs |
-| `Login.razor` | InicializaÁ„o explÌcita + loading |
-| `Register.razor` | InicializaÁ„o explÌcita + loading |
+| `Login.razor` | Inicializa√ß√£o expl√≠cita + loading |
+| `Register.razor` | Inicializa√ß√£o expl√≠cita + loading |
 
 ## ?? Como Testar:
 
 1. **Limpar cache do navegador** (Ctrl+Shift+Del)
-2. **Executar aplicaÁ„o:**
+2. **Executar aplica√ß√£o:**
    ```sh
    dotnet run --project src/MoneyManager.Web
    ```
@@ -88,36 +88,36 @@ protected override async Task OnInitializedAsync()
 ### Logs Esperados:
 ```
 [LocalizationService] Inicializando... BaseAddress: https://localhost:7001/
-[LocalizationService] Usando idioma padr„o: pt-BR
+[LocalizationService] Usando idioma padr√£o: pt-BR
 [LocalizationService] Tentando carregar: https://localhost:7001/i18n/pt-BR.json
 [LocalizationService] ? Arquivo carregado com sucesso!
-[LocalizationService] ? Carregado 13 seÁıes
+[LocalizationService] ? Carregado 13 se√ß√µes
 ```
 
 ### Resultado na Tela:
-- ? TÌtulo: "MoneyManager"
-- ? SubtÌtulo: "FaÁa login na sua conta"
+- ? T√≠tulo: "MoneyManager"
+- ? Subt√≠tulo: "Fa√ßa login na sua conta"
 - ? Labels: "Email" e "Senha"
 - ? Placeholder: "seu@email.com"
-- ? Bot„o: "Entrar"
+- ? Bot√£o: "Entrar"
 
 ## ?? Status:
 
 ? **JSON Corrigido e Validado**  
 ? **LocalizationService Atualizado**  
 ? **Logs de Debug Adicionados**  
-? **CompilaÁ„o Bem-sucedida**  
+? **Compila√ß√£o Bem-sucedida**  
 
-## ?? PrÛximos Passos:
+## ?? Pr√≥ximos Passos:
 
 1. Testar no navegador
 2. Verificar logs no console
 3. Se ainda houver problema, checar:
    - Cache do navegador
-   - Arquivo est· sendo servido corretamente
-   - BaseAddress est· correto
+   - Arquivo est√° sendo servido corretamente
+   - BaseAddress est√° correto
 
 ---
 
 **Data:** 2024  
-**Status:** ? **CORRE«’ES APLICADAS**
+**Status:** ? **CORRE√á√ïES APLICADAS**

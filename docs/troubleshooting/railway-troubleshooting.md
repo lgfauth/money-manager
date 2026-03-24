@@ -1,6 +1,6 @@
 # ?? Railway Troubleshooting Guide
 
-## ?? Problemas Comuns e SoluÁıes
+## ?? Problemas Comuns e Solu√ß√µes
 
 ### 1. Application failed to respond
 
@@ -10,12 +10,12 @@ Error: Application failed to respond
 Health check timeout
 ```
 
-#### Causas PossÌveis
+#### Causas Poss√≠veis
 - Porta errada configurada
-- AplicaÁ„o n„o est· escutando em `0.0.0.0`
-- AplicaÁ„o demora muito para iniciar
+- Aplica√ß√£o n√£o est√° escutando em `0.0.0.0`
+- Aplica√ß√£o demora muito para iniciar
 
-#### SoluÁıes
+#### Solu√ß√µes
 
 **1.1 Verificar Porta**
 ```bash
@@ -41,7 +41,7 @@ healthcheckTimeout = 60  # Aumentar para 60s
 ```bash
 railway logs
 # Procurar por:
-# - Erros de inicializaÁ„o
+# - Erros de inicializa√ß√£o
 # - "Now listening on: http://[::]:8080"
 ```
 
@@ -54,12 +54,12 @@ railway logs
 MongoConnectionException: Timed out while connecting
 ```
 
-#### Causas PossÌveis
+#### Causas Poss√≠veis
 - Connection string incorreta
-- IP n„o liberado no MongoDB Atlas
-- Credenciais inv·lidas
+- IP n√£o liberado no MongoDB Atlas
+- Credenciais inv√°lidas
 
-#### SoluÁıes
+#### Solu√ß√µes
 
 **2.1 Verificar Connection String**
 ```bash
@@ -70,12 +70,12 @@ mongodb+srv://usuario:senha@cluster.mongodb.net/MoneyAgent?retryWrites=true&w=ma
 # Exemplo: @ ? %40, # ? %23
 ```
 
-**2.2 Testar Conex„o Localmente**
+**2.2 Testar Conex√£o Localmente**
 ```bash
 # Instalar MongoDB Shell
 npm install -g mongosh
 
-# Testar conex„o
+# Testar conex√£o
 mongosh "sua-connection-string"
 ```
 
@@ -87,10 +87,10 @@ mongosh "sua-connection-string"
 4. Confirmar
 ```
 
-**2.4 Verificar Usu·rio e Senha**
+**2.4 Verificar Usu√°rio e Senha**
 ```
 1. MongoDB Atlas ? Database Access
-2. Verificar que o usu·rio existe
+2. Verificar que o usu√°rio existe
 3. Role: "Atlas admin" ou "Read and write to any database"
 ```
 
@@ -104,14 +104,14 @@ Access to fetch at 'https://api...' from origin 'https://web...'
 has been blocked by CORS policy
 ```
 
-#### Causas PossÌveis
-- CORS n„o configurado na API
-- Origem n„o permitida
+#### Causas Poss√≠veis
+- CORS n√£o configurado na API
+- Origem n√£o permitida
 - Headers incorretos
 
-#### SoluÁıes
+#### Solu√ß√µes
 
-**3.1 Verificar ConfiguraÁ„o CORS na API**
+**3.1 Verificar Configura√ß√£o CORS na API**
 
 Em `Program.cs`:
 ```csharp
@@ -129,7 +129,7 @@ builder.Services.AddCors(options =>
 app.UseCors("AllowAll");
 ```
 
-**3.2 ConfiguraÁ„o EspecÌfica (ProduÁ„o)**
+**3.2 Configura√ß√£o Espec√≠fica (Produ√ß√£o)**
 ```csharp
 builder.Services.AddCors(options =>
 {
@@ -165,19 +165,19 @@ app.MapControllers();
 Bearer token invalid
 ```
 
-#### Causas PossÌveis
+#### Causas Poss√≠veis
 - SecretKey diferente entre ambientes
 - Token expirado
 - Headers incorretos
 
-#### SoluÁıes
+#### Solu√ß√µes
 
 **4.1 Verificar SecretKey**
 ```bash
 # API deve ter:
 JWT__SECRETKEY=mesma-chave-em-todos-ambientes
 
-# ?? Deve ter no mÌnimo 32 caracteres!
+# ?? Deve ter no m√≠nimo 32 caracteres!
 ```
 
 **4.2 Verificar Issuer e Audience**
@@ -211,12 +211,12 @@ railway logs
 404 Not Found: /_framework/blazor.webassembly.js
 ```
 
-#### Causas PossÌveis
-- Nginx n„o servindo arquivos corretamente
+#### Causas Poss√≠veis
+- Nginx n√£o servindo arquivos corretamente
 - Paths incorretos
 - Build incompleto
 
-#### SoluÁıes
+#### Solu√ß√µes
 
 **5.1 Verificar nginx.conf**
 ```nginx
@@ -256,12 +256,12 @@ Memory usage > 500MB
 Railway suspending service
 ```
 
-#### Causas PossÌveis
+#### Causas Poss√≠veis
 - Memory leaks
-- Muitos objetos em memÛria
+- Muitos objetos em mem√≥ria
 - Logs excessivos
 
-#### SoluÁıes
+#### Solu√ß√µes
 
 **6.1 Otimizar Logs**
 ```json
@@ -299,12 +299,12 @@ Build failed
 Docker build error
 ```
 
-#### Causas PossÌveis
+#### Causas Poss√≠veis
 - Dockerfile incorreto
 - Arquivos faltando
-- DependÍncias n„o restauradas
+- Depend√™ncias n√£o restauradas
 
-#### SoluÁıes
+#### Solu√ß√µes
 
 **7.1 Testar Build Localmente**
 ```bash
@@ -329,7 +329,7 @@ docker run -p 8080:8080 test-web
 
 **7.3 Verificar Paths no Dockerfile**
 ```dockerfile
-# Devem comeÁar de src/
+# Devem come√ßar de src/
 COPY ["src/MoneyManager.Web/...", "src/MoneyManager.Web/"]
 ```
 
@@ -343,12 +343,12 @@ Configuration value is null
 MongoDB connection string not found
 ```
 
-#### Causas PossÌveis
-- Vari·veis n„o definidas
+#### Causas Poss√≠veis
+- Vari√°veis n√£o definidas
 - Nomenclatura incorreta
 - Formato errado
 
-#### SoluÁıes
+#### Solu√ß√µes
 
 **8.1 Nomenclatura Correta**
 ```bash
@@ -363,7 +363,7 @@ JWT_SECRETKEY=...               # ? Errado
 **8.2 Verificar no Railway**
 ```bash
 railway variables
-# Listar todas as vari·veis
+# Listar todas as vari√°veis
 
 railway variables set KEY=VALUE
 # Adicionar/Atualizar
@@ -382,7 +382,7 @@ dotnet run
 
 ---
 
-## ?? Comandos de DiagnÛstico
+## ?? Comandos de Diagn√≥stico
 
 ### Railway CLI
 
@@ -393,10 +393,10 @@ railway status
 # Ver logs em tempo real
 railway logs -f
 
-# Ver vari·veis
+# Ver vari√°veis
 railway variables
 
-# Ver domÌnio
+# Ver dom√≠nio
 railway domain
 
 # Redeploy
@@ -412,7 +412,7 @@ railway open
 # Build
 docker build -f Dockerfile.api -t api .
 
-# Run com vari·veis
+# Run com vari√°veis
 docker run -p 8080:8080 \
   -e MONGODB__CONNECTIONSTRING="..." \
   -e JWT__SECRETKEY="..." \
@@ -427,9 +427,9 @@ docker exec -it <container-id> /bin/bash
 
 ---
 
-## ?? An·lise de Logs
+## ?? An√°lise de Logs
 
-### Padrıes de Erro Comuns
+### Padr√µes de Erro Comuns
 
 **MongoDB:**
 ```
@@ -455,7 +455,7 @@ docker exec -it <container-id> /bin/bash
 ### Como Interpretar
 
 ```bash
-# 1. Ver ˙ltimas 100 linhas
+# 1. Ver √∫ltimas 100 linhas
 railway logs --limit 100
 
 # 2. Filtrar erros
@@ -474,7 +474,7 @@ railway logs -f
 
 ### Onde Buscar Ajuda
 
-1. **DocumentaÁ„o Oficial:**
+1. **Documenta√ß√£o Oficial:**
    - [Railway Docs](https://docs.railway.app)
    - [ASP.NET Core Docs](https://docs.microsoft.com/aspnet/core)
 
@@ -484,7 +484,7 @@ railway logs -f
 
 3. **Projeto:**
    - GitHub Issues
-   - DocumentaÁ„o local
+   - Documenta√ß√£o local
 
 ---
 
@@ -492,27 +492,27 @@ railway logs -f
 
 Antes de reportar erro, verifique:
 
-- [ ] MongoDB Atlas configurado e acessÌvel
+- [ ] MongoDB Atlas configurado e acess√≠vel
 - [ ] Connection string correta (com senha codificada)
 - [ ] IP 0.0.0.0/0 liberado no MongoDB
-- [ ] Vari·veis de ambiente definidas no Railway
-- [ ] JWT SecretKey com mÌnimo 32 caracteres
+- [ ] Vari√°veis de ambiente definidas no Railway
+- [ ] JWT SecretKey com m√≠nimo 32 caracteres
 - [ ] CORS configurado na API
 - [ ] Porta 8080 em todos os lugares
 - [ ] Dockerfiles na raiz do projeto
 - [ ] Build local funciona
-- [ ] Logs n„o mostram erros crÌticos
+- [ ] Logs n√£o mostram erros cr√≠ticos
 
 ---
 
 **Se o problema persistir:**
 
-1. FaÁa um redeploy: `railway up`
-2. Limpe e reconstrua: Delete o serviÁo e recrie
+1. Fa√ßa um redeploy: `railway up`
+2. Limpe e reconstrua: Delete o servi√ßo e recrie
 3. Teste localmente com Docker
 4. Abra uma issue no GitHub com logs
 
 ---
 
 Criado por: Equipe MoneyManager  
-⁄ltima atualizaÁ„o: ${new Date().toLocaleDateString('pt-BR')}
+√öltima atualiza√ß√£o: ${new Date().toLocaleDateString('pt-BR')}
