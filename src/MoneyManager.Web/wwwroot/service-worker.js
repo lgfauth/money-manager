@@ -1,12 +1,12 @@
 /* ==========================================================
-   MoneyManager � Service Worker
+   MoneyManager - Service Worker
    - Offline-first cache for static shell assets
    - Web Push notification handler
    ========================================================== */
 
-const CACHE_NAME = 'moneymanager-v2';
+const CACHE_NAME = 'moneymanager-v3';
 
-// Assets to pre-cache on install (shell assets only � not API data)
+// Assets to pre-cache on install (shell assets only - not API data)
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -18,7 +18,7 @@ const PRECACHE_URLS = [
   '/css/navbar.css'
 ];
 
-// ?? Install: pre-cache shell assets ??????????????????????
+// Install: pre-cache shell assets
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -27,7 +27,7 @@ self.addEventListener('install', event => {
   );
 });
 
-// ?? Activate: remove stale caches ????????????????????????
+// Activate: remove stale caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -40,7 +40,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ?? Fetch: network-first for i18n, cache-first for static, skip API ??
+// Fetch: network-first for i18n, cache-first for static, skip API
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
@@ -94,11 +94,11 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// ?? Push: receive and display notification ???????????????
+// Push: receive and display notification
 self.addEventListener('push', event => {
   let data = {
     title: 'MoneyManager',
-    body: 'Voc� tem uma nova notifica��o.',
+    body: 'Você tem uma nova notificação.',
     icon: '/favicon.svg',
     url: '/'
   };
@@ -125,7 +125,7 @@ self.addEventListener('push', event => {
   );
 });
 
-// ?? Notification click: open or focus the app ????????????
+// Notification click: open or focus the app
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
