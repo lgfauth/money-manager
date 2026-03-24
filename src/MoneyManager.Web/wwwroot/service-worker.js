@@ -18,26 +18,14 @@ const PRECACHE_URLS = [
   '/css/navbar.css'
 ];
 
-// Install: pre-cache shell assets
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
-  );
+// Install: skip waiting to activate immediately
+self.addEventListener('install', function(event) {
+  self.skipWaiting();
 });
 
-// Activate: remove stale caches
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
-  );
+// Activate: take control of all clients immediately
+self.addEventListener('activate', function(event) {
+  event.waitUntil(clients.claim());
 });
 
 // Fetch: network-first for i18n, cache-first for static, skip API
@@ -95,57 +83,23 @@ self.addEventListener('fetch', event => {
 });
 
 // Push: receive and display notification
-self.addEventListener('push', event => {
-  let data = {
-    title: 'MoneyManager',
-    body: 'Você tem uma nova notificação.',
-    icon: '/favicon.svg',
-    url: '/'
-  };
-
-  if (event.data) {
-    try {
-      data = { ...data, ...event.data.json() };
-    } catch {
-      data.body = event.data.text();
-    }
-  }
-
+self.addEventListener('push', function(event) {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || 'MoneyManager';
   const options = {
-    body: data.body,
-    icon: data.icon || '/favicon.svg',
-    badge: '/favicon.svg',
-    data: { url: data.url || '/' },
-    requireInteraction: false,
-    vibrate: [200, 100, 200]
+    body: data.body || 'Você tem uma nova notificação.',
+    icon: '/favicon.png',
+    badge: '/favicon.png'
   };
-
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    self.registration.showNotification(title, options)
   );
 });
 
-// Notification click: open or focus the app
-self.addEventListener('notificationclick', event => {
+// Notification click: open the app
+self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-
-  const targetUrl = (event.notification.data && event.notification.data.url)
-    ? event.notification.data.url
-    : '/';
-
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(windowClients => {
-        // Focus existing open window if available
-        for (const client of windowClients) {
-          if (client.url === targetUrl && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        // Otherwise open a new window
-        if (clients.openWindow) {
-          return clients.openWindow(targetUrl);
-        }
-      })
+    clients.openWindow('/')
   );
 });
