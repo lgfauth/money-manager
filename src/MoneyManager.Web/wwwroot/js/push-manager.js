@@ -112,10 +112,11 @@ window.pushManager = (function () {
    * Sends the PushSubscription to the API endpoint POST /api/push/subscribe.
    * @param {PushSubscription} subscription
    * @param {string} authToken  Bearer token for the authenticated user.
+   * @param {string} apiBaseUrl Base URL of the API.
    * Returns true on success.
    */
 
-  async function sendSubscriptionToServer(subscription, authToken) {
+  async function sendSubscriptionToServer(subscription, authToken, apiBaseUrl) {
     const keys = subscription.getKey ? {
       p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
       auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth'))))
@@ -129,7 +130,7 @@ window.pushManager = (function () {
     };
 
     try {
-      const response = await fetch('/api/push/subscribe', {
+      const response = await fetch(`${apiBaseUrl}/api/push/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,7 +162,7 @@ window.pushManager = (function () {
    * Returns 'success', 'permission-denied', 'not-supported', or 'error'.
    */
 
-  async function initPush(vapidPublicKey, authToken) {
+  async function initPush(vapidPublicKey, authToken, apiBaseUrl) {
     console.info('[PushManager] initPush: starting full activation flow...');
 
     console.info('[PushManager] Step 1: Registering service worker...');
@@ -186,7 +187,7 @@ window.pushManager = (function () {
     }
 
     console.info('[PushManager] Step 4: Sending subscription to server...');
-    const saved = await sendSubscriptionToServer(subscription, authToken);
+    const saved = await sendSubscriptionToServer(subscription, authToken, apiBaseUrl);
     if (!saved) {
       console.error('[PushManager] initPush: failed to save subscription on server.');
       return 'error';
@@ -199,9 +200,10 @@ window.pushManager = (function () {
   /**
    * Removes the push subscription from the browser and notifies the API.
    * @param {string} authToken  JWT bearer token.
+   * @param {string} apiBaseUrl Base URL of the API.
    */
 
-  async function unsubscribeFromPush(authToken) {
+  async function unsubscribeFromPush(authToken, apiBaseUrl) {
     console.info('[PushManager] unsubscribeFromPush: starting...');
 
     if (!('serviceWorker' in navigator)) {
@@ -228,7 +230,7 @@ window.pushManager = (function () {
     console.info('[PushManager] Browser subscription removed.');
 
     try {
-      const response = await fetch('/api/push/unsubscribe', {
+      const response = await fetch(`${apiBaseUrl}/api/push/unsubscribe`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

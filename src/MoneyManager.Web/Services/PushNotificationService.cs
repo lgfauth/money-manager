@@ -58,13 +58,13 @@ public class PushNotificationService : IPushNotificationService
         if (string.IsNullOrWhiteSpace(token))
             return "error";
 
-        return await _js.InvokeAsync<string>("pushManager.initPush", vapidPublicKey, token);
+        return await _js.InvokeAsync<string>("pushManager.initPush", vapidPublicKey, token, _http.BaseAddress?.ToString());
     }
 
     public async Task<bool> UnsubscribeAsync()
     {
         var token = await _authProvider.GetTokenAsync();
-        return await _js.InvokeAsync<bool>("pushManager.unsubscribeFromPush", token ?? string.Empty);
+        return await _js.InvokeAsync<bool>("pushManager.unsubscribeFromPush", token ?? string.Empty, _http.BaseAddress?.ToString());
     }
 
     public async Task<string> GetPermissionStateAsync()
