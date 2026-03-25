@@ -117,6 +117,10 @@ window.pushManager = (function () {
    */
 
   async function sendSubscriptionToServer(subscription, authToken, apiBaseUrl) {
+    
+    console.log('[PushManager] apiBaseUrl:', apiBaseUrl);
+    console.log('[PushManager] URL completa:', `${apiBaseUrl}/api/push/subscribe`);
+
     const keys = subscription.getKey ? {
       p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
       auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth'))))
