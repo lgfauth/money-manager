@@ -117,9 +117,9 @@ window.pushManager = (function () {
    */
 
   async function sendSubscriptionToServer(subscription, authToken, apiBaseUrl) {
-    
+
     console.log('[PushManager] apiBaseUrl:', apiBaseUrl);
-    console.log('[PushManager] URL completa:', `${apiBaseUrl}/api/push/subscribe`);
+    console.log('[PushManager] URL completa:', `${apiBaseUrl}api/push/subscribe`);
 
     const keys = subscription.getKey ? {
       p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
@@ -134,7 +134,7 @@ window.pushManager = (function () {
     };
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/push/subscribe`, {
+      const response = await fetch(`${apiBaseUrl}api/push/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -234,7 +234,7 @@ window.pushManager = (function () {
     console.info('[PushManager] Browser subscription removed.');
 
     try {
-      const response = await fetch(`${apiBaseUrl}/api/push/unsubscribe`, {
+      const response = await fetch(`${apiBaseUrl}api/push/unsubscribe`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
