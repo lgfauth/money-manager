@@ -12,7 +12,8 @@ namespace MoneyManager.Tests.Application.Services;
 public class TransactionServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
-    private readonly IAccountService _accountServiceMock;
+    private readonly IRepository<Account> _accountRepoMock;
+    private readonly ITransactionRepository _transactionRepoMock;
     private readonly ICreditCardInvoiceService _invoiceServiceMock;
     private readonly ILogger<TransactionService> _loggerMock;
     private readonly ITransactionService _transactionService;
@@ -20,10 +21,17 @@ public class TransactionServiceTests
     public TransactionServiceTests()
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _accountServiceMock = Substitute.For<IAccountService>();
+        _accountRepoMock = Substitute.For<IRepository<Account>>();
+        _transactionRepoMock = Substitute.For<ITransactionRepository>();
         _invoiceServiceMock = Substitute.For<ICreditCardInvoiceService>();
         _loggerMock = Substitute.For<ILogger<TransactionService>>();
-        _transactionService = new TransactionService(_unitOfWorkMock, _accountServiceMock, _invoiceServiceMock, _loggerMock);
+
+        _unitOfWorkMock.Accounts.Returns(_accountRepoMock);
+        _unitOfWorkMock.Transactions.Returns(_transactionRepoMock);
+
+        _transactionRepoMock.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
+
+        _transactionService = new TransactionService(_unitOfWorkMock, _invoiceServiceMock, _loggerMock);
     }
 
     [Fact]
@@ -44,11 +52,7 @@ public class TransactionServiceTests
         };
 
         var account = new Account { Id = accountId, UserId = userId, Balance = 1000m };
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
-
-        _unitOfWorkMock.Accounts.GetByIdAsync(accountId).Returns(account);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _accountRepoMock.GetByIdAsync(accountId).Returns(account);
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);
@@ -57,8 +61,9 @@ public class TransactionServiceTests
         Assert.NotNull(result);
         Assert.Equal(request.Amount, result.Amount);
         Assert.Equal(request.Description, result.Description);
-        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, accountId, 500m);
-        await transactionRepo.Received(1).AddAsync(Arg.Any<Transaction>());
+        Assert.Equal(1500m, account.Balance);
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == accountId));
+        await _transactionRepoMock.Received(1).AddAsync(Arg.Any<Transaction>());
     }
 
     [Fact]
@@ -79,18 +84,15 @@ public class TransactionServiceTests
         };
 
         var account = new Account { Id = accountId, UserId = userId, Balance = 1000m };
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
-
-        _unitOfWorkMock.Accounts.GetByIdAsync(accountId).Returns(account);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _accountRepoMock.GetByIdAsync(accountId).Returns(account);
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);
 
         // Assert
         Assert.NotNull(result);
-        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, accountId, -200m);
+        Assert.Equal(800m, account.Balance);
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == accountId));
     }
 
     [Fact]
@@ -113,20 +115,19 @@ public class TransactionServiceTests
 
         var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m, Type = AccountType.Checking };
         var toAccount = new Account { Id = toAccountId, UserId = userId, Balance = 500m, Type = AccountType.Checking };
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
 
-        _unitOfWorkMock.Accounts.GetByIdAsync(fromAccountId).Returns(fromAccount);
-        _unitOfWorkMock.Accounts.GetByIdAsync(toAccountId).Returns(toAccount);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _accountRepoMock.GetByIdAsync(fromAccountId).Returns(fromAccount);
+        _accountRepoMock.GetByIdAsync(toAccountId).Returns(toAccount);
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);
 
         // Assert
         Assert.NotNull(result);
-        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, fromAccountId, -300m);
-        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, toAccountId, 300m);
+        Assert.Equal(700m, fromAccount.Balance);
+        Assert.Equal(800m, toAccount.Balance);
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == fromAccountId));
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == toAccountId));
     }
 
     [Fact]
@@ -149,20 +150,19 @@ public class TransactionServiceTests
 
         var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m, Type = AccountType.Checking };
         var toAccount = new Account { Id = toAccountId, UserId = userId, Balance = 500m, Type = AccountType.CreditCard };
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
 
-        _unitOfWorkMock.Accounts.GetByIdAsync(fromAccountId).Returns(fromAccount);
-        _unitOfWorkMock.Accounts.GetByIdAsync(toAccountId).Returns(toAccount);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _accountRepoMock.GetByIdAsync(fromAccountId).Returns(fromAccount);
+        _accountRepoMock.GetByIdAsync(toAccountId).Returns(toAccount);
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);
 
         // Assert
         Assert.NotNull(result);
-        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, fromAccountId, -300m);
-        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, toAccountId, -300m);
+        Assert.Equal(700m, fromAccount.Balance);
+        Assert.Equal(200m, toAccount.Balance); // 500 - 300 = 200 (debt reduced)
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == fromAccountId));
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == toAccountId));
     }
 
     [Fact]
@@ -179,10 +179,10 @@ public class TransactionServiceTests
             Status = 0
         };
 
-        _unitOfWorkMock.Accounts.GetByIdAsync("invalid").Returns((Account?)null);
+        _accountRepoMock.GetByIdAsync("invalid").Returns((Account?)null);
 
         // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _transactionService.CreateAsync(userId, request));
     }
 
@@ -198,9 +198,7 @@ public class TransactionServiceTests
             new Transaction { Id = "3", UserId = "other", Amount = 200, Type = TransactionType.Income }
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetAllAsync().Returns(transactions);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _transactionRepoMock.GetAllAsync().Returns(transactions);
 
         // Act
         var result = await _transactionService.GetAllAsync(userId);
@@ -215,17 +213,15 @@ public class TransactionServiceTests
         // Arrange
         var userId = "user123";
         var transactionId = "trans123";
-        var transaction = new Transaction 
-        { 
-            Id = transactionId, 
-            UserId = userId, 
+        var transaction = new Transaction
+        {
+            Id = transactionId,
+            UserId = userId,
             Amount = 100,
             Type = TransactionType.Income
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetByIdAsync(transactionId).Returns(transaction);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _transactionRepoMock.GetByIdAsync(transactionId).Returns(transaction);
 
         // Act
         var result = await _transactionService.GetByIdAsync(userId, transactionId);
@@ -261,12 +257,10 @@ public class TransactionServiceTests
             Status = 0
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetByIdAsync(transactionId).Returns(existingTransaction);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _transactionRepoMock.GetByIdAsync(transactionId).Returns(existingTransaction);
 
-        var account = new Account { Id = "acc123", UserId = userId };
-        _unitOfWorkMock.Accounts.GetByIdAsync("acc123").Returns(account);
+        var account = new Account { Id = "acc123", UserId = userId, Balance = 1000m };
+        _accountRepoMock.GetByIdAsync("acc123").Returns(account);
 
         // Act
         var result = await _transactionService.UpdateAsync(userId, transactionId, updateRequest);
@@ -291,18 +285,17 @@ public class TransactionServiceTests
             Type = TransactionType.Expense
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetByIdAsync(transactionId).Returns(transaction);
-        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+        _transactionRepoMock.GetByIdAsync(transactionId).Returns(transaction);
 
-        var account = new Account { Id = "acc123", UserId = userId, Balance = 1000m };
-        _unitOfWorkMock.Accounts.GetByIdAsync("acc123").Returns(account);
+        var account = new Account { Id = "acc123", UserId = userId, Balance = 800m };
+        _accountRepoMock.GetByIdAsync("acc123").Returns(account);
 
         // Act
         await _transactionService.DeleteAsync(userId, transactionId);
 
         // Assert
-        await _accountServiceMock.Received(1).UpdateBalanceAsync(userId, "acc123", 200m);
-        await transactionRepo.Received(1).UpdateAsync(Arg.Is<Transaction>(t => t.IsDeleted));
+        Assert.Equal(1000m, account.Balance); // 800 + 200 reverted
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == "acc123"));
+        await _transactionRepoMock.Received(1).UpdateAsync(Arg.Is<Transaction>(t => t.IsDeleted));
     }
 }

@@ -454,6 +454,13 @@
 
     private void ShowAddModal()
     {
+        newRequest = new CreateTransactionRequestDto
+        {
+            Date = DateTime.Today,
+            Type = (int)TransactionType.Expense,
+            ClientRequestId = Guid.NewGuid().ToString()
+        };
+        editingTransactionId = null;
         showAdd = true;
     }
 
@@ -557,11 +564,12 @@
             // Se "Salvar e adicionar outra", limpa o formulário mas mantém aberto
             if (addAnother)
             {
-                newRequest = new CreateTransactionRequestDto 
-                { 
-                    Date = DateTime.Today, 
+                newRequest = new CreateTransactionRequestDto
+                {
+                    Date = DateTime.Today,
                     Type = (int)TransactionType.Expense,
-                    AccountId = newRequest.AccountId // Mantém a conta selecionada
+                    AccountId = newRequest.AccountId, // Mantém a conta selecionada
+                    ClientRequestId = Guid.NewGuid().ToString()
                 };
                 installmentsCount = 1;
                 firstInstallmentInCurrentInvoice = true;

@@ -36,8 +36,8 @@ public class BudgetServiceTests
         budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
         _unitOfWorkMock.Budgets.Returns(budgetRepo);
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetAllAsync().Returns(new List<Transaction>());
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 1).Returns(new List<Transaction>());
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
         // Act
@@ -73,8 +73,8 @@ public class BudgetServiceTests
         budgetRepo.GetAllAsync().Returns(new List<Budget> { existingBudget });
         _unitOfWorkMock.Budgets.Returns(budgetRepo);
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetAllAsync().Returns(new List<Transaction>());
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 1).Returns(new List<Transaction>());
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
         // Act
@@ -107,8 +107,8 @@ public class BudgetServiceTests
         budgetRepo.GetAllAsync().Returns(new List<Budget> { budget });
         _unitOfWorkMock.Budgets.Returns(budgetRepo);
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetAllAsync().Returns(new List<Transaction>());
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 1).Returns(new List<Transaction>());
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
         // Act
@@ -129,7 +129,7 @@ public class BudgetServiceTests
         _unitOfWorkMock.Budgets.Returns(budgetRepo);
 
         // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => 
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _budgetService.GetByMonthAsync(userId, "2024-99"));
     }
 
@@ -149,8 +149,9 @@ public class BudgetServiceTests
         budgetRepo.GetAllAsync().Returns(budgets);
         _unitOfWorkMock.Budgets.Returns(budgetRepo);
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetAllAsync().Returns(new List<Transaction>());
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 1).Returns(new List<Transaction>());
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 2).Returns(new List<Transaction>());
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
         // Act
@@ -198,8 +199,8 @@ public class BudgetServiceTests
         budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
         _unitOfWorkMock.Budgets.Returns(budgetRepo);
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetAllAsync().Returns(transactions);
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 1).Returns(transactions);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
         // Act
@@ -222,6 +223,8 @@ public class BudgetServiceTests
             new BudgetItemRequestDto { CategoryId = "cat1", LimitAmount = 1000m }
         };
 
+        // GetByUserAndMonthAsync already filters IsDeleted=false in the repository,
+        // so the mock only returns non-deleted transactions
         var transactions = new List<Transaction>
         {
             new Transaction
@@ -232,15 +235,6 @@ public class BudgetServiceTests
                 Type = TransactionType.Expense,
                 Date = new DateTime(2024, 1, 15),
                 IsDeleted = false
-            },
-            new Transaction
-            {
-                UserId = userId,
-                CategoryId = "cat1",
-                Amount = 500m,
-                Type = TransactionType.Expense,
-                Date = new DateTime(2024, 1, 20),
-                IsDeleted = true
             }
         };
 
@@ -249,8 +243,8 @@ public class BudgetServiceTests
         budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
         _unitOfWorkMock.Budgets.Returns(budgetRepo);
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
-        transactionRepo.GetAllAsync().Returns(transactions);
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 1).Returns(transactions);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
         // Act

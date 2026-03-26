@@ -11,4 +11,5 @@ public class CreateTransactionRequestDto
     public List<string> Tags { get; set; } = [];
     public string? ToAccountId { get; set; }
     public int Status { get; set; }
+    public string? ClientRequestId { get; set; }
 }

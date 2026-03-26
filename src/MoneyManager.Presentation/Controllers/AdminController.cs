@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -34,7 +35,7 @@ public class AdminController : ControllerBase
     [HttpPost("migrate-credit-card-invoices")]
     public async Task<IActionResult> MigrateCreditCardInvoices()
     {
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = HttpContext.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
@@ -143,7 +144,7 @@ public class AdminController : ControllerBase
     [HttpPost("recalculate-invoices")]
     public async Task<IActionResult> RecalculateInvoices()
     {
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = HttpContext.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();
@@ -200,7 +201,7 @@ public class AdminController : ControllerBase
     [HttpPost("create-missing-open-invoices")]
     public async Task<IActionResult> CreateMissingOpenInvoices()
     {
-        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var userId = HttpContext.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized();

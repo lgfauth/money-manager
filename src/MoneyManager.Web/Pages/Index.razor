@@ -329,9 +329,6 @@ private async Task LoadDashboardData()
     {
         try
         {
-            // Pequeno delay para garantir que o DOM está pronto
-            await Task.Delay(100);
-            
             await RenderBudgetChart();
             await RenderIncomeExpenseChart();
             await RenderLiquidAccountsChart();

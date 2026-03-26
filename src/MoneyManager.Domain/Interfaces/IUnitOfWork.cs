@@ -7,7 +7,7 @@ public interface IUnitOfWork : IDisposable
     IUserRepository Users { get; }
     IRepository<Category> Categories { get; }
     IRepository<Account> Accounts { get; }
-    IRepository<Transaction> Transactions { get; }
+    ITransactionRepository Transactions { get; }
     IRepository<Budget> Budgets { get; }
     IRepository<RecurringTransaction> RecurringTransactions { get; }
     IRepository<UserSettings> UserSettings { get; }

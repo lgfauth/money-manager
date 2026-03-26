@@ -19,18 +19,15 @@ public interface ITransactionService
 public class TransactionService : ITransactionService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IAccountService _accountService;
     private readonly ICreditCardInvoiceService _invoiceService;
     private readonly ILogger<TransactionService> _logger;
 
     public TransactionService(
         IUnitOfWork unitOfWork,
-        IAccountService accountService,
         ICreditCardInvoiceService invoiceService,
         ILogger<TransactionService> logger)
     {
         _unitOfWork = unitOfWork;
-        _accountService = accountService;
         _invoiceService = invoiceService;
         _logger = logger;
     }
@@ -40,8 +37,20 @@ public class TransactionService : ITransactionService
         _logger.LogDebug("Creating transaction: userId={UserId}, type={Type}, amount={Amount}, accountId={AccountId}",
             userId, request.Type, request.Amount, request.AccountId);
 
+        // Idempotência: se ClientRequestId fornecido, verificar duplicata
+        if (!string.IsNullOrEmpty(request.ClientRequestId))
+        {
+            var existing = await _unitOfWork.Transactions.GetByClientRequestIdAsync(userId, request.ClientRequestId);
+            if (existing != null)
+            {
+                _logger.LogInformation("Duplicate request detected (ClientRequestId={ClientRequestId}), returning existing transaction {TransactionId}",
+                    request.ClientRequestId, existing.Id);
+                return MapToDto(existing);
+            }
+        }
+
         var account = await _unitOfWork.Accounts.GetByIdAsync(request.AccountId);
-        if (account == null || account.UserId != userId)
+        if (account == null || account.UserId != userId || account.IsDeleted)
         {
             _logger.LogWarning("Account {AccountId} not found for user {UserId}", request.AccountId, userId);
             throw new KeyNotFoundException("Account not found");
@@ -58,19 +67,30 @@ public class TransactionService : ITransactionService
                 throw new InvalidOperationException("ToAccountId is required for transfers");
 
             var toAccount = await _unitOfWork.Accounts.GetByIdAsync(request.ToAccountId);
-            if (toAccount == null || toAccount.UserId != userId)
+            if (toAccount == null || toAccount.UserId != userId || toAccount.IsDeleted)
                 throw new KeyNotFoundException("Destination account not found");
 
-            // Debit from source
-            await _accountService.UpdateBalanceAsync(userId, request.AccountId, -request.Amount);
-            // Credit to destination
-            var toImpact = request.Amount;
-            if (toAccount.Type == AccountType.CreditCard)
+            var sourceImpact = -request.Amount;
+            var destImpact = toAccount.Type == AccountType.CreditCard ? -request.Amount : request.Amount;
+
+            account.Balance += sourceImpact;
+            account.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.Accounts.UpdateAsync(account);
+
+            try
             {
-                // Credit card balance is debt; transferring money to the card reduces debt.
-                toImpact = -request.Amount;
+                toAccount.Balance += destImpact;
+                toAccount.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Accounts.UpdateAsync(toAccount);
             }
-            await _accountService.UpdateBalanceAsync(userId, request.ToAccountId, toImpact);
+            catch
+            {
+                _logger.LogWarning("Transfer failed on destination update. Rolling back source account {AccountId}", account.Id);
+                account.Balance -= sourceImpact;
+                account.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Accounts.UpdateAsync(account);
+                throw;
+            }
 
             _logger.LogInformation("Transfer processed: {Amount} from {FromAccount} to {ToAccount}",
                 request.Amount, request.AccountId, request.ToAccountId);
@@ -78,13 +98,13 @@ public class TransactionService : ITransactionService
         else
         {
             // Para despesas em cartão de crédito, validar limite antes de criar
-            if (account.Type == AccountType.CreditCard && 
+            if (account.Type == AccountType.CreditCard &&
                 transactionType == TransactionType.Expense &&
                 account.CreditLimit.HasValue)
             {
                 var currentDebt = Math.Abs(account.Balance);
                 var newDebt = currentDebt + request.Amount;
-                
+
                 if (newDebt > account.CreditLimit.Value)
                 {
                     var available = account.CreditLimit.Value - currentDebt;
@@ -95,15 +115,10 @@ public class TransactionService : ITransactionService
                 }
             }
 
-            var impactAmount = transactionType == TransactionType.Income ? request.Amount : -request.Amount;
-
-            // Credit card balance represents debt (invoice amount).
-            // Expense increases debt; Income decreases debt.
-            if (account.Type == AccountType.CreditCard)
-            {
-                impactAmount = transactionType == TransactionType.Income ? -request.Amount : request.Amount;
-            }
-            await _accountService.UpdateBalanceAsync(userId, request.AccountId, impactAmount);
+            var impactAmount = CalculateBalanceImpact(account.Type, transactionType, request.Amount);
+            account.Balance += impactAmount;
+            account.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.Accounts.UpdateAsync(account);
 
             _logger.LogInformation("Balance updated for account {AccountId}: impact={Impact}, type={Type}",
                 request.AccountId, impactAmount, transactionType);
@@ -120,7 +135,8 @@ public class TransactionService : ITransactionService
             Description = request.Description,
             Tags = request.Tags,
             ToAccountId = request.ToAccountId,
-            Status = (TransactionStatus)request.Status
+            Status = (TransactionStatus)request.Status,
+            ClientRequestId = request.ClientRequestId
         };
 
         // Se for despesa em cartão de crédito, vincular à fatura apropriada
@@ -129,25 +145,16 @@ public class TransactionService : ITransactionService
             _logger.LogDebug("Determining invoice for credit card transaction on account {AccountId}, date {Date}",
                 account.Id, request.Date);
 
-            try
-            {
-                var invoice = await _invoiceService.DetermineInvoiceForTransactionAsync(userId, request.AccountId, request.Date);
-                transaction.InvoiceId = invoice.Id;
+            var invoice = await _invoiceService.DetermineInvoiceForTransactionAsync(userId, request.AccountId, request.Date);
+            transaction.InvoiceId = invoice.Id;
 
-                // Atualizar total da fatura
-                invoice.TotalAmount += request.Amount;
-                invoice.RemainingAmount = invoice.TotalAmount - invoice.PaidAmount;
-                invoice.UpdatedAt = DateTime.UtcNow;
-                await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
+            invoice.TotalAmount += request.Amount;
+            invoice.RemainingAmount = invoice.TotalAmount - invoice.PaidAmount;
+            invoice.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
 
-                _logger.LogInformation("Transaction linked to invoice {InvoiceId} (Reference: {RefMonth})",
-                    invoice.Id, invoice.ReferenceMonth);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to link transaction to invoice for account {AccountId}", account.Id);
-                // Continuar mesmo se falhar (não bloqueante)
-            }
+            _logger.LogInformation("Transaction linked to invoice {InvoiceId} (Reference: {RefMonth})",
+                invoice.Id, invoice.ReferenceMonth);
         }
 
         await _unitOfWork.Transactions.AddAsync(transaction);
@@ -185,9 +192,6 @@ public class TransactionService : ITransactionService
             throw new KeyNotFoundException("Transaction not found");
 
         var oldInvoiceId = transaction.InvoiceId;
-        var oldAccountId = transaction.AccountId;
-        var oldDate = transaction.Date;
-        var oldAmount = transaction.Amount;
 
         // Revert previous impact
         _logger.LogDebug("Reverting previous transaction impact for {TransactionId}", id);
@@ -216,45 +220,24 @@ public class TransactionService : ITransactionService
         // Gerenciar faturas se for cartão de crédito
         if (newAccount.Type == AccountType.CreditCard && transaction.Type == TransactionType.Expense)
         {
-            try
+            var newInvoice = await _invoiceService.DetermineInvoiceForTransactionAsync(userId, request.AccountId, request.Date);
+            transaction.InvoiceId = newInvoice.Id;
+
+            if (!string.IsNullOrEmpty(oldInvoiceId) && oldInvoiceId != newInvoice.Id)
             {
-                // Determinar nova fatura baseado na nova data
-                var newInvoice = await _invoiceService.DetermineInvoiceForTransactionAsync(userId, request.AccountId, request.Date);
-                transaction.InvoiceId = newInvoice.Id;
-
-                // Se mudou de fatura, recalcular ambas
-                if (!string.IsNullOrEmpty(oldInvoiceId) && oldInvoiceId != newInvoice.Id)
-                {
-                    _logger.LogInformation("Transaction moved from invoice {OldInvoice} to {NewInvoice}",
-                        oldInvoiceId, newInvoice.Id);
-
-                    // Recalcular fatura antiga
-                    await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
-                }
-
-                // Recalcular fatura nova/atual
-                await _invoiceService.RecalculateInvoiceTotalAsync(userId, newInvoice.Id);
-
-                _logger.LogDebug("Invoice totals recalculated after transaction update");
+                _logger.LogInformation("Transaction moved from invoice {OldInvoice} to {NewInvoice}",
+                    oldInvoiceId, newInvoice.Id);
+                await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to update invoice for transaction {TransactionId}", id);
-            }
+
+            await _invoiceService.RecalculateInvoiceTotalAsync(userId, newInvoice.Id);
+            _logger.LogDebug("Invoice totals recalculated after transaction update");
         }
         else if (!string.IsNullOrEmpty(oldInvoiceId))
         {
-            // Se a transação estava em uma fatura mas agora não é mais cartão de crédito (mudou conta)
-            try
-            {
-                transaction.InvoiceId = null;
-                await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
-                _logger.LogDebug("Transaction removed from invoice {InvoiceId}", oldInvoiceId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to remove transaction from invoice {InvoiceId}", oldInvoiceId);
-            }
+            transaction.InvoiceId = null;
+            await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
+            _logger.LogDebug("Transaction removed from invoice {InvoiceId}", oldInvoiceId);
         }
 
         await _unitOfWork.Transactions.UpdateAsync(transaction);
@@ -283,18 +266,10 @@ public class TransactionService : ITransactionService
 
         await _unitOfWork.Transactions.UpdateAsync(transaction);
 
-        // Se a transação estava vinculada a uma fatura, recalcular o total
         if (!string.IsNullOrEmpty(invoiceId))
         {
-            try
-            {
-                await _invoiceService.RecalculateInvoiceTotalAsync(userId, invoiceId);
-                _logger.LogInformation("Invoice {InvoiceId} recalculated after transaction deletion", invoiceId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to recalculate invoice {InvoiceId} after deleting transaction", invoiceId);
-            }
+            await _invoiceService.RecalculateInvoiceTotalAsync(userId, invoiceId);
+            _logger.LogInformation("Invoice {InvoiceId} recalculated after transaction deletion", invoiceId);
         }
 
         await _unitOfWork.SaveChangesAsync();
@@ -308,34 +283,47 @@ public class TransactionService : ITransactionService
         {
             if (!string.IsNullOrEmpty(transaction.ToAccountId))
             {
-                await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, -transaction.Amount);
+                var sourceAccount = await _unitOfWork.Accounts.GetByIdAsync(transaction.AccountId);
+                if (sourceAccount == null || sourceAccount.UserId != userId || sourceAccount.IsDeleted)
+                    throw new KeyNotFoundException("Source account not found");
 
                 var toAccount = await _unitOfWork.Accounts.GetByIdAsync(transaction.ToAccountId);
                 if (toAccount == null || toAccount.UserId != userId || toAccount.IsDeleted)
                     throw new KeyNotFoundException("Destination account not found");
 
-                var toImpact = transaction.Amount;
-                if (toAccount.Type == AccountType.CreditCard)
-                {
-                    toImpact = -transaction.Amount;
-                }
+                var sourceImpact = -transaction.Amount;
+                var destImpact = toAccount.Type == AccountType.CreditCard ? -transaction.Amount : transaction.Amount;
 
-                await _accountService.UpdateBalanceAsync(userId, transaction.ToAccountId, toImpact);
+                sourceAccount.Balance += sourceImpact;
+                sourceAccount.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Accounts.UpdateAsync(sourceAccount);
+
+                try
+                {
+                    toAccount.Balance += destImpact;
+                    toAccount.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Accounts.UpdateAsync(toAccount);
+                }
+                catch
+                {
+                    _logger.LogWarning("Transfer apply failed on destination. Rolling back source account {AccountId}", sourceAccount.Id);
+                    sourceAccount.Balance -= sourceImpact;
+                    sourceAccount.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Accounts.UpdateAsync(sourceAccount);
+                    throw;
+                }
             }
         }
         else
         {
-            var impactAmount = transaction.Type == TransactionType.Income ? transaction.Amount : -transaction.Amount;
-
             var account = await _unitOfWork.Accounts.GetByIdAsync(transaction.AccountId);
             if (account == null || account.UserId != userId || account.IsDeleted)
                 throw new KeyNotFoundException("Account not found");
 
-            if (account.Type == AccountType.CreditCard)
-            {
-                impactAmount = transaction.Type == TransactionType.Income ? -transaction.Amount : transaction.Amount;
-            }
-            await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, impactAmount);
+            var impactAmount = CalculateBalanceImpact(account.Type, transaction.Type, transaction.Amount);
+            account.Balance += impactAmount;
+            account.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.Accounts.UpdateAsync(account);
         }
     }
 
@@ -345,36 +333,58 @@ public class TransactionService : ITransactionService
         {
             if (!string.IsNullOrEmpty(transaction.ToAccountId))
             {
-                await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, transaction.Amount);
+                var sourceAccount = await _unitOfWork.Accounts.GetByIdAsync(transaction.AccountId);
+                if (sourceAccount == null || sourceAccount.UserId != userId || sourceAccount.IsDeleted)
+                    throw new KeyNotFoundException("Source account not found");
 
                 var toAccount = await _unitOfWork.Accounts.GetByIdAsync(transaction.ToAccountId);
                 if (toAccount == null || toAccount.UserId != userId || toAccount.IsDeleted)
                     throw new KeyNotFoundException("Destination account not found");
 
-                var toImpact = -transaction.Amount;
-                if (toAccount.Type == AccountType.CreditCard)
-                {
-                    // Original transfer reduced debt; reverting it should increase debt back.
-                    toImpact = transaction.Amount;
-                }
+                var sourceRevert = transaction.Amount;
+                var destRevert = toAccount.Type == AccountType.CreditCard ? transaction.Amount : -transaction.Amount;
 
-                await _accountService.UpdateBalanceAsync(userId, transaction.ToAccountId, toImpact);
+                sourceAccount.Balance += sourceRevert;
+                sourceAccount.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Accounts.UpdateAsync(sourceAccount);
+
+                try
+                {
+                    toAccount.Balance += destRevert;
+                    toAccount.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Accounts.UpdateAsync(toAccount);
+                }
+                catch
+                {
+                    _logger.LogWarning("Transfer revert failed on destination. Rolling back source account {AccountId}", sourceAccount.Id);
+                    sourceAccount.Balance -= sourceRevert;
+                    sourceAccount.UpdatedAt = DateTime.UtcNow;
+                    await _unitOfWork.Accounts.UpdateAsync(sourceAccount);
+                    throw;
+                }
             }
         }
         else
         {
-            var impactAmount = transaction.Type == TransactionType.Income ? -transaction.Amount : transaction.Amount;
-
             var account = await _unitOfWork.Accounts.GetByIdAsync(transaction.AccountId);
             if (account == null || account.UserId != userId || account.IsDeleted)
                 throw new KeyNotFoundException("Account not found");
 
-            if (account.Type == AccountType.CreditCard)
-            {
-                impactAmount = transaction.Type == TransactionType.Income ? transaction.Amount : -transaction.Amount;
-            }
-            await _accountService.UpdateBalanceAsync(userId, transaction.AccountId, impactAmount);
+            var impactAmount = -CalculateBalanceImpact(account.Type, transaction.Type, transaction.Amount);
+            account.Balance += impactAmount;
+            account.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.Accounts.UpdateAsync(account);
         }
+    }
+
+    private static decimal CalculateBalanceImpact(AccountType accountType, TransactionType transactionType, decimal amount)
+    {
+        var impact = transactionType == TransactionType.Income ? amount : -amount;
+        if (accountType == AccountType.CreditCard)
+        {
+            impact = -impact;
+        }
+        return impact;
     }
 
     private static TransactionResponseDto MapToDto(Transaction transaction)

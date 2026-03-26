@@ -8,8 +8,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Configure HttpClient - URL da API no Railway
-var apiUrl = "https://money-manager-api.up.railway.app";
+// Configure HttpClient - URL da API via configuração
+var apiUrl = builder.Configuration["ApiUrl"] ?? "https://localhost:5001";
 
 Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
 

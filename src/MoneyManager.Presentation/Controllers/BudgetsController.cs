@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
-using System.Security.Claims;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -18,17 +18,12 @@ public class BudgetsController : ControllerBase
         _budgetService = budgetService;
     }
 
-    private string GetUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateBudgetRequestDto request)
     {
         try
         {
-            var result = await _budgetService.CreateOrUpdateAsync(GetUserId(), request.Month, request.Items);
+            var result = await _budgetService.CreateOrUpdateAsync(HttpContext.GetUserId(), request.Month, request.Items);
             return CreatedAtAction(nameof(GetByMonth), new { month = request.Month }, result);
         }
         catch (Exception ex)
@@ -42,7 +37,7 @@ public class BudgetsController : ControllerBase
     {
         try
         {
-            var result = await _budgetService.GetByMonthAsync(GetUserId(), month);
+            var result = await _budgetService.GetByMonthAsync(HttpContext.GetUserId(), month);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -60,7 +55,7 @@ public class BudgetsController : ControllerBase
     {
         try
         {
-            var result = await _budgetService.GetAllAsync(GetUserId());
+            var result = await _budgetService.GetAllAsync(HttpContext.GetUserId());
             return Ok(result);
         }
         catch (Exception ex)
@@ -74,7 +69,7 @@ public class BudgetsController : ControllerBase
     {
         try
         {
-            var result = await _budgetService.CreateOrUpdateAsync(GetUserId(), month, request.Items);
+            var result = await _budgetService.CreateOrUpdateAsync(HttpContext.GetUserId(), month, request.Items);
             return Ok(result);
         }
         catch (Exception ex)

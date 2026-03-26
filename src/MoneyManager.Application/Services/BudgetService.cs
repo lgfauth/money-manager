@@ -11,6 +11,7 @@ public interface IBudgetService
     Task<BudgetResponseDto> CreateOrUpdateAsync(string userId, string month, List<BudgetItemRequestDto> items);
     Task<BudgetResponseDto> GetByMonthAsync(string userId, string month);
     Task<IEnumerable<BudgetResponseDto>> GetAllAsync(string userId);
+    Task DeleteAsync(string userId, string id);
 }
 
 public class BudgetService : IBudgetService
@@ -25,7 +26,7 @@ public class BudgetService : IBudgetService
     public async Task<BudgetResponseDto> CreateOrUpdateAsync(string userId, string month, List<BudgetItemRequestDto> items)
     {
         var budgets = await _unitOfWork.Budgets.GetAllAsync();
-        var budget = budgets.FirstOrDefault(b => b.UserId == userId && b.Month == month);
+        var budget = budgets.FirstOrDefault(b => b.UserId == userId && b.Month == month && !b.IsDeleted);
 
         if (budget == null)
         {
@@ -53,7 +54,7 @@ public class BudgetService : IBudgetService
     public async Task<BudgetResponseDto> GetByMonthAsync(string userId, string month)
     {
         var budgets = await _unitOfWork.Budgets.GetAllAsync();
-        var budget = budgets.FirstOrDefault(b => b.UserId == userId && b.Month == month);
+        var budget = budgets.FirstOrDefault(b => b.UserId == userId && b.Month == month && !b.IsDeleted);
 
         if (budget == null)
             throw new KeyNotFoundException("Budget not found");
@@ -65,7 +66,7 @@ public class BudgetService : IBudgetService
     public async Task<IEnumerable<BudgetResponseDto>> GetAllAsync(string userId)
     {
         var budgets = await _unitOfWork.Budgets.GetAllAsync();
-        var userBudgets = budgets.Where(b => b.UserId == userId).ToList();
+        var userBudgets = budgets.Where(b => b.UserId == userId && !b.IsDeleted).ToList();
 
         foreach (var budget in userBudgets)
         {
@@ -75,11 +76,28 @@ public class BudgetService : IBudgetService
         return userBudgets.Select(MapToDto);
     }
 
+    public async Task DeleteAsync(string userId, string id)
+    {
+        var budget = await _unitOfWork.Budgets.GetByIdAsync(id);
+        if (budget == null || budget.UserId != userId || budget.IsDeleted)
+            throw new KeyNotFoundException("Budget not found");
+
+        budget.IsDeleted = true;
+        budget.DeletedAt = DateTime.UtcNow;
+        budget.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.Budgets.UpdateAsync(budget);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
     private async Task UpdateSpentAmountsAsync(Budget budget)
     {
-        var transactions = await _unitOfWork.Transactions.GetAllAsync();
-        var monthTransactions = transactions
-            .Where(t => t.UserId == budget.UserId && t.Date.Year.ToString("D4") + "-" + t.Date.Month.ToString("D2") == budget.Month && t.Type == TransactionType.Expense && !t.IsDeleted)
+        var parts = budget.Month.Split('-');
+        var year = int.Parse(parts[0]);
+        var month = int.Parse(parts[1]);
+
+        var monthTransactions = (await _unitOfWork.Transactions.GetByUserAndMonthAsync(budget.UserId, year, month))
+            .Where(t => t.Type == TransactionType.Expense)
             .ToList();
 
         foreach (var item in budget.Items)

@@ -53,6 +53,9 @@ public class Transaction
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    [BsonElement("clientRequestId")]
+    public string? ClientRequestId { get; set; }
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 }

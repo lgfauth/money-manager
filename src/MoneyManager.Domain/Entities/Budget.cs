@@ -23,6 +23,12 @@ public class Budget
 
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("isDeleted")]
+    public bool IsDeleted { get; set; }
+
+    [BsonElement("deletedAt")]
+    public DateTime? DeletedAt { get; set; }
 }
 
 [BsonIgnoreExtraElements]

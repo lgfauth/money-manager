@@ -11,7 +11,7 @@ public class UnitOfWork : IUnitOfWork
     private IUserRepository? _userRepository;
     private IRepository<Category>? _categoryRepository;
     private IRepository<Account>? _accountRepository;
-    private IRepository<Transaction>? _transactionRepository;
+    private ITransactionRepository? _transactionRepository;
     private IRepository<Budget>? _budgetRepository;
     private IRepository<RecurringTransaction>? _recurringTransactionRepository;
     private IRepository<UserSettings>? _userSettingsRepository;
@@ -26,7 +26,7 @@ public class UnitOfWork : IUnitOfWork
     public IUserRepository Users => _userRepository ??= new UserRepository(_context);
     public IRepository<Category> Categories => _categoryRepository ??= new Repository<Category>(_context, "categories");
     public IRepository<Account> Accounts => _accountRepository ??= new Repository<Account>(_context, "accounts");
-    public IRepository<Transaction> Transactions => _transactionRepository ??= new Repository<Transaction>(_context, "transactions");
+    public ITransactionRepository Transactions => _transactionRepository ??= new TransactionRepository(_context);
     public IRepository<Budget> Budgets => _budgetRepository ??= new Repository<Budget>(_context, "budgets");
     public IRepository<RecurringTransaction> RecurringTransactions => _recurringTransactionRepository ??= new Repository<RecurringTransaction>(_context, "recurring_transactions");
     public IRepository<UserSettings> UserSettings => _userSettingsRepository ??= new Repository<UserSettings>(_context, "user_settings");

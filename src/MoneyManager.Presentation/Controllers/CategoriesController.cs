@@ -4,7 +4,7 @@ using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Enums;
 using FluentValidation;
-using System.Security.Claims;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -22,11 +22,6 @@ public class CategoriesController : ControllerBase
         _validator = validator;
     }
 
-    private string GetUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateCategoryRequestDto request)
     {
@@ -36,7 +31,7 @@ public class CategoriesController : ControllerBase
 
         try
         {
-            var result = await _categoryService.CreateAsync(GetUserId(), request);
+            var result = await _categoryService.CreateAsync(HttpContext.GetUserId(), request);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
         catch (Exception ex)
@@ -50,7 +45,7 @@ public class CategoriesController : ControllerBase
     {
         try
         {
-            var result = await _categoryService.GetAllAsync(GetUserId(), type.HasValue ? (CategoryType)type.Value : null);
+            var result = await _categoryService.GetAllAsync(HttpContext.GetUserId(), type.HasValue ? (CategoryType)type.Value : null);
             return Ok(result);
         }
         catch (Exception ex)
@@ -64,7 +59,7 @@ public class CategoriesController : ControllerBase
     {
         try
         {
-            var result = await _categoryService.GetByIdAsync(GetUserId(), id);
+            var result = await _categoryService.GetByIdAsync(HttpContext.GetUserId(), id);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -86,7 +81,7 @@ public class CategoriesController : ControllerBase
 
         try
         {
-            var result = await _categoryService.UpdateAsync(GetUserId(), id, request);
+            var result = await _categoryService.UpdateAsync(HttpContext.GetUserId(), id, request);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -104,7 +99,7 @@ public class CategoriesController : ControllerBase
     {
         try
         {
-            await _categoryService.DeleteAsync(GetUserId(), id);
+            await _categoryService.DeleteAsync(HttpContext.GetUserId(), id);
             return NoContent();
         }
         catch (KeyNotFoundException)

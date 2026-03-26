@@ -233,7 +233,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (request.Amount != invoice.RemainingAmount)
             throw new InvalidOperationException($"Payment amount must be equal to remaining amount (R$ {invoice.RemainingAmount:F2})");
 
-        await ProcessPaymentAsync(invoice, request, true);
+        await ProcessPaymentAsync(userId, invoice, request, true);
     }
 
     public async Task PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request)
@@ -253,7 +253,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (request.Amount > invoice.RemainingAmount)
             throw new InvalidOperationException($"Payment amount cannot exceed remaining amount (R$ {invoice.RemainingAmount:F2})");
 
-        await ProcessPaymentAsync(invoice, request, false);
+        await ProcessPaymentAsync(userId, invoice, request, false);
     }
 
     // ==================== RELATÓRIOS ====================
@@ -513,11 +513,11 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         return invoice;
     }
 
-    private async Task ProcessPaymentAsync(CreditCardInvoice invoice, PayInvoiceRequestDto request, bool isFullPayment)
+    private async Task ProcessPaymentAsync(string userId, CreditCardInvoice invoice, PayInvoiceRequestDto request, bool isFullPayment)
     {
-        // Validar conta pagadora existe
+        // Validar conta pagadora existe e pertence ao usuário
         var payFromAccount = await _unitOfWork.Accounts.GetByIdAsync(request.PayFromAccountId);
-        if (payFromAccount == null)
+        if (payFromAccount == null || payFromAccount.UserId != userId || payFromAccount.IsDeleted)
             throw new KeyNotFoundException("Payment account not found");
 
         if (payFromAccount.Type == AccountType.CreditCard)

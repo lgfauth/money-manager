@@ -94,8 +94,30 @@ public class AccountService : IAccountService
 
         account.IsDeleted = true;
         account.UpdatedAt = DateTime.UtcNow;
-
         await _unitOfWork.Accounts.UpdateAsync(account);
+
+        // Cascade soft delete: transações vinculadas a esta conta
+        var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
+        var accountTransactions = allTransactions
+            .Where(t => t.UserId == userId && t.AccountId == id && !t.IsDeleted)
+            .ToList();
+
+        foreach (var transaction in accountTransactions)
+        {
+            transaction.IsDeleted = true;
+            transaction.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.Transactions.UpdateAsync(transaction);
+        }
+
+        // Cascade soft delete: faturas de cartão de crédito vinculadas a esta conta
+        var accountInvoices = await _unitOfWork.CreditCardInvoices.GetByAccountIdAsync(id);
+        foreach (var invoice in accountInvoices.Where(i => !i.IsDeleted))
+        {
+            invoice.IsDeleted = true;
+            invoice.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
+        }
+
         await _unitOfWork.SaveChangesAsync();
     }
 

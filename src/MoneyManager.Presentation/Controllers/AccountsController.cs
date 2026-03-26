@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
 using FluentValidation;
-using System.Security.Claims;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -21,11 +21,6 @@ public class AccountsController : ControllerBase
         _validator = validator;
     }
 
-    private string GetUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateAccountRequestDto request)
     {
@@ -35,7 +30,7 @@ public class AccountsController : ControllerBase
 
         try
         {
-            var result = await _accountService.CreateAsync(GetUserId(), request);
+            var result = await _accountService.CreateAsync(HttpContext.GetUserId(), request);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
         catch (Exception ex)
@@ -49,7 +44,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var result = await _accountService.GetAllAsync(GetUserId());
+            var result = await _accountService.GetAllAsync(HttpContext.GetUserId());
             return Ok(result);
         }
         catch (Exception ex)
@@ -63,7 +58,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            var result = await _accountService.GetByIdAsync(GetUserId(), id);
+            var result = await _accountService.GetByIdAsync(HttpContext.GetUserId(), id);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -85,7 +80,7 @@ public class AccountsController : ControllerBase
 
         try
         {
-            var result = await _accountService.UpdateAsync(GetUserId(), id, request);
+            var result = await _accountService.UpdateAsync(HttpContext.GetUserId(), id, request);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -103,7 +98,7 @@ public class AccountsController : ControllerBase
     {
         try
         {
-            await _accountService.DeleteAsync(GetUserId(), id);
+            await _accountService.DeleteAsync(HttpContext.GetUserId(), id);
             return NoContent();
         }
         catch (KeyNotFoundException)

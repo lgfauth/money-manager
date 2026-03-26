@@ -50,7 +50,7 @@ public class ReportServiceTests
             }
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
+        var transactionRepo = Substitute.For<ITransactionRepository>();
         transactionRepo.GetAllAsync().Returns(transactions);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
@@ -89,7 +89,7 @@ public class ReportServiceTests
             }
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
+        var transactionRepo = Substitute.For<ITransactionRepository>();
         transactionRepo.GetAllAsync().Returns(transactions);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
@@ -135,7 +135,7 @@ public class ReportServiceTests
             }
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
+        var transactionRepo = Substitute.For<ITransactionRepository>();
         transactionRepo.GetAllAsync().Returns(transactions);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
@@ -178,7 +178,7 @@ public class ReportServiceTests
             }
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
+        var transactionRepo = Substitute.For<ITransactionRepository>();
         transactionRepo.GetAllAsync().Returns(transactions);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 
@@ -218,7 +218,7 @@ public class ReportServiceTests
             }
         };
 
-        var transactionRepo = Substitute.For<IRepository<Transaction>>();
+        var transactionRepo = Substitute.For<ITransactionRepository>();
         transactionRepo.GetAllAsync().Returns(transactions);
         _unitOfWorkMock.Transactions.Returns(transactionRepo);
 

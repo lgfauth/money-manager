@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
 using FluentValidation;
-using System.Security.Claims;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -26,15 +26,10 @@ public class TransactionsController : ControllerBase
         _logger = logger;
     }
 
-    private string GetUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-    }
-
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTransactionRequestDto request)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Creating transaction for user {UserId}, type: {Type}, amount: {Amount}",
             userId, request.Type, request.Amount);
 
@@ -63,7 +58,7 @@ public class TransactionsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Fetching all transactions for user {UserId}", userId);
 
         try
@@ -85,7 +80,7 @@ public class TransactionsController : ControllerBase
     {
         try
         {
-            var result = await _transactionService.GetByIdAsync(GetUserId(), id);
+            var result = await _transactionService.GetByIdAsync(HttpContext.GetUserId(), id);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -101,7 +96,7 @@ public class TransactionsController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] CreateTransactionRequestDto request)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Updating transaction {TransactionId} for user {UserId}",
             id, userId);
 
@@ -133,7 +128,7 @@ public class TransactionsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Deleting transaction {TransactionId} for user {UserId}",
             id, userId);
 

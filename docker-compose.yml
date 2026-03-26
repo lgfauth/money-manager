@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   mongodb:
-    image: mongo:latest
+    image: mongo:8.0
     container_name: moneymanager-mongo
     ports:
       - "27017:27017"
@@ -12,9 +10,14 @@ services:
       - mongodb_data:/data/db
     networks:
       - moneymanager-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   mongo-express:
-    image: mongo-express:latest
+    image: mongo-express:1.0
     container_name: moneymanager-mongo-express
     ports:
       - "8081:8081"
@@ -22,7 +25,8 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017
       ME_CONFIG_MONGODB_DATABASE: MoneyAgent
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - moneymanager-network
 
@@ -43,7 +47,8 @@ services:
       - Jwt__Audience=MoneyManagerUsers
       - Jwt__ExpirationHours=24
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
     networks:
       - moneymanager-network
 

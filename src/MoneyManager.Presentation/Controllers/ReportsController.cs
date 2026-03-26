@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.Services;
-using System.Security.Claims;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -17,17 +17,12 @@ public class ReportsController : ControllerBase
         _reportService = reportService;
     }
 
-    private string GetUserId()
-    {
-        return User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-    }
-
     [HttpGet("summary")]
     public async Task<IActionResult> GetMonthlySummary([FromQuery] string month)
     {
         try
         {
-            var result = await _reportService.GetMonthlySummaryAsync(GetUserId(), month);
+            var result = await _reportService.GetMonthlySummaryAsync(HttpContext.GetUserId(), month);
             return Ok(result);
         }
         catch (Exception ex)
@@ -41,7 +36,7 @@ public class ReportsController : ControllerBase
     {
         try
         {
-            var result = await _reportService.GetExpensesByCategoryAsync(GetUserId(), month);
+            var result = await _reportService.GetExpensesByCategoryAsync(HttpContext.GetUserId(), month);
             return Ok(result);
         }
         catch (Exception ex)

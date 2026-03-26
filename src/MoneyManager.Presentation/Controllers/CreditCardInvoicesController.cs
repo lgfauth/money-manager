@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -21,11 +22,6 @@ public class CreditCardInvoicesController : ControllerBase
         _logger = logger;
     }
 
-    private string GetUserId()
-    {
-        return User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
-    }
-
     // ==================== GESTÃO DE FATURAS ====================
 
     /// <summary>
@@ -34,7 +30,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("accounts/{accountId}/open")]
     public async Task<IActionResult> GetOrCreateOpenInvoice(string accountId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Getting or creating open invoice for account {AccountId}, user {UserId}", accountId, userId);
 
         try
@@ -60,7 +56,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("{invoiceId}")]
     public async Task<IActionResult> GetById(string invoiceId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Getting invoice {InvoiceId} for user {UserId}", invoiceId, userId);
 
         try
@@ -86,7 +82,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("accounts/{accountId}")]
     public async Task<IActionResult> GetByAccount(string accountId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Getting invoices for account {AccountId}, user {UserId}", accountId, userId);
 
         try
@@ -107,7 +103,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("pending")]
     public async Task<IActionResult> GetPending()
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Getting pending invoices for user {UserId}", userId);
 
         try
@@ -128,7 +124,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("overdue")]
     public async Task<IActionResult> GetOverdue()
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Getting overdue invoices for user {UserId}", userId);
 
         try
@@ -151,7 +147,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpPost("{invoiceId}/close")]
     public async Task<IActionResult> CloseInvoice(string invoiceId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Closing invoice {InvoiceId} for user {UserId}", invoiceId, userId);
 
         try
@@ -184,7 +180,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpPost("pay")]
     public async Task<IActionResult> PayInvoice([FromBody] PayInvoiceRequestDto request)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Processing full payment for invoice {InvoiceId}, user {UserId}", request.InvoiceId, userId);
 
         try
@@ -215,7 +211,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpPost("pay-partial")]
     public async Task<IActionResult> PayPartialInvoice([FromBody] PayInvoiceRequestDto request)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Processing partial payment for invoice {InvoiceId}, user {UserId}, amount {Amount}", 
             request.InvoiceId, userId, request.Amount);
 
@@ -249,7 +245,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("{invoiceId}/summary")]
     public async Task<IActionResult> GetSummary(string invoiceId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Getting summary for invoice {InvoiceId}, user {UserId}", invoiceId, userId);
 
         try
@@ -275,7 +271,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("{invoiceId}/transactions")]
     public async Task<IActionResult> GetTransactions(string invoiceId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Getting transactions for invoice {InvoiceId}, user {UserId}", invoiceId, userId);
 
         try
@@ -303,7 +299,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpGet("accounts/{accountId}/determine")]
     public async Task<IActionResult> DetermineInvoiceForTransaction(string accountId, [FromQuery] DateTime transactionDate)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogDebug("Determining invoice for account {AccountId}, date {Date}", accountId, transactionDate);
 
         try
@@ -329,7 +325,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpPost("{invoiceId}/recalculate")]
     public async Task<IActionResult> RecalculateTotal(string invoiceId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Recalculating total for invoice {InvoiceId}, user {UserId}", invoiceId, userId);
 
         try
@@ -355,7 +351,7 @@ public class CreditCardInvoicesController : ControllerBase
     [HttpPost("accounts/{accountId}/history")]
     public async Task<IActionResult> CreateHistoryInvoice(string accountId)
     {
-        var userId = GetUserId();
+        var userId = HttpContext.GetUserId();
         _logger.LogInformation("Creating history invoice for account {AccountId}, user {UserId}", accountId, userId);
 
         try

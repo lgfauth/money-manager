@@ -1,6 +1,7 @@
 using MongoDB.Driver;
 using MongoDB.Bson;
 using System.Security.Authentication;
+using MoneyManager.Infrastructure.Data.Migrations;
 
 namespace MoneyManager.Infrastructure.Data;
 
@@ -60,6 +61,27 @@ public class MongoContext
                 .Ascending(t => t.UserId)
                 .Ascending(t => t.Date)
         ));
+        await transactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Transaction>(
+            Builders<MoneyManager.Domain.Entities.Transaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.AccountId)
+        ));
+        await transactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Transaction>(
+            Builders<MoneyManager.Domain.Entities.Transaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.CategoryId)
+        ));
+        await transactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Transaction>(
+            Builders<MoneyManager.Domain.Entities.Transaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.IsDeleted)
+        ));
+        await transactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Transaction>(
+            Builders<MoneyManager.Domain.Entities.Transaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.ClientRequestId),
+            new CreateIndexOptions { Unique = true, Sparse = true }
+        ));
 
         // Create accounts collection
         if (!collectionNames.Contains("accounts"))
@@ -82,6 +104,23 @@ public class MongoContext
             Builders<MoneyManager.Domain.Entities.Budget>.IndexKeys
                 .Ascending(b => b.UserId)
                 .Ascending(b => b.Month)
+        ));
+
+        // Create credit_card_invoices collection
+        if (!collectionNames.Contains("credit_card_invoices"))
+        {
+            await _database.CreateCollectionAsync("credit_card_invoices");
+        }
+        var invoicesCollection = _database.GetCollection<MoneyManager.Domain.Entities.CreditCardInvoice>("credit_card_invoices");
+        await invoicesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoice>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoice>.IndexKeys
+                .Ascending(i => i.AccountId)
+                .Ascending(i => i.IsDeleted)
+        ));
+        await invoicesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoice>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoice>.IndexKeys
+                .Ascending(i => i.AccountId)
+                .Ascending(i => i.ReferenceMonth)
         ));
 
         // Create push_subscriptions collection
@@ -113,6 +152,17 @@ public class MongoContext
             // Throw full exception details to aid diagnostics (will be logged by caller)
             throw new Exception("MongoDB TestConnectionAsync failed: " + ex.ToString(), ex);
         }
+    }
+
+    public async Task RunMigrationsAsync()
+    {
+        var runner = new MigrationRunner(_database);
+        var migrations = new IMigration[]
+        {
+            new Migration_20260326_01_Initial()
+        };
+
+        await runner.RunAsync(migrations);
     }
 
     public async Task CreateIndexesAsync()

@@ -115,12 +115,13 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Add CORS - Configura��o permissiva para funcionar
+// Add CORS - Origens permitidas via configuração
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.SetIsOriginAllowed(origin => true)
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -135,38 +136,7 @@ app.Urls.Add("http://0.0.0.0:8080");
 // Use forwarded headers FIRST (before any other middleware)
 app.UseForwardedHeaders();
 
-// CORS deve ser o PRIMEIRO middleware depois de ForwardedHeaders
-app.Use(async (context, next) =>
-{
-    var origin = context.Request.Headers["Origin"].FirstOrDefault();
-    var method = context.Request.Method;
-    var path = context.Request.Path;
-
-    Console.WriteLine($"[CORS] Request: {method} {path} from Origin: {origin ?? "NO ORIGIN"}");
-
-    if (!string.IsNullOrEmpty(origin))
-    {
-        context.Response.Headers["Access-Control-Allow-Origin"] = origin;
-        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-        context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH";
-        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With";
-        context.Response.Headers["Access-Control-Max-Age"] = "86400";
-
-        Console.WriteLine($"[CORS] Added headers for origin: {origin}");
-    }
-
-    if (method == "OPTIONS")
-    {
-        Console.WriteLine("[CORS] Handling OPTIONS (preflight) request - returning 204");
-        context.Response.StatusCode = 204;
-        await context.Response.CompleteAsync();
-        return;
-    }
-
-    await next();
-
-    Console.WriteLine($"[CORS] Response status: {context.Response.StatusCode}");
-});
+app.UseCors();
 
 // Create MongoDB indexes (with error handling)
 using (var scope = app.Services.CreateScope())
@@ -181,9 +151,13 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine("? MongoDB connection successful!");
         Console.WriteLine("========================================");
 
+        Console.WriteLine("Running MongoDB migrations...");
+        await mongoContext.RunMigrationsAsync();
+        Console.WriteLine("MongoDB migrations completed!");
+
         Console.WriteLine("Creating MongoDB indexes...");
         await mongoContext.CreateIndexesAsync();
-        Console.WriteLine("? MongoDB indexes created successfully!");
+        Console.WriteLine("MongoDB indexes created successfully!");
         Console.WriteLine("========================================");
     }
     catch (Exception ex)

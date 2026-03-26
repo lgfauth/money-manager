@@ -15,7 +15,7 @@ public class CreditCardInvoiceServiceTests
     private readonly ILogger<CreditCardInvoiceService> _loggerMock;
     private readonly ICreditCardInvoiceService _invoiceService;
     private readonly ICreditCardInvoiceRepository _invoiceRepoMock;
-    private readonly IRepository<Transaction> _transactionRepoMock;
+    private readonly ITransactionRepository _transactionRepoMock;
     private readonly IRepository<Account> _accountRepoMock;
 
     public CreditCardInvoiceServiceTests()
@@ -23,7 +23,7 @@ public class CreditCardInvoiceServiceTests
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _loggerMock = Substitute.For<ILogger<CreditCardInvoiceService>>();
         _invoiceRepoMock = Substitute.For<ICreditCardInvoiceRepository>();
-        _transactionRepoMock = Substitute.For<IRepository<Transaction>>();
+        _transactionRepoMock = Substitute.For<ITransactionRepository>();
         _accountRepoMock = Substitute.For<IRepository<Account>>();
         
         _unitOfWorkMock.CreditCardInvoices.Returns(_invoiceRepoMock);
