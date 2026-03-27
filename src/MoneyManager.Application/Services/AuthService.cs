@@ -2,7 +2,7 @@ using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Interfaces;
-using Microsoft.Extensions.Logging;
+using MoneyManager.Observability;
 
 namespace MoneyManager.Application.Services;
 
@@ -16,26 +16,29 @@ public class AuthService : IAuthService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITokenService _tokenService;
-    private readonly ILogger<AuthService> _logger;
+    private readonly IProcessLogger _processLogger;
 
     public AuthService(
         IUnitOfWork unitOfWork,
         ITokenService tokenService,
-        ILogger<AuthService> logger)
+        IProcessLogger processLogger)
     {
         _unitOfWork = unitOfWork;
         _tokenService = tokenService;
-        _logger = logger;
+        _processLogger = processLogger;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
     {
-        _logger.LogInformation("Registration attempt for email: {Email}", request.Email);
+        _processLogger.AddStep("Registration attempt", new Dictionary<string, object?>
+        {
+            ["email"] = request.Email
+        });
 
         var existingUser = await _unitOfWork.Users.GetByEmailAsync(request.Email);
         if (existingUser != null)
         {
-            _logger.LogWarning("Registration failed: email {Email} already exists", request.Email);
+            _processLogger.AddWarning("Registration failed: email already exists");
             throw new InvalidOperationException("Email already registered");
         }
 
@@ -49,8 +52,10 @@ public class AuthService : IAuthService
         await _unitOfWork.Users.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("User registered successfully: {UserId}, email: {Email}",
-            user.Id, user.Email);
+        _processLogger.AddStep("User registered successfully", new Dictionary<string, object?>
+        {
+            ["userId"] = user.Id
+        });
 
         return new AuthResponseDto
         {
@@ -62,19 +67,24 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
     {
-        _logger.LogInformation("Login attempt for email: {Email}", request.Email);
+        _processLogger.AddStep("Login attempt", new Dictionary<string, object?>
+        {
+            ["email"] = request.Email
+        });
 
         var user = await _unitOfWork.Users.GetByEmailAsync(request.Email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
-            _logger.LogWarning("Login failed for email: {Email} - invalid credentials", request.Email);
+            _processLogger.AddWarning("Login failed: invalid credentials");
             throw new InvalidOperationException("Invalid credentials");
         }
 
         var token = _tokenService.GenerateToken(user.Id, user.Email);
 
-        _logger.LogInformation("User logged in successfully: {UserId}, email: {Email}",
-            user.Id, user.Email);
+        _processLogger.AddStep("User logged in successfully", new Dictionary<string, object?>
+        {
+            ["userId"] = user.Id
+        });
 
         return new AuthResponseDto
         {

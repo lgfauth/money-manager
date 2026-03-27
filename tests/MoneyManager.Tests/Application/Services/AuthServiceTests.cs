@@ -5,7 +5,7 @@ using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Interfaces;
-using Microsoft.Extensions.Logging;
+using MoneyManager.Observability;
 
 namespace MoneyManager.Tests.Application.Services;
 
@@ -13,15 +13,15 @@ public class AuthServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly ITokenService _tokenServiceMock;
-    private readonly ILogger<AuthService> _loggerMock;
+    private readonly IProcessLogger _processLoggerMock;
     private readonly AuthService _authService;
 
     public AuthServiceTests()
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _tokenServiceMock = Substitute.For<ITokenService>();
-        _loggerMock = Substitute.For<ILogger<AuthService>>();
-        _authService = new AuthService(_unitOfWorkMock, _tokenServiceMock, _loggerMock);
+        _processLoggerMock = Substitute.For<IProcessLogger>();
+        _authService = new AuthService(_unitOfWorkMock, _tokenServiceMock, _processLoggerMock);
     }
 
     [Fact]

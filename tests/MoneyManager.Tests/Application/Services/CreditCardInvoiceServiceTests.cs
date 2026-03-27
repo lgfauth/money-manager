@@ -5,14 +5,14 @@ using MoneyManager.Application.Services;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
-using Microsoft.Extensions.Logging;
+using MoneyManager.Observability;
 
 namespace MoneyManager.Tests.Application.Services;
 
 public class CreditCardInvoiceServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
-    private readonly ILogger<CreditCardInvoiceService> _loggerMock;
+    private readonly IProcessLogger _processLoggerMock;
     private readonly ICreditCardInvoiceService _invoiceService;
     private readonly ICreditCardInvoiceRepository _invoiceRepoMock;
     private readonly ITransactionRepository _transactionRepoMock;
@@ -21,7 +21,7 @@ public class CreditCardInvoiceServiceTests
     public CreditCardInvoiceServiceTests()
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-        _loggerMock = Substitute.For<ILogger<CreditCardInvoiceService>>();
+        _processLoggerMock = Substitute.For<IProcessLogger>();
         _invoiceRepoMock = Substitute.For<ICreditCardInvoiceRepository>();
         _transactionRepoMock = Substitute.For<ITransactionRepository>();
         _accountRepoMock = Substitute.For<IRepository<Account>>();
@@ -30,7 +30,7 @@ public class CreditCardInvoiceServiceTests
         _unitOfWorkMock.Transactions.Returns(_transactionRepoMock);
         _unitOfWorkMock.Accounts.Returns(_accountRepoMock);
         
-        _invoiceService = new CreditCardInvoiceService(_unitOfWorkMock, _loggerMock);
+        _invoiceService = new CreditCardInvoiceService(_unitOfWorkMock, _processLoggerMock);
     }
 
     [Fact]
@@ -457,8 +457,124 @@ public class CreditCardInvoiceServiceTests
         _accountRepoMock.GetByIdAsync("cc123").Returns(creditCardAccount);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => 
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _invoiceService.PayInvoiceAsync(userId, request));
+    }
+
+    [Fact]
+    public async Task PayInvoiceAsync_AmountExceedsRemaining_ShouldCapAtRemainingAndMarkPaid()
+    {
+        // Arrange
+        var userId = "user123";
+        var invoiceId = "inv123";
+        var invoice = new CreditCardInvoice
+        {
+            Id = invoiceId,
+            AccountId = "card123",
+            UserId = userId,
+            Status = InvoiceStatus.Closed,
+            TotalAmount = 500m,
+            PaidAmount = 300m,
+            RemainingAmount = 200m
+        };
+
+        var payFromAccount = new Account
+        {
+            Id = "checking123",
+            UserId = userId,
+            Type = AccountType.Checking,
+            Balance = 5000m
+        };
+
+        var request = new PayInvoiceRequestDto
+        {
+            InvoiceId = invoiceId,
+            PayFromAccountId = "checking123",
+            Amount = 200m, // Exact remaining
+            PaymentDate = DateTime.Today,
+            Description = "Final payment"
+        };
+
+        _invoiceRepoMock.GetByIdAsync(invoiceId).Returns(invoice);
+        _accountRepoMock.GetByIdAsync("checking123").Returns(payFromAccount);
+
+        // Act
+        await _invoiceService.PayInvoiceAsync(userId, request);
+
+        // Assert
+        await _invoiceRepoMock.Received(1).UpdateAsync(Arg.Is<CreditCardInvoice>(i =>
+            i.Status == InvoiceStatus.Paid &&
+            i.PaidAmount == 500m &&
+            i.RemainingAmount == 0m));
+    }
+
+    [Fact]
+    public async Task PayPartialInvoiceAsync_AmountExceedsRemaining_ShouldThrowException()
+    {
+        // Arrange
+        var userId = "user123";
+        var invoiceId = "inv123";
+        var invoice = new CreditCardInvoice
+        {
+            Id = invoiceId,
+            AccountId = "card123",
+            UserId = userId,
+            Status = InvoiceStatus.Closed,
+            TotalAmount = 1000m,
+            PaidAmount = 800m,
+            RemainingAmount = 200m
+        };
+
+        var request = new PayInvoiceRequestDto
+        {
+            InvoiceId = invoiceId,
+            PayFromAccountId = "checking123",
+            Amount = 500m, // Exceeds remaining 200
+            PaymentDate = DateTime.Today
+        };
+
+        _invoiceRepoMock.GetByIdAsync(invoiceId).Returns(invoice);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _invoiceService.PayPartialInvoiceAsync(userId, request));
+        Assert.Contains("remaining amount", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CloseInvoiceAsync_AlreadyClosed_ShouldThrowException()
+    {
+        // Arrange
+        var userId = "user123";
+        var invoiceId = "inv123";
+        var invoice = new CreditCardInvoice
+        {
+            Id = invoiceId,
+            AccountId = "card123",
+            UserId = userId,
+            Status = InvoiceStatus.Closed // Already closed
+        };
+
+        _invoiceRepoMock.GetByIdAsync(invoiceId).Returns(invoice);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _invoiceService.CloseInvoiceAsync(userId, invoiceId));
+    }
+
+    [Fact]
+    public async Task GetOrCreateOpenInvoiceAsync_WithNoAccount_ShouldThrowException()
+    {
+        // Arrange
+        var userId = "user123";
+        var accountId = "nonexistent";
+
+        _invoiceRepoMock.GetOpenInvoiceByAccountIdAsync(accountId).Returns((CreditCardInvoice?)null);
+        _accountRepoMock.GetByIdAsync(accountId).Returns((Account?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _invoiceService.GetOrCreateOpenInvoiceAsync(userId, accountId));
     }
 }
 

@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\MoneyManager.Domain\MoneyManager.Domain.csproj" />
     <ProjectReference Include="..\..\src\MoneyManager.Application\MoneyManager.Application.csproj" />
     <ProjectReference Include="..\..\src\MoneyManager.Infrastructure\MoneyManager.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\MoneyManager.Observability\MoneyManager.Observability.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,16 +1,12 @@
-using Microsoft.Extensions.Logging;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Observability;
 
 namespace TransactionSchedulerWorker.WorkerHost.Services;
 
-/// <summary>
-/// Envia um lembrete push às 21h para os usuários que têm a opção ativa,
-/// incentivando o registro dos gastos e receitas do dia.
-/// </summary>
 internal sealed class DailyReminderProcessor(
-    ILogger<DailyReminderProcessor> logger,
+    IProcessLogger processLogger,
     IUnitOfWork unitOfWork,
     IPushService pushService)
 {
@@ -18,14 +14,20 @@ internal sealed class DailyReminderProcessor(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        logger.LogInformation("Iniciando envio de lembretes diários push...");
+        processLogger.AddStep("Buscando usuÃ¡rios com lembrete diÃ¡rio ativo");
 
         var allSettings = await unitOfWork.UserSettings.GetAllAsync();
         var targets = allSettings
             .Where(s => s.PushDailyReminder)
             .ToList();
 
-        logger.LogInformation("{Count} usuário(s) com lembrete diário ativo.", targets.Count);
+        processLogger.AddStep("UsuÃ¡rios elegÃ­veis encontrados", new Dictionary<string, object?>
+        {
+            ["count"] = targets.Count
+        });
+
+        var sent = 0;
+        var failed = 0;
 
         foreach (var userSettings in targets)
         {
@@ -35,21 +37,26 @@ internal sealed class DailyReminderProcessor(
             {
                 var payload = new PushNotificationPayload
                 {
-                    Title = "MoneyManager — Lembrete do dia ??",
-                    Body = "Não se esqueça de registrar seus gastos e receitas de hoje!",
+                    Title = "MoneyManager â€” Lembrete do dia",
+                    Body = "NÃ£o se esqueÃ§a de registrar seus gastos e receitas de hoje!",
                     Icon = "/favicon.svg",
                     Url = "/transactions"
                 };
 
                 await pushService.SendToUserAsync(userSettings.UserId, payload);
-                logger.LogInformation("Lembrete diário enviado para usuário {UserId}", userSettings.UserId);
+                sent++;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Falha ao enviar lembrete diário para usuário {UserId}", userSettings.UserId);
+                failed++;
+                processLogger.AddError($"Falha ao enviar lembrete para usuÃ¡rio {userSettings.UserId}", ex);
             }
         }
 
-        logger.LogInformation("Envio de lembretes diários concluído.");
+        processLogger.AddStep("Envio de lembretes concluÃ­do", new Dictionary<string, object?>
+        {
+            ["sent"] = sent,
+            ["failed"] = failed
+        });
     }
 }

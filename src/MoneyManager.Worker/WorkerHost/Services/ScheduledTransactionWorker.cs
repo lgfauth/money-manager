@@ -1,24 +1,17 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MoneyManager.Observability;
 using TransactionSchedulerWorker.WorkerHost.Options;
 
 namespace TransactionSchedulerWorker.WorkerHost.Services;
 
-/// <summary>
-/// Worker responsável por executar o processamento agendado (1x ao dia).
-/// Estrutura seguindo boas práticas:
-/// - BackgroundService
-/// - Cancelamento cooperativo
-/// - Timeout por execução
-/// - Separação de responsabilidades (orquestração vs. processamento)
-/// </summary>
 internal sealed class ScheduledTransactionWorker(
     ILogger<ScheduledTransactionWorker> logger,
     IOptions<WorkerOptions> options,
     IOptions<ScheduleOptions> scheduleOptions,
     ITimeProvider timeProvider,
-    ITransactionScheduleProcessor processor) : BackgroundService
+    IServiceScopeFactory scopeFactory) : BackgroundService
 {
     private readonly WorkerOptions _options = options.Value;
     private readonly ScheduleOptions _schedule = scheduleOptions.Value;
@@ -27,30 +20,18 @@ internal sealed class ScheduledTransactionWorker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation(
-            "========================================");
-        logger.LogInformation(
-            "TransactionSchedulerWorker INICIADO");
-        logger.LogInformation(
-            "Agendado para {Hour:00}:{Minute:00} (TimeZone: {TimeZone})",
-            _schedule.Hour,
-            _schedule.Minute,
-            _schedule.TimeZoneId ?? "Local");
-        logger.LogInformation(
-            "Loop delay: {LoopDelay}s | Timeout: {Timeout}min",
-            _schedule.LoopDelaySeconds,
-            _options.ExecutionTimeoutMinutes);
-        logger.LogInformation("========================================");
+            "TransactionSchedulerWorker INICIADO — Agendado para {Hour:00}:{Minute:00} ({TimeZone}) | Loop: {LoopDelay}s | Timeout: {Timeout}min",
+            _schedule.Hour, _schedule.Minute, _schedule.TimeZoneId ?? "Local",
+            _schedule.LoopDelaySeconds, _options.ExecutionTimeoutMinutes);
 
-        // Execute immediately on startup to process any backlog and validate everything works
-        logger.LogInformation("STARTUP EXECUTION: Processando recorrências vencidas imediatamente...");
+        // Execute immediately on startup to process any backlog
         try
         {
             await RunOnceAsync(timeProvider.GetUtcNow(), stoppingToken);
-            logger.LogInformation("STARTUP EXECUTION: Concluída com sucesso. Aguardando próximo horário agendado.");
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "STARTUP EXECUTION: Falhou. Worker continuará tentando no horário agendado.");
+            logger.LogError(ex, "STARTUP EXECUTION falhou. Worker continuará tentando no horário agendado.");
         }
 
         while (!stoppingToken.IsCancellationRequested)
@@ -60,31 +41,17 @@ internal sealed class ScheduledTransactionWorker(
                 var nowUtc = timeProvider.GetUtcNow();
                 var tz = ResolveTimeZone(_schedule.TimeZoneId);
                 var nowLocal = TimeZoneInfo.ConvertTime(nowUtc, tz);
-
                 var nextRunLocal = GetNextRunLocal(nowLocal, _schedule);
                 var nextRunUtc = TimeZoneInfo.ConvertTime(nextRunLocal, TimeZoneInfo.Utc);
 
-                // Log scheduling info every loop iteration (for debugging)
-                logger.LogDebug(
-                    "Schedule check: Now={NowLocal:yyyy-MM-dd HH:mm:ss} | NextRun={NextRun:yyyy-MM-dd HH:mm:ss} | AlreadyRan={AlreadyRan}",
-                    nowLocal,
-                    nextRunLocal,
-                    AlreadyRanForSlot(nextRunUtc));
-
-                // If it's time (or we're late) and we didn't run for this slot yet
                 if (nowUtc >= nextRunUtc && !AlreadyRanForSlot(nextRunUtc))
                 {
-                    logger.LogInformation(
-                        "TRIGGER: Executando processamento agendado (Now >= NextRun and not already ran)");
                     await RunOnceAsync(nowUtc, stoppingToken);
                     _lastRunAt = nextRunUtc;
-                    logger.LogInformation("Processamento agendado concluído. Próxima execução: {NextRun:yyyy-MM-dd HH:mm:ss}",
-                        GetNextRunLocal(TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), tz), _schedule));
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                logger.LogInformation("Worker cancelado por desligamento.");
                 break;
             }
             catch (Exception ex)
@@ -100,26 +67,39 @@ internal sealed class ScheduledTransactionWorker(
 
     private async Task RunOnceAsync(DateTimeOffset runStartedAtUtc, CancellationToken stoppingToken)
     {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var processLogger = scope.ServiceProvider.GetRequiredService<IProcessLogger>();
+        var processor = scope.ServiceProvider.GetRequiredService<ITransactionScheduleProcessor>();
+
+        processLogger.Start("RecurringTransactions", new Dictionary<string, object?>
+        {
+            ["source"] = "Worker",
+            ["worker"] = nameof(ScheduledTransactionWorker),
+            ["triggeredAt"] = runStartedAtUtc.ToString("O")
+        });
+
         try
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
             timeoutCts.CancelAfter(TimeSpan.FromMinutes(_options.ExecutionTimeoutMinutes));
 
-            logger.LogInformation("Iniciando processamento em {StartedAtUtc}", runStartedAtUtc);
             await processor.ProcessAsync(timeoutCts.Token);
-            logger.LogInformation("Processamento finalizado em {FinishedAtUtc}", timeProvider.GetUtcNow());
+            processLogger.Finish(success: true);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
+            processLogger.AddWarning("Processo cancelado por desligamento do host");
+            processLogger.Finish(success: false);
             throw;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
-            logger.LogWarning("Execução cancelada por timeout ({TimeoutMinutes} min).", _options.ExecutionTimeoutMinutes);
+            processLogger.AddWarning($"Processo cancelado por timeout ({_options.ExecutionTimeoutMinutes} min)");
+            processLogger.Finish(success: false, exception: ex);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro inesperado no processamento.");
+            processLogger.Finish(success: false, exception: ex);
         }
     }
 
@@ -127,14 +107,7 @@ internal sealed class ScheduledTransactionWorker(
         => _lastRunAt.HasValue && _lastRunAt.Value == slotUtc;
 
     private static TimeZoneInfo ResolveTimeZone(string? timeZoneId)
-    {
-        if (string.IsNullOrWhiteSpace(timeZoneId))
-        {
-            return TimeZoneInfo.Local;
-        }
-
-        return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-    }
+        => string.IsNullOrWhiteSpace(timeZoneId) ? TimeZoneInfo.Local : TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 
     private static DateTimeOffset GetNextRunLocal(DateTimeOffset nowLocal, ScheduleOptions schedule)
     {
@@ -143,14 +116,10 @@ internal sealed class ScheduledTransactionWorker(
             today.AddHours(schedule.Hour).AddMinutes(schedule.Minute),
             nowLocal.Offset);
 
-        if (nowLocal <= runToday)
-        {
-            return runToday;
-        }
-
-        var tomorrow = today.AddDays(1);
-        return new DateTimeOffset(
-            tomorrow.AddHours(schedule.Hour).AddMinutes(schedule.Minute),
-            nowLocal.Offset);
+        return nowLocal <= runToday
+            ? runToday
+            : new DateTimeOffset(
+                today.AddDays(1).AddHours(schedule.Hour).AddMinutes(schedule.Minute),
+                nowLocal.Offset);
     }
 }

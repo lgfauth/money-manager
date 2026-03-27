@@ -3,7 +3,7 @@ using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
-using Microsoft.Extensions.Logging;
+using MoneyManager.Observability;
 
 namespace MoneyManager.Application.Services;
 
@@ -22,22 +22,21 @@ public class RecurringTransactionService : IRecurringTransactionService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITransactionService _transactionService;
-    private readonly ILogger<RecurringTransactionService> _logger;
+    private readonly IProcessLogger _processLogger;
 
     public RecurringTransactionService(
         IUnitOfWork unitOfWork,
         ITransactionService transactionService,
-        ILogger<RecurringTransactionService> logger)
+        IProcessLogger processLogger)
     {
         _unitOfWork = unitOfWork;
         _transactionService = transactionService;
-        _logger = logger;
+        _processLogger = processLogger;
     }
 
     public async Task<RecurringTransaction> CreateAsync(string userId, CreateRecurringTransactionRequestDto request)
     {
-        _logger.LogInformation("Creating recurring transaction for user {UserId}, frequency: {Frequency}",
-            userId, request.Frequency);
+        _processLogger.AddStep("Creating recurring transaction", new Dictionary<string, object?> { ["frequency"] = request.Frequency.ToString() });
 
         var account = await _unitOfWork.Accounts.GetByIdAsync(request.AccountId);
         if (account == null || account.UserId != userId)
@@ -67,8 +66,7 @@ public class RecurringTransactionService : IRecurringTransactionService
         await _unitOfWork.RecurringTransactions.AddAsync(recurring);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Recurring transaction {RecurringId} created for user {UserId}, next occurrence: {NextDate}",
-            recurring.Id, userId, recurring.NextOccurrenceDate);
+        _processLogger.AddStep("Recurring transaction created", new Dictionary<string, object?> { ["recurringId"] = recurring.Id, ["nextOccurrence"] = recurring.NextOccurrenceDate.ToString("O") });
 
         return recurring;
     }
@@ -88,9 +86,7 @@ public class RecurringTransactionService : IRecurringTransactionService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex,
-                "Failed to load recurring transactions for user {UserId}. Returning empty list to keep UI available.",
-                userId);
+            _processLogger.AddError("Failed to load recurring transactions, returning empty list", ex);
 
             return [];
         }
@@ -151,7 +147,7 @@ public class RecurringTransactionService : IRecurringTransactionService
     {
         var today = DateTime.UtcNow.Date;
         var summary = new RecurringProcessingSummary();
-        _logger.LogInformation("Starting recurring transactions processing for date: {Date}", today);
+        _processLogger.AddStep("Starting recurring transactions processing", new Dictionary<string, object?> { ["date"] = today.ToString("O") });
 
         var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
 
@@ -162,14 +158,13 @@ public class RecurringTransactionService : IRecurringTransactionService
                      && (!r.EndDate.HasValue || r.EndDate.Value.Date >= today))
             .ToList();
 
-        _logger.LogInformation("Found {Count} due recurring transactions to process", dueRecurrences.Count);
+        _processLogger.AddStep("Due recurring transactions found", new Dictionary<string, object?> { ["count"] = dueRecurrences.Count });
 
         foreach (var recurrence in dueRecurrences)
         {
             try
             {
-                _logger.LogDebug("Processing recurring transaction {RecurringId} for user {UserId}",
-                    recurrence.Id, recurrence.UserId);
+                _processLogger.AddStep("Processing recurring transaction", new Dictionary<string, object?> { ["recurringId"] = recurrence.Id });
 
                 // Process all overdue occurrences (backlog support)
                 var processedCount = 0;
@@ -191,8 +186,7 @@ public class RecurringTransactionService : IRecurringTransactionService
                     await _transactionService.CreateAsync(recurrence.UserId, transactionRequest);
                     processedCount++;
 
-                    _logger.LogDebug("Transaction created from recurring {RecurringId} for date: {Date}",
-                        recurrence.Id, recurrence.NextOccurrenceDate);
+                    _processLogger.AddStep("Transaction created from recurring", new Dictionary<string, object?> { ["recurringId"] = recurrence.Id, ["date"] = recurrence.NextOccurrenceDate.ToString("O") });
 
                     recurrence.LastProcessedDate = recurrence.NextOccurrenceDate;
                     recurrence.NextOccurrenceDate = await CalculateNextOccurrence(
@@ -202,8 +196,7 @@ public class RecurringTransactionService : IRecurringTransactionService
                     recurrence.UpdatedAt = DateTime.UtcNow;
                 }
 
-                _logger.LogInformation("Processed {Count} transaction(s) from recurring {RecurringId}, next occurrence: {NextDate}",
-                    processedCount, recurrence.Id, recurrence.NextOccurrenceDate);
+                _processLogger.AddStep("Recurring batch processed", new Dictionary<string, object?> { ["recurringId"] = recurrence.Id, ["processedCount"] = processedCount, ["nextOccurrence"] = recurrence.NextOccurrenceDate.ToString("O") });
 
                 if (processedCount > 0)
                     summary.Add(recurrence.UserId, processedCount);
@@ -211,21 +204,19 @@ public class RecurringTransactionService : IRecurringTransactionService
                 if (recurrence.EndDate.HasValue && recurrence.NextOccurrenceDate > recurrence.EndDate.Value)
                 {
                     recurrence.IsActive = false;
-                    _logger.LogInformation("Recurring transaction {RecurringId} reached end date and was deactivated",
-                        recurrence.Id);
+                    _processLogger.AddStep("Recurring transaction deactivated (end date reached)", new Dictionary<string, object?> { ["recurringId"] = recurrence.Id });
                 }
 
                 await _unitOfWork.RecurringTransactions.UpdateAsync(recurrence);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing recurring transaction {RecurringId} for user {UserId}",
-                    recurrence.Id, recurrence.UserId);
+                _processLogger.AddError($"Error processing recurring transaction {recurrence.Id}", ex);
             }
         }
 
         await _unitOfWork.SaveChangesAsync();
-        _logger.LogInformation("Recurring transactions processing completed");
+        _processLogger.AddStep("Recurring transactions processing completed");
         return summary;
     }
 

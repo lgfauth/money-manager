@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Logging;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Observability;
 
 namespace MoneyManager.Application.Services;
 
@@ -13,27 +13,27 @@ namespace MoneyManager.Application.Services;
 public class CreditCardInvoiceService : ICreditCardInvoiceService
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<CreditCardInvoiceService> _logger;
+    private readonly IProcessLogger _processLogger;
 
     public CreditCardInvoiceService(
         IUnitOfWork unitOfWork,
-        ILogger<CreditCardInvoiceService> logger)
+        IProcessLogger processLogger)
     {
         _unitOfWork = unitOfWork;
-        _logger = logger;
+        _processLogger = processLogger;
     }
 
     // ==================== GESTÃO DE FATURAS ====================
 
     public async Task<CreditCardInvoice> GetOrCreateOpenInvoiceAsync(string userId, string accountId)
     {
-        _logger.LogDebug("Getting or creating open invoice for account {AccountId}", accountId);
+        _processLogger.AddStep("Getting or creating open invoice", new Dictionary<string, object?> { ["accountId"] = accountId });
 
         // Verificar se já existe uma fatura aberta
         var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(accountId);
         if (openInvoice != null)
         {
-            _logger.LogDebug("Found existing open invoice {InvoiceId}", openInvoice.Id);
+            _processLogger.AddStep("Found existing open invoice", new Dictionary<string, object?> { ["invoiceId"] = openInvoice.Id });
             return openInvoice;
         }
 
@@ -45,7 +45,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (account.Type != AccountType.CreditCard)
             throw new InvalidOperationException("Account is not a credit card");
 
-        _logger.LogInformation("Creating new open invoice for account {AccountId}", accountId);
+        _processLogger.AddStep("Creating new open invoice", new Dictionary<string, object?> { ["accountId"] = accountId });
 
         // Criar nova fatura aberta
         var invoice = await CreateNewOpenInvoiceAsync(account);
@@ -113,7 +113,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
     public async Task<CreditCardInvoiceResponseDto> CloseInvoiceAsync(string userId, string invoiceId)
     {
-        _logger.LogInformation("Closing invoice {InvoiceId} manually", invoiceId);
+        _processLogger.AddStep("Closing invoice manually", new Dictionary<string, object?> { ["invoiceId"] = invoiceId });
 
         var invoice = await _unitOfWork.CreditCardInvoices.GetByIdAsync(invoiceId);
         if (invoice == null || invoice.UserId != userId)
@@ -144,7 +144,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Invoice {InvoiceId} closed successfully", invoiceId);
+        _processLogger.AddStep("Invoice closed successfully", new Dictionary<string, object?> { ["invoiceId"] = invoiceId });
 
         return await MapToDtoAsync(invoice);
     }
@@ -152,13 +152,13 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
     public async Task ProcessMonthlyInvoiceClosuresAsync()
     {
         var today = DateTime.UtcNow.Date;
-        _logger.LogInformation("Processing monthly invoice closures for date: {Date}", today);
+        _processLogger.AddStep("Processing monthly invoice closures", new Dictionary<string, object?> { ["date"] = today.ToString("O") });
 
         // Buscar todos os cartões de crédito
         var allAccounts = await _unitOfWork.Accounts.GetAllAsync();
         var creditCards = allAccounts.Where(a => a.Type == AccountType.CreditCard && !a.IsDeleted).ToList();
 
-        _logger.LogInformation("Found {Count} credit card accounts", creditCards.Count);
+        _processLogger.AddStep("Credit card accounts found", new Dictionary<string, object?> { ["count"] = creditCards.Count });
 
         var closedCount = 0;
 
@@ -172,14 +172,13 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
                 if (today.Day != closingDay)
                     continue;
 
-                _logger.LogDebug("Processing invoice closure for card {CardId} (closing day: {Day})", 
-                    card.Id, closingDay);
+                _processLogger.AddStep("Processing invoice closure", new Dictionary<string, object?> { ["cardId"] = card.Id, ["closingDay"] = closingDay });
 
                 // Buscar fatura aberta
                 var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(card.Id);
                 if (openInvoice == null)
                 {
-                    _logger.LogWarning("No open invoice found for card {CardId}, skipping", card.Id);
+                    _processLogger.AddWarning("No open invoice found, skipping", new Dictionary<string, object?> { ["cardId"] = card.Id });
                     continue;
                 }
 
@@ -202,25 +201,24 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
                 closedCount++;
 
-                _logger.LogInformation("Invoice {InvoiceId} closed for card {CardId}, new invoice {NewInvoiceId} created",
-                    openInvoice.Id, card.Id, newInvoice.Id);
+                _processLogger.AddStep("Invoice closed, new invoice created", new Dictionary<string, object?> { ["closedInvoiceId"] = openInvoice.Id, ["cardId"] = card.Id, ["newInvoiceId"] = newInvoice.Id });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing invoice closure for card {CardId}", card.Id);
+                _processLogger.AddError($"Error processing invoice closure for card {card.Id}", ex);
             }
         }
 
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Monthly invoice closure completed. {Count} invoices closed", closedCount);
+        _processLogger.AddStep("Monthly invoice closure completed", new Dictionary<string, object?> { ["closedCount"] = closedCount });
     }
 
     // ==================== PAGAMENTO DE FATURAS ====================
 
     public async Task PayInvoiceAsync(string userId, PayInvoiceRequestDto request)
     {
-        _logger.LogInformation("Processing full payment for invoice {InvoiceId}", request.InvoiceId);
+        _processLogger.AddStep("Processing full payment", new Dictionary<string, object?> { ["invoiceId"] = request.InvoiceId });
 
         var invoice = await _unitOfWork.CreditCardInvoices.GetByIdAsync(request.InvoiceId);
         if (invoice == null || invoice.UserId != userId)
@@ -238,7 +236,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
     public async Task PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request)
     {
-        _logger.LogInformation("Processing partial payment for invoice {InvoiceId}", request.InvoiceId);
+        _processLogger.AddStep("Processing partial payment", new Dictionary<string, object?> { ["invoiceId"] = request.InvoiceId });
 
         var invoice = await _unitOfWork.CreditCardInvoices.GetByIdAsync(request.InvoiceId);
         if (invoice == null || invoice.UserId != userId)
@@ -355,8 +353,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             return invoice;
 
         // Se não existe, criar nova fatura
-        _logger.LogInformation("Creating new invoice for account {AccountId} with closing date {ClosingDate}",
-            accountId, targetClosingDate);
+        _processLogger.AddStep("Creating new invoice for closing date", new Dictionary<string, object?> { ["accountId"] = accountId, ["closingDate"] = targetClosingDate.ToString("O") });
 
         return await CreateInvoiceForClosingDateAsync(account, targetClosingDate);
     }
@@ -381,13 +378,12 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogDebug("Invoice {InvoiceId} total recalculated: {Total} ({Count} transactions)",
-            invoiceId, total, invoiceTransactions.Count);
+        _processLogger.AddStep("Invoice total recalculated", new Dictionary<string, object?> { ["invoiceId"] = invoiceId, ["total"] = total, ["transactionCount"] = invoiceTransactions.Count });
     }
 
     public async Task<CreditCardInvoice> CreateHistoryInvoiceAsync(string userId, string accountId)
     {
-        _logger.LogInformation("Creating history invoice for account {AccountId}", accountId);
+        _processLogger.AddStep("Creating history invoice", new Dictionary<string, object?> { ["accountId"] = accountId });
 
         var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
         if (account == null || account.UserId != userId)
@@ -434,8 +430,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("History invoice created for account {AccountId} with {Count} transactions",
-            accountId, oldTransactions.Count);
+        _processLogger.AddStep("History invoice created", new Dictionary<string, object?> { ["accountId"] = accountId, ["transactionCount"] = oldTransactions.Count });
 
         return historyInvoice;
     }
@@ -541,10 +536,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Payment processed for invoice {InvoiceId}: R$ {Amount} (Remaining: R$ {Remaining})",
-            invoice.Id, request.Amount, invoice.RemainingAmount);
-        
-        _logger.LogInformation("?? Note: Payment transaction must be created separately by calling TransactionService.CreateAsync()");
+        _processLogger.AddStep("Payment processed", new Dictionary<string, object?> { ["invoiceId"] = invoice.Id, ["paidAmount"] = request.Amount, ["remaining"] = invoice.RemainingAmount });
     }
 
     private async Task<CreditCardInvoiceResponseDto> MapToDtoAsync(CreditCardInvoice invoice)

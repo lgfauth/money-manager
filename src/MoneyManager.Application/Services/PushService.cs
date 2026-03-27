@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Observability;
 using WebPush;
 using DomainPushSubscription = MoneyManager.Domain.Entities.PushSubscription;
 
@@ -10,19 +10,10 @@ namespace MoneyManager.Application.Services;
 
 public interface IPushService
 {
-    /// <summary>Saves or updates a push subscription for the authenticated user.</summary>
     Task<PushSubscriptionResponseDto> SubscribeAsync(string userId, PushSubscribeRequestDto request);
-
-    /// <summary>Removes (soft-deletes) the subscription matching the given endpoint.</summary>
     Task UnsubscribeAsync(string userId, string endpoint);
-
-    /// <summary>Sends a push notification to all active subscriptions of a user.</summary>
     Task SendToUserAsync(string userId, PushNotificationPayload payload);
-
-    /// <summary>Sends a test notification to all subscriptions of a user.</summary>
     Task SendTestAsync(string userId);
-
-    /// <summary>Returns true if the user has at least one active push subscription.</summary>
     Task<bool> HasActiveSubscriptionAsync(string userId);
 }
 
@@ -30,27 +21,29 @@ public class PushService : IPushService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly VapidSettings _vapid;
-    private readonly ILogger<PushService> _logger;
+    private readonly IProcessLogger _processLogger;
 
     public PushService(
         IUnitOfWork unitOfWork,
         IOptions<VapidSettings> vapidOptions,
-        ILogger<PushService> logger)
+        IProcessLogger processLogger)
     {
         _unitOfWork = unitOfWork;
         _vapid = vapidOptions.Value;
-        _logger = logger;
+        _processLogger = processLogger;
     }
 
     public async Task<PushSubscriptionResponseDto> SubscribeAsync(string userId, PushSubscribeRequestDto request)
     {
-        _logger.LogInformation("Saving push subscription for user {UserId}", userId);
+        _processLogger.AddStep("Saving push subscription", new Dictionary<string, object?>
+        {
+            ["userId"] = userId
+        });
 
         var existing = await _unitOfWork.PushSubscriptions.GetByEndpointAsync(request.Endpoint);
 
         if (existing != null)
         {
-            // Update keys in case the browser rotated them
             existing.P256dh = request.P256dh;
             existing.Auth = request.Auth;
             existing.UserId = userId;
@@ -59,7 +52,10 @@ public class PushService : IPushService
             existing.IsDeleted = false;
             await _unitOfWork.PushSubscriptions.UpdateAsync(existing);
 
-            _logger.LogInformation("Updated existing push subscription {Id} for user {UserId}", existing.Id, userId);
+            _processLogger.AddStep("Updated existing push subscription", new Dictionary<string, object?>
+            {
+                ["subscriptionId"] = existing.Id
+            });
             return MapToDto(existing);
         }
 
@@ -75,13 +71,16 @@ public class PushService : IPushService
         await _unitOfWork.PushSubscriptions.AddAsync(subscription);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Created push subscription {Id} for user {UserId}", subscription.Id, userId);
+        _processLogger.AddStep("Created push subscription", new Dictionary<string, object?>
+        {
+            ["subscriptionId"] = subscription.Id
+        });
         return MapToDto(subscription);
     }
 
     public async Task UnsubscribeAsync(string userId, string endpoint)
     {
-        _logger.LogInformation("Removing push subscription for user {UserId}", userId);
+        _processLogger.AddStep("Removing push subscription");
 
         var subscription = await _unitOfWork.PushSubscriptions.GetByEndpointAsync(endpoint);
         if (subscription == null || subscription.UserId != userId)
@@ -92,16 +91,24 @@ public class PushService : IPushService
         await _unitOfWork.PushSubscriptions.UpdateAsync(subscription);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Removed push subscription {Id} for user {UserId}", subscription.Id, userId);
+        _processLogger.AddStep("Push subscription removed", new Dictionary<string, object?>
+        {
+            ["subscriptionId"] = subscription.Id
+        });
     }
 
     public async Task SendToUserAsync(string userId, PushNotificationPayload payload)
     {
         var subscriptions = await _unitOfWork.PushSubscriptions.GetByUserIdAsync(userId);
+        var subsList = subscriptions.ToList();
 
-        _logger.LogInformation("Found {Count} subscriptions for user {UserId}", subscriptions.Count(), userId);
+        _processLogger.AddStep("Sending push notifications", new Dictionary<string, object?>
+        {
+            ["userId"] = userId,
+            ["subscriptionCount"] = subsList.Count
+        });
 
-        await SendToSubscriptionsAsync(subscriptions, payload);
+        await SendToSubscriptionsAsync(subsList, payload);
     }
 
     public async Task SendTestAsync(string userId)
@@ -109,7 +116,7 @@ public class PushService : IPushService
         var payload = new PushNotificationPayload
         {
             Title = "MoneyManager",
-            Body = "Notificações push estão funcionando! ??",
+            Body = "Notificações push estão funcionando!",
             Icon = "/favicon.svg"
         };
 
@@ -141,19 +148,20 @@ public class PushService : IPushService
             {
                 var pushSub = new WebPush.PushSubscription(sub.Endpoint, sub.P256dh, sub.Auth);
                 await client.SendNotificationAsync(pushSub, payloadJson, vapidDetails);
-
-                _logger.LogInformation("Push notification sent to subscription {Id}", sub.Id);
             }
             catch (WebPushException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Gone)
             {
-                _logger.LogWarning("Subscription {Id} is expired (410 Gone). Soft-deleting.", sub.Id);
+                _processLogger.AddWarning("Subscription expired (410 Gone), soft-deleting", new Dictionary<string, object?>
+                {
+                    ["subscriptionId"] = sub.Id
+                });
                 sub.IsDeleted = true;
                 sub.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.PushSubscriptions.UpdateAsync(sub);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send push notification to subscription {Id}", sub.Id);
+                _processLogger.AddError($"Failed to send push to subscription {sub.Id}", ex);
             }
         }
 
@@ -169,16 +177,10 @@ public class PushService : IPushService
     };
 }
 
-/// <summary>
-/// Strongly-typed VAPID configuration bound from appsettings "Vapid" section.
-/// </summary>
 public sealed class VapidSettings
 {
     public const string SectionName = "Vapid";
-
-    /// <summary>mailto: or https: URL that identifies the application owner.</summary>
     public string Subject { get; set; } = "mailto:admin@moneymanager.app";
     public string PublicKey { get; set; } = string.Empty;
     public string PrivateKey { get; set; } = string.Empty;
 }
-

@@ -8,6 +8,7 @@ using MoneyManager.Domain.Interfaces;
 using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Repositories;
 using MoneyManager.Infrastructure.Security;
+using MoneyManager.Observability;
 using MoneyManager.Presentation.Middlewares;
 using NLog.Web;
 
@@ -43,6 +44,9 @@ builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>(
 builder.Services.Configure<VapidSettings>(
     builder.Configuration.GetSection(VapidSettings.SectionName));
 builder.Services.AddScoped<IPushService, PushService>();
+
+// Register structured process logger
+builder.Services.AddProcessLogger();
 
 // Register validators
 builder.Services.AddValidatorsFromAssembly(typeof(RegisterRequestValidator).Assembly);
@@ -139,40 +143,28 @@ app.UseForwardedHeaders();
 app.UseCors();
 
 // Create MongoDB indexes (with error handling)
+var startupLogger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
 using (var scope = app.Services.CreateScope())
 {
     try
     {
         var mongoContext = scope.ServiceProvider.GetRequiredService<MongoContext>();
 
-        Console.WriteLine("========================================");
-        Console.WriteLine("Testing MongoDB connection...");
+        startupLogger.LogInformation("Testing MongoDB connection...");
         await mongoContext.TestConnectionAsync();
-        Console.WriteLine("? MongoDB connection successful!");
-        Console.WriteLine("========================================");
+        startupLogger.LogInformation("MongoDB connection successful");
 
-        Console.WriteLine("Running MongoDB migrations...");
+        startupLogger.LogInformation("Running MongoDB migrations...");
         await mongoContext.RunMigrationsAsync();
-        Console.WriteLine("MongoDB migrations completed!");
+        startupLogger.LogInformation("MongoDB migrations completed");
 
-        Console.WriteLine("Creating MongoDB indexes...");
+        startupLogger.LogInformation("Creating MongoDB indexes...");
         await mongoContext.CreateIndexesAsync();
-        Console.WriteLine("MongoDB indexes created successfully!");
-        Console.WriteLine("========================================");
+        startupLogger.LogInformation("MongoDB indexes created successfully");
     }
     catch (Exception ex)
     {
-        Console.WriteLine("========================================");
-        Console.WriteLine("? MongoDB Error:");
-        Console.WriteLine($"Message: {ex.Message}");
-        Console.WriteLine($"Type: {ex.GetType().Name}");
-        if (ex.InnerException != null)
-        {
-            Console.WriteLine($"Inner: {ex.InnerException.Message}");
-        }
-        Console.WriteLine("========================================");
-        Console.WriteLine("? API started but MongoDB is not accessible!");
-        Console.WriteLine("========================================");
+        startupLogger.LogError(ex, "MongoDB initialization failed. API started but MongoDB is not accessible");
     }
 }
 
@@ -198,6 +190,9 @@ app.UseSwaggerUI(c =>
     c.DisplayRequestDuration();
     c.EnableDeepLinking();
 });
+
+// RequestLoggingMiddleware envolve toda a pipeline — gera JSON estruturado por request
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 // ExceptionHandlingMiddleware DEPOIS do CORS
 app.UseMiddleware<ExceptionHandlingMiddleware>();

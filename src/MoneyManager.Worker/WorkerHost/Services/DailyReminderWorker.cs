@@ -1,14 +1,11 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using MoneyManager.Observability;
 using TransactionSchedulerWorker.WorkerHost.Options;
 
 namespace TransactionSchedulerWorker.WorkerHost.Services;
 
-/// <summary>
-/// Dispara o lembrete push diário às 21h (horário de Brasília por padrão).
-/// Não executa no startup — o lembrete só faz sentido no horário certo.
-/// </summary>
 internal sealed class DailyReminderWorker(
     ILogger<DailyReminderWorker> logger,
     IOptions<WorkerOptions> options,
@@ -22,13 +19,10 @@ internal sealed class DailyReminderWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("========================================");
-        logger.LogInformation("DailyReminderWorker INICIADO");
-        logger.LogInformation("Agendado para {Hour:00}:{Minute:00} (TimeZone: {TimeZone})",
-            _schedule.Hour,
-            _schedule.Minute,
-            _schedule.TimeZoneId ?? "Local");
-        logger.LogInformation("========================================");
+        logger.LogInformation(
+            "DailyReminderWorker INICIADO â€” Agendado para {Hour:00}:{Minute:00} ({TimeZone}) | Loop: {LoopDelay}s",
+            _schedule.Hour, _schedule.Minute, _schedule.TimeZoneId ?? "Local",
+            _schedule.LoopDelaySeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -37,24 +31,17 @@ internal sealed class DailyReminderWorker(
                 var nowUtc = timeProvider.GetUtcNow();
                 var tz = ResolveTimeZone(_schedule.TimeZoneId);
                 var nowLocal = TimeZoneInfo.ConvertTime(nowUtc, tz);
-
                 var nextRunLocal = GetNextRunLocal(nowLocal, _schedule);
                 var nextRunUtc = TimeZoneInfo.ConvertTime(nextRunLocal, TimeZoneInfo.Utc);
 
-                logger.LogDebug(
-                    "DailyReminder check: Now={NowLocal:yyyy-MM-dd HH:mm:ss} | NextRun={NextRun:yyyy-MM-dd HH:mm:ss} | AlreadyRan={AlreadyRan}",
-                    nowLocal, nextRunLocal, AlreadyRanForSlot(nextRunUtc));
-
                 if (nowUtc >= nextRunUtc && !AlreadyRanForSlot(nextRunUtc))
                 {
-                    logger.LogInformation("TRIGGER: Enviando lembretes diários...");
                     await RunOnceAsync(nowUtc, stoppingToken);
                     _lastRunAt = nextRunUtc;
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                logger.LogInformation("DailyReminderWorker cancelado por desligamento.");
                 break;
             }
             catch (Exception ex)
@@ -70,30 +57,39 @@ internal sealed class DailyReminderWorker(
 
     private async Task RunOnceAsync(DateTimeOffset runStartedAtUtc, CancellationToken stoppingToken)
     {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var processLogger = scope.ServiceProvider.GetRequiredService<IProcessLogger>();
+        var processor = scope.ServiceProvider.GetRequiredService<DailyReminderProcessor>();
+
+        processLogger.Start("DailyReminder", new Dictionary<string, object?>
+        {
+            ["source"] = "Worker",
+            ["worker"] = nameof(DailyReminderWorker),
+            ["triggeredAt"] = runStartedAtUtc.ToString("O")
+        });
+
         try
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
             timeoutCts.CancelAfter(TimeSpan.FromMinutes(_options.ExecutionTimeoutMinutes));
 
-            // Processor é Scoped — precisa de scope próprio
-            await using var scope = scopeFactory.CreateAsyncScope();
-            var processor = scope.ServiceProvider.GetRequiredService<DailyReminderProcessor>();
-
-            logger.LogInformation("Iniciando envio de lembretes em {StartedAtUtc}", runStartedAtUtc);
             await processor.ProcessAsync(timeoutCts.Token);
-            logger.LogInformation("Lembretes enviados em {FinishedAtUtc}", timeProvider.GetUtcNow());
+            processLogger.Finish(success: true);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
+            processLogger.AddWarning("Processo cancelado por desligamento do host");
+            processLogger.Finish(success: false);
             throw;
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException ex)
         {
-            logger.LogWarning("Envio de lembretes cancelado por timeout ({TimeoutMinutes} min).", _options.ExecutionTimeoutMinutes);
+            processLogger.AddWarning($"Processo cancelado por timeout ({_options.ExecutionTimeoutMinutes} min)");
+            processLogger.Finish(success: false, exception: ex);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Erro inesperado no envio de lembretes.");
+            processLogger.Finish(success: false, exception: ex);
         }
     }
 
@@ -101,9 +97,7 @@ internal sealed class DailyReminderWorker(
         => _lastRunAt.HasValue && _lastRunAt.Value == slotUtc;
 
     private static TimeZoneInfo ResolveTimeZone(string? timeZoneId)
-        => string.IsNullOrWhiteSpace(timeZoneId)
-            ? TimeZoneInfo.Local
-            : TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        => string.IsNullOrWhiteSpace(timeZoneId) ? TimeZoneInfo.Local : TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 
     private static DateTimeOffset GetNextRunLocal(DateTimeOffset nowLocal, DailyReminderScheduleOptions schedule)
     {

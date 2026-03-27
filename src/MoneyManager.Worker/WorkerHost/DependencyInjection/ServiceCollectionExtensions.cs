@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MoneyManager.Observability;
 using TransactionSchedulerWorker.WorkerHost.Options;
 using TransactionSchedulerWorker.WorkerHost.Services;
 
@@ -33,6 +34,7 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services.AddSingleton<ITimeProvider>(sp => new SystemTimeProvider(TimeProvider.System));
+        services.AddProcessLogger();
 
         // Only recurring transactions are processed by the worker.
         services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();

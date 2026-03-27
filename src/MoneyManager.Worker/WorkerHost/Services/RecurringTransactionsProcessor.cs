@@ -1,12 +1,12 @@
-using Microsoft.Extensions.Logging;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Observability;
 
 namespace TransactionSchedulerWorker.WorkerHost.Services;
 
 internal sealed class RecurringTransactionsProcessor(
-    ILogger<RecurringTransactionsProcessor> logger,
+    IProcessLogger processLogger,
     IRecurringTransactionService recurringTransactionService,
     IUnitOfWork unitOfWork,
     IPushService pushService) : ITransactionScheduleProcessor
@@ -15,9 +15,13 @@ internal sealed class RecurringTransactionsProcessor(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        logger.LogInformation("Processando recorrências vencidas...");
+        processLogger.AddStep("Processando recorrências vencidas");
         var summary = await recurringTransactionService.ProcessDueRecurrencesAsync();
-        logger.LogInformation("Processamento de recorrências finalizado.");
+        processLogger.AddStep("Processamento de recorrências finalizado", new Dictionary<string, object?>
+        {
+            ["usersAffected"] = summary.ProcessedByUser.Count,
+            ["totalProcessed"] = summary.ProcessedByUser.Values.Sum()
+        });
 
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -30,9 +34,12 @@ internal sealed class RecurringTransactionsProcessor(
     {
         if (summary.ProcessedByUser.Count == 0)
         {
-            logger.LogDebug("Nenhuma recorrência processada — sem push notifications a enviar.");
+            processLogger.AddStep("Nenhuma recorrência processada — sem push notifications a enviar");
             return;
         }
+
+        var sent = 0;
+        var skipped = 0;
 
         foreach (var (userId, count) in summary.ProcessedByUser)
         {
@@ -40,13 +47,12 @@ internal sealed class RecurringTransactionsProcessor(
 
             try
             {
-                // Respeita a preferência do usuário
                 var userSettings = await unitOfWork.UserSettings.GetAllAsync();
                 var settings = userSettings.FirstOrDefault(s => s.UserId == userId);
 
                 if (settings is { PushRecurringProcessed: false })
                 {
-                    logger.LogDebug("Usuário {UserId} desativou push de recorrentes. Pulando.", userId);
+                    skipped++;
                     continue;
                 }
 
@@ -61,14 +67,18 @@ internal sealed class RecurringTransactionsProcessor(
                 };
 
                 await pushService.SendToUserAsync(userId, payload);
-                logger.LogInformation("Push enviado para usuário {UserId} ({Count} recorrência(s))", userId, count);
+                sent++;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Falha ao enviar push para usuário {UserId}", userId);
+                processLogger.AddError($"Falha ao enviar push para usuário {userId}", ex);
             }
         }
+
+        processLogger.AddStep("Push notifications enviadas", new Dictionary<string, object?>
+        {
+            ["sent"] = sent,
+            ["skipped"] = skipped
+        });
     }
 }
-
-

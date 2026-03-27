@@ -3,7 +3,7 @@ using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
-using Microsoft.Extensions.Logging;
+using MoneyManager.Observability;
 
 namespace MoneyManager.Application.Services;
 
@@ -20,22 +20,25 @@ public class TransactionService : ITransactionService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICreditCardInvoiceService _invoiceService;
-    private readonly ILogger<TransactionService> _logger;
+    private readonly IProcessLogger _processLogger;
 
     public TransactionService(
         IUnitOfWork unitOfWork,
         ICreditCardInvoiceService invoiceService,
-        ILogger<TransactionService> logger)
+        IProcessLogger processLogger)
     {
         _unitOfWork = unitOfWork;
         _invoiceService = invoiceService;
-        _logger = logger;
+        _processLogger = processLogger;
     }
 
     public async Task<TransactionResponseDto> CreateAsync(string userId, CreateTransactionRequestDto request)
     {
-        _logger.LogDebug("Creating transaction: userId={UserId}, type={Type}, amount={Amount}, accountId={AccountId}",
-            userId, request.Type, request.Amount, request.AccountId);
+        _processLogger.AddStep("Creating transaction", new Dictionary<string, object?>
+        {
+            ["type"] = request.Type,
+            ["accountId"] = request.AccountId
+        });
 
         // Idempotência: se ClientRequestId fornecido, verificar duplicata
         if (!string.IsNullOrEmpty(request.ClientRequestId))
@@ -43,8 +46,11 @@ public class TransactionService : ITransactionService
             var existing = await _unitOfWork.Transactions.GetByClientRequestIdAsync(userId, request.ClientRequestId);
             if (existing != null)
             {
-                _logger.LogInformation("Duplicate request detected (ClientRequestId={ClientRequestId}), returning existing transaction {TransactionId}",
-                    request.ClientRequestId, existing.Id);
+                _processLogger.AddStep("Duplicate request detected, returning existing transaction", new Dictionary<string, object?>
+                {
+                    ["clientRequestId"] = request.ClientRequestId,
+                    ["existingTransactionId"] = existing.Id
+                });
                 return MapToDto(existing);
             }
         }
@@ -52,7 +58,10 @@ public class TransactionService : ITransactionService
         var account = await _unitOfWork.Accounts.GetByIdAsync(request.AccountId);
         if (account == null || account.UserId != userId || account.IsDeleted)
         {
-            _logger.LogWarning("Account {AccountId} not found for user {UserId}", request.AccountId, userId);
+            _processLogger.AddWarning("Account not found", new Dictionary<string, object?>
+            {
+                ["accountId"] = request.AccountId
+            });
             throw new KeyNotFoundException("Account not found");
         }
 
@@ -60,8 +69,11 @@ public class TransactionService : ITransactionService
 
         if (transactionType == TransactionType.Transfer)
         {
-            _logger.LogDebug("Processing transfer from {FromAccount} to {ToAccount}, amount: {Amount}",
-                request.AccountId, request.ToAccountId, request.Amount);
+            _processLogger.AddStep("Processing transfer", new Dictionary<string, object?>
+            {
+                ["fromAccount"] = request.AccountId,
+                ["toAccount"] = request.ToAccountId
+            });
 
             if (string.IsNullOrEmpty(request.ToAccountId))
                 throw new InvalidOperationException("ToAccountId is required for transfers");
@@ -85,15 +97,14 @@ public class TransactionService : ITransactionService
             }
             catch
             {
-                _logger.LogWarning("Transfer failed on destination update. Rolling back source account {AccountId}", account.Id);
+                _processLogger.AddWarning("Transfer failed on destination update, rolling back source");
                 account.Balance -= sourceImpact;
                 account.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.Accounts.UpdateAsync(account);
                 throw;
             }
 
-            _logger.LogInformation("Transfer processed: {Amount} from {FromAccount} to {ToAccount}",
-                request.Amount, request.AccountId, request.ToAccountId);
+            _processLogger.AddStep("Transfer processed");
         }
         else
         {
@@ -108,8 +119,12 @@ public class TransactionService : ITransactionService
                 if (newDebt > account.CreditLimit.Value)
                 {
                     var available = account.CreditLimit.Value - currentDebt;
-                    _logger.LogWarning("Credit limit exceeded for account {AccountId}: limit={Limit}, current={Current}, attempt={Attempt}",
-                        account.Id, account.CreditLimit.Value, currentDebt, request.Amount);
+                    _processLogger.AddWarning("Credit limit exceeded", new Dictionary<string, object?>
+                    {
+                        ["limit"] = account.CreditLimit.Value,
+                        ["currentDebt"] = currentDebt,
+                        ["attempted"] = request.Amount
+                    });
                     throw new InvalidOperationException(
                         $"Limite de crédito excedido. Disponível: R$ {available:F2} | Tentando usar: R$ {request.Amount:F2}");
                 }
@@ -120,8 +135,11 @@ public class TransactionService : ITransactionService
             account.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.Accounts.UpdateAsync(account);
 
-            _logger.LogInformation("Balance updated for account {AccountId}: impact={Impact}, type={Type}",
-                request.AccountId, impactAmount, transactionType);
+            _processLogger.AddStep("Balance updated", new Dictionary<string, object?>
+            {
+                ["impact"] = impactAmount,
+                ["accountType"] = account.Type.ToString()
+            });
         }
 
         var transaction = new Transaction
@@ -142,9 +160,6 @@ public class TransactionService : ITransactionService
         // Se for despesa em cartão de crédito, vincular à fatura apropriada
         if (account.Type == AccountType.CreditCard && transactionType == TransactionType.Expense)
         {
-            _logger.LogDebug("Determining invoice for credit card transaction on account {AccountId}, date {Date}",
-                account.Id, request.Date);
-
             var invoice = await _invoiceService.DetermineInvoiceForTransactionAsync(userId, request.AccountId, request.Date);
             transaction.InvoiceId = invoice.Id;
 
@@ -153,15 +168,20 @@ public class TransactionService : ITransactionService
             invoice.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
 
-            _logger.LogInformation("Transaction linked to invoice {InvoiceId} (Reference: {RefMonth})",
-                invoice.Id, invoice.ReferenceMonth);
+            _processLogger.AddStep("Transaction linked to invoice", new Dictionary<string, object?>
+            {
+                ["invoiceId"] = invoice.Id,
+                ["referenceMonth"] = invoice.ReferenceMonth
+            });
         }
 
         await _unitOfWork.Transactions.AddAsync(transaction);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Transaction {TransactionId} created successfully for user {UserId}",
-            transaction.Id, userId);
+        _processLogger.AddStep("Transaction created", new Dictionary<string, object?>
+        {
+            ["transactionId"] = transaction.Id
+        });
 
         return MapToDto(transaction);
     }
@@ -185,7 +205,10 @@ public class TransactionService : ITransactionService
 
     public async Task<TransactionResponseDto> UpdateAsync(string userId, string id, CreateTransactionRequestDto request)
     {
-        _logger.LogDebug("Updating transaction {TransactionId} for user {UserId}", id, userId);
+        _processLogger.AddStep("Updating transaction", new Dictionary<string, object?>
+        {
+            ["transactionId"] = id
+        });
 
         var transaction = await _unitOfWork.Transactions.GetByIdAsync(id);
         if (transaction == null || transaction.UserId != userId || transaction.IsDeleted)
@@ -194,7 +217,7 @@ public class TransactionService : ITransactionService
         var oldInvoiceId = transaction.InvoiceId;
 
         // Revert previous impact
-        _logger.LogDebug("Reverting previous transaction impact for {TransactionId}", id);
+        _processLogger.AddStep("Reverting previous transaction impact");
         await RevertTransactionImpact(userId, transaction);
 
         transaction.AccountId = request.AccountId;
@@ -214,7 +237,7 @@ public class TransactionService : ITransactionService
             throw new KeyNotFoundException("Account not found");
 
         // Apply new impact
-        _logger.LogDebug("Applying new transaction impact for {TransactionId}", id);
+        _processLogger.AddStep("Applying new transaction impact");
         await ApplyTransactionImpact(userId, transaction);
 
         // Gerenciar faturas se for cartão de crédito
@@ -225,31 +248,35 @@ public class TransactionService : ITransactionService
 
             if (!string.IsNullOrEmpty(oldInvoiceId) && oldInvoiceId != newInvoice.Id)
             {
-                _logger.LogInformation("Transaction moved from invoice {OldInvoice} to {NewInvoice}",
-                    oldInvoiceId, newInvoice.Id);
+                _processLogger.AddStep("Transaction moved between invoices", new Dictionary<string, object?>
+                {
+                    ["oldInvoice"] = oldInvoiceId,
+                    ["newInvoice"] = newInvoice.Id
+                });
                 await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
             }
 
             await _invoiceService.RecalculateInvoiceTotalAsync(userId, newInvoice.Id);
-            _logger.LogDebug("Invoice totals recalculated after transaction update");
         }
         else if (!string.IsNullOrEmpty(oldInvoiceId))
         {
             transaction.InvoiceId = null;
             await _invoiceService.RecalculateInvoiceTotalAsync(userId, oldInvoiceId);
-            _logger.LogDebug("Transaction removed from invoice {InvoiceId}", oldInvoiceId);
         }
 
         await _unitOfWork.Transactions.UpdateAsync(transaction);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Transaction {TransactionId} updated successfully", id);
+        _processLogger.AddStep("Transaction updated successfully");
         return MapToDto(transaction);
     }
 
     public async Task DeleteAsync(string userId, string id)
     {
-        _logger.LogDebug("Deleting transaction {TransactionId} for user {UserId}", id, userId);
+        _processLogger.AddStep("Deleting transaction", new Dictionary<string, object?>
+        {
+            ["transactionId"] = id
+        });
 
         var transaction = await _unitOfWork.Transactions.GetByIdAsync(id);
         if (transaction == null || transaction.UserId != userId || transaction.IsDeleted)
@@ -258,7 +285,6 @@ public class TransactionService : ITransactionService
         var invoiceId = transaction.InvoiceId;
 
         // Revert impact
-        _logger.LogDebug("Reverting transaction impact before deletion for {TransactionId}", id);
         await RevertTransactionImpact(userId, transaction);
 
         transaction.IsDeleted = true;
@@ -269,12 +295,15 @@ public class TransactionService : ITransactionService
         if (!string.IsNullOrEmpty(invoiceId))
         {
             await _invoiceService.RecalculateInvoiceTotalAsync(userId, invoiceId);
-            _logger.LogInformation("Invoice {InvoiceId} recalculated after transaction deletion", invoiceId);
+            _processLogger.AddStep("Invoice recalculated after deletion", new Dictionary<string, object?>
+            {
+                ["invoiceId"] = invoiceId
+            });
         }
 
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Transaction {TransactionId} deleted (soft delete) successfully", id);
+        _processLogger.AddStep("Transaction deleted (soft delete)");
     }
 
     private async Task ApplyTransactionImpact(string userId, Transaction transaction)
@@ -306,7 +335,6 @@ public class TransactionService : ITransactionService
                 }
                 catch
                 {
-                    _logger.LogWarning("Transfer apply failed on destination. Rolling back source account {AccountId}", sourceAccount.Id);
                     sourceAccount.Balance -= sourceImpact;
                     sourceAccount.UpdatedAt = DateTime.UtcNow;
                     await _unitOfWork.Accounts.UpdateAsync(sourceAccount);
@@ -356,7 +384,6 @@ public class TransactionService : ITransactionService
                 }
                 catch
                 {
-                    _logger.LogWarning("Transfer revert failed on destination. Rolling back source account {AccountId}", sourceAccount.Id);
                     sourceAccount.Balance -= sourceRevert;
                     sourceAccount.UpdatedAt = DateTime.UtcNow;
                     await _unitOfWork.Accounts.UpdateAsync(sourceAccount);

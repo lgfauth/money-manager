@@ -254,4 +254,155 @@ public class BudgetServiceTests
         var item = result.Items.First();
         Assert.Equal(300m, item.SpentAmount);
     }
+
+    [Fact]
+    public async Task DeleteAsync_ShouldSoftDeleteBudget()
+    {
+        // Arrange
+        var userId = "user123";
+        var budget = new Budget
+        {
+            Id = "budget123",
+            UserId = userId,
+            Month = "2024-01",
+            Items = new List<BudgetItem>()
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetByIdAsync("budget123").Returns(budget);
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        // Act
+        await _budgetService.DeleteAsync(userId, "budget123");
+
+        // Assert
+        Assert.True(budget.IsDeleted);
+        Assert.NotNull(budget.DeletedAt);
+        await budgetRepo.Received(1).UpdateAsync(Arg.Is<Budget>(b => b.IsDeleted));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_NonExistent_ShouldThrowException()
+    {
+        // Arrange
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetByIdAsync("invalid").Returns((Budget?)null);
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _budgetService.DeleteAsync("user123", "invalid"));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_AlreadyDeleted_ShouldThrowException()
+    {
+        // Arrange
+        var userId = "user123";
+        var budget = new Budget
+        {
+            Id = "budget123",
+            UserId = userId,
+            IsDeleted = true
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetByIdAsync("budget123").Returns(budget);
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _budgetService.DeleteAsync(userId, "budget123"));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WrongUser_ShouldThrowException()
+    {
+        // Arrange
+        var budget = new Budget
+        {
+            Id = "budget123",
+            UserId = "other-user",
+            Month = "2024-01"
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetByIdAsync("budget123").Returns(budget);
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _budgetService.DeleteAsync("user123", "budget123"));
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateAsync_MultipleCategories_ShouldCalculateSpentPerCategory()
+    {
+        // Arrange
+        var userId = "user123";
+        var month = "2024-03";
+        var items = new List<BudgetItemRequestDto>
+        {
+            new BudgetItemRequestDto { CategoryId = "food", LimitAmount = 800m },
+            new BudgetItemRequestDto { CategoryId = "transport", LimitAmount = 400m },
+            new BudgetItemRequestDto { CategoryId = "entertainment", LimitAmount = 200m }
+        };
+
+        var transactions = new List<Transaction>
+        {
+            new Transaction { UserId = userId, CategoryId = "food", Amount = 150m, Type = TransactionType.Expense },
+            new Transaction { UserId = userId, CategoryId = "food", Amount = 200m, Type = TransactionType.Expense },
+            new Transaction { UserId = userId, CategoryId = "transport", Amount = 50m, Type = TransactionType.Expense },
+            new Transaction { UserId = userId, CategoryId = "food", Amount = 500m, Type = TransactionType.Income }, // Income — not counted
+            new Transaction { UserId = userId, CategoryId = "entertainment", Amount = 100m, Type = TransactionType.Expense }
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetAllAsync().Returns(new List<Budget>());
+        budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 3).Returns(transactions);
+        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+
+        // Act
+        var result = await _budgetService.CreateOrUpdateAsync(userId, month, items);
+
+        // Assert
+        var foodItem = result.Items.First(i => i.CategoryId == "food");
+        var transportItem = result.Items.First(i => i.CategoryId == "transport");
+        var entertainmentItem = result.Items.First(i => i.CategoryId == "entertainment");
+
+        Assert.Equal(350m, foodItem.SpentAmount); // 150 + 200
+        Assert.Equal(50m, transportItem.SpentAmount);
+        Assert.Equal(100m, entertainmentItem.SpentAmount);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateAsync_CategoryWithNoTransactions_ShouldHaveZeroSpent()
+    {
+        // Arrange
+        var userId = "user123";
+        var month = "2024-06";
+        var items = new List<BudgetItemRequestDto>
+        {
+            new BudgetItemRequestDto { CategoryId = "cat-no-expenses", LimitAmount = 1000m }
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetAllAsync().Returns(new List<Budget>());
+        budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 6).Returns(new List<Transaction>());
+        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+
+        // Act
+        var result = await _budgetService.CreateOrUpdateAsync(userId, month, items);
+
+        // Assert
+        Assert.Equal(0m, result.Items.First().SpentAmount);
+    }
 }
