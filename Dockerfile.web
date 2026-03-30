@@ -28,4 +28,14 @@ COPY --from=publish /app/publish/wwwroot .
 # Copy nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Create entrypoint script that substitutes environment variables at runtime
+RUN printf '#!/bin/sh\n\
+API_URL=${API_URL:-"https://localhost:5001"}\n\
+echo "Configuring Blazor with API_URL: $API_URL"\n\
+sed -i "s|#{API_URL}#|$API_URL|g" /usr/share/nginx/html/appsettings.Production.json\n\
+sed -i "s|__API_URL__|$API_URL|g" /usr/share/nginx/html/index.html\n\
+exec nginx -g "daemon off;"\n' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
+
 EXPOSE 8080
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

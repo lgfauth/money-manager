@@ -9,17 +9,18 @@ builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
 // Configure HttpClient - URL da API via configuração
-var apiUrl = builder.Configuration["ApiUrl"];
+var configuredApiUrl = builder.Configuration["ApiUrl"];
+string apiUrl;
 
-// Validar se a URL é utilizável (não é placeholder de CI/CD nem valor inválido)
-if (string.IsNullOrEmpty(apiUrl) || !Uri.TryCreate(apiUrl, UriKind.Absolute, out _))
+if (!string.IsNullOrEmpty(configuredApiUrl) && Uri.TryCreate(configuredApiUrl, UriKind.Absolute, out _))
 {
-    apiUrl = "https://localhost:5001";
-    Console.WriteLine($"[MoneyManager] API URL (fallback): {apiUrl}");
+    apiUrl = configuredApiUrl;
+    Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
 }
 else
 {
-    Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
+    apiUrl = "https://localhost:5001";
+    Console.WriteLine($"[MoneyManager] API URL (fallback): {apiUrl} — configured value was: '{configuredApiUrl}'");
 }
 
 // Register AuthorizationMessageHandler
