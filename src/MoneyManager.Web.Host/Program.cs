@@ -77,9 +77,15 @@ app.UseStaticFiles(new StaticFileOptions
     ContentTypeProvider = provider,
     OnPrepareResponse = ctx =>
     {
+        // Informar ao Blazor WASM qual é o ambiente atual
+        if (ctx.File.Name == "blazor.boot.json")
+        {
+            ctx.Context.Response.Headers["Blazor-Environment"] = app.Environment.EnvironmentName;
+        }
+
         // Não cachear arquivos da framework em desenvolvimento
-        if (app.Environment.IsDevelopment() && 
-            (ctx.File.Name == "blazor.webassembly.js" || 
+        if (app.Environment.IsDevelopment() &&
+            (ctx.File.Name == "blazor.webassembly.js" ||
              ctx.File.Name.EndsWith(".wasm") ||
              ctx.File.Name.EndsWith(".json")))
         {
