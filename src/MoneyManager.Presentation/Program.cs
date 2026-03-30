@@ -132,6 +132,11 @@ if (!string.IsNullOrEmpty(envOrigin))
 
 Console.WriteLine($"[MoneyManager API] CORS AllowedOrigins: {string.Join(", ", allowedOrigins)}");
 
+if (allowedOrigins.Length == 0)
+{
+    Console.WriteLine("[MoneyManager API] WARNING: No CORS origins configured. Set AllowedOrigins in appsettings or ALLOWED_ORIGIN env var.");
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -146,9 +151,11 @@ builder.Services.AddCors(options =>
         else
         {
             // Fallback: permite qualquer origem (apenas se nenhuma origem foi configurada)
-            policy.AllowAnyOrigin()
+            // Nota: AllowAnyOrigin não é compatível com AllowCredentials
+            policy.SetIsOriginAllowed(_ => true)
                   .AllowAnyMethod()
-                  .AllowAnyHeader();
+                  .AllowAnyHeader()
+                  .AllowCredentials();
         }
     });
 });
