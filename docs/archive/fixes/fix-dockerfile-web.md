@@ -175,7 +175,7 @@ ENTRYPOINT ["/docker-entrypoint.sh"]
 ```
 ======================================
 Configuring Blazor WebAssembly
-API_URL: https://money-manager.up.railway.app/
+API_URL: https://money-manager-api.up.railway.app/
 ======================================
 ? Updated index.html with API URL
 ? Updated appsettings.Production.json
@@ -186,7 +186,7 @@ Starting nginx...
 
 ### **3. Browser Console (F12):**
 ```
-[MoneyManager] API URL from config: https://money-manager.up.railway.app/
+[MoneyManager] API URL from config: https://money-manager-api.up.railway.app/
 [HttpClient] Configured with base address: https://...
 ```
 

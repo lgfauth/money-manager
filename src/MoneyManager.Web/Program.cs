@@ -9,14 +9,14 @@ builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
 // Configure HttpClient - URL da API via configuração
-const string DefaultApiUrl = "https://money-manager.up.railway.app/";
+const string DefaultApiUrl = "https://money-manager-api.up.railway.app/";
 var configuredApiUrl = builder.Configuration["ApiUrl"];
 string apiUrl;
 
 if (!string.IsNullOrEmpty(configuredApiUrl) && Uri.TryCreate(configuredApiUrl, UriKind.Absolute, out _))
 {
     apiUrl = configuredApiUrl;
-    Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
+    Console.WriteLine($"[MoneyManager] API URL Railway: {apiUrl}");
 }
 else
 {

@@ -2,7 +2,7 @@
 set -e
 
 # Get API URL from environment or use default
-API_URL=${API_URL:-https://money-manager.up.railway.app/}
+API_URL=${API_URL:-https://money-manager-api.up.railway.app/}
 
 echo "========================================"
 echo "Configuring Blazor WebAssembly"

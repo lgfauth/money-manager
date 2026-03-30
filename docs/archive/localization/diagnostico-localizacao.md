@@ -4,7 +4,7 @@
 
 Mesmo após as correções, a aplicação continua tentando carregar do Railway:
 ```
-BaseAddress: https://money-manager.up.railway.app/
+BaseAddress: https://money-manager-api.up.railway.app/
 ```
 
 ## ?? POSSÍVEIS CAUSAS:
