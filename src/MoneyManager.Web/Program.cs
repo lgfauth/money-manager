@@ -8,14 +8,11 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Configure HttpClient - URL da API via configuração (appsettings ou variável de ambiente via Docker)
-// Em produção, o Docker entrypoint substitui #{API_URL}# no appsettings.Production.json
-// Fallback: usa o BaseAddress do host (resolvido dinamicamente pelo browser)
+// Configure HttpClient - URL da API
+// Em produção, o Docker entrypoint escreve API_URL no appsettings.json antes do nginx iniciar
+// Fallback: usa o BaseAddress do host (resolvido dinamicamente pelo browser, mesmo padrão do LocalizationService)
 var configuredApiUrl = builder.Configuration["ApiUrl"];
 string apiUrl;
-
-Console.WriteLine($"[MoneyManager] ApiUrl: {builder.Configuration["ApiUrl"]}");
-Console.WriteLine($"[MoneyManager] API_URL: {builder.Configuration["API_URL"]}");
 
 if (!string.IsNullOrEmpty(configuredApiUrl) && Uri.TryCreate(configuredApiUrl, UriKind.Absolute, out _))
 {

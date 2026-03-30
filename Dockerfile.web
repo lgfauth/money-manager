@@ -28,14 +28,13 @@ COPY --from=publish /app/publish/wwwroot .
 # Copy nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create entrypoint script that substitutes environment variables at runtime
+# Entrypoint: inject API_URL from Railway env var into appsettings.json at container startup
 RUN printf '#!/bin/sh\n\
-if [ -z "$API_URL" ]; then\n\
-  echo "WARNING: API_URL not set, placeholders will not be replaced"\n\
-else\n\
+if [ -n "$API_URL" ]; then\n\
   echo "Configuring Blazor with API_URL: $API_URL"\n\
-  sed -i "s|#{API_URL}#|$API_URL|g" /usr/share/nginx/html/appsettings.Production.json\n\
-  sed -i "s|__API_URL__|$API_URL|g" /usr/share/nginx/html/index.html\n\
+  printf '"'"'{"ApiUrl":"%s"}'"'"' "$API_URL" > /usr/share/nginx/html/appsettings.json\n\
+else\n\
+  echo "WARNING: API_URL not set — Blazor will use HostEnvironment.BaseAddress as fallback"\n\
 fi\n\
 exec nginx -g "daemon off;"\n' > /docker-entrypoint.sh && chmod +x /docker-entrypoint.sh
 
