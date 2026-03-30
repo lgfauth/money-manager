@@ -9,20 +9,33 @@ builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
 // Configure HttpClient - URL da API
-// Em produção, o Docker entrypoint escreve API_URL no appsettings.json antes do nginx iniciar
-// Fallback: usa o BaseAddress do host (resolvido dinamicamente pelo browser, mesmo padrão do LocalizationService)
+// 1. Tenta ler do appsettings.json (injetado pelo Docker entrypoint via $API_URL)
+// 2. Fallback: deriva a URL da API a partir do BaseAddress (troca subdomain por subdomain-api)
 var configuredApiUrl = builder.Configuration["ApiUrl"];
 string apiUrl;
 
 if (!string.IsNullOrEmpty(configuredApiUrl) && Uri.TryCreate(configuredApiUrl, UriKind.Absolute, out _))
 {
     apiUrl = configuredApiUrl;
-    Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
+    Console.WriteLine($"[MoneyManager] API URL (from config): {apiUrl}");
 }
 else
 {
-    apiUrl = builder.HostEnvironment.BaseAddress;
-    Console.WriteLine($"[MoneyManager] API URL (from HostEnvironment): {apiUrl}");
+    var baseAddress = builder.HostEnvironment.BaseAddress.TrimEnd('/');
+
+    if (baseAddress.Contains(".up.railway.app"))
+    {
+        // Derive API URL: e.g., https://money-manager.up.railway.app -> https://money-manager-api.up.railway.app
+        var uri = new Uri(baseAddress);
+        var subdomain = uri.Host.Split('.')[0];
+        apiUrl = baseAddress.Replace(subdomain + ".up.railway.app", subdomain + "-api.up.railway.app") + "/";
+    }
+    else
+    {
+        apiUrl = baseAddress + "/";
+    }
+
+    Console.WriteLine($"[MoneyManager] API URL (derived from BaseAddress): {apiUrl}");
 }
 
 // Register AuthorizationMessageHandler
