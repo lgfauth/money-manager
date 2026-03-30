@@ -11,6 +11,14 @@ public interface ITransactionService
 {
     Task<TransactionResponseDto> CreateAsync(string userId, CreateTransactionRequestDto request);
     Task<IEnumerable<TransactionResponseDto>> GetAllAsync(string userId);
+    Task<PagedResultDto<TransactionResponseDto>> GetAllPagedAsync(
+        string userId,
+        int page = 1,
+        int pageSize = 50,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        TransactionType? type = null,
+        string sortBy = "date_desc");
     Task<TransactionResponseDto> GetByIdAsync(string userId, string id);
     Task<TransactionResponseDto> UpdateAsync(string userId, string id, CreateTransactionRequestDto request);
     Task DeleteAsync(string userId, string id);
@@ -192,6 +200,27 @@ public class TransactionService : ITransactionService
         return transactions
             .Where(t => t.UserId == userId && !t.IsDeleted)
             .Select(MapToDto);
+    }
+
+    public async Task<PagedResultDto<TransactionResponseDto>> GetAllPagedAsync(
+        string userId,
+        int page = 1,
+        int pageSize = 50,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        TransactionType? type = null,
+        string sortBy = "date_desc")
+    {
+        var (items, totalCount) = await _unitOfWork.Transactions.GetPagedByUserAsync(
+            userId, page, pageSize, startDate, endDate, type, sortBy);
+
+        return new PagedResultDto<TransactionResponseDto>
+        {
+            Items = items.Select(MapToDto),
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<TransactionResponseDto> GetByIdAsync(string userId, string id)

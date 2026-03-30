@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
+using MoneyManager.Domain.Enums;
 using FluentValidation;
 using MoneyManager.Presentation.Extensions;
 
@@ -56,13 +57,34 @@ public class TransactionsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null,
+        [FromQuery] DateTime? startDate = null,
+        [FromQuery] DateTime? endDate = null,
+        [FromQuery] TransactionType? type = null,
+        [FromQuery] string sortBy = "date_desc")
     {
         var userId = HttpContext.GetUserId();
-        _logger.LogDebug("Fetching all transactions for user {UserId}", userId);
 
         try
         {
+            if (page.HasValue || pageSize.HasValue)
+            {
+                var pagedResult = await _transactionService.GetAllPagedAsync(
+                    userId,
+                    page ?? 1,
+                    pageSize ?? 50,
+                    startDate,
+                    endDate,
+                    type,
+                    sortBy);
+
+                _logger.LogDebug("Retrieved page {Page} ({Count}/{Total}) transactions for user {UserId}",
+                    pagedResult.Page, pagedResult.Items.Count(), pagedResult.TotalCount, userId);
+                return Ok(pagedResult);
+            }
+
             var result = await _transactionService.GetAllAsync(userId);
             _logger.LogDebug("Retrieved {Count} transactions for user {UserId}",
                 result.Count(), userId);

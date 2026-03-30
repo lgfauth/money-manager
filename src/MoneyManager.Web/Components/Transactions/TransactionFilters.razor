@@ -1,0 +1,79 @@
+@using MoneyManager.Web.Services.Localization
+@inject ILocalizationService Localization
+
+<div class="row mb-3">
+    <div class="col-12 col-md-4">
+        <label class="form-label">Ordenar por</label>
+        <select class="form-select" value="@TransactionsSort" @onchange="SortChanged">
+            <option value="date_desc">Data (mais recente)</option>
+            <option value="date_asc">Data (mais antiga)</option>
+            <option value="amount_desc">Valor (maior)</option>
+            <option value="amount_asc">Valor (menor)</option>
+        </select>
+    </div>
+
+    <div class="col-12 col-md-4">
+        <label class="form-label">@Localization.Get("Transactions.Period")</label>
+        <select class="form-select" value="@PeriodPreset" @onchange="PeriodPresetChanged">
+            <option value="current_month">@Localization.Get("Transactions.CurrentMonth")</option>
+            <option value="custom">@Localization.Get("Transactions.Custom")</option>
+        </select>
+    </div>
+
+    <div class="col-6 col-md-2">
+        <label class="form-label">De</label>
+        <input type="date" class="form-control" value="@FilterStart.ToString("yyyy-MM-dd")" @onchange="StartDateChanged" disabled="@(PeriodPreset != "custom")" />
+    </div>
+    <div class="col-6 col-md-2">
+        <label class="form-label">@Localization.Get("Common.To")</label>
+        <input type="date" class="form-control" value="@FilterEnd.ToString("yyyy-MM-dd")" @onchange="EndDateChanged" disabled="@(PeriodPreset != "custom")" />
+    </div>
+
+    <div class="col-12 col-md-4 mt-3 mt-md-0">
+        <label class="form-label">Mostrar</label>
+        <select class="form-select" value="@TransactionTypeFilter" @onchange="TypeFilterChanged">
+            <option value="all">@Localization.Get("Transactions.AllTypes")</option>
+            <option value="income">@Localization.Get("Transactions.IncomeOnly")</option>
+            <option value="expense">@Localization.Get("Transactions.ExpenseOnly")</option>
+            <option value="investment">💼 Investimentos</option>
+        </select>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string TransactionsSort { get; set; } = "date_desc";
+    [Parameter] public EventCallback<string> OnSortChanged { get; set; }
+
+    [Parameter] public string PeriodPreset { get; set; } = "current_month";
+    [Parameter] public EventCallback<string> OnPeriodPresetChanged { get; set; }
+
+    [Parameter] public DateTime FilterStart { get; set; }
+    [Parameter] public EventCallback<DateTime> OnStartDateChanged { get; set; }
+
+    [Parameter] public DateTime FilterEnd { get; set; }
+    [Parameter] public EventCallback<DateTime> OnEndDateChanged { get; set; }
+
+    [Parameter] public string TransactionTypeFilter { get; set; } = "all";
+    [Parameter] public EventCallback<string> OnTypeFilterChanged { get; set; }
+
+    private async Task SortChanged(ChangeEventArgs e)
+        => await OnSortChanged.InvokeAsync(e.Value?.ToString() ?? "date_desc");
+
+    private async Task PeriodPresetChanged(ChangeEventArgs e)
+        => await OnPeriodPresetChanged.InvokeAsync(e.Value?.ToString() ?? "current_month");
+
+    private async Task StartDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+            await OnStartDateChanged.InvokeAsync(date);
+    }
+
+    private async Task EndDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+            await OnEndDateChanged.InvokeAsync(date);
+    }
+
+    private async Task TypeFilterChanged(ChangeEventArgs e)
+        => await OnTypeFilterChanged.InvokeAsync(e.Value?.ToString() ?? "all");
+}

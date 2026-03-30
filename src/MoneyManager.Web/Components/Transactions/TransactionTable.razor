@@ -1,0 +1,190 @@
+@using MoneyManager.Domain.Entities
+@using MoneyManager.Domain.Enums
+@using MoneyManager.Web.Services.Localization
+@inject ILocalizationService Localization
+
+@if (IsLoading)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+        <p class="mt-3 text-muted">@Localization.Get("Transactions.Loading")</p>
+    </div>
+}
+else if (ErrorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle"></i> @ErrorMessage
+        <button type="button" class="btn-close" @onclick="() => OnDismissError.InvokeAsync()"></button>
+    </div>
+}
+else if (Transactions != null && Transactions.Any())
+{
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th><i class="fas fa-calendar"></i> Data</th>
+                        <th><i class="fas fa-file-alt"></i> @Localization.Get("Transactions.Description")</th>
+                        <th><i class="fas fa-tag"></i> Categoria</th>
+                        <th class="text-end"><i class="fas fa-money-bill"></i> Valor</th>
+                        <th class="text-center">@Localization.Get("Common.Actions")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var transaction in Transactions)
+                    {
+                        <tr>
+                            <td>@transaction.Date.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @GetTransactionTypeIcon(transaction.Type)
+                                @transaction.Description
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">@GetCategoryName(transaction.CategoryId)</span>
+                            </td>
+                            <td class="text-end fw-bold">
+                                @if (transaction.Type.ToString() == "Income")
+                                {
+                                    <span class="text-success">+ R$ @transaction.Amount.ToString("F2")</span>
+                                }
+                                else if (transaction.Type.ToString() == "Transfer")
+                                {
+                                    <span class="text-primary">R$ @transaction.Amount.ToString("F2")</span>
+                                }
+                                else if (IsInvestmentTransaction(transaction.Type))
+                                {
+                                    <span class="@GetInvestmentTransactionColor(transaction.Type)">@GetInvestmentTransactionSign(transaction.Type) R$ @transaction.Amount.ToString("F2")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger">- R$ @transaction.Amount.ToString("F2")</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                            <button class="btn btn-sm btn-warning me-2" @onclick="() => OnEdit.InvokeAsync(transaction.Id)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => OnDelete.InvokeAsync(transaction.Id)" disabled="@IsBusy">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (TotalPages > 1)
+    {
+        <nav class="mt-3 d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Mostrando @(((CurrentPage - 1) * PageSize) + 1)–@(Math.Min(CurrentPage * PageSize, TotalCount)) de @TotalCount
+            </small>
+            <ul class="pagination mb-0">
+                <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => OnPageChanged.InvokeAsync(CurrentPage - 1)" disabled="@(CurrentPage <= 1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </li>
+                @foreach (var p in GetPageNumbers())
+                {
+                    <li class="page-item @(p == CurrentPage ? "active" : "")">
+                        <button class="page-link" @onclick="() => OnPageChanged.InvokeAsync(p)">@p</button>
+                    </li>
+                }
+                <li class="page-item @(CurrentPage >= TotalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => OnPageChanged.InvokeAsync(CurrentPage + 1)" disabled="@(CurrentPage >= TotalPages)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    }
+}
+else
+{
+    <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle"></i> @Localization.Get("Transactions.NoTransactions") <a href="#" @onclick="OnAddClicked" @onclick:preventDefault>Clique aqui para criar uma.</a>
+    </div>
+}
+
+@code {
+    [Parameter] public IEnumerable<Transaction>? Transactions { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public bool IsBusy { get; set; }
+    [Parameter] public Dictionary<string, string> CategoriesDict { get; set; } = new();
+
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int PageSize { get; set; } = 50;
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+
+    [Parameter] public EventCallback<string> OnEdit { get; set; }
+    [Parameter] public EventCallback<string> OnDelete { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+    [Parameter] public EventCallback OnDismissError { get; set; }
+    [Parameter] public EventCallback OnAddClicked { get; set; }
+
+    private string GetCategoryName(string? categoryId)
+    {
+        if (string.IsNullOrEmpty(categoryId))
+            return "Sem categoria";
+
+        return CategoriesDict.TryGetValue(categoryId, out var name) ? name : "Categoria desconhecida";
+    }
+
+    private IEnumerable<int> GetPageNumbers()
+    {
+        const int maxVisible = 5;
+        var start = Math.Max(1, CurrentPage - maxVisible / 2);
+        var end = Math.Min(TotalPages, start + maxVisible - 1);
+        start = Math.Max(1, end - maxVisible + 1);
+
+        return Enumerable.Range(start, end - start + 1);
+    }
+
+    private static bool IsInvestmentTransaction(TransactionType type)
+    {
+        return type == TransactionType.InvestmentYield ||
+               type == TransactionType.InvestmentBuy ||
+               type == TransactionType.InvestmentSell;
+    }
+
+    private static string GetTransactionTypeIcon(TransactionType type)
+    {
+        return type switch
+        {
+            TransactionType.InvestmentYield => "💰",
+            TransactionType.InvestmentBuy => "🛒",
+            TransactionType.InvestmentSell => "💵",
+            _ => ""
+        };
+    }
+
+    private static string GetInvestmentTransactionColor(TransactionType type)
+    {
+        return type switch
+        {
+            TransactionType.InvestmentYield => "text-success",
+            TransactionType.InvestmentBuy => "text-primary",
+            TransactionType.InvestmentSell => "text-warning",
+            _ => "text-muted"
+        };
+    }
+
+    private static string GetInvestmentTransactionSign(TransactionType type)
+    {
+        return type switch
+        {
+            TransactionType.InvestmentYield => "+",
+            TransactionType.InvestmentBuy => "-",
+            TransactionType.InvestmentSell => "+",
+            _ => ""
+        };
+    }
+}

@@ -1,0 +1,45 @@
+@if (Show)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-credit-card"></i> Confirmar Compra Parcelada
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="() => OnConfirm.InvokeAsync(false)"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-question-circle fa-3x text-primary"></i>
+                    </div>
+                    <p class="text-center mb-3">
+                        @Message
+                    </p>
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle"></i> <strong>Como funciona:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>A 1ª parcela será lançada imediatamente</li>
+                            <li>As demais parcelas serão criadas automaticamente como recorrência mensal</li>
+                            <li>Você poderá gerenciar as parcelas futuras na aba "Recorrentes"</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => OnConfirm.InvokeAsync(false)">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-primary" @onclick="() => OnConfirm.InvokeAsync(true)">
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public string Message { get; set; } = string.Empty;
+    [Parameter] public EventCallback<bool> OnConfirm { get; set; }
+}

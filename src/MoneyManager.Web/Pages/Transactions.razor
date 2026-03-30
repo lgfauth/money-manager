@@ -2,6 +2,8 @@
 @using MoneyManager.Web.Services.Localization
 @using MoneyManager.Domain.Entities
 @using MoneyManager.Domain.Enums
+@using MoneyManager.Application.DTOs.Request
+@using MoneyManager.Application.DTOs.Response
 @using MoneyManager.Web.Services
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.JSInterop
@@ -9,13 +11,9 @@
 @inject ITransactionService TransactionService
 @inject ILocalizationService Localization
 @inject IRecurringTransactionService RecurringTransactionService
-@inject ILocalizationService Localization
 @inject IAccountService AccountService
-@inject ILocalizationService Localization
 @inject ICategoryService CategoryService
-@inject ILocalizationService Localization
 @inject IJSRuntime JSRuntime
-@inject ILocalizationService Localization
 
 <PageTitle>@Localization.Get("Transactions.PageTitle")</PageTitle>
 
@@ -35,318 +33,53 @@
     </div>
 </div>
 
-    <div class="row mb-3">
-        <div class="col-12 col-md-4">
-            <label class="form-label">Ordenar por</label>
-            <select class="form-select" @bind="transactionsSort">
-                <option value="date_desc">Data (mais recente)</option>
-                <option value="date_asc">Data (mais antiga)</option>
-                <option value="category">Categoria</option>
-                <option value="amount_desc">Valor (maior)</option>
-                <option value="amount_asc">Valor (menor)</option>
-            </select>
-        </div>
+    <TransactionFilters
+        TransactionsSort="@transactionsSort"
+        OnSortChanged="HandleSortChanged"
+        PeriodPreset="@periodPreset"
+        OnPeriodPresetChanged="HandlePeriodPresetChanged"
+        FilterStart="@filterStart"
+        OnStartDateChanged="HandleStartDateChanged"
+        FilterEnd="@filterEnd"
+        OnEndDateChanged="HandleEndDateChanged"
+        TransactionTypeFilter="@transactionTypeFilter"
+        OnTypeFilterChanged="HandleTypeFilterChanged" />
 
-        <div class="col-12 col-md-4">
-            <label class="form-label">@Localization.Get("Transactions.Period")</label>
-            <select class="form-select" @bind="PeriodPreset">
-                <option value="current_month">@Localization.Get("Transactions.CurrentMonth")</option>
-                <option value="custom">@Localization.Get("Transactions.Custom")</option>
-            </select>
-        </div>
+    <TransactionFormModal
+        Show="@showAdd"
+        Request="@newRequest"
+        EditingTransactionId="@editingTransactionId"
+        AccountsList="@accountsList"
+        CategoriesList="@categoriesList"
+        IsBusy="@isBusy"
+        Error="@addError"
+        InstallmentsCount="@installmentsCount"
+        InstallmentsCountChanged="v => installmentsCount = v"
+        FirstInstallmentInCurrentInvoice="@firstInstallmentInCurrentInvoice"
+        FirstInstallmentInCurrentInvoiceChanged="v => firstInstallmentInCurrentInvoice = v"
+        OnSave="CreateTransaction"
+        OnCancel="CancelAdd" />
 
-        <div class="col-6 col-md-2">
-            <label class="form-label">De</label>
-            <input type="date" class="form-control" @bind="filterStart" disabled="@(periodPreset != "custom")" />
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="form-label">@Localization.Get("Common.To")</label>
-            <input type="date" class="form-control" @bind="filterEnd" disabled="@(periodPreset != "custom")" />
-        </div>
+    <InstallmentConfirmModal
+        Show="@showInstallmentConfirmModal"
+        Message="@installmentConfirmMessage"
+        OnConfirm="ConfirmInstallment" />
 
-        <div class="col-12 col-md-4 mt-3 mt-md-0">
-            <label class="form-label">Mostrar</label>
-            <select class="form-select" @bind="transactionTypeFilter">
-                <option value="all">@Localization.Get("Transactions.AllTypes")</option>
-                <option value="income">@Localization.Get("Transactions.IncomeOnly")</option>
-                <option value="expense">@Localization.Get("Transactions.ExpenseOnly")</option>
-                <option value="investment">💼 Investimentos</option>
-            </select>
-        </div>
-    </div>
-
-    @if (showAdd)
-    {
-        <!-- Modal de Nova Transação -->
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="fas fa-plus-circle"></i> 
-                            @(string.IsNullOrEmpty(editingTransactionId) ? Localization.Get("Transactions.NewTransaction") : "Editar Transação")
-                        </h5>
-                        <button type="button" class="btn-close" @onclick="CancelAdd" disabled="@isBusy"></button>
-                    </div>
-                    <div class="modal-body">
-                        @if (!string.IsNullOrEmpty(addError))
-                        {
-                            <div class="alert alert-danger">
-                                <i class="fas fa-exclamation-triangle"></i> @addError
-                            </div>
-                        }
-                        
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Data</label>
-                                <input type="date" class="form-control" @bind="newRequest.Date" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Tipo</label>
-                                <select class="form-select" @bind="newRequest.Type">
-                                    <option value="0">@Localization.Get("Transactions.Income")</option>
-                                    <option value="1">@Localization.Get("Transactions.Expense")</option>
-                                    <option value="2">@Localization.Get("Transactions.Transfer")</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label">Conta @(newRequest.Type == 2 ? "Origem" : "")</label>
-                                <select class="form-select" @bind="newRequest.AccountId">
-                                    <option value="">-- Selecione uma conta --</option>
-                                    @foreach (var a in GetAccountsOrdered(accountsList))
-                                    {
-                                        <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
-                                    }
-                                </select>
-                            </div>
-                            
-                            @if (newRequest.Type == 2)
-                            {
-                                <div class="col-md-6">
-                                    <label class="form-label">Conta Destino</label>
-                                    <select class="form-select" @bind="newRequest.ToAccountId">
-                                        <option value="">-- Selecione a conta destino --</option>
-                                        @foreach (var a in GetAccountsOrdered(accountsList))
-                                        {
-                                            if (a.Id != newRequest.AccountId)
-                                            {
-                                                <option value="@a.Id">@a.Name (@GetAccountTypeLabel(a.Type))</option>
-                                            }
-                                        }
-                                    </select>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="col-md-6">
-                                    <label class="form-label">@Localization.Get("Transactions.Category")</label>
-                                    <select class="form-select" @bind="newRequest.CategoryId">
-                                        <option value="">-- Selecione uma categoria --</option>
-                                        @if (categoriesList != null)
-                                        {
-                                            @foreach (var c in categoriesList)
-                                            {
-                                                <option value="@c.Id">@c.Name</option>
-                                            }
-                                        }
-                                    </select>
-                                </div>
-                            }
-                            
-                            <div class="col-12">
-                                <label class="form-label">@Localization.Get("Transactions.Description")</label>
-                                <input class="form-control" placeholder="Digite a descrição" @bind="newRequest.Description" />
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label">Valor</label>
-                                <MoneyInput @bind-Value="newRequest.Amount" Placeholder="R$ 0,00" />
-                            </div>
-
-                            @if (IsSelectedAccountCreditCard() && newRequest.Type == 1)
-                            {
-                                <div class="col-12">
-                                    <div class="alert alert-info py-2">
-                                        <div class="row g-3 align-items-end">
-                                            <div class="col-md-4">
-                                                <label class="form-label mb-1">Parcelamento</label>
-                                                <select class="form-select" @bind="installmentsCount">
-                                                    @for (var i = 1; i <= 12; i++)
-                                                    {
-                                                        <option value="@i">@i x</option>
-                                                    }
-                                                </select>
-                                            </div>
-
-                                            <div class="col-md-8">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="firstInCurrent" @bind="firstInstallmentInCurrentInvoice" />
-                                                    <label class="form-check-label" for="firstInCurrent">
-                                                        Primeira parcela entra na fatura atual
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        @if (installmentsCount > 1)
-                                        {
-                                            <small class="text-muted d-block mt-2">
-                                                <i class="fas fa-info-circle"></i> O valor informado é o total. O sistema lançará a 1ª parcela agora (se marcado) e criará uma recorrência mensal para as demais.
-                                            </small>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CancelAdd" disabled="@isBusy">
-                            <i class="fas fa-times"></i> Cancelar
-                        </button>
-                        @if (string.IsNullOrEmpty(editingTransactionId))
-                        {
-                            <button type="button" class="btn btn-primary" @onclick="() => CreateTransaction(false)" disabled="@isBusy">
-                                <i class="fas fa-save"></i> Salvar
-                            </button>
-                            <button type="button" class="btn btn-success" @onclick="() => CreateTransaction(true)" disabled="@isBusy">
-                                <i class="fas fa-plus"></i> Salvar e Adicionar Outra
-                            </button>
-                        }
-                        else
-                        {
-                            <button type="button" class="btn btn-primary" @onclick="() => CreateTransaction(false)" disabled="@isBusy">
-                                <i class="fas fa-save"></i> Salvar Alterações
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
-    <!-- Modal de Confirmação de Parcelamento -->
-    @if (showInstallmentConfirmModal)
-    {
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-credit-card"></i> Confirmar Compra Parcelada
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" @onclick="() => ConfirmInstallment(false)"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="text-center mb-3">
-                            <i class="fas fa-question-circle fa-3x text-primary"></i>
-                        </div>
-                        <p class="text-center mb-3">
-                            @installmentConfirmMessage
-                        </p>
-                        <div class="alert alert-info mb-0">
-                            <i class="fas fa-info-circle"></i> <strong>Como funciona:</strong>
-                            <ul class="mb-0 mt-2">
-                                <li>A 1ª parcela será lançada imediatamente</li>
-                                <li>As demais parcelas serão criadas automaticamente como recorrência mensal</li>
-                                <li>Você poderá gerenciar as parcelas futuras na aba "Recorrentes"</li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="() => ConfirmInstallment(false)">
-                            <i class="fas fa-times"></i> Cancelar
-                        </button>
-                        <button type="button" class="btn btn-primary" @onclick="() => ConfirmInstallment(true)">
-                            <i class="fas fa-check"></i> Confirmar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-
-    @if (isLoading)
-    {
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Carregando...</span>
-            </div>
-            <p class="mt-3 text-muted">@Localization.Get("Transactions.Loading")</p>
-        </div>
-    }
-    else if (errorMessage != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle"></i> @errorMessage
-            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
-        </div>
-    }
-    else if (transactions != null && transactions.Any())
-    {
-        var viewTransactions = GetTransactionsSorted(ApplyFilters(transactions));
-        <div class="card shadow-sm">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th><i class="fas fa-calendar"></i> Data</th>
-                            <th><i class="fas fa-file-alt"></i> @Localization.Get("Transactions.Description")</th>
-                            <th><i class="fas fa-tag"></i> Categoria</th>
-                            <th class="text-end"><i class="fas fa-money-bill"></i> Valor</th>
-                            <th class="text-center">@Localization.Get("Common.Actions")</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var transaction in viewTransactions)
-                        {
-                            <tr>
-                                <td>@transaction.Date.ToString("dd/MM/yyyy")</td>
-                                <td>
-                                    @GetTransactionTypeIcon(transaction.Type)
-                                    @transaction.Description
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark">@GetCategoryName(transaction.CategoryId)</span>
-                                </td>
-                                <td class="text-end fw-bold">
-                                    @if (transaction.Type.ToString() == "Income")
-                                    {
-                                        <span class="text-success">+ R$ @transaction.Amount.ToString("F2")</span>
-                                    }
-                                    else if (transaction.Type.ToString() == "Transfer")
-                                    {
-                                        <span class="text-primary">R$ @transaction.Amount.ToString("F2")</span>
-                                    }
-                                    else if (IsInvestmentTransaction(transaction.Type))
-                                    {
-                                        <span class="@GetInvestmentTransactionColor(transaction.Type)">@GetInvestmentTransactionSign(transaction.Type) R$ @transaction.Amount.ToString("F2")</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-danger">- R$ @transaction.Amount.ToString("F2")</span>
-                                    }
-                                </td>
-                                <td class="text-center">
-                                <button class="btn btn-sm btn-warning me-2" @onclick="() => BeginEditTransaction(transaction.Id)">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteTransaction(transaction.Id)" disabled="@isBusy">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle"></i> @Localization.Get("Transactions.NoTransactions") <a href="#" @onclick="ShowAddModal">Clique aqui para criar uma.</a>
-        </div>
-    }
+    <TransactionTable
+        Transactions="@transactions"
+        IsLoading="@isLoading"
+        ErrorMessage="@errorMessage"
+        IsBusy="@isBusy"
+        CategoriesDict="@categoriesDict"
+        CurrentPage="@currentPage"
+        PageSize="@pageSize"
+        TotalCount="@totalCount"
+        TotalPages="@totalPages"
+        OnEdit="BeginEditTransaction"
+        OnDelete="DeleteTransaction"
+        OnPageChanged="GoToPage"
+        OnDismissError="() => { errorMessage = null; }"
+        OnAddClicked="ShowAddModal" />
 </div>
 
 <!-- Botão Flutuante para Mobile -->
@@ -384,6 +117,7 @@
 </style>
 
 @code {
+    // Data state
     private IEnumerable<Transaction>? transactions;
     private bool isLoading = true;
     private string? errorMessage;
@@ -391,27 +125,34 @@
     private IEnumerable<Category>? categoriesList;
     private Dictionary<string, string> categoriesDict = new();
 
+    // Filter state
     private string transactionsSort = "date_desc";
-
     private string periodPreset = "current_month";
     private string transactionTypeFilter = "all";
     private DateTime filterStart = new(DateTime.Today.Year, DateTime.Today.Month, 1);
     private DateTime filterEnd = new(DateTime.Today.Year, DateTime.Today.Month, DateTime.DaysInMonth(DateTime.Today.Year, DateTime.Today.Month));
 
-    private string PeriodPreset
-    {
-        get => periodPreset;
-        set
-        {
-            if (periodPreset == value) return;
+    // Pagination state
+    private int currentPage = 1;
+    private int pageSize = 50;
+    private int totalCount;
+    private int totalPages;
 
-            periodPreset = value;
-            if (periodPreset == "current_month")
-            {
-                ResetFilterToCurrentMonth();
-            }
-        }
-    }
+    // Form state
+    private bool showAdd;
+    private string? addError;
+    private CreateTransactionRequestDto newRequest = new() { Date = DateTime.Today, Type = (int)TransactionType.Expense };
+    private string? editingTransactionId;
+    private bool isBusy;
+
+    // Installment state
+    private int installmentsCount = 1;
+    private bool firstInstallmentInCurrentInvoice = true;
+    private bool showInstallmentConfirmModal;
+    private string installmentConfirmMessage = string.Empty;
+    private TaskCompletionSource<bool>? installmentConfirmTcs;
+
+    // --- Lifecycle ---
 
     protected override async Task OnInitializedAsync()
     {
@@ -422,12 +163,7 @@
         categoriesDict = categoriesList?.ToDictionary(c => c.Id, c => c.Name) ?? new Dictionary<string, string>();
     }
 
-    private void ResetFilterToCurrentMonth()
-    {
-        var today = DateTime.Today;
-        filterStart = new DateTime(today.Year, today.Month, 1);
-        filterEnd = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
-    }
+    // --- Data loading ---
 
     private async Task LoadTransactions()
     {
@@ -435,7 +171,18 @@
         errorMessage = null;
         try
         {
-            transactions = await TransactionService.GetAllAsync();
+            var result = await TransactionService.GetAllPagedAsync(
+                currentPage,
+                pageSize,
+                filterStart,
+                filterEnd,
+                GetTypeFilter(),
+                transactionsSort);
+
+            transactions = result.Items;
+            totalCount = result.TotalCount;
+            totalPages = result.TotalPages;
+
             if (transactions == null || !transactions.Any())
             {
                 errorMessage = "Nenhuma transação disponível.";
@@ -452,6 +199,75 @@
         }
     }
 
+    private async Task GoToPage(int page)
+    {
+        if (page < 1 || page > totalPages && totalPages > 0) return;
+        currentPage = page;
+        await LoadTransactions();
+    }
+
+    private async Task ApplyFiltersAndReload()
+    {
+        currentPage = 1;
+        await LoadTransactions();
+    }
+
+    // --- Filter handlers ---
+
+    private async Task HandleSortChanged(string value)
+    {
+        transactionsSort = value;
+        await ApplyFiltersAndReload();
+    }
+
+    private async Task HandlePeriodPresetChanged(string value)
+    {
+        if (periodPreset == value) return;
+        periodPreset = value;
+        if (periodPreset == "current_month")
+        {
+            ResetFilterToCurrentMonth();
+        }
+        await ApplyFiltersAndReload();
+    }
+
+    private async Task HandleStartDateChanged(DateTime date)
+    {
+        filterStart = date;
+        await ApplyFiltersAndReload();
+    }
+
+    private async Task HandleEndDateChanged(DateTime date)
+    {
+        filterEnd = date;
+        await ApplyFiltersAndReload();
+    }
+
+    private async Task HandleTypeFilterChanged(string value)
+    {
+        transactionTypeFilter = value;
+        await ApplyFiltersAndReload();
+    }
+
+    private void ResetFilterToCurrentMonth()
+    {
+        var today = DateTime.Today;
+        filterStart = new DateTime(today.Year, today.Month, 1);
+        filterEnd = new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+    }
+
+    private TransactionType? GetTypeFilter()
+    {
+        return transactionTypeFilter switch
+        {
+            "income" => TransactionType.Income,
+            "expense" => TransactionType.Expense,
+            _ => null
+        };
+    }
+
+    // --- Form handlers ---
+
     private void ShowAddModal()
     {
         newRequest = new CreateTransactionRequestDto
@@ -463,13 +279,6 @@
         editingTransactionId = null;
         showAdd = true;
     }
-
-    private bool showAdd;
-    private Transaction newTransaction = new Transaction { Date = DateTime.Today };
-    private string? addError;
-    private CreateTransactionRequestDto newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
-    private string? editingTransactionId;
-    private bool isBusy;
 
     private async Task BeginEditTransaction(string id)
     {
@@ -502,7 +311,7 @@
         }
     }
 
-    private async Task CreateTransaction(bool addAnother = false)
+    private async Task CreateTransaction(bool addAnother)
     {
         addError = null;
         if (isBusy) return;
@@ -596,7 +405,6 @@
     {
         if (isBusy) return;
         showAdd = false;
-        newTransaction = new Transaction { Date = DateTime.Today };
         newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
         editingTransactionId = null;
         addError = null;
@@ -627,132 +435,7 @@
         }
     }
 
-    private string GetCategoryName(string? categoryId)
-    {
-        if (string.IsNullOrEmpty(categoryId))
-            return "Sem categoria";
-
-        return categoriesDict.TryGetValue(categoryId, out var name) ? name : "Categoria desconhecida";
-    }
-
-    private IEnumerable<Transaction> GetTransactionsSorted(IEnumerable<Transaction> list)
-    {
-        return transactionsSort switch
-        {
-            "date_asc" => list.OrderBy(t => t.Date),
-            "category" => list.OrderBy(t => GetCategoryName(t.CategoryId)).ThenByDescending(t => t.Date),
-            "amount_asc" => list.OrderBy(t => t.Amount),
-            "amount_desc" => list.OrderByDescending(t => t.Amount),
-            _ => list.OrderByDescending(t => t.Date)
-        };
-    }
-
-    private IEnumerable<Transaction> ApplyFilters(IEnumerable<Transaction> list)
-    {
-        var start = filterStart.Date;
-        var end = filterEnd.Date;
-        if (end < start)
-        {
-            (start, end) = (end, start);
-        }
-
-        var query = list.Where(t => t.Date.Date >= start && t.Date.Date <= end);
-
-        // Separar corretamente transaÇões de despesa das de receita.
-        // TransferÃƒÂªncias nÃƒÂ£o entram em entradas/saÃƒÂ­das.
-        query = transactionTypeFilter switch
-        {
-            "income" => query.Where(t => t.Type == TransactionType.Income),
-            "expense" => query.Where(t => t.Type == TransactionType.Expense),
-            "investment" => query.Where(t => IsInvestmentTransaction(t.Type)),
-            _ => query
-        };
-
-        return query;
-    }
-
-    private bool IsInvestmentTransaction(TransactionType type)
-    {
-        return type == TransactionType.InvestmentYield ||
-               type == TransactionType.InvestmentBuy ||
-               type == TransactionType.InvestmentSell;
-    }
-
-    private string GetTransactionTypeIcon(TransactionType type)
-    {
-        return type switch
-        {
-            TransactionType.InvestmentYield => "💰",
-            TransactionType.InvestmentBuy => "🛒",
-            TransactionType.InvestmentSell => "💵",
-            _ => ""
-        };
-    }
-
-    private string GetInvestmentTransactionColor(TransactionType type)
-    {
-        return type switch
-        {
-            TransactionType.InvestmentYield => "text-success",
-            TransactionType.InvestmentBuy => "text-primary",
-            TransactionType.InvestmentSell => "text-warning",
-            _ => "text-muted"
-        };
-    }
-
-    private string GetInvestmentTransactionSign(TransactionType type)
-    {
-        return type switch
-        {
-            TransactionType.InvestmentYield => "+",
-            TransactionType.InvestmentBuy => "-",
-            TransactionType.InvestmentSell => "+",
-            _ => ""
-        };
-    }
-
-    private static IEnumerable<Account> GetAccountsOrdered(IEnumerable<Account>? accounts)
-    {
-        if (accounts is null) return Enumerable.Empty<Account>();
-
-        return accounts
-            .OrderBy(a => GetAccountTypeSortKey(a.Type))
-            .ThenBy(a => a.Name);
-    }
-
-    private static int GetAccountTypeSortKey(AccountType type)
-    {
-        return type switch
-        {
-            AccountType.Cash => 0,
-            AccountType.Checking => 1,
-            AccountType.Savings => 2,
-            AccountType.CreditCard => 3,
-            AccountType.Investment => 4,
-            _ => 99
-        };
-    }
-
-    private static string GetAccountTypeLabel(AccountType type)
-    {
-        return type switch
-        {
-            AccountType.Cash => "Dinheiro",
-            AccountType.Checking => "Conta Corrente",
-            AccountType.Savings => "Poupança",
-            AccountType.CreditCard => "Cartão de Crédito",
-            AccountType.Investment => "Investimento",
-            _ => type.ToString()
-        };
-    }
-
-    private int installmentsCount = 1;
-    private bool firstInstallmentInCurrentInvoice = true;
-    
-    // Modal de confirmação de parcelamento
-    private bool showInstallmentConfirmModal = false;
-    private string installmentConfirmMessage = string.Empty;
-    private TaskCompletionSource<bool>? installmentConfirmTcs;
+    // --- Installment logic ---
 
     private bool IsSelectedAccountCreditCard()
     {
