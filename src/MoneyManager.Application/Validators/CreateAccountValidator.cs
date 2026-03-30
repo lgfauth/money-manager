@@ -18,6 +18,10 @@ public class CreateAccountValidator : AbstractValidator<CreateAccountRequestDto>
         RuleFor(x => x.InitialBalance)
             .GreaterThanOrEqualTo(0).WithMessage("Initial balance must be greater than or equal to 0");
 
+        RuleFor(x => x.Currency)
+            .NotEmpty().WithMessage("Currency is required")
+            .Length(3).WithMessage("Currency must be a 3-letter ISO code (e.g. BRL, USD, EUR)");
+
         RuleFor(x => x.InvoiceClosingDay)
             .InclusiveBetween(1, 31)
             .When(x => x.Type == (int)AccountType.CreditCard && x.InvoiceClosingDay.HasValue)

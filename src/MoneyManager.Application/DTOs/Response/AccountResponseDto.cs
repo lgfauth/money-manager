@@ -7,6 +7,7 @@ public class AccountResponseDto
     public int Type { get; set; }
     public decimal Balance { get; set; }
     public decimal InitialBalance { get; set; }
+    public string Currency { get; set; } = "BRL";
     public decimal? CreditLimit { get; set; }
     public int? InvoiceClosingDay { get; set; }
     public int InvoiceDueDayOffset { get; set; }

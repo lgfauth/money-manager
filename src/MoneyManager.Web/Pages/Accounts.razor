@@ -95,6 +95,22 @@
                                 }
                             </div>
                             
+                            <div class="col-md-4">
+                                <label class="form-label">Moeda</label>
+                                <select class="form-select" @bind="newAccount.Currency">
+                                    <option value="BRL">BRL - Real Brasileiro</option>
+                                    <option value="USD">USD - Dólar Americano</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - Libra Esterlina</option>
+                                    <option value="JPY">JPY - Iene Japonês</option>
+                                    <option value="ARS">ARS - Peso Argentino</option>
+                                    <option value="CAD">CAD - Dólar Canadense</option>
+                                    <option value="CHF">CHF - Franco Suíço</option>
+                                    <option value="AUD">AUD - Dólar Australiano</option>
+                                    <option value="CNY">CNY - Yuan Chinês</option>
+                                </select>
+                            </div>
+
                             @if (newAccount.Type == AccountType.CreditCard)
                             {
                                 <div class="col-12">
@@ -182,11 +198,12 @@
                             <h5 class="card-title mb-3">@account.Name</h5>
                             <div class="mb-3">
                                 <p class="text-muted small mb-2">Saldo</p>
-                                <h3 class="text-primary mb-0">R$ @account.Balance.ToString("F2")</h3>
+                                <h3 class="text-primary mb-0">@GetCurrencySymbol(account.Currency) @account.Balance.ToString("F2")</h3>
                             </div>
                             <div class="mb-3">
                                 <small class="text-muted">Tipo: @GetAccountTypeLabel(account.Type)</small><br/>
-                                <small class="text-muted">Saldo Inicial: R$ @account.InitialBalance.ToString("F2")</small>
+                                <small class="text-muted">Moeda: @account.Currency</small><br/>
+                                <small class="text-muted">Saldo Inicial: @GetCurrencySymbol(account.Currency) @account.InitialBalance.ToString("F2")</small>
                                 @if (account.Type == AccountType.CreditCard && account.InvoiceClosingDay.HasValue)
                                 {
                                     <br />
@@ -198,9 +215,9 @@
                                         var used = Math.Abs(account.Balance);
                                         var available = account.CreditLimit.Value - used;
                                         <br />
-                                        <small class="text-muted">Limite: R$ @account.CreditLimit.Value.ToString("F2")</small>
+                                        <small class="text-muted">Limite: @GetCurrencySymbol(account.Currency) @account.CreditLimit.Value.ToString("F2")</small>
                                         <br />
-                                        <small class="text-muted">Disponível: R$ @available.ToString("F2")</small>
+                                        <small class="text-muted">Disponível: @GetCurrencySymbol(account.Currency) @available.ToString("F2")</small>
                                     }
                                 }
                             </div>
@@ -603,6 +620,24 @@
             AccountType.CreditCard => "Cartão de Crédito",
             AccountType.Investment => "Investimento",
             _ => type.ToString()
+        };
+    }
+
+    private static string GetCurrencySymbol(string currency)
+    {
+        return currency switch
+        {
+            "BRL" => "R$",
+            "USD" => "$",
+            "EUR" => "€",
+            "GBP" => "£",
+            "JPY" => "¥",
+            "ARS" => "ARS$",
+            "CAD" => "C$",
+            "CHF" => "CHF",
+            "AUD" => "A$",
+            "CNY" => "¥",
+            _ => currency
         };
     }
 

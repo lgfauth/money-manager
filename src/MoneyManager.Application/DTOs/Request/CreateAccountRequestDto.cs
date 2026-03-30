@@ -5,6 +5,7 @@ public class CreateAccountRequestDto
     public string Name { get; set; } = string.Empty;
     public int Type { get; set; }
     public decimal InitialBalance { get; set; }
+    public string Currency { get; set; } = "BRL";
 
     /// <summary>
     /// Only applicable to credit card accounts. Day of invoice closing (1..31).

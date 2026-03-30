@@ -26,6 +26,9 @@ public class Transaction
     [BsonElement("amount")]
     public decimal Amount { get; set; }
 
+    [BsonElement("currency")]
+    public string Currency { get; set; } = "BRL";
+
     [BsonElement("date")]
     public DateTime Date { get; set; }
 
@@ -52,6 +55,9 @@ public class Transaction
 
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("version")]
+    public int Version { get; set; } = 1;
 
     [BsonElement("clientRequestId")]
     public string? ClientRequestId { get; set; }

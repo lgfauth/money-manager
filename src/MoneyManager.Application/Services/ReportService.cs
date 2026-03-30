@@ -40,7 +40,18 @@ public class ReportService : IReportService
         {
             TotalIncome = totalIncome,
             TotalExpense = totalExpense,
-            Balance = totalIncome - totalExpense
+            Balance = totalIncome - totalExpense,
+            ByCurrency = monthTransactions
+                .GroupBy(t => t.Currency)
+                .Select(g => new CurrencySummaryDto
+                {
+                    Currency = g.Key,
+                    TotalIncome = g.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount),
+                    TotalExpense = g.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount),
+                    Balance = g.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount)
+                          - g.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount)
+                })
+                .ToList()
         };
     }
 

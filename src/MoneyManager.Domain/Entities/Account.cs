@@ -20,6 +20,9 @@ public class Account
     [BsonElement("type")]
     public AccountType Type { get; set; }
 
+    [BsonElement("currency")]
+    public string Currency { get; set; } = "BRL";
+
     [BsonElement("balance")]
     public decimal Balance { get; set; }
 
@@ -59,6 +62,9 @@ public class Account
 
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("version")]
+    public int Version { get; set; } = 1;
 
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }

@@ -1,3 +1,5 @@
+using MoneyManager.Domain.Exceptions;
+
 namespace MoneyManager.Presentation.Middlewares;
 
 public class ExceptionHandlingMiddleware
@@ -37,6 +39,7 @@ public class ExceptionHandlingMiddleware
         KeyNotFoundException => StatusCodes.Status404NotFound,
         InvalidOperationException => StatusCodes.Status400BadRequest,
         UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
+        ConcurrencyException => StatusCodes.Status409Conflict,
         _ => StatusCodes.Status500InternalServerError
     };
 

@@ -39,6 +39,7 @@ public class AccountService : IAccountService
             Type = type,
             Balance = request.InitialBalance,
             InitialBalance = request.InitialBalance,
+            Currency = request.Currency,
             InvoiceClosingDay = invoiceClosingDay,
             InvoiceDueDayOffset = invoiceDueDayOffset,
             CreditLimit = creditLimit
@@ -75,6 +76,7 @@ public class AccountService : IAccountService
 
         account.Name = request.Name;
         account.Type = (AccountType)request.Type;
+        account.Currency = request.Currency;
         account.InvoiceClosingDay = account.Type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
         account.InvoiceDueDayOffset = account.Type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
         account.CreditLimit = account.Type == AccountType.CreditCard ? request.CreditLimit : null;
@@ -143,6 +145,7 @@ public class AccountService : IAccountService
             Type = (int)account.Type,
             Balance = account.Balance,
             InitialBalance = account.InitialBalance,
+            Currency = account.Currency,
             CreditLimit = account.CreditLimit,
             InvoiceClosingDay = account.InvoiceClosingDay,
             InvoiceDueDayOffset = account.InvoiceDueDayOffset,

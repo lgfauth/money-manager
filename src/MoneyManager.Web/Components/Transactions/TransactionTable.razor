@@ -48,19 +48,19 @@ else if (Transactions != null && Transactions.Any())
                             <td class="text-end fw-bold">
                                 @if (transaction.Type.ToString() == "Income")
                                 {
-                                    <span class="text-success">+ R$ @transaction.Amount.ToString("F2")</span>
+                                    <span class="text-success">+ @GetCurrencySymbol(transaction.Currency) @transaction.Amount.ToString("F2")</span>
                                 }
                                 else if (transaction.Type.ToString() == "Transfer")
                                 {
-                                    <span class="text-primary">R$ @transaction.Amount.ToString("F2")</span>
+                                    <span class="text-primary">@GetCurrencySymbol(transaction.Currency) @transaction.Amount.ToString("F2")</span>
                                 }
                                 else if (IsInvestmentTransaction(transaction.Type))
                                 {
-                                    <span class="@GetInvestmentTransactionColor(transaction.Type)">@GetInvestmentTransactionSign(transaction.Type) R$ @transaction.Amount.ToString("F2")</span>
+                                    <span class="@GetInvestmentTransactionColor(transaction.Type)">@GetInvestmentTransactionSign(transaction.Type) @GetCurrencySymbol(transaction.Currency) @transaction.Amount.ToString("F2")</span>
                                 }
                                 else
                                 {
-                                    <span class="text-danger">- R$ @transaction.Amount.ToString("F2")</span>
+                                    <span class="text-danger">- @GetCurrencySymbol(transaction.Currency) @transaction.Amount.ToString("F2")</span>
                                 }
                             </td>
                             <td class="text-center">
@@ -185,6 +185,24 @@ else
             TransactionType.InvestmentBuy => "-",
             TransactionType.InvestmentSell => "+",
             _ => ""
+        };
+    }
+
+    private static string GetCurrencySymbol(string currency)
+    {
+        return currency switch
+        {
+            "BRL" => "R$",
+            "USD" => "$",
+            "EUR" => "€",
+            "GBP" => "£",
+            "JPY" => "¥",
+            "ARS" => "ARS$",
+            "CAD" => "C$",
+            "CHF" => "CHF",
+            "AUD" => "A$",
+            "CNY" => "¥",
+            _ => currency
         };
     }
 }

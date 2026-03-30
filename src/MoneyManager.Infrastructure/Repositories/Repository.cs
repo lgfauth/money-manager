@@ -1,5 +1,5 @@
 using MongoDB.Driver;
-using MoneyManager.Domain.Entities;
+using MoneyManager.Domain.Exceptions;
 using MoneyManager.Domain.Interfaces;
 using MoneyManager.Infrastructure.Data;
 
@@ -33,9 +33,29 @@ public class Repository<T> : IRepository<T> where T : class
 
     public virtual async Task<T> UpdateAsync(T entity)
     {
-        var id = entity.GetType().GetProperty("Id")?.GetValue(entity);
+        var entityType = entity.GetType();
+        var id = entityType.GetProperty("Id")?.GetValue(entity);
         var filter = Builders<T>.Filter.Eq("_id", MongoDB.Bson.ObjectId.Parse(id?.ToString() ?? ""));
-        await Collection.ReplaceOneAsync(filter, entity);
+
+        var versionProp = entityType.GetProperty("Version");
+        if (versionProp != null)
+        {
+            var currentVersion = (int)(versionProp.GetValue(entity) ?? 1);
+            filter = filter & Builders<T>.Filter.Eq("version", currentVersion);
+            versionProp.SetValue(entity, currentVersion + 1);
+
+            var result = await Collection.ReplaceOneAsync(filter, entity);
+            if (result.ModifiedCount == 0)
+            {
+                versionProp.SetValue(entity, currentVersion);
+                throw new ConcurrencyException();
+            }
+        }
+        else
+        {
+            await Collection.ReplaceOneAsync(filter, entity);
+        }
+
         return entity;
     }
 
