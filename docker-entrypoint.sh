@@ -1,31 +1,22 @@
 #!/bin/sh
 set -e
 
-# Get API URL from environment or use default
-API_URL=${API_URL:-https://money-manager-api.up.railway.app/}
-
-echo "========================================"
-echo "Configuring Blazor WebAssembly"
-echo "API_URL: $API_URL"
-echo "========================================"
-
-# Replace placeholder in index.html
-if [ -f /usr/share/nginx/html/index.html ]; then
-    sed -i "s|__API_URL__|$API_URL|g" /usr/share/nginx/html/index.html
-    echo "? Updated index.html with API URL"
+# Substitute API_URL from Railway environment variable into static files
+if [ -z "$API_URL" ]; then
+    echo "WARNING: API_URL not set, placeholders will not be replaced"
 else
-    echo "? Warning: index.html not found"
+    echo "Configuring Blazor with API_URL: $API_URL"
+
+    if [ -f /usr/share/nginx/html/index.html ]; then
+        sed -i "s|__API_URL__|$API_URL|g" /usr/share/nginx/html/index.html
+    fi
+
+    if [ -f /usr/share/nginx/html/appsettings.Production.json ]; then
+        sed -i "s|#{API_URL}#|$API_URL|g" /usr/share/nginx/html/appsettings.Production.json
+    fi
 fi
 
-# Replace placeholder in appsettings.Production.json
-if [ -f /usr/share/nginx/html/appsettings.Production.json ]; then
-    sed -i "s|#{API_URL}#|$API_URL|g" /usr/share/nginx/html/appsettings.Production.json
-    echo "? Updated appsettings.Production.json"
-fi
-
-echo "========================================"
 echo "Starting nginx..."
-echo "========================================"
 
 # Start nginx in foreground
 exec nginx -g 'daemon off;'

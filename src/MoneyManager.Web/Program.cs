@@ -8,20 +8,24 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
-// Configure HttpClient - URL da API via configuração
-const string DefaultApiUrl = "https://money-manager-api.up.railway.app/";
+// Configure HttpClient - URL da API via configuração (appsettings ou variável de ambiente via Docker)
+// Em produção, o Docker entrypoint substitui #{API_URL}# no appsettings.Production.json
+// Fallback: usa o BaseAddress do host (resolvido dinamicamente pelo browser)
 var configuredApiUrl = builder.Configuration["ApiUrl"];
 string apiUrl;
+
+Console.WriteLine($"[MoneyManager] ApiUrl: {builder.Configuration["ApiUrl"]}");
+Console.WriteLine($"[MoneyManager] API_URL: {builder.Configuration["API_URL"]}");
 
 if (!string.IsNullOrEmpty(configuredApiUrl) && Uri.TryCreate(configuredApiUrl, UriKind.Absolute, out _))
 {
     apiUrl = configuredApiUrl;
-    Console.WriteLine($"[MoneyManager] API URL Railway: {apiUrl}");
+    Console.WriteLine($"[MoneyManager] API URL: {apiUrl}");
 }
 else
 {
-    apiUrl = DefaultApiUrl;
-    Console.WriteLine($"[MoneyManager] API URL (fallback): {apiUrl}");
+    apiUrl = builder.HostEnvironment.BaseAddress;
+    Console.WriteLine($"[MoneyManager] API URL (from HostEnvironment): {apiUrl}");
 }
 
 // Register AuthorizationMessageHandler
