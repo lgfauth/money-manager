@@ -119,16 +119,37 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Add CORS - Origens permitidas via configuração
+// Add CORS - Origens permitidas via configuração ou variável de ambiente ALLOWED_ORIGIN
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
+// Também aceita variável de ambiente ALLOWED_ORIGIN (string simples, suporta múltiplas separadas por vírgula)
+var envOrigin = Environment.GetEnvironmentVariable("ALLOWED_ORIGIN");
+if (!string.IsNullOrEmpty(envOrigin))
+{
+    var envOrigins = envOrigin.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    allowedOrigins = allowedOrigins.Concat(envOrigins).Distinct().ToArray();
+}
+
+Console.WriteLine($"[MoneyManager API] CORS AllowedOrigins: {string.Join(", ", allowedOrigins)}");
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
+        else
+        {
+            // Fallback: permite qualquer origem (apenas se nenhuma origem foi configurada)
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        }
     });
 });
 
