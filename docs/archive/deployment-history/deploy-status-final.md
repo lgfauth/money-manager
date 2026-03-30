@@ -63,7 +63,7 @@ JWT__SECRETKEY=...
 
 #### **Frontend (verificar):**
 ```env
-API_URL=https://money-manager-production-6120.up.railway.app
+API_URL=https://money-manager.up.railway.app/
 ```
 
 ?? **Certifique-se de que `API_URL` está definido no Railway!**
@@ -92,7 +92,7 @@ https://money-manager-web-production.up.railway.app
 ```
 ======================================
 Configuring Blazor WebAssembly
-API_URL: https://money-manager-production-6120.up.railway.app
+API_URL: https://money-manager.up.railway.app/
 ======================================
 ? Updated index.html
 ? Updated appsettings.Production.json
@@ -103,8 +103,8 @@ Starting nginx...
 
 #### **Browser Console (F12):**
 ```
-[MoneyManager] API URL from config: https://money-manager-production-6120.up.railway.app
-[HttpClient] Configured with base address: https://money-manager-production-6120.up.railway.app
+[MoneyManager] API URL from config: https://money-manager.up.railway.app/
+[HttpClient] Configured with base address: https://money-manager.up.railway.app/
 ```
 
 ---
@@ -163,9 +163,9 @@ Build Logs ? procure por "error CS..."
 
 ### **API:**
 ```
-Swagger: https://money-manager-production-6120.up.railway.app/swagger
-Health:  https://money-manager-production-6120.up.railway.app/health
-IP Info: https://money-manager-production-6120.up.railway.app/api/discover-ip
+Swagger: https://money-manager.up.railway.app//swagger
+Health:  https://money-manager.up.railway.app//health
+IP Info: https://money-manager.up.railway.app//api/discover-ip
 ```
 
 ### **Frontend:**

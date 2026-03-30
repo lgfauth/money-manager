@@ -9,6 +9,7 @@ builder.RootComponents.Add<MoneyManager.Web.App>("#app");
 builder.RootComponents.Add<Microsoft.AspNetCore.Components.Web.HeadOutlet>("head::after");
 
 // Configure HttpClient - URL da API via configuração
+const string DefaultApiUrl = "https://money-manager.up.railway.app/";
 var configuredApiUrl = builder.Configuration["ApiUrl"];
 string apiUrl;
 
@@ -19,8 +20,8 @@ if (!string.IsNullOrEmpty(configuredApiUrl) && Uri.TryCreate(configuredApiUrl, U
 }
 else
 {
-    apiUrl = "https://localhost:5001";
-    Console.WriteLine($"[MoneyManager] API URL (fallback): {apiUrl} — configured value was: '{configuredApiUrl}'");
+    apiUrl = DefaultApiUrl;
+    Console.WriteLine($"[MoneyManager] API URL (fallback): {apiUrl}");
 }
 
 // Register AuthorizationMessageHandler

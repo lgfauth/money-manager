@@ -39,7 +39,7 @@ public class ApiConfigService : IApiConfigService
         }
 
         // Fallback to default
-        _cachedApiUrl = "https://localhost:5001";
+        _cachedApiUrl = "https://money-manager.up.railway.app/";
         Console.WriteLine($"[MoneyManager] Using default API URL: {_cachedApiUrl}");
         return _cachedApiUrl;
     }
