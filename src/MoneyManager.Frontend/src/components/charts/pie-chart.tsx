@@ -54,7 +54,7 @@ export function DonutChart({
               <ChartTooltip
                 active={active}
                 payload={payload?.map((p) => ({
-                  name: String(p.name ?? ""),
+                  name: String((p.payload as PieChartItem).name ?? ""),
                   value: p.value as number,
                   color: (p.payload as PieChartItem).color,
                 }))}

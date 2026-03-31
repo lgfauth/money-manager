@@ -226,11 +226,13 @@ export function RecurringForm({
           <div className="space-y-2">
             <Label>Conta</Label>
             <Select
-              value={watch("accountId")}
+              value={watch("accountId") || null}
               onValueChange={(v) => v && setValue("accountId", v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione a conta" />
+                <SelectValue placeholder="Selecione a conta">
+                  {(value: string) => accounts?.find((a) => a.id === value)?.name}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {accounts?.map((acc) => (
@@ -250,11 +252,25 @@ export function RecurringForm({
           <div className="space-y-2">
             <Label>Categoria</Label>
             <Select
-              value={watch("categoryId")}
+              value={watch("categoryId") || null}
               onValueChange={(v) => v && setValue("categoryId", v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione a categoria" />
+                <SelectValue placeholder="Selecione a categoria">
+                  {(value: string) => {
+                    const cat = filteredCategories?.find((c) => c.id === value);
+                    if (!cat) return null;
+                    return (
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.name}
+                      </span>
+                    );
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {filteredCategories?.map((cat) => (

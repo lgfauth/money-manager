@@ -41,7 +41,7 @@ public class Repository<T> : IRepository<T> where T : class
         if (versionProp != null)
         {
             var currentVersion = (int)(versionProp.GetValue(entity) ?? 1);
-            filter = filter & Builders<T>.Filter.Eq("version", currentVersion);
+            filter = filter & (Builders<T>.Filter.Eq("version", currentVersion) | Builders<T>.Filter.Not(Builders<T>.Filter.Exists("version")));
             versionProp.SetValue(entity, currentVersion + 1);
 
             var result = await Collection.ReplaceOneAsync(filter, entity);

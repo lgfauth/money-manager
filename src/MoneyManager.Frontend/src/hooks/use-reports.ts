@@ -57,8 +57,10 @@ export function useReports(period: ReportPeriod): ReportData {
     useMemo(() => {
       const items = transactions.data?.items ?? [];
       const categoryColorMap: Record<string, string> = {};
+      const categoryNameMap: Record<string, string> = {};
       categories?.forEach((c) => {
         categoryColorMap[c.id] = c.color;
+        categoryNameMap[c.id] = c.name;
       });
 
       let income = 0;
@@ -82,7 +84,7 @@ export function useReports(period: ReportPeriod): ReportData {
 
           if (!categoryAcc[t.categoryId]) {
             categoryAcc[t.categoryId] = {
-              name: t.categoryName,
+              name: categoryNameMap[t.categoryId] ?? t.categoryName ?? t.categoryId,
               total: 0,
             };
           }

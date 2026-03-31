@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useBudget } from "@/hooks/use-budgets";
+import { useCategories } from "@/hooks/use-categories";
 import type { TransactionResponseDto, PaginatedResponse } from "@/types/transaction";
 import type { AccountResponseDto } from "@/types/account";
 import { AccountType } from "@/types/account";
@@ -28,6 +29,13 @@ export function useDashboard() {
 
   const accounts = useAccounts();
   const budget = useBudget(month);
+  const { data: categories } = useCategories();
+
+  // Build category name map for resolving names (API doesn't return categoryName)
+  const categoryNameMap: Record<string, string> = {};
+  categories?.forEach((c) => {
+    categoryNameMap[c.id] = c.name;
+  });
 
   const transactions = useQuery({
     queryKey: queryKeys.transactions({
@@ -89,7 +97,7 @@ export function useDashboard() {
     .filter((t) => t.type === "Expense")
     .reduce<Record<string, { name: string; amount: number }>>((acc, t) => {
       if (!acc[t.categoryId]) {
-        acc[t.categoryId] = { name: t.categoryName, amount: 0 };
+        acc[t.categoryId] = { name: categoryNameMap[t.categoryId] ?? t.categoryName ?? t.categoryId, amount: 0 };
       }
       acc[t.categoryId].amount += t.amount;
       return acc;
