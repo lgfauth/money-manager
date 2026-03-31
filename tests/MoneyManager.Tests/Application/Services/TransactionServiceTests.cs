@@ -44,11 +44,11 @@ public class TransactionServiceTests
         {
             AccountId = accountId,
             CategoryId = "cat123",
-            Type = 0, // Income
+            Type = TransactionType.Income,
             Amount = 500m,
             Date = DateTime.UtcNow,
             Description = "Salary",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var account = new Account { Id = accountId, UserId = userId, Balance = 1000m };
@@ -76,11 +76,11 @@ public class TransactionServiceTests
         {
             AccountId = accountId,
             CategoryId = "cat123",
-            Type = 1, // Expense
+            Type = TransactionType.Expense,
             Amount = 200m,
             Date = DateTime.UtcNow,
             Description = "Groceries",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var account = new Account { Id = accountId, UserId = userId, Balance = 1000m };
@@ -106,11 +106,11 @@ public class TransactionServiceTests
         {
             AccountId = fromAccountId,
             ToAccountId = toAccountId,
-            Type = 2, // Transfer
+            Type = TransactionType.Transfer,
             Amount = 300m,
             Date = DateTime.UtcNow,
             Description = "Transfer",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m, Type = AccountType.Checking };
@@ -141,11 +141,11 @@ public class TransactionServiceTests
         {
             AccountId = fromAccountId,
             ToAccountId = toAccountId,
-            Type = 2, // Transfer
+            Type = TransactionType.Transfer,
             Amount = 300m,
             Date = DateTime.UtcNow,
             Description = "Payment",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m, Type = AccountType.Checking };
@@ -173,10 +173,10 @@ public class TransactionServiceTests
         var request = new CreateTransactionRequestDto
         {
             AccountId = "invalid",
-            Type = 0,
+            Type = TransactionType.Income,
             Amount = 100m,
             Date = DateTime.UtcNow,
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         _accountRepoMock.GetByIdAsync("invalid").Returns((Account?)null);
@@ -250,11 +250,11 @@ public class TransactionServiceTests
         {
             AccountId = "acc123",
             CategoryId = "cat123",
-            Type = 0,
+            Type = TransactionType.Income,
             Amount = 150m,
             Date = DateTime.UtcNow,
             Description = "Updated",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         _transactionRepoMock.GetByIdAsync(transactionId).Returns(existingTransaction);
@@ -310,11 +310,11 @@ public class TransactionServiceTests
         {
             AccountId = fromAccountId,
             ToAccountId = toAccountId,
-            Type = 2, // Transfer
+            Type = TransactionType.Transfer,
             Amount = 300m,
             Date = DateTime.UtcNow,
             Description = "Transfer",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var fromAccount = new Account { Id = fromAccountId, UserId = userId, Balance = 1000m, Type = AccountType.Checking };
@@ -355,11 +355,11 @@ public class TransactionServiceTests
         var request = new CreateTransactionRequestDto
         {
             AccountId = "acc123",
-            Type = 0,
+            Type = TransactionType.Income,
             Amount = 500m,
             Date = DateTime.UtcNow,
             Description = "Duplicate attempt",
-            Status = 0,
+            Status = TransactionStatus.Pending,
             ClientRequestId = clientRequestId
         };
 
@@ -384,11 +384,11 @@ public class TransactionServiceTests
         {
             AccountId = "acc123",
             CategoryId = "cat123",
-            Type = 0, // Income
+            Type = TransactionType.Income,
             Amount = 200m,
             Date = DateTime.UtcNow,
             Description = "New transaction",
-            Status = 0,
+            Status = TransactionStatus.Pending,
             ClientRequestId = clientRequestId
         };
 
@@ -417,11 +417,11 @@ public class TransactionServiceTests
         {
             AccountId = accountId,
             CategoryId = "cat123",
-            Type = 1, // Expense
+            Type = TransactionType.Expense,
             Amount = 600m,
             Date = DateTime.UtcNow,
             Description = "Big purchase",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var creditCard = new Account
@@ -452,11 +452,11 @@ public class TransactionServiceTests
         {
             AccountId = accountId,
             CategoryId = "cat123",
-            Type = 1, // Expense
+            Type = TransactionType.Expense,
             Amount = 50m,
             Date = DateTime.UtcNow,
             Description = "Small purchase",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var creditCard = new Account
@@ -502,11 +502,11 @@ public class TransactionServiceTests
         {
             AccountId = accountId,
             CategoryId = "cat123",
-            Type = 1, // Expense
+            Type = TransactionType.Expense,
             Amount = 200m,
             Date = transactionDate,
             Description = "Restaurant",
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var creditCard = new Account
@@ -557,10 +557,10 @@ public class TransactionServiceTests
         var request = new CreateTransactionRequestDto
         {
             AccountId = "acc123",
-            Type = 2, // Transfer
+            Type = TransactionType.Transfer,
             Amount = 100m,
             Date = DateTime.UtcNow,
-            Status = 0,
+            Status = TransactionStatus.Pending,
             ToAccountId = null
         };
 
@@ -581,10 +581,10 @@ public class TransactionServiceTests
         {
             AccountId = "acc123",
             ToAccountId = "invalid",
-            Type = 2, // Transfer
+            Type = TransactionType.Transfer,
             Amount = 100m,
             Date = DateTime.UtcNow,
-            Status = 0
+            Status = TransactionStatus.Pending
         };
 
         var account = new Account { Id = "acc123", UserId = userId, Balance = 1000m };

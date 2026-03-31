@@ -477,11 +477,11 @@
             {
                 AccountId = selectedPaymentAccountId,
                 ToAccountId = invoiceSummary.Invoice.AccountId,
-                Type = (int)MoneyManager.Domain.Enums.TransactionType.Transfer,
+                Type = MoneyManager.Domain.Enums.TransactionType.Transfer,
                 Amount = paymentAmount,
                 Date = paymentDate,
                 Description = description,
-                Status = 0
+                Status = MoneyManager.Domain.Enums.TransactionStatus.Pending
             };
 
             await TransactionService.CreateAsync(transactionRequest); // SEM userId - API pega do token

@@ -27,7 +27,7 @@ public class CategoryServiceTests
         var request = new CreateCategoryRequestDto
         {
             Name = "Food",
-            Type = 1,
+            Type = CategoryType.Expense,
             Color = "#FF5733"
         };
 

@@ -856,11 +856,11 @@
             {
                 AccountId = payFromAccountId,
                 ToAccountId = selectedInvoiceToPay.AccountId,
-                Type = (int)TransactionType.Transfer,
+                Type = TransactionType.Transfer,
                 Amount = invoicePaymentAmount,
                 Date = invoicePaymentDate,
                 Description = description,
-                Status = 0
+                Status = TransactionStatus.Pending
             };
 
             await TransactionService.CreateAsync(transactionRequest); // SEM userId - API pega do token

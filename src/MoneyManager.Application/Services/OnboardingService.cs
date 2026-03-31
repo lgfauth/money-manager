@@ -80,15 +80,15 @@ public class OnboardingService : IOnboardingService
         return await Task.FromResult(new List<CategorySuggestionDto>
         {
             // Receitas
-            new CategorySuggestionDto { Name = "Salário", Type = (int)CategoryType.Income, Color = "#28a745", Icon = "fa-money-bill-wave", IsDefault = true },
-            new CategorySuggestionDto { Name = "Freelance", Type = (int)CategoryType.Income, Color = "#17a2b8", Icon = "fa-laptop-code", IsDefault = true },
-            new CategorySuggestionDto { Name = "Investimentos", Type = (int)CategoryType.Income, Color = "#20c997", Icon = "fa-chart-line", IsDefault = true },
+            new CategorySuggestionDto { Name = "Salário", Type = CategoryType.Income, Color = "#28a745", Icon = "fa-money-bill-wave", IsDefault = true },
+            new CategorySuggestionDto { Name = "Freelance", Type = CategoryType.Income, Color = "#17a2b8", Icon = "fa-laptop-code", IsDefault = true },
+            new CategorySuggestionDto { Name = "Investimentos", Type = CategoryType.Income, Color = "#20c997", Icon = "fa-chart-line", IsDefault = true },
             
             // Despesas
-            new CategorySuggestionDto { Name = "Moradia", Type = (int)CategoryType.Expense, Color = "#fd7e14", Icon = "fa-home", IsDefault = true },
-            new CategorySuggestionDto { Name = "Alimentação", Type = (int)CategoryType.Expense, Color = "#dc3545", Icon = "fa-utensils", IsDefault = true },
-            new CategorySuggestionDto { Name = "Transporte", Type = (int)CategoryType.Expense, Color = "#ffc107", Icon = "fa-car", IsDefault = true },
-            new CategorySuggestionDto { Name = "Lazer", Type = (int)CategoryType.Expense, Color = "#007bff", Icon = "fa-gamepad", IsDefault = true },
+            new CategorySuggestionDto { Name = "Moradia", Type = CategoryType.Expense, Color = "#fd7e14", Icon = "fa-home", IsDefault = true },
+            new CategorySuggestionDto { Name = "Alimentação", Type = CategoryType.Expense, Color = "#dc3545", Icon = "fa-utensils", IsDefault = true },
+            new CategorySuggestionDto { Name = "Transporte", Type = CategoryType.Expense, Color = "#ffc107", Icon = "fa-car", IsDefault = true },
+            new CategorySuggestionDto { Name = "Lazer", Type = CategoryType.Expense, Color = "#007bff", Icon = "fa-gamepad", IsDefault = true },
         });
     }
 

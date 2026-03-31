@@ -30,7 +30,7 @@ public class CategoryService : ICategoryService
         {
             UserId = userId,
             Name = request.Name,
-            Type = (CategoryType)request.Type,
+            Type = request.Type,
             Color = request.Color
         };
 
@@ -67,7 +67,7 @@ public class CategoryService : ICategoryService
             throw new KeyNotFoundException("Category not found");
 
         category.Name = request.Name;
-        category.Type = (CategoryType)request.Type;
+        category.Type = request.Type;
         category.Color = request.Color;
         category.UpdatedAt = DateTime.UtcNow;
 
@@ -96,7 +96,7 @@ public class CategoryService : ICategoryService
         {
             Id = category.Id,
             Name = category.Name,
-            Type = (int)category.Type,
+            Type = category.Type,
             Color = category.Color,
             CreatedAt = category.CreatedAt
         };

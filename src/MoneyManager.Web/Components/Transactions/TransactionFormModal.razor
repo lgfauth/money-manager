@@ -32,14 +32,14 @@
                         <div class="col-md-6">
                             <label class="form-label">Tipo</label>
                             <select class="form-select" @bind="Request.Type">
-                                <option value="0">@Localization.Get("Transactions.Income")</option>
-                                <option value="1">@Localization.Get("Transactions.Expense")</option>
-                                <option value="2">@Localization.Get("Transactions.Transfer")</option>
+                                <option value="@TransactionType.Income">@Localization.Get("Transactions.Income")</option>
+                                <option value="@TransactionType.Expense">@Localization.Get("Transactions.Expense")</option>
+                                <option value="@TransactionType.Transfer">@Localization.Get("Transactions.Transfer")</option>
                             </select>
                         </div>
                         
                         <div class="col-md-6">
-                            <label class="form-label">Conta @(Request.Type == 2 ? "Origem" : "")</label>
+                            <label class="form-label">Conta @(Request.Type == TransactionType.Transfer ? "Origem" : "")</label>
                             <select class="form-select" @bind="Request.AccountId">
                                 <option value="">-- Selecione uma conta --</option>
                                 @foreach (var a in GetAccountsOrdered())
@@ -49,7 +49,7 @@
                             </select>
                         </div>
                         
-                        @if (Request.Type == 2)
+                        @if (Request.Type == TransactionType.Transfer)
                         {
                             <div class="col-md-6">
                                 <label class="form-label">Conta Destino</label>
@@ -92,7 +92,7 @@
                             <MoneyInput @bind-Value="Request.Amount" Placeholder="R$ 0,00" />
                         </div>
 
-                        @if (IsSelectedAccountCreditCard() && Request.Type == 1)
+                        @if (IsSelectedAccountCreditCard() && Request.Type == TransactionType.Expense)
                         {
                             <div class="col-12">
                                 <div class="alert alert-info py-2">

@@ -12,6 +12,6 @@ public class CreateCategoryValidator : AbstractValidator<CreateCategoryRequestDt
             .MinimumLength(3).WithMessage("Category name must have at least 3 characters");
 
         RuleFor(x => x.Type)
-            .GreaterThanOrEqualTo(0).WithMessage("Invalid category type");
+            .IsInEnum().WithMessage("Invalid category type");
     }
 }

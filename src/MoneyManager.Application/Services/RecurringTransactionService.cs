@@ -175,12 +175,12 @@ public class RecurringTransactionService : IRecurringTransactionService
                     {
                         AccountId = recurrence.AccountId,
                         CategoryId = recurrence.CategoryId,
-                        Type = (int)recurrence.Type,
+                        Type = recurrence.Type,
                         Amount = recurrence.Amount,
                         Date = recurrence.NextOccurrenceDate.Date, // Ensure transaction date has no time component
                         Description = $"{recurrence.Description} (Recorrente)",
                         Tags = recurrence.Tags,
-                        Status = 0
+                        Status = TransactionStatus.Pending
                     };
 
                     await _transactionService.CreateAsync(recurrence.UserId, transactionRequest);

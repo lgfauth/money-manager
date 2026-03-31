@@ -40,7 +40,7 @@ public class AccountServiceTests
         var request = new CreateAccountRequestDto
         {
             Name = "Checking Account",
-            Type = 0,
+            Type = AccountType.Checking,
             InitialBalance = 1000m
         };
 
@@ -62,7 +62,7 @@ public class AccountServiceTests
         var request = new CreateAccountRequestDto
         {
             Name = "My Credit Card",
-            Type = 3, // CreditCard
+            Type = AccountType.CreditCard,
             InitialBalance = 0m,
             CreditLimit = 5000m,
             InvoiceClosingDay = 15,
@@ -87,7 +87,7 @@ public class AccountServiceTests
         var request = new CreateAccountRequestDto
         {
             Name = "Checking",
-            Type = 0, // Checking
+            Type = AccountType.Checking,
             InitialBalance = 1000m,
             CreditLimit = 9999m // Should be ignored
         };
@@ -201,7 +201,7 @@ public class AccountServiceTests
         var request = new CreateAccountRequestDto
         {
             Name = "New Name",
-            Type = 0 // Checking
+            Type = AccountType.Checking
         };
 
         // Act
@@ -218,7 +218,7 @@ public class AccountServiceTests
         // Arrange
         _accountRepoMock.GetByIdAsync("invalid").Returns((Account?)null);
 
-        var request = new CreateAccountRequestDto { Name = "Test", Type = 0 };
+        var request = new CreateAccountRequestDto { Name = "Test", Type = AccountType.Checking };
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>

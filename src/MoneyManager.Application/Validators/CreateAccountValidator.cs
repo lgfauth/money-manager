@@ -13,7 +13,7 @@ public class CreateAccountValidator : AbstractValidator<CreateAccountRequestDto>
             .MinimumLength(3).WithMessage("Account name must have at least 3 characters");
 
         RuleFor(x => x.Type)
-            .GreaterThanOrEqualTo(0).WithMessage("Invalid account type");
+            .IsInEnum().WithMessage("Invalid account type");
 
         RuleFor(x => x.InitialBalance)
             .GreaterThanOrEqualTo(0).WithMessage("Initial balance must be greater than or equal to 0");
@@ -24,7 +24,7 @@ public class CreateAccountValidator : AbstractValidator<CreateAccountRequestDto>
 
         RuleFor(x => x.InvoiceClosingDay)
             .InclusiveBetween(1, 31)
-            .When(x => x.Type == (int)AccountType.CreditCard && x.InvoiceClosingDay.HasValue)
+            .When(x => x.Type == AccountType.CreditCard && x.InvoiceClosingDay.HasValue)
             .WithMessage("Invoice closing day must be between 1 and 31");
     }
 }

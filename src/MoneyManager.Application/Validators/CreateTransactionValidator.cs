@@ -14,7 +14,7 @@ public class CreateTransactionValidator : AbstractValidator<CreateTransactionReq
             .GreaterThan(0).WithMessage("Amount must be greater than 0");
 
         RuleFor(x => x.Type)
-            .GreaterThanOrEqualTo(0).WithMessage("Invalid transaction type");
+            .IsInEnum().WithMessage("Invalid transaction type");
 
         RuleFor(x => x.Date)
             .NotEmpty().WithMessage("Date is required");

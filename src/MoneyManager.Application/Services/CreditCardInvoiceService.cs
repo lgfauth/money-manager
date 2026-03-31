@@ -297,12 +297,12 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             Id = t.Id,
             AccountId = t.AccountId,
             CategoryId = t.CategoryId,
-            Type = (int)t.Type,
+            Type = t.Type,
             Amount = t.Amount,
             Date = t.Date,
             Description = t.Description,
             Tags = t.Tags,
-            Status = (int)t.Status,
+            Status = t.Status,
             CreatedAt = t.CreatedAt
         });
     }

@@ -27,7 +27,7 @@ public class AccountService : IAccountService
 
     public async Task<AccountResponseDto> CreateAsync(string userId, CreateAccountRequestDto request)
     {
-        var type = (AccountType)request.Type;
+        var type = request.Type;
         int? invoiceClosingDay = type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
         int invoiceDueDayOffset = type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
         decimal? creditLimit = type == AccountType.CreditCard ? request.CreditLimit : null;
@@ -75,7 +75,7 @@ public class AccountService : IAccountService
             throw new KeyNotFoundException("Account not found");
 
         account.Name = request.Name;
-        account.Type = (AccountType)request.Type;
+        account.Type = request.Type;
         account.Currency = request.Currency;
         account.InvoiceClosingDay = account.Type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
         account.InvoiceDueDayOffset = account.Type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
@@ -142,7 +142,7 @@ public class AccountService : IAccountService
         {
             Id = account.Id,
             Name = account.Name,
-            Type = (int)account.Type,
+            Type = account.Type,
             Balance = account.Balance,
             InitialBalance = account.InitialBalance,
             Currency = account.Currency,

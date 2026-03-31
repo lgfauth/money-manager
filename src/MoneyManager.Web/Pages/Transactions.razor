@@ -141,7 +141,7 @@
     // Form state
     private bool showAdd;
     private string? addError;
-    private CreateTransactionRequestDto newRequest = new() { Date = DateTime.Today, Type = (int)TransactionType.Expense };
+    private CreateTransactionRequestDto newRequest = new() { Date = DateTime.Today, Type = TransactionType.Expense };
     private string? editingTransactionId;
     private bool isBusy;
 
@@ -273,7 +273,7 @@
         newRequest = new CreateTransactionRequestDto
         {
             Date = DateTime.Today,
-            Type = (int)TransactionType.Expense,
+            Type = TransactionType.Expense,
             ClientRequestId = Guid.NewGuid().ToString()
         };
         editingTransactionId = null;
@@ -295,10 +295,10 @@
                     CategoryId = tx.CategoryId,
                     Date = tx.Date,
                     Description = tx.Description,
-                    Status = (int)tx.Status,
+                    Status = tx.Status,
                     Tags = tx.Tags ?? new List<string>(),
                     ToAccountId = tx.ToAccountId,
-                    Type = (int)tx.Type
+                    Type = tx.Type
                 };
 
                 editingTransactionId = id;
@@ -324,7 +324,7 @@
                 return;
             }
 
-            if (newRequest.Type == 2)
+            if (newRequest.Type == TransactionType.Transfer)
             {
                 if (string.IsNullOrEmpty(newRequest.ToAccountId))
                 {
@@ -376,7 +376,7 @@
                 newRequest = new CreateTransactionRequestDto
                 {
                     Date = DateTime.Today,
-                    Type = (int)TransactionType.Expense,
+                    Type = TransactionType.Expense,
                     AccountId = newRequest.AccountId, // Mantém a conta selecionada
                     ClientRequestId = Guid.NewGuid().ToString()
                 };
@@ -386,7 +386,7 @@
             else
             {
                 showAdd = false;
-                newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
+                newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = TransactionType.Expense };
             }
 
             await LoadTransactions();
@@ -405,7 +405,7 @@
     {
         if (isBusy) return;
         showAdd = false;
-        newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = (int)TransactionType.Expense };
+        newRequest = new CreateTransactionRequestDto { Date = DateTime.Today, Type = TransactionType.Expense };
         editingTransactionId = null;
         addError = null;
         installmentsCount = 1;
@@ -448,7 +448,7 @@
 
     private bool ShouldCreateInstallments() =>
         IsSelectedAccountCreditCard() &&
-        newRequest.Type == (int)TransactionType.Expense &&
+        newRequest.Type == TransactionType.Expense &&
         installmentsCount > 1;
 
     private async Task<bool> ConfirmInstallmentStartAsync()
@@ -549,7 +549,7 @@
         {
             AccountId = baseRequest.AccountId,
             CategoryId = baseRequest.CategoryId,
-            Type = baseRequest.Type == (int)TransactionType.Income ? TransactionType.Income : TransactionType.Expense,
+            Type = baseRequest.Type == TransactionType.Income ? TransactionType.Income : TransactionType.Expense,
             Amount = installmentAmount,
             Description = $"{baseRequest.Description} (Parcela)",
             Frequency = RecurrenceFrequency.Monthly,

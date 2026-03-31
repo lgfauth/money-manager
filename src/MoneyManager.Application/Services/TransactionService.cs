@@ -73,7 +73,7 @@ public class TransactionService : ITransactionService
             throw new KeyNotFoundException("Account not found");
         }
 
-        var transactionType = (TransactionType)request.Type;
+        var transactionType = request.Type;
 
         if (transactionType == TransactionType.Transfer)
         {
@@ -162,7 +162,7 @@ public class TransactionService : ITransactionService
             Description = request.Description,
             Tags = request.Tags,
             ToAccountId = request.ToAccountId,
-            Status = (TransactionStatus)request.Status,
+            Status = request.Status,
             ClientRequestId = request.ClientRequestId
         };
 
@@ -252,13 +252,13 @@ public class TransactionService : ITransactionService
 
         transaction.AccountId = request.AccountId;
         transaction.CategoryId = request.CategoryId;
-        transaction.Type = (TransactionType)request.Type;
+        transaction.Type = request.Type;
         transaction.Amount = request.Amount;
         transaction.Date = request.Date;
         transaction.Description = request.Description;
         transaction.Tags = request.Tags;
         transaction.ToAccountId = request.ToAccountId;
-        transaction.Status = (TransactionStatus)request.Status;
+        transaction.Status = request.Status;
         transaction.UpdatedAt = DateTime.UtcNow;
 
         // Buscar nova conta
@@ -451,13 +451,13 @@ public class TransactionService : ITransactionService
             Id = transaction.Id,
             AccountId = transaction.AccountId,
             CategoryId = transaction.CategoryId,
-            Type = (int)transaction.Type,
+            Type = transaction.Type,
             Amount = transaction.Amount,
             Currency = transaction.Currency,
             Date = transaction.Date,
             Description = transaction.Description,
             Tags = transaction.Tags,
-            Status = (int)transaction.Status,
+            Status = transaction.Status,
             CreatedAt = transaction.CreatedAt
         };
     }
