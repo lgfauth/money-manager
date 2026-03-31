@@ -53,6 +53,9 @@ public class RecurringTransaction
     [BsonElement("tags")]
     public List<string> Tags { get; set; } = [];
 
+    [BsonElement("notes")]
+    public string? Notes { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

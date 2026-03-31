@@ -138,6 +138,18 @@ public class MongoContext
                 .Ascending(s => s.Endpoint),
             new CreateIndexOptions { Unique = true, Sparse = true }
         ));
+
+        // Create user_reports collection
+        if (!collectionNames.Contains("user_reports"))
+        {
+            await _database.CreateCollectionAsync("user_reports");
+        }
+        var userReportsCollection = _database.GetCollection<MoneyManager.Domain.Entities.UserReport>("user_reports");
+        await userReportsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.UserReport>(
+            Builders<MoneyManager.Domain.Entities.UserReport>.IndexKeys
+                .Ascending(r => r.UserId)
+                .Descending(r => r.CreatedAt)
+        ));
     }
 
     public async Task TestConnectionAsync()

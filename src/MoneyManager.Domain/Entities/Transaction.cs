@@ -38,6 +38,9 @@ public class Transaction
     [BsonElement("tags")]
     public List<string> Tags { get; set; } = [];
 
+    [BsonElement("notes")]
+    public string? Notes { get; set; }
+
     [BsonElement("toAccountId")]
     public string? ToAccountId { get; set; }
 

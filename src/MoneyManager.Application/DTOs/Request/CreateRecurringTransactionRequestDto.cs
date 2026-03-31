@@ -14,4 +14,5 @@ public class CreateRecurringTransactionRequestDto
     public DateTime? EndDate { get; set; }
     public int? DayOfMonth { get; set; }
     public List<string> Tags { get; set; } = [];
+    public string? Notes { get; set; }
 }

@@ -11,6 +11,7 @@ public class CreateTransactionRequestDto
     public DateTime Date { get; set; }
     public string Description { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = [];
+    public string? Notes { get; set; }
     public string? ToAccountId { get; set; }
     public TransactionStatus Status { get; set; }
     public string? ClientRequestId { get; set; }

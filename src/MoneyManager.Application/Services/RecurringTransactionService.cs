@@ -60,6 +60,7 @@ public class RecurringTransactionService : IRecurringTransactionService
             DayOfMonth = request.DayOfMonth,
             NextOccurrenceDate = firstOccurrence,
             Tags = request.Tags,
+            Notes = request.Notes,
             IsActive = true
         };
 
@@ -117,6 +118,7 @@ public class RecurringTransactionService : IRecurringTransactionService
         recurring.EndDate = request.EndDate?.Date;
         recurring.DayOfMonth = request.DayOfMonth;
         recurring.Tags = request.Tags;
+        recurring.Notes = request.Notes;
         recurring.UpdatedAt = DateTime.UtcNow;
 
         // When updating, reset next occurrence to the start date (or today if start is in the past)

@@ -13,6 +13,7 @@ public class TransactionResponseDto
     public DateTime Date { get; set; }
     public string Description { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = [];
+    public string? Notes { get; set; }
     public TransactionStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
 }

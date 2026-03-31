@@ -161,6 +161,7 @@ public class TransactionService : ITransactionService
             Date = request.Date,
             Description = request.Description,
             Tags = request.Tags,
+            Notes = request.Notes,
             ToAccountId = request.ToAccountId,
             Status = request.Status,
             ClientRequestId = request.ClientRequestId
@@ -257,6 +258,7 @@ public class TransactionService : ITransactionService
         transaction.Date = request.Date;
         transaction.Description = request.Description;
         transaction.Tags = request.Tags;
+        transaction.Notes = request.Notes;
         transaction.ToAccountId = request.ToAccountId;
         transaction.Status = request.Status;
         transaction.UpdatedAt = DateTime.UtcNow;
@@ -457,6 +459,7 @@ public class TransactionService : ITransactionService
             Date = transaction.Date,
             Description = transaction.Description,
             Tags = transaction.Tags,
+            Notes = transaction.Notes,
             Status = transaction.Status,
             CreatedAt = transaction.CreatedAt
         };

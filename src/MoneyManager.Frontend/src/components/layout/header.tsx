@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, LogOut, User, Settings } from "lucide-react";
+import { Menu, LogOut, User, Settings, MessageSquarePlus, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -51,6 +51,18 @@ export function Header() {
         <Breadcrumb pathname={pathname} />
       </div>
 
+      {/* Report button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="rounded-full"
+        onClick={() => router.push("/report")}
+        title="Enviar Report"
+      >
+        <HelpCircle className="h-5 w-5" />
+        <span className="sr-only">Enviar Report</span>
+      </Button>
+
       {/* User menu */}
       <DropdownMenu>
         <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -75,6 +87,10 @@ export function Header() {
           <DropdownMenuItem onClick={() => router.push("/settings")}>
             <Settings className="mr-2 h-4 w-4" />
             Configuracoes
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/report")}>
+            <MessageSquarePlus className="mr-2 h-4 w-4" />
+            Enviar Report
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
