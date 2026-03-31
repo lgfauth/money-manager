@@ -14,9 +14,9 @@ interface CreditLimitGaugeProps {
 }
 
 function getGaugeColor(percentage: number): string {
-  if (percentage <= CREDIT_LIMIT_THRESHOLD_WARNING) return "hsl(var(--income))";
-  if (percentage <= CREDIT_LIMIT_THRESHOLD_DANGER) return "hsl(var(--warning))";
-  return "hsl(var(--expense))";
+  if (percentage <= CREDIT_LIMIT_THRESHOLD_WARNING) return "var(--color-income)";
+  if (percentage <= CREDIT_LIMIT_THRESHOLD_DANGER) return "var(--color-warning)";
+  return "var(--color-expense)";
 }
 
 function formatCurrency(value: number, currency = "BRL"): string {

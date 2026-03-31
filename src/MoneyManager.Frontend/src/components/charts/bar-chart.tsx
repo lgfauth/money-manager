@@ -29,7 +29,7 @@ interface BarChartProps {
 export function BarChartComponent({
   data,
   layout = "vertical",
-  color = "hsl(var(--primary))",
+  color = "var(--color-primary)",
   height = 280,
   formatter,
 }: BarChartProps) {

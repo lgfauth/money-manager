@@ -56,8 +56,8 @@ export default function ReportsPage() {
 
   const trendSeries = useMemo(
     () => [
-      { dataKey: "income", name: "Receitas", color: "hsl(var(--income))" },
-      { dataKey: "expense", name: "Despesas", color: "hsl(var(--expense))" },
+      { dataKey: "income", name: "Receitas", color: "var(--color-income)" },
+      { dataKey: "expense", name: "Despesas", color: "var(--color-expense)" },
     ],
     []
   );

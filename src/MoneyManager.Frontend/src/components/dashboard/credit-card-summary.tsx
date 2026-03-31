@@ -31,13 +31,19 @@ export function CreditCardSummary({ cards }: CreditCardSummaryProps) {
               <Link
                 key={card.id}
                 href={`/credit-cards/${card.id}`}
-                className="flex items-center gap-4 min-w-[200px] rounded-[10px] p-3 transition-shadow hover:shadow-lg"
+                className="flex items-center gap-4 min-w-[220px] rounded-[14px] px-[1.4rem] py-[1.2rem] transition-shadow hover:shadow-lg"
                 style={{ background: "linear-gradient(135deg, #0D1117, #1A2D40)" }}
               >
-                <RadialChart value={Math.min(used, 100)} size={60} />
+                <RadialChart
+                  value={Math.min(used, 100)}
+                  size={52}
+                  color="#00C896"
+                  trackColor="rgba(255,255,255,0.08)"
+                  textClassName="text-white font-heading text-[13px] font-semibold"
+                />
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate text-white">{card.name}</p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-[15px] font-semibold truncate text-white">{card.name}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#8B9AB0" }}>
                     {new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: card.currency,

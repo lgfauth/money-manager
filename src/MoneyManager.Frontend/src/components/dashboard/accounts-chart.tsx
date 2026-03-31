@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChartComponent } from "@/components/charts/bar-chart";
 import type { AccountResponseDto } from "@/types/account";
+import { AccountType } from "@/types/account";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -18,7 +19,7 @@ export function AccountsChart({ accounts }: AccountsChartProps) {
   const chartData = accounts.map((a) => ({
     name: a.name,
     value: a.balance,
-    color: a.color,
+    color: a.type === AccountType.CreditCard ? "#4E9BFF" : "#00C896",
   }));
 
   return (
