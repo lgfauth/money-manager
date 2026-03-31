@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { transactionSchema, type TransactionFormData } from "@/lib/validators";
@@ -73,6 +73,7 @@ export function TransactionForm({
   const [firstInCurrentInvoice, setFirstInCurrentInvoice] = useState(true);
 
   const isEditing = !!editingTransaction;
+  const saveAndAddRef = useRef(false);
 
   const {
     register,
@@ -134,6 +135,25 @@ export function TransactionForm({
   }, [editingTransaction, defaultType, reset]);
 
   const onSubmit = (data: TransactionFormData) => {
+    const keepOpen = saveAndAddRef.current;
+    saveAndAddRef.current = false;
+
+    const onSuccess = () => {
+      if (keepOpen) {
+        reset({
+          description: "",
+          amount: 0,
+          date: data.date,
+          type: data.type,
+          accountId: data.accountId,
+          categoryId: data.categoryId,
+          notes: "",
+        });
+      } else {
+        onOpenChange(false);
+      }
+    };
+
     if (isInstallment && isCreditCardAccount && !isEditing) {
       createInstallment.mutate(
         {
@@ -147,17 +167,15 @@ export function TransactionForm({
           categoryId: data.categoryId,
           notes: data.notes,
         },
-        { onSuccess: () => onOpenChange(false) }
+        { onSuccess }
       );
     } else if (isEditing) {
       updateTransaction.mutate(
         { id: editingTransaction!.id, data },
-        { onSuccess: () => onOpenChange(false) }
+        { onSuccess }
       );
     } else {
-      createTransaction.mutate(data, {
-        onSuccess: () => onOpenChange(false),
-      });
+      createTransaction.mutate(data, { onSuccess });
     }
   };
 
@@ -238,11 +256,13 @@ export function TransactionForm({
           <div className="space-y-2">
             <Label>Conta</Label>
             <Select
-              value={selectedAccountId}
+              value={selectedAccountId || null}
               onValueChange={(v) => v && setValue("accountId", v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione a conta" />
+                <SelectValue placeholder="Selecione a conta">
+                  {(value: string) => accounts?.find((a) => a.id === value)?.name}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {accounts?.map((acc) => (
@@ -262,11 +282,25 @@ export function TransactionForm({
           <div className="space-y-2">
             <Label>Categoria</Label>
             <Select
-              value={watch("categoryId")}
+              value={watch("categoryId") || null}
               onValueChange={(v) => v && setValue("categoryId", v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione a categoria" />
+                <SelectValue placeholder="Selecione a categoria">
+                  {(value: string) => {
+                    const cat = categories?.find((c) => c.id === value);
+                    if (!cat) return null;
+                    return (
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.name}
+                      </span>
+                    );
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {filteredCategories?.map((cat) => (
@@ -361,7 +395,26 @@ export function TransactionForm({
           )}
 
           <DialogFooter>
-            <Button type="submit" className="w-full" disabled={isPending}>
+            {!isEditing && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={isPending}
+                onClick={() => {
+                  saveAndAddRef.current = true;
+                  handleSubmit(onSubmit)();
+                }}
+              >
+                Salvar e Adicionar Outra
+              </Button>
+            )}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isPending}
+              onClick={() => { saveAndAddRef.current = false; }}
+            >
               {isPending
                 ? "Salvando..."
                 : isEditing
