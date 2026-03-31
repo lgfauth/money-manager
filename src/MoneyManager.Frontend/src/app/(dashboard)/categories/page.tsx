@@ -65,14 +65,14 @@ export default function CategoriesPage() {
     formState: { errors },
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
-    defaultValues: { color: "#6366f1", type: CategoryType.Expense },
+    defaultValues: { color: "#00C896", type: CategoryType.Expense },
   });
 
   const selectedColor = watch("color");
 
   const openCreate = () => {
     setEditingCategory(null);
-    reset({ name: "", type: CategoryType.Expense, color: "#6366f1" });
+    reset({ name: "", type: CategoryType.Expense, color: "#00C896" });
     setDialogOpen(true);
   };
 

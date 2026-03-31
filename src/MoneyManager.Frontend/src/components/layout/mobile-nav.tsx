@@ -61,12 +61,14 @@ export function MobileNav() {
               <span>Mais</span>
             </span>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0">
-            <div className="flex h-14 items-center gap-2 border-b px-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Wallet className="h-4 w-4" />
-              </div>
-              <span className="font-semibold text-sm">MoneyManager</span>
+          <SheetContent side="left" className="w-72 p-0 bg-sidebar text-sidebar-foreground border-r-0">
+            <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
+              <svg width="28" height="28" viewBox="0 0 64 64" className="shrink-0">
+                <rect width="64" height="64" rx="16" fill="#00C896"/>
+                <polyline points="10,44 22,28 32,36 44,18 54,26" fill="none" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="44" cy="18" r="5" fill="white"/>
+              </svg>
+              <span className="font-heading font-semibold text-sm text-white">MoneyManager</span>
             </div>
             <nav className="p-2">
               <ul className="space-y-1">
@@ -82,10 +84,10 @@ export function MobileNav() {
                         href={item.href}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                           isActive
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                         )}
                       >
                         <item.icon className="h-4 w-4" />

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChevronLeft, Wallet } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navigationItems } from "@/config/navigation";
 import { useUIStore } from "@/stores/ui-store";
@@ -26,21 +26,23 @@ export function Sidebar() {
   return (
     <TooltipProvider delay={0}>
       <motion.aside
-        className="hidden md:flex flex-col border-r bg-card h-screen sticky top-0"
+        className="hidden md:flex flex-col border-r border-sidebar-border bg-sidebar h-screen sticky top-0"
         animate={{ width: sidebarCollapsed ? 64 : 240 }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
       >
         {/* Logo */}
-        <div className="flex h-14 items-center gap-2 border-b px-4">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Wallet className="h-4 w-4" />
-          </div>
+        <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-4">
+          <svg width="28" height="28" viewBox="0 0 64 64" className="shrink-0">
+            <rect width="64" height="64" rx="16" fill="#00C896"/>
+            <polyline points="10,44 22,28 32,36 44,18 54,26" fill="none" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="44" cy="18" r="5" fill="white"/>
+          </svg>
           {!sidebarCollapsed && (
             <motion.span
               initial={{ opacity: 0, width: 0 }}
               animate={{ opacity: 1, width: "auto" }}
               exit={{ opacity: 0, width: 0 }}
-              className="font-semibold text-sm whitespace-nowrap overflow-hidden"
+              className="font-heading font-semibold text-sm whitespace-nowrap overflow-hidden text-white"
             >
               MoneyManager
             </motion.span>
@@ -60,10 +62,10 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                     isActive
-                      ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
@@ -88,7 +90,7 @@ export function Sidebar() {
             })}
           </ul>
 
-          <Separator className="my-2" />
+          <Separator className="my-2 bg-sidebar-border" />
 
           <ul className="space-y-1">
             {userItems.map((item) => {
@@ -98,10 +100,10 @@ export function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                     isActive
-                      ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
@@ -128,11 +130,11 @@ export function Sidebar() {
         </nav>
 
         {/* Collapse toggle */}
-        <div className="border-t p-2">
+        <div className="border-t border-sidebar-border p-2">
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-center"
+            className="w-full justify-center text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             onClick={toggleCollapsed}
           >
             <ChevronLeft

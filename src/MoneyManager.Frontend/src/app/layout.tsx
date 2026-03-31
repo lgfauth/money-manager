@@ -1,17 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Sora, DM_Sans } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const sora = Sora({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const dmSans = DM_Sans({
+  variable: "--font-sans",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const viewport: Viewport = {
-  themeColor: "#6366f1",
+  themeColor: "#00C896",
 };
 
 export const metadata: Metadata = {
@@ -40,9 +47,10 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${sora.variable} ${dmSans.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

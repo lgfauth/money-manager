@@ -66,7 +66,7 @@ export function AccountForm({
       type: AccountType.Checking,
       initialBalance: 0,
       currency: DEFAULT_CURRENCY,
-      color: "#6366f1",
+      color: "#00C896",
     },
   });
 
@@ -96,7 +96,7 @@ export function AccountForm({
         type: AccountType.Checking,
         initialBalance: 0,
         currency: DEFAULT_CURRENCY,
-        color: "#6366f1",
+        color: "#00C896",
       });
     }
   }, [open, editingAccount, reset]);

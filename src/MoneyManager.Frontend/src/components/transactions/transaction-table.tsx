@@ -70,7 +70,7 @@ function MobileCard({
   const Icon = config.icon;
 
   return (
-    <Card>
+    <Card className="rounded-[10px] hover:shadow-md transition-shadow">
       <CardContent className="flex items-center gap-3 p-3">
         <div className={cn("rounded-full p-2 bg-muted", config.className)}>
           <Icon className="h-4 w-4" />
@@ -84,7 +84,7 @@ function MobileCard({
           </p>
         </div>
         <div className="text-right">
-          <p className={cn("text-sm font-bold", config.className)}>
+          <p className={cn("text-sm font-semibold font-heading", config.className)}>
             {transaction.type === TransactionType.Income ? "+" : "-"}
             {new Intl.NumberFormat("pt-BR", {
               style: "currency",
@@ -123,7 +123,7 @@ export function TransactionTable({
   return (
     <>
       {/* Desktop table */}
-      <div className="hidden md:block rounded-lg border">
+      <div className="hidden md:block rounded-[10px] border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -156,7 +156,7 @@ export function TransactionTable({
                     </Badge>
                   </TableCell>
                   <TableCell
-                    className={cn("text-right font-medium", config.className)}
+                    className={cn("text-right font-semibold font-heading", config.className)}
                   >
                     {tx.type === TransactionType.Income ? "+" : "-"}
                     {new Intl.NumberFormat("pt-BR", {

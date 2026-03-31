@@ -4,8 +4,8 @@
   "description": "Gerenciador financeiro pessoal",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#6366f1",
+  "background_color": "#F7F8FA",
+  "theme_color": "#00C896",
   "orientation": "portrait-primary",
   "icons": [
     {

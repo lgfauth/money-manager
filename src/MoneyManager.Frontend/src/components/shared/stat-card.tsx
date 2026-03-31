@@ -14,12 +14,12 @@ interface StatCardProps {
   variant?: "default" | "income" | "expense" | "investment" | "warning";
 }
 
-const variantBorder: Record<string, string> = {
-  default: "border-l-primary",
-  income: "border-l-income",
-  expense: "border-l-expense",
-  investment: "border-l-investment",
-  warning: "border-l-warning",
+const variantTopBar: Record<string, string> = {
+  default: "before:bg-primary",
+  income: "before:bg-income",
+  expense: "before:bg-expense",
+  investment: "before:bg-investment",
+  warning: "before:bg-warning",
 };
 
 const variantIcon: Record<string, string> = {
@@ -40,12 +40,12 @@ export function StatCard({
   return (
     <Card
       className={cn(
-        "rounded-xl border-l-4 shadow-sm hover:shadow-md transition-shadow",
-        variantBorder[variant]
+        "relative overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px]",
+        variantTopBar[variant]
       )}
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+        <CardTitle className="text-xs font-medium text-muted-foreground">
           {title}
         </CardTitle>
         <div
@@ -58,7 +58,7 @@ export function StatCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-[26px] font-semibold font-heading">{value}</div>
         {trend && (
           <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
             {trend.value >= 0 ? (
