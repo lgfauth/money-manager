@@ -39,10 +39,8 @@ export default function DashboardPage() {
         <BudgetUsageChart data={expensesByCategory} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AccountsChart accounts={accounts} />
-        <CreditCardSummary cards={creditCards} />
-      </div>
+      <AccountsChart accounts={accounts} />
+      <CreditCardSummary cards={creditCards} />
 
       <RecentTransactions transactions={recentTransactions} />
     </div>

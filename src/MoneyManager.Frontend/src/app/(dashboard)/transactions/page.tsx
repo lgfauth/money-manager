@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, ArrowLeft, ArrowRight, Receipt } from "lucide-react";
 import { useTransactions } from "@/hooks/use-transactions";
@@ -45,6 +45,17 @@ export default function TransactionsPage() {
     useState<TransactionResponseDto | null>(null);
   const [deletingTx, setDeletingTx] =
     useState<TransactionResponseDto | null>(null);
+
+  // Listen for FAB "open-new-transaction" event (mobile)
+  const handleFabOpen = useCallback(() => {
+    setEditingTx(null);
+    setFormOpen(true);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("open-new-transaction", handleFabOpen);
+    return () => window.removeEventListener("open-new-transaction", handleFabOpen);
+  }, [handleFabOpen]);
 
   // Update URL params
   const setFilters = (newFilters: Partial<TransactionFilters>) => {

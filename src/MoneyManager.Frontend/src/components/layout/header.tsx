@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, LogOut, User, Settings, MessageSquarePlus, HelpCircle } from "lucide-react";
+import { Menu, LogOut, User, Settings, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -51,23 +51,11 @@ export function Header() {
         <Breadcrumb pathname={pathname} />
       </div>
 
-      {/* Report button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="rounded-full"
-        onClick={() => router.push("/report")}
-        title="Enviar Report"
-      >
-        <HelpCircle className="h-5 w-5" />
-        <span className="sr-only">Enviar Report</span>
-      </Button>
-
       {/* User menu */}
       <DropdownMenu>
         <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+          <Avatar className="h-9 w-9 ring-2 ring-primary/30">
+            <AvatarFallback className="bg-primary text-white text-xs font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>

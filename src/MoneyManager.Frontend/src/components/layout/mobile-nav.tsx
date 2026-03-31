@@ -103,12 +103,19 @@ export function MobileNav() {
       </nav>
 
       {/* FAB for quick add (mobile only) */}
-      <Link
-        href="/transactions?new=true"
+      <button
+        type="button"
+        onClick={() => {
+          if (pathname.startsWith("/transactions")) {
+            window.dispatchEvent(new CustomEvent("open-new-transaction"));
+          } else {
+            window.location.href = "/transactions?new=true";
+          }
+        }}
         className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
       >
         <Plus className="h-6 w-6" />
-      </Link>
+      </button>
     </>
   );
 }
