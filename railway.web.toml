@@ -1,7 +1,7 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "src/money-manager-web/Dockerfile"
-watchPatterns = ["src/money-manager-web/**"]
+dockerfilePath = "src/MoneyManager.Frontend/Dockerfile"
+watchPatterns = ["src/MoneyManager.Frontend/**"]
 
 [build.args]
 NEXT_PUBLIC_API_URL = "${{API_URL}}"
