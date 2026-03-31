@@ -1,0 +1,45 @@
+{
+  "Common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "loading": "Cargando...",
+    "confirm": "Confirmar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "saving": "Guardando...",
+    "optional": "Opcional",
+    "all": "Todos",
+    "none": "Ninguno",
+    "sortBy": "Ordenar por:",
+    "type": "Tipo",
+    "name": "Nombre",
+    "balance": "Saldo",
+    "noData": "Sin datos",
+    "actions": "Acciones"
+  },
+  "Navigation": {
+    "dashboard": "Panel",
+    "accounts": "Cuentas",
+    "transactions": "Transacciones",
+    "categories": "Categorías",
+    "budgets": "Presupuestos",
+    "reports": "Informes",
+    "recurring": "Recurrentes",
+    "creditCards": "Tarjetas",
+    "invoices": "Facturas",
+    "profile": "Perfil",
+    "settings": "Configuración",
+    "onboarding": "Bienvenida"
+  },
+  "Dashboard": {
+    "title": "Resumen General",
+    "netBalance": "Saldo Neto",
+    "totalAssets": "Total en Activos",
+    "monthIncome": "Ingresos del Mes",
+    "monthExpense": "Gastos del Mes"
+  }
+}

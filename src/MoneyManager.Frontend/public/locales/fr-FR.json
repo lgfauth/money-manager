@@ -1,0 +1,45 @@
+{
+  "Common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "loading": "Chargement...",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "saving": "Enregistrement...",
+    "optional": "Facultatif",
+    "all": "Tous",
+    "none": "Aucun",
+    "sortBy": "Trier par :",
+    "type": "Type",
+    "name": "Nom",
+    "balance": "Solde",
+    "noData": "Aucune donnée",
+    "actions": "Actions"
+  },
+  "Navigation": {
+    "dashboard": "Tableau de bord",
+    "accounts": "Comptes",
+    "transactions": "Transactions",
+    "categories": "Catégories",
+    "budgets": "Budgets",
+    "reports": "Rapports",
+    "recurring": "Récurrents",
+    "creditCards": "Cartes",
+    "invoices": "Factures",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "onboarding": "Bienvenue"
+  },
+  "Dashboard": {
+    "title": "Vue d'ensemble",
+    "netBalance": "Solde Net",
+    "totalAssets": "Total des Actifs",
+    "monthIncome": "Revenus du Mois",
+    "monthExpense": "Dépenses du Mois"
+  }
+}
