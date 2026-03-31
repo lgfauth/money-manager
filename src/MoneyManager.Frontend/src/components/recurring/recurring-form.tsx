@@ -98,6 +98,7 @@ export function RecurringForm({
   });
 
   useEffect(() => {
+    if (!open) return;
     if (editingRecurring) {
       reset({
         description: editingRecurring.description,
@@ -124,7 +125,7 @@ export function RecurringForm({
         notes: "",
       });
     }
-  }, [editingRecurring, reset]);
+  }, [open, editingRecurring, reset]);
 
   const onSubmit = (data: RecurringFormData) => {
     if (isEditing) {

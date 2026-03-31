@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCategories } from "@/hooks/use-categories";
 import { useCreateBudget, useUpdateBudget } from "@/hooks/use-budgets";
@@ -58,6 +58,23 @@ export function BudgetWizard({
     }
     return map;
   });
+
+  useEffect(() => {
+    if (!open) return;
+    setStep(0);
+    setDirection(0);
+    if (existingBudget) {
+      setSelectedCategoryIds(existingBudget.items.map((i) => i.categoryId));
+      const map: Record<string, number> = {};
+      existingBudget.items.forEach((i) => (map[i.categoryId] = i.limitAmount));
+      setAmounts(map);
+    } else {
+      setSelectedCategoryIds(expenseCategories.map((c) => c.id));
+      const map: Record<string, number> = {};
+      expenseCategories.forEach((c) => (map[c.id] = DEFAULT_BUDGET_AMOUNT));
+      setAmounts(map);
+    }
+  }, [open, existingBudget, expenseCategories]);
 
   const toggleCategory = (id: string) => {
     setSelectedCategoryIds((prev) =>

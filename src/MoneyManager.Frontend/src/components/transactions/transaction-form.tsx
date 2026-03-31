@@ -108,6 +108,7 @@ export function TransactionForm({
   });
 
   useEffect(() => {
+    if (!open) return;
     if (editingTransaction) {
       reset({
         description: editingTransaction.description,
@@ -132,7 +133,7 @@ export function TransactionForm({
       setIsInstallment(false);
       setInstallmentCount(2);
     }
-  }, [editingTransaction, defaultType, reset]);
+  }, [open, editingTransaction, defaultType, reset]);
 
   const onSubmit = (data: TransactionFormData) => {
     const keepOpen = saveAndAddRef.current;

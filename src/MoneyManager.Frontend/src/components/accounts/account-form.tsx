@@ -78,6 +78,7 @@ export function AccountForm({
   const isEditing = !!editingAccount;
 
   useEffect(() => {
+    if (!open) return;
     if (editingAccount) {
       reset({
         name: editingAccount.name,
@@ -98,7 +99,7 @@ export function AccountForm({
         color: "#6366f1",
       });
     }
-  }, [editingAccount, reset]);
+  }, [open, editingAccount, reset]);
 
   const onSubmit = (data: AccountFormData) => {
     if (!isCreditCard) {
