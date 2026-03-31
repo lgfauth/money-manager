@@ -191,7 +191,7 @@ export function TransactionForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] sm:max-h-[90vh] overflow-y-auto sm:max-w-md pb-8 sm:pb-4">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md max-md:mt-[env(safe-area-inset-top,16px)] max-md:mb-[env(safe-area-inset-bottom,16px)] max-md:pt-10 max-md:pb-6">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? "Editar Transacao" : "Nova Transacao"}

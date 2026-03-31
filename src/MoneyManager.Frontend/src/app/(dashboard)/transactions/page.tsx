@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, ArrowLeft, ArrowRight, Receipt } from "lucide-react";
 import { useTransactions } from "@/hooks/use-transactions";
@@ -41,21 +41,21 @@ export default function TransactionsPage() {
   const [formOpen, setFormOpen] = useState(
     searchParams.get("new") === "true"
   );
+
+  // Re-open form when navigating to ?new=true (e.g. from mobile FAB)
+  useEffect(() => {
+    if (searchParams.get("new") === "true") {
+      setEditingTx(null);
+      setFormOpen(true);
+      // Clean the URL param so it doesn't persist
+      router.replace("/transactions");
+    }
+  }, [searchParams, router]);
+
   const [editingTx, setEditingTx] =
     useState<TransactionResponseDto | null>(null);
   const [deletingTx, setDeletingTx] =
     useState<TransactionResponseDto | null>(null);
-
-  // Listen for FAB "open-new-transaction" event (mobile)
-  const handleFabOpen = useCallback(() => {
-    setEditingTx(null);
-    setFormOpen(true);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("open-new-transaction", handleFabOpen);
-    return () => window.removeEventListener("open-new-transaction", handleFabOpen);
-  }, [handleFabOpen]);
 
   // Update URL params
   const setFilters = (newFilters: Partial<TransactionFilters>) => {
