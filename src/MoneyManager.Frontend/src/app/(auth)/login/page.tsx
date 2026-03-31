@@ -3,18 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { Loader2, Wallet } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/lib/validators";
 import { useLogin } from "@/hooks/use-auth";
 
@@ -34,20 +23,34 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="border-0 bg-card/80 shadow-xl backdrop-blur-sm">
-      <CardHeader className="space-y-2 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <Wallet className="h-6 w-6" />
+    <div className="login-page">
+      {/* Painel esquerdo — escuro */}
+      <div className="login-panel-left">
+        <div className="login-logo">
+          <svg width="24" height="24" viewBox="0 0 64 64" fill="none">
+            <polyline
+              points="10,44 22,28 32,36 44,18 54,26"
+              stroke="#0A2B1E"
+              strokeWidth="4.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="44" cy="18" r="5" fill="#0A2B1E" />
+          </svg>
         </div>
-        <CardTitle className="text-2xl font-bold">MoneyManager</CardTitle>
-        <CardDescription>Entre com suas credenciais</CardDescription>
-      </CardHeader>
+        <h1 className="login-brand">MoneyManager</h1>
+        <p className="login-tagline">Controle financeiro inteligente</p>
+      </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
-            <Input
+      {/* Painel direito — formulário */}
+      <div className="login-panel-right">
+        <h2 className="login-title">Bem-vindo</h2>
+        <p className="login-subtitle">Entre com suas credenciais</p>
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="login-field">
+            <label htmlFor="email">E-MAIL</label>
+            <input
               id="email"
               type="email"
               placeholder="seu@email.com"
@@ -55,13 +58,13 @@ export default function LoginPage() {
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="mt-1 text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Senha</Label>
-            <Input
+          <div className="login-field">
+            <label htmlFor="password">SENHA</label>
+            <input
               id="password"
               type="password"
               placeholder="••••••"
@@ -69,36 +72,29 @@ export default function LoginPage() {
               {...register("password")}
             />
             {errors.password && (
-              <p className="text-sm text-destructive">
+              <p className="mt-1 text-sm text-destructive">
                 {errors.password.message}
               </p>
             )}
           </div>
-        </CardContent>
 
-        <CardFooter className="flex flex-col gap-4">
-          <Button
+          <button
             type="submit"
-            className="w-full"
+            className="btn-login"
             disabled={loginMutation.isPending}
           >
             {loginMutation.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
             )}
             Entrar
-          </Button>
+          </button>
+        </form>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Nao tem uma conta?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-primary hover:underline"
-            >
-              Cadastre-se
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+        <p className="login-register">
+          Não tem uma conta?{" "}
+          <Link href="/register">Cadastre-se</Link>
+        </p>
+      </div>
+    </div>
   );
 }
