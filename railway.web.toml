@@ -1,8 +1,11 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.web"
+dockerfilePath = "src/money-manager-web/Dockerfile"
+watchPatterns = ["src/money-manager-web/**"]
+
+[build.args]
+NEXT_PUBLIC_API_URL = "${{API_URL}}"
 
 [deploy]
-startCommand = "/docker-entrypoint.sh"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
