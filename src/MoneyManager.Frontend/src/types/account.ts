@@ -9,7 +9,7 @@ export enum AccountType {
 export interface AccountRequestDto {
   name: string;
   type: AccountType;
-  balance: number;
+  initialBalance: number;
   currency: string;
   color: string;
   invoiceClosingDay?: number;

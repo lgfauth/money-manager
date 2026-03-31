@@ -166,6 +166,7 @@ export function TransactionForm({
           accountId: data.accountId,
           categoryId: data.categoryId,
           notes: data.notes,
+          clientRequestId: crypto.randomUUID(),
         },
         { onSuccess }
       );
@@ -175,7 +176,10 @@ export function TransactionForm({
         { onSuccess }
       );
     } else {
-      createTransaction.mutate(data, { onSuccess });
+      createTransaction.mutate(
+        { ...data, clientRequestId: crypto.randomUUID() },
+        { onSuccess }
+      );
     }
   };
 

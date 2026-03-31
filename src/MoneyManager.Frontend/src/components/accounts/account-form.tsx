@@ -64,7 +64,7 @@ export function AccountForm({
     defaultValues: {
       name: "",
       type: AccountType.Checking,
-      balance: 0,
+      initialBalance: 0,
       currency: DEFAULT_CURRENCY,
       color: "#6366f1",
     },
@@ -73,7 +73,7 @@ export function AccountForm({
   const selectedType = watch("type");
   const selectedColor = watch("color");
   const selectedCurrency = watch("currency");
-  const balanceValue = watch("balance");
+  const balanceValue = watch("initialBalance");
   const isCreditCard = selectedType === AccountType.CreditCard;
   const isEditing = !!editingAccount;
 
@@ -82,7 +82,7 @@ export function AccountForm({
       reset({
         name: editingAccount.name,
         type: editingAccount.type,
-        balance: editingAccount.balance,
+        initialBalance: editingAccount.balance,
         currency: editingAccount.currency,
         color: editingAccount.color,
         invoiceClosingDay: editingAccount.invoiceClosingDay,
@@ -93,7 +93,7 @@ export function AccountForm({
       reset({
         name: "",
         type: AccountType.Checking,
-        balance: 0,
+        initialBalance: 0,
         currency: DEFAULT_CURRENCY,
         color: "#6366f1",
       });
@@ -149,11 +149,11 @@ export function AccountForm({
           <div className="space-y-2">
             <Label htmlFor="type">Tipo</Label>
             <Select
-              defaultValue={selectedType}
+              value={selectedType}
               onValueChange={(v) => v && setValue("type", v as AccountType)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue placeholder={accountTypeLabels[selectedType] ?? "Selecione"} />
               </SelectTrigger>
               <SelectContent>
                 {Object.values(AccountType).map((t) => (
@@ -169,7 +169,7 @@ export function AccountForm({
             <Label>Saldo Inicial</Label>
             <MoneyInput
               value={balanceValue}
-              onChange={(v) => setValue("balance", v)}
+              onChange={(v) => setValue("initialBalance", v)}
               currencyCode={selectedCurrency}
             />
           </div>
@@ -177,11 +177,11 @@ export function AccountForm({
           <div className="space-y-2">
             <Label htmlFor="currency">Moeda</Label>
             <Select
-              defaultValue={selectedCurrency}
+              value={selectedCurrency}
               onValueChange={(v) => v && setValue("currency", v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
                 {currencies.map((c) => (

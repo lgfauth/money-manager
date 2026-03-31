@@ -14,7 +14,7 @@ export function useRecurring() {
     queryKey: queryKeys.recurring,
     queryFn: () =>
       apiClient.get<RecurringTransactionResponseDto[]>(
-        "/api/recurring-transactions"
+        "/api/RecurringTransactions"
       ),
   });
 }
@@ -24,7 +24,7 @@ export function useCreateRecurring() {
   return useMutation({
     mutationFn: (data: RecurringTransactionRequestDto) =>
       apiClient.post<RecurringTransactionResponseDto>(
-        "/api/recurring-transactions",
+        "/api/RecurringTransactions",
         data
       ),
     onSuccess: () => {
@@ -45,7 +45,7 @@ export function useUpdateRecurring() {
       id: string;
       data: RecurringTransactionRequestDto;
     }) =>
-      apiClient.put<void>(`/api/recurring-transactions/${id}`, data),
+      apiClient.put<void>(`/api/RecurringTransactions/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
       toast.success("Recorrente atualizada");
@@ -58,7 +58,7 @@ export function useDeleteRecurring() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      apiClient.delete<void>(`/api/recurring-transactions/${id}`),
+      apiClient.delete<void>(`/api/RecurringTransactions/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
       toast.success("Recorrente excluida");

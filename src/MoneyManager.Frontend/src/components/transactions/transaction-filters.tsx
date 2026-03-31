@@ -36,7 +36,7 @@ export function TransactionFilters({
     filters.type || filters.accountId || filters.startDate || filters.endDate;
 
   const clearFilters = () => {
-    onFiltersChange({});
+    onFiltersChange({ type: undefined, accountId: undefined, startDate: undefined, endDate: undefined });
   };
 
   return (
@@ -72,7 +72,11 @@ export function TransactionFilters({
           }
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Todas" />
+            <SelectValue placeholder="Todas">
+              {filters.accountId
+                ? accounts?.find((a) => a.id === filters.accountId)?.name
+                : undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">Todas</SelectItem>

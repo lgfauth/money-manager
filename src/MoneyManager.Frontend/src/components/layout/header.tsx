@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { Menu, Search, LogOut, User, Settings } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -16,13 +16,13 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useLogout } from "@/hooks/use-auth";
 import { Breadcrumb } from "./breadcrumb";
-import Link from "next/link";
 
 export function Header() {
   const { user } = useAuthStore();
-  const { toggleSidebar, toggleCommand } = useUIStore();
+  const { toggleSidebar } = useUIStore();
   const handleLogout = useLogout();
   const pathname = usePathname();
+  const router = useRouter();
 
   const initials = user?.name
     ? user.name
@@ -51,20 +51,6 @@ export function Header() {
         <Breadcrumb pathname={pathname} />
       </div>
 
-      {/* Command palette trigger */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="hidden gap-2 text-muted-foreground md:flex"
-        onClick={toggleCommand}
-      >
-        <Search className="h-4 w-4" />
-        <span className="text-xs">Buscar...</span>
-        <kbd className="pointer-events-none rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-          Ctrl+K
-        </kbd>
-      </Button>
-
       {/* User menu */}
       <DropdownMenu>
         <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -82,17 +68,13 @@ export function Header() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
-            <Link href="/profile">
-              <User className="mr-2 h-4 w-4" />
-              Perfil
-            </Link>
+          <DropdownMenuItem onClick={() => router.push("/profile")}>
+            <User className="mr-2 h-4 w-4" />
+            Perfil
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Link href="/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              Configuracoes
-            </Link>
+          <DropdownMenuItem onClick={() => router.push("/settings")}>
+            <Settings className="mr-2 h-4 w-4" />
+            Configuracoes
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>

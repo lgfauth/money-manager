@@ -74,7 +74,7 @@ export function BudgetWizard({
 
     if (existingBudget) {
       updateBudget.mutate(
-        { id: existingBudget.id, data: payload },
+        { id: month, data: payload },
         { onSuccess: () => onOpenChange(false) }
       );
     } else {
