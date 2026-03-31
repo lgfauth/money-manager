@@ -1,9 +1,9 @@
 # Build
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY src/MoneyManager.Frontend/package*.json ./
+COPY package*.json ./
 RUN npm ci
-COPY src/MoneyManager.Frontend/ .
+COPY . .
 
 # Inject API URL at build time
 ARG NEXT_PUBLIC_API_URL
