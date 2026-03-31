@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -61,30 +62,36 @@ export function Header() {
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{user?.name}</p>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
-            </div>
-          </DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => router.push("/profile")}>
-            <User className="mr-2 h-4 w-4" />
-            Perfil
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/settings")}>
-            <Settings className="mr-2 h-4 w-4" />
-            Configuracoes
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push("/report")}>
-            <MessageSquarePlus className="mr-2 h-4 w-4" />
-            Enviar Report
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => router.push("/profile")}>
+              <User className="mr-2 h-4 w-4" />
+              Perfil
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")}>
+              <Settings className="mr-2 h-4 w-4" />
+              Configuracoes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/report")}>
+              <MessageSquarePlus className="mr-2 h-4 w-4" />
+              Enviar Report
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

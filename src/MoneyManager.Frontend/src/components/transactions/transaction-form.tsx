@@ -404,7 +404,7 @@ export function TransactionForm({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full"
+                className="w-full sm:w-auto sm:flex-1"
                 disabled={isPending}
                 onClick={() => {
                   saveAndAddRef.current = true;
@@ -416,7 +416,7 @@ export function TransactionForm({
             )}
             <Button
               type="submit"
-              className="w-full"
+              className="w-full sm:w-auto sm:flex-1"
               disabled={isPending}
               onClick={() => { saveAndAddRef.current = false; }}
             >
