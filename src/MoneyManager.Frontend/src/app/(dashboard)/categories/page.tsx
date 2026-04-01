@@ -33,6 +33,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { ColorPicker } from "@/components/shared/color-picker";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { categorySchema, type CategoryFormData } from "@/lib/validators";
@@ -62,7 +63,7 @@ export default function CategoriesPage() {
     reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: { color: "#00C896", type: CategoryType.Expense },
@@ -214,6 +215,8 @@ export default function CategoriesPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <FormErrorSummary errors={errors} submitCount={submitCount} />
+
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
               <Input id="name" {...register("name")} />

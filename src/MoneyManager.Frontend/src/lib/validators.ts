@@ -27,16 +27,54 @@ export const categorySchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida"),
 });
 
-export const accountSchema = z.object({
-  name: z.string().min(1, "Nome obrigatório"),
-  type: z.nativeEnum(AccountType),
-  initialBalance: z.number(),
-  currency: z.string().min(1),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  invoiceClosingDay: z.number().min(1).max(28).optional(),
-  invoiceDueDayOffset: z.number().min(1).max(30).optional(),
-  creditLimit: z.number().min(0).optional(),
-});
+export const accountSchema = z
+  .object({
+    name: z.string().min(1, "Nome obrigatório"),
+    type: z.nativeEnum(AccountType),
+    initialBalance: z.number(),
+    currency: z.string().min(1),
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    invoiceClosingDay: z.number().min(1).max(28).optional(),
+    invoiceDueDayOffset: z.number().min(1).max(30).optional(),
+    creditLimit: z.number().min(0).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type !== AccountType.CreditCard) {
+      return;
+    }
+
+    if (data.creditLimit === undefined || data.creditLimit < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["creditLimit"],
+        message: "Limite obrigatório para cartão de crédito",
+      });
+    }
+
+    if (
+      data.invoiceClosingDay === undefined ||
+      data.invoiceClosingDay < 1 ||
+      data.invoiceClosingDay > 28
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["invoiceClosingDay"],
+        message: "Dia de fechamento deve estar entre 1 e 28",
+      });
+    }
+
+    if (
+      data.invoiceDueDayOffset === undefined ||
+      data.invoiceDueDayOffset < 1 ||
+      data.invoiceDueDayOffset > 30
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["invoiceDueDayOffset"],
+        message: "Dias até vencimento deve estar entre 1 e 30",
+      });
+    }
+  });
 
 export const transactionSchema = z.object({
   description: z.string().min(1, "Descrição obrigatória"),

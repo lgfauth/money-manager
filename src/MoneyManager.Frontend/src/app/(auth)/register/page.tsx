@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { registerSchema, type RegisterFormData } from "@/lib/validators";
 import { useRegister } from "@/hooks/use-auth";
 
@@ -22,7 +23,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
@@ -50,6 +51,8 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
+          <FormErrorSummary errors={errors} submitCount={submitCount} />
+
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input

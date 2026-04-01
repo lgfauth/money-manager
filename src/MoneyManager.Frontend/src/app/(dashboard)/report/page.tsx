@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/auth-store";
 
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,14 @@ export default function ReportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitCount, setSubmitCount] = useState(0);
+
+  const validationErrors = [
+    !category ? "Selecione uma categoria para o report." : null,
+    description.trim().length < 10
+      ? "A descricao precisa ter pelo menos 10 caracteres."
+      : null,
+  ].filter((message): message is string => Boolean(message));
 
   const submitReport = useMutation({
     mutationFn: async () => {
@@ -102,9 +111,7 @@ export default function ReportPage() {
   };
 
   const canSubmit =
-    category.length > 0 &&
-    description.length >= 10 &&
-    !submitReport.isPending;
+    validationErrors.length === 0 && !submitReport.isPending;
 
   if (submitted) {
     return (
@@ -161,10 +168,22 @@ export default function ReportPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+
+              setSubmitCount((currentCount) => currentCount + 1);
+
+              if (!canSubmit) {
+                return;
+              }
+
               submitReport.mutate();
             }}
             className="space-y-5"
           >
+            <FormErrorSummary
+              submitCount={submitCount}
+              messages={validationErrors}
+            />
+
             {/* Category */}
             <div className="space-y-2">
               <Label>Categoria do Report</Label>
@@ -180,6 +199,11 @@ export default function ReportPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {submitCount > 0 && !category && (
+                <p className="text-xs text-destructive">
+                  Selecione uma categoria para continuar.
+                </p>
+              )}
             </div>
 
             {/* Name (read-only from auth) */}
@@ -210,6 +234,11 @@ export default function ReportPage() {
                   {description.length}/5000
                 </p>
               </div>
+              {submitCount > 0 && description.trim().length < 10 && (
+                <p className="text-xs text-destructive">
+                  Informe uma descricao com pelo menos 10 caracteres.
+                </p>
+              )}
             </div>
 
             {/* File upload */}
@@ -274,7 +303,7 @@ export default function ReportPage() {
             <Button
               type="submit"
               className="w-full"
-              disabled={!canSubmit}
+              disabled={submitReport.isPending}
             >
               {submitReport.isPending ? "Enviando..." : "Enviar Report"}
             </Button>

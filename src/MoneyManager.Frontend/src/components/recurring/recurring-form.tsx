@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MoneyInput } from "@/components/shared/money-input";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { cn } from "@/lib/utils";
 
 interface RecurringFormProps {
@@ -73,7 +74,7 @@ export function RecurringForm({
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<RecurringFormData>({
     resolver: zodResolver(recurringSchema),
     defaultValues: {
@@ -157,6 +158,8 @@ export function RecurringForm({
         </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-4">
+          <FormErrorSummary errors={errors} submitCount={submitCount} />
+
           {/* Type selector */}
           <div className="space-y-2">
             <Label>Tipo</Label>

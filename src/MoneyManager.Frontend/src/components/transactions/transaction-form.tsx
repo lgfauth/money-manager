@@ -37,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MoneyInput } from "@/components/shared/money-input";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { cn } from "@/lib/utils";
 
 interface TransactionFormProps {
@@ -81,7 +82,7 @@ export function TransactionForm({
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -204,6 +205,8 @@ export function TransactionForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <FormErrorSummary errors={errors} submitCount={submitCount} />
+
           {/* Segmented type selector */}
           <div className="space-y-2">
             <Label>Tipo</Label>

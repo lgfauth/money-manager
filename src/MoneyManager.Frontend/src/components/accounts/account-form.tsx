@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { MoneyInput } from "@/components/shared/money-input";
 import { ColorPicker } from "@/components/shared/color-picker";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 
 interface AccountFormProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function AccountForm({
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<AccountFormData>({
     resolver: zodResolver(accountSchema),
     defaultValues: {
@@ -77,6 +78,15 @@ export function AccountForm({
   const isCreditCard = selectedType === AccountType.CreditCard;
   const isEditing = !!editingAccount;
 
+  const parseOptionalNumber = (value: string) => {
+    if (value === "") {
+      return undefined;
+    }
+
+    const parsedValue = Number(value);
+    return Number.isNaN(parsedValue) ? undefined : parsedValue;
+  };
+
   useEffect(() => {
     if (!open) return;
     if (editingAccount) {
@@ -86,9 +96,18 @@ export function AccountForm({
         initialBalance: editingAccount.balance,
         currency: editingAccount.currency,
         color: editingAccount.color,
-        invoiceClosingDay: editingAccount.invoiceClosingDay,
-        invoiceDueDayOffset: editingAccount.invoiceDueDayOffset,
-        creditLimit: editingAccount.creditLimit,
+        invoiceClosingDay:
+          editingAccount.type === AccountType.CreditCard
+            ? editingAccount.invoiceClosingDay
+            : undefined,
+        invoiceDueDayOffset:
+          editingAccount.type === AccountType.CreditCard
+            ? editingAccount.invoiceDueDayOffset
+            : undefined,
+        creditLimit:
+          editingAccount.type === AccountType.CreditCard
+            ? editingAccount.creditLimit
+            : undefined,
       });
     } else {
       reset({
@@ -100,6 +119,14 @@ export function AccountForm({
       });
     }
   }, [open, editingAccount, reset]);
+
+  useEffect(() => {
+    if (selectedType !== AccountType.CreditCard) {
+      setValue("invoiceClosingDay", undefined);
+      setValue("invoiceDueDayOffset", undefined);
+      setValue("creditLimit", undefined);
+    }
+  }, [selectedType, setValue]);
 
   const onSubmit = (data: AccountFormData) => {
     if (!isCreditCard) {
@@ -135,6 +162,8 @@ export function AccountForm({
         </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-4">
+          <FormErrorSummary errors={errors} submitCount={submitCount} />
+
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input
@@ -224,7 +253,9 @@ export function AccountForm({
                   type="number"
                   min={1}
                   max={28}
-                  {...register("invoiceClosingDay", { valueAsNumber: true })}
+                  {...register("invoiceClosingDay", {
+                    setValueAs: parseOptionalNumber,
+                  })}
                 />
                 {errors.invoiceClosingDay && (
                   <p className="text-xs text-destructive">
@@ -242,7 +273,9 @@ export function AccountForm({
                   type="number"
                   min={1}
                   max={30}
-                  {...register("invoiceDueDayOffset", { valueAsNumber: true })}
+                  {...register("invoiceDueDayOffset", {
+                    setValueAs: parseOptionalNumber,
+                  })}
                 />
                 {errors.invoiceDueDayOffset && (
                   <p className="text-xs text-destructive">

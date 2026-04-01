@@ -34,6 +34,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { PageHeader } from "@/components/shared/page-header";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import {
@@ -257,6 +258,11 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={onPasswordSubmit} className="space-y-4 max-w-md">
+            <FormErrorSummary
+              errors={passwordForm.formState.errors}
+              submitCount={passwordForm.formState.submitCount}
+            />
+
             <div className="space-y-2">
               <Label>Senha Atual</Label>
               <Input
@@ -331,6 +337,11 @@ export default function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={onEmailSubmit} className="space-y-4">
+            <FormErrorSummary
+              errors={emailForm.formState.errors}
+              submitCount={emailForm.formState.submitCount}
+            />
+
             <div className="space-y-2">
               <Label>Novo E-mail</Label>
               <Input type="email" {...emailForm.register("newEmail")} />

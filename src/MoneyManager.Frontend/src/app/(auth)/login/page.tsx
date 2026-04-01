@@ -6,12 +6,13 @@ import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { loginSchema, type LoginFormData } from "@/lib/validators";
 import { useLogin } from "@/hooks/use-auth";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 
 export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, submitCount },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
@@ -48,6 +49,8 @@ export default function LoginPage() {
         <p className="login-subtitle">Entre com suas credenciais</p>
 
         <form onSubmit={handleSubmit(onSubmit)}>
+          <FormErrorSummary errors={errors} submitCount={submitCount} className="mb-4" />
+
           <div className="login-field">
             <label htmlFor="email">E-MAIL</label>
             <input
