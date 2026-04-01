@@ -39,7 +39,7 @@ export function BudgetUsageChart({ data }: BudgetUsageChartProps) {
       <CardContent>
         {chartData.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            Sem despesas no periodo.
+            Sem despesas no período.
           </p>
         ) : (
           <DonutChart

@@ -17,9 +17,9 @@ import Link from "next/link";
 
 const accountTypeLabels: Record<string, string> = {
   Checking: "Conta Corrente",
-  Savings: "Poupanca",
+  Savings: "Poupança",
   Cash: "Dinheiro",
-  CreditCard: "Cartao de Credito",
+  CreditCard: "Cartão de Crédito",
   Investment: "Investimento",
 };
 

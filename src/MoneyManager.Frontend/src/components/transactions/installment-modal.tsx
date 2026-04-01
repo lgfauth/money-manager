@@ -48,7 +48,7 @@ export function InstallmentModal({
 
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Descricao</span>
+            <span className="text-muted-foreground">Descrição</span>
             <span className="font-medium">{description}</span>
           </div>
           <div className="flex justify-between">

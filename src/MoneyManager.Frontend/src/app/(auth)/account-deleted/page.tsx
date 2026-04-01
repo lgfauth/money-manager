@@ -16,7 +16,7 @@ export default function AccountDeletedPage() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-income/10">
           <CheckCircle className="h-8 w-8 text-income" />
         </div>
-        <CardTitle className="text-xl">Conta excluida com sucesso</CardTitle>
+        <CardTitle className="text-xl">Conta excluída com sucesso</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm text-muted-foreground">
         <p>
@@ -24,7 +24,7 @@ export default function AccountDeletedPage() {
           do nosso sistema, conforme previsto pela LGPD.
         </p>
         <p>
-          Se voce mudar de ideia, podera criar uma nova conta a qualquer
+          Se você mudar de ideia, poderá criar uma nova conta a qualquer
           momento.
         </p>
       </CardContent>

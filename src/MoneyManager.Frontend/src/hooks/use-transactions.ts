@@ -55,9 +55,9 @@ export function useCreateTransaction() {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Transacao criada com sucesso");
+      toast.success("Transação criada com sucesso");
     },
-    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar transacao")),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar transação")),
   });
 }
 
@@ -86,9 +86,9 @@ export function useUpdateTransaction() {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Transacao atualizada");
+      toast.success("Transação atualizada");
     },
-    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar transacao")),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar transação")),
   });
 }
 
@@ -101,8 +101,8 @@ export function useDeleteTransaction() {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Transacao excluida");
+      toast.success("Transação excluída");
     },
-    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir transacao")),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir transação")),
   });
 }

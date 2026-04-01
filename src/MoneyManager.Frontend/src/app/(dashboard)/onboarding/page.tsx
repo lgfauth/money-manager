@@ -11,7 +11,7 @@ const steps = [
   {
     icon: Wallet,
     title: "Criar primeira conta",
-    description: "Adicione uma conta bancaria, carteira ou cartao de credito",
+    description: "Adicione uma conta bancária, carteira ou cartão de crédito",
     href: "/accounts",
   },
   {
@@ -23,7 +23,7 @@ const steps = [
   {
     icon: LayoutDashboard,
     title: "Ir para o Dashboard",
-    description: "Veja o resumo das suas financas",
+    description: "Veja o resumo das suas finanças",
     href: "/",
   },
 ];

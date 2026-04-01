@@ -47,7 +47,7 @@ const typeOptions = [
 ];
 
 const frequencyOptions = [
-  { value: RecurrenceFrequency.Daily, label: "Diaria" },
+  { value: RecurrenceFrequency.Daily, label: "Diária" },
   { value: RecurrenceFrequency.Weekly, label: "Semanal" },
   { value: RecurrenceFrequency.Biweekly, label: "Quinzenal" },
   { value: RecurrenceFrequency.Monthly, label: "Mensal" },
@@ -162,8 +162,8 @@ export function RecurringForm({
           </SheetTitle>
           <SheetDescription>
             {isEditing
-              ? "Altere os dados da transacao recorrente."
-              : "Configure uma nova transacao recorrente."}
+              ? "Altere os dados da transação recorrente."
+              : "Configure uma nova transação recorrente."}
           </SheetDescription>
         </SheetHeader>
 
@@ -197,7 +197,7 @@ export function RecurringForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descricao</Label>
+            <Label htmlFor="description">Descrição</Label>
             <Input
               id="description"
               placeholder="Ex: Aluguel"
@@ -221,7 +221,7 @@ export function RecurringForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Frequencia</Label>
+            <Label>Frequência</Label>
             <Select
               defaultValue={watch("frequency")}
               onValueChange={(v) =>
@@ -313,7 +313,7 @@ export function RecurringForm({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Inicio</Label>
+              <Label htmlFor="startDate">Início</Label>
               <Input id="startDate" type="date" {...register("startDate")} />
               {errors.startDate && (
                 <p className="text-xs text-destructive">
@@ -328,7 +328,7 @@ export function RecurringForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Observacoes</Label>
+            <Label htmlFor="notes">Observações</Label>
             <Input
               id="notes"
               placeholder="Opcional"
@@ -341,7 +341,7 @@ export function RecurringForm({
               {isPending
                 ? "Salvando..."
                 : isEditing
-                  ? "Salvar Alteracoes"
+                  ? "Salvar Alterações"
                   : "Criar Recorrente"}
             </Button>
           </SheetFooter>

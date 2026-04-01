@@ -94,12 +94,12 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Transacoes"
-        description="Registre e acompanhe todas as suas movimentacoes."
+        title="Transações"
+        description="Registre e acompanhe todas as suas movimentações."
       >
         <Button onClick={handleNew}>
           <Plus className="mr-2 h-4 w-4" />
-          Nova Transacao
+          Nova Transação
         </Button>
       </PageHeader>
 
@@ -120,9 +120,9 @@ export default function TransactionsPage() {
       ) : !data || data.items.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title="Nenhuma transacao encontrada"
-          description="Registre sua primeira transacao ou ajuste os filtros."
-          actionLabel="Nova Transacao"
+          title="Nenhuma transação encontrada"
+          description="Registre sua primeira transação ou ajuste os filtros."
+          actionLabel="Nova Transação"
           onAction={handleNew}
         />
       ) : (
@@ -137,7 +137,7 @@ export default function TransactionsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {data.totalCount} transacoes · Pagina {currentPage} de{" "}
+                {data.totalCount} transações · Página {currentPage} de{" "}
                 {totalPages}
               </p>
               <div className="flex gap-2">
@@ -156,7 +156,7 @@ export default function TransactionsPage() {
                   disabled={currentPage >= totalPages}
                   onClick={() => setFilters({ page: currentPage + 1 })}
                 >
-                  Proxima
+                  Próxima
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
@@ -179,8 +179,8 @@ export default function TransactionsPage() {
         onOpenChange={(open) => {
           if (!open) setDeletingTx(null);
         }}
-        title="Excluir transacao"
-        description={`Tem certeza que deseja excluir "${deletingTx?.description}"? Esta acao nao pode ser desfeita.`}
+        title="Excluir transação"
+        description={`Tem certeza que deseja excluir "${deletingTx?.description}"? Esta ação não pode ser desfeita.`}
         onConfirm={handleDelete}
         confirmLabel="Excluir"
         variant="destructive"

@@ -210,11 +210,11 @@ export function TransactionForm({
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md max-md:mt-[env(safe-area-inset-top,16px)] max-md:mb-[env(safe-area-inset-bottom,16px)] max-md:pt-10 max-md:pb-6">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Editar Transacao" : "Nova Transacao"}
+            {isEditing ? "Editar Transação" : "Nova Transação"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Altere os dados da transacao."
+              ? "Altere os dados da transação."
               : "Preencha os dados para registrar."}
           </DialogDescription>
         </DialogHeader>
@@ -249,7 +249,7 @@ export function TransactionForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descricao</Label>
+            <Label htmlFor="description">Descrição</Label>
             <Input
               id="description"
               placeholder="Ex: Supermercado"
@@ -351,7 +351,7 @@ export function TransactionForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Observacoes</Label>
+            <Label htmlFor="notes">Observações</Label>
             <Input
               id="notes"
               placeholder="Opcional"
@@ -413,7 +413,7 @@ export function TransactionForm({
                       className="h-4 w-4 rounded border-input"
                     />
                     <Label htmlFor="firstInCurrentInvoice" className="text-sm">
-                      1a parcela na fatura atual
+                          1ª parcela na fatura atual
                     </Label>
                   </div>
                 </>
@@ -445,10 +445,10 @@ export function TransactionForm({
               {isPending
                 ? "Salvando..."
                 : isEditing
-                  ? "Salvar Alteracoes"
+                  ? "Salvar Alterações"
                   : isInstallment
                     ? `Parcelar em ${installmentCount}x`
-                    : "Criar Transacao"}
+                    : "Criar Transação"}
             </Button>
           </DialogFooter>
         </form>

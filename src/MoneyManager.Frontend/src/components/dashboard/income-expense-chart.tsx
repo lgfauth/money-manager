@@ -29,7 +29,7 @@ export function IncomeExpenseChart({ data }: IncomeExpenseChartProps) {
       <CardContent>
         {chartData.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
-            Sem dados para o periodo.
+            Sem dados para o período.
           </p>
         ) : (
           <AreaChartComponent

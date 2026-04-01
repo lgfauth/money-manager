@@ -39,9 +39,9 @@ interface AccountFormProps {
 
 const accountTypeLabels: Record<string, string> = {
   Checking: "Conta Corrente",
-  Savings: "Poupanca",
+  Savings: "Poupança",
   Cash: "Dinheiro",
-  CreditCard: "Cartao de Credito",
+  CreditCard: "Cartão de Crédito",
   Investment: "Investimento",
 };
 
@@ -247,7 +247,7 @@ export function AccountForm({
 
           {isCreditCard && (
             <div className="space-y-4 rounded-lg border p-4">
-              <p className="text-sm font-medium">Dados do Cartao de Credito</p>
+              <p className="text-sm font-medium">Dados do Cartão de Crédito</p>
 
               <div className="space-y-2">
                 <Label htmlFor="creditLimit">Limite</Label>
@@ -280,7 +280,7 @@ export function AccountForm({
 
               <div className="space-y-2">
                 <Label htmlFor="invoiceDueDayOffset">
-                  Dias ate vencimento (1–30)
+                  Dias até vencimento (1–30)
                 </Label>
                 <Input
                   id="invoiceDueDayOffset"
@@ -305,7 +305,7 @@ export function AccountForm({
               {isPending
                 ? "Salvando..."
                 : isEditing
-                  ? "Salvar Alteracoes"
+                  ? "Salvar Alterações"
                   : "Criar Conta"}
             </Button>
           </SheetFooter>

@@ -25,7 +25,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
     <Card className="col-span-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-sm font-medium">
-          Transacoes Recentes
+          Transações Recentes
         </CardTitle>
         <Link
           href="/transactions"
@@ -37,7 +37,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
       <CardContent>
         {transactions.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Nenhuma transacao este mes.
+            Nenhuma transação este mês.
           </p>
         ) : (
           <div className="space-y-3">

@@ -52,7 +52,7 @@ export function useDeleteAccount() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Conta excluida");
+      toast.success("Conta excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir conta")),
   });

@@ -91,7 +91,7 @@ export default function RecurringPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Transacoes Recorrentes"
+        title="Transações Recorrentes"
         description="Gerencie receitas e despesas que se repetem automaticamente."
       >
         <Button onClick={handleNew}>
@@ -132,7 +132,7 @@ export default function RecurringPage() {
         <EmptyState
           icon={RefreshCw}
           title="Nenhuma recorrente cadastrada"
-          description="Crie transacoes recorrentes para automatizar lancamentos."
+          description="Crie transações recorrentes para automatizar lançamentos."
           actionLabel="Nova Recorrente"
           onAction={handleNew}
         />
@@ -165,7 +165,7 @@ export default function RecurringPage() {
           if (!open) setDeletingItem(null);
         }}
         title="Excluir recorrente"
-        description={`Tem certeza que deseja excluir "${deletingItem?.description}"? Lancamentos ja realizados nao serao afetados.`}
+        description={`Tem certeza que deseja excluir "${deletingItem?.description}"? Lançamentos já realizados não serão afetados.`}
         onConfirm={handleDelete}
         confirmLabel="Excluir"
         variant="destructive"

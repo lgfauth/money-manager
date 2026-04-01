@@ -30,7 +30,7 @@ export function useCreateRecurring() {
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
-      toast.success("Transacao recorrente criada");
+      toast.success("Transação recorrente criada");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar recorrente")),
   });
@@ -62,7 +62,7 @@ export function useDeleteRecurring() {
       apiClient.delete<void>(`/api/RecurringTransactions/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
-      toast.success("Recorrente excluida");
+      toast.success("Recorrente excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir recorrente")),
   });

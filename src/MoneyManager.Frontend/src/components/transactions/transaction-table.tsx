@@ -153,7 +153,7 @@ export function TransactionTable({
           <TableHeader>
             <TableRow>
               <TableHead>Data</TableHead>
-              <TableHead>Descricao</TableHead>
+              <TableHead>Descrição</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Conta</TableHead>
               <TableHead>Tipo</TableHead>

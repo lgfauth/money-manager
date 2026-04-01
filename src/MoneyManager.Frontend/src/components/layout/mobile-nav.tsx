@@ -18,8 +18,8 @@ import { useUIStore } from "@/stores/ui-store";
 const bottomNavItems = [
   { href: "/", icon: LayoutDashboard, label: "Home" },
   { href: "/accounts", icon: Wallet, label: "Contas" },
-  { href: "/transactions", icon: ArrowLeftRight, label: "Transacoes" },
-  { href: "/budgets", icon: PieChart, label: "Orcamentos" },
+  { href: "/transactions", icon: ArrowLeftRight, label: "Transações" },
+  { href: "/budgets", icon: PieChart, label: "Orçamentos" },
 ];
 
 export function MobileNav() {

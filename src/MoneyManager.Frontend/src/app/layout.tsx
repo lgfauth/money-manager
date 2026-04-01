@@ -23,7 +23,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "MoneyManager",
-  description: "Gerencie suas financas pessoais",
+  description: "Gerencie suas finanças pessoais",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

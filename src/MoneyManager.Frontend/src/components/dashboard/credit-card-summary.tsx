@@ -18,7 +18,7 @@ export function CreditCardSummary({ cards }: CreditCardSummaryProps) {
       <CardHeader>
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <CreditCard className="h-4 w-4" />
-          Cartoes de Credito
+          Cartões de Crédito
         </CardTitle>
       </CardHeader>
       <CardContent>

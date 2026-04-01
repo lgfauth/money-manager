@@ -7,15 +7,15 @@ import { ChevronRight, Home } from "lucide-react";
 const routeLabels: Record<string, string> = {
   "": "Dashboard",
   accounts: "Contas",
-  transactions: "Transacoes",
+  transactions: "Transações",
   categories: "Categorias",
-  budgets: "Orcamentos",
-  reports: "Relatorios",
+  budgets: "Orçamentos",
+  reports: "Relatórios",
   recurring: "Recorrentes",
-  "credit-cards": "Cartoes",
+  "credit-cards": "Cartões",
   invoices: "Faturas",
   profile: "Perfil",
-  settings: "Configuracoes",
+  settings: "Configurações",
   onboarding: "Onboarding",
 };
 

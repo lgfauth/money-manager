@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const frequencyLabels: Record<string, string> = {
-  Daily: "Diaria",
+  Daily: "Diária",
   Weekly: "Semanal",
   Biweekly: "Quinzenal",
   Monthly: "Mensal",
@@ -115,7 +115,7 @@ export function RecurringCard({
           {recurring.nextOccurrence && (
             <p className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              Proxima:{" "}
+              Próxima:{" "}
               {format(new Date(recurring.nextOccurrence), "dd/MM/yyyy", {
                 locale: ptBR,
               })}

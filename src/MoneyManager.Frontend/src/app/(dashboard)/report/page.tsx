@@ -62,7 +62,7 @@ export default function ReportPage() {
   const validationErrors = [
     !category ? "Selecione uma categoria para o report." : null,
     description.trim().length < 10
-      ? "A descricao precisa ter pelo menos 10 caracteres."
+      ? "A descrição precisa ter pelo menos 10 caracteres."
       : null,
   ].filter((message): message is string => Boolean(message));
 
@@ -238,7 +238,7 @@ export default function ReportPage() {
               </div>
               {submitCount > 0 && description.trim().length < 10 && (
                 <p className="text-xs text-destructive">
-                  Informe uma descricao com pelo menos 10 caracteres.
+                  Informe uma descrição com pelo menos 10 caracteres.
                 </p>
               )}
             </div>

@@ -46,7 +46,7 @@ export default function RegisterPage() {
           <Wallet className="h-6 w-6" />
         </div>
         <CardTitle className="text-2xl font-bold">Criar conta</CardTitle>
-        <CardDescription>Comece a controlar suas financas</CardDescription>
+        <CardDescription>Comece a controlar suas finanças</CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
             <Input
               id="password"
               type="password"
-              placeholder="Minimo 6 caracteres"
+              placeholder="Mínimo 6 caracteres"
               autoComplete="new-password"
               {...register("password")}
             />
@@ -131,7 +131,7 @@ export default function RegisterPage() {
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            Ja tem uma conta?{" "}
+            Já tem uma conta?{" "}
             <Link
               href="/login"
               className="font-medium text-primary hover:underline"

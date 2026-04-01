@@ -49,7 +49,7 @@ export function useDeleteCategory() {
     mutationFn: (id: string) => apiClient.delete<void>(`/api/categories/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.categories });
-      toast.success("Categoria excluida");
+      toast.success("Categoria excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir categoria")),
   });

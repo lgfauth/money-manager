@@ -47,19 +47,19 @@ export default function BudgetsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Orcamentos"
+        title="Orçamentos"
         description="Defina limites de gastos por categoria."
       >
         <Button onClick={() => setWizardOpen(true)}>
           {budget ? (
             <>
               <Settings className="mr-2 h-4 w-4" />
-              Editar Orcamento
+              Editar Orçamento
             </>
           ) : (
             <>
               <Plus className="mr-2 h-4 w-4" />
-              Criar Orcamento
+              Criar Orçamento
             </>
           )}
         </Button>

@@ -119,7 +119,7 @@ export default function CategoriesPage() {
         <EmptyState
           icon={Tags}
           title="Nenhuma categoria"
-          description="Crie sua primeira categoria para organizar suas financas"
+          description="Crie sua primeira categoria para organizar suas finanças"
           actionLabel="Nova Categoria"
           onAction={openCreate}
         />
@@ -280,7 +280,7 @@ export default function CategoriesPage() {
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Excluir categoria"
-        description="Tem certeza que deseja excluir esta categoria? Esta acao nao pode ser desfeita."
+        description="Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita."
         confirmLabel="Excluir"
         variant="destructive"
         onConfirm={handleDelete}

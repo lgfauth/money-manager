@@ -65,7 +65,7 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Contas" description="Gerencie suas contas e cartoes.">
+      <PageHeader title="Contas" description="Gerencie suas contas e cartões.">
         <Button onClick={handleNew}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Conta
@@ -99,7 +99,7 @@ export default function AccountsPage() {
         <EmptyState
           icon={Wallet}
           title="Nenhuma conta cadastrada"
-          description="Crie sua primeira conta para comecar a registrar transacoes."
+          description="Crie sua primeira conta para começar a registrar transações."
           actionLabel="Nova Conta"
           onAction={handleNew}
         />
@@ -131,7 +131,7 @@ export default function AccountsPage() {
           if (!open) setDeletingAccount(null);
         }}
         title="Excluir conta"
-        description={`Tem certeza que deseja excluir a conta "${deletingAccount?.name}"? Esta acao nao pode ser desfeita.`}
+        description={`Tem certeza que deseja excluir a conta "${deletingAccount?.name}"? Esta ação não pode ser desfeita.`}
         onConfirm={handleDelete}
         confirmLabel="Excluir"
         variant="destructive"
