@@ -1,9 +1,9 @@
 # Build
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
+COPY src/MoneyManager.Administration/package*.json ./
 RUN npm ci
-COPY . .
+COPY src/MoneyManager.Administration/. ./
 
 # Build arg for admin API URL — replaced at runtime via entrypoint if not set at build time
 ARG NEXT_PUBLIC_ADMIN_API_URL=__NEXT_PUBLIC_ADMIN_API_URL_PLACEHOLDER__
