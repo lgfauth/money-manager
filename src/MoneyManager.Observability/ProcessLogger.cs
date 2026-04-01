@@ -14,12 +14,14 @@ public sealed class ProcessLogger : IProcessLogger
     };
 
     private readonly ILogger<ProcessLogger> _logger;
+    private readonly IEnumerable<IProcessLogStore> _stores;
     private readonly Stopwatch _stopwatch = new();
     private ProcessLogDocument? _document;
 
-    public ProcessLogger(ILogger<ProcessLogger> logger)
+    public ProcessLogger(ILogger<ProcessLogger> logger, IEnumerable<IProcessLogStore> stores)
     {
         _logger = logger;
+        _stores = stores;
     }
 
     public void Start(string processName, Dictionary<string, object?>? context = null)
@@ -114,6 +116,11 @@ public sealed class ProcessLogger : IProcessLogger
 
     private void Flush()
     {
+        foreach (var store in _stores)
+        {
+            store.Persist(_document!);
+        }
+
         var json = JsonSerializer.Serialize(_document, JsonOptions);
 
         var logLevel = _document!.Status == "Success" ? LogLevel.Information : LogLevel.Error;

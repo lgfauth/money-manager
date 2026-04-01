@@ -1,0 +1,6 @@
+@MoneyManager.Api.Administration_HostAddress = http://localhost:5243
+
+GET {{MoneyManager.Api.Administration_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
