@@ -42,15 +42,28 @@ public class CreditCardInvoiceServiceTests
         // Arrange
         var userId = "user123";
         var accountId = "card123";
+        var today = DateTime.Today;
+        var closingDay = 10;
+        var expectedClosingDate = today.Day <= closingDay
+            ? new DateTime(today.Year, today.Month, closingDay)
+            : new DateTime(today.AddMonths(1).Year, today.AddMonths(1).Month, closingDay);
         var existingInvoice = new CreditCardInvoice
         {
             Id = "inv123",
             AccountId = accountId,
             UserId = userId,
             Status = InvoiceStatus.Open,
-            ReferenceMonth = "2026-02"
+            ReferenceMonth = expectedClosingDate.ToString("yyyy-MM")
         };
 
+        _accountRepoMock.GetByIdAsync(accountId).Returns(new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Type = AccountType.CreditCard,
+            InvoiceClosingDay = closingDay,
+            InvoiceDueDayOffset = 7
+        });
         _invoiceRepoMock.GetOpenInvoiceByAccountIdAsync(accountId).Returns(existingInvoice);
 
         // Act
@@ -91,6 +104,62 @@ public class CreditCardInvoiceServiceTests
     }
 
     [Fact]
+    public async Task GetOrCreateOpenInvoiceAsync_WithStaleOpenInvoice_ShouldCloseOldAndCreateCurrent()
+    {
+        // Arrange
+        var userId = "user123";
+        var accountId = "card123";
+        var today = DateTime.Today;
+        var closingDay = Math.Min(today.Day, 28);
+        var expectedClosingDate = today.Day <= closingDay
+            ? new DateTime(today.Year, today.Month, closingDay)
+            : new DateTime(today.AddMonths(1).Year, today.AddMonths(1).Month, closingDay);
+
+        var account = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Type = AccountType.CreditCard,
+            InvoiceClosingDay = closingDay,
+            InvoiceDueDayOffset = 7
+        };
+
+        var staleOpenInvoice = new CreditCardInvoice
+        {
+            Id = "inv-stale",
+            AccountId = accountId,
+            UserId = userId,
+            Status = InvoiceStatus.Open,
+            ReferenceMonth = today.AddMonths(-1).ToString("yyyy-MM"),
+            PeriodEnd = today.AddDays(-1),
+            RemainingAmount = 150m,
+            TotalAmount = 150m,
+            PaidAmount = 0m
+        };
+
+        _accountRepoMock.GetByIdAsync(accountId).Returns(account);
+        _invoiceRepoMock.GetOpenInvoiceByAccountIdAsync(accountId).Returns(staleOpenInvoice, (CreditCardInvoice?)null);
+        _invoiceRepoMock.GetByReferenceMonthAsync(accountId, expectedClosingDate.ToString("yyyy-MM")).Returns((CreditCardInvoice?)null);
+        _invoiceRepoMock.GetByIdAsync("inv-stale").Returns(staleOpenInvoice);
+        _transactionRepoMock.GetAllAsync().Returns(new List<Transaction>
+        {
+            new() { Id = "t1", InvoiceId = "inv-stale", Amount = 150m, Type = TransactionType.Expense, IsDeleted = false }
+        });
+
+        // Act
+        var result = await _invoiceService.GetOrCreateOpenInvoiceAsync(userId, accountId);
+
+        // Assert
+        Assert.Equal(InvoiceStatus.Open, result.Status);
+        Assert.Equal(expectedClosingDate.ToString("yyyy-MM"), result.ReferenceMonth);
+        Assert.Equal(InvoiceStatus.Closed, staleOpenInvoice.Status);
+        Assert.Equal(staleOpenInvoice.PeriodEnd.Date, account.LastInvoiceClosedAt);
+        await _invoiceRepoMock.Received(1).AddAsync(Arg.Is<CreditCardInvoice>(invoice =>
+            invoice.ReferenceMonth == expectedClosingDate.ToString("yyyy-MM") &&
+            invoice.Status == InvoiceStatus.Open));
+    }
+
+    [Fact]
     public async Task CloseInvoiceAsync_ShouldCloseInvoiceAndCreateNew()
     {
         // Arrange
@@ -105,7 +174,8 @@ public class CreditCardInvoiceServiceTests
             UserId = userId,
             Status = InvoiceStatus.Open,
             TotalAmount = 500m,
-            RemainingAmount = 500m
+            RemainingAmount = 500m,
+            PeriodEnd = new DateTime(2026, 4, 10)
         };
 
         var account = new Account
@@ -127,6 +197,7 @@ public class CreditCardInvoiceServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(InvoiceStatus.Closed, result.Status);
+        Assert.Equal(invoice.PeriodEnd.Date, account.LastInvoiceClosedAt);
         // UpdateAsync is called twice: once for recalculation, once for closing
         await _invoiceRepoMock.Received(2).UpdateAsync(Arg.Any<CreditCardInvoice>());
         await _invoiceRepoMock.Received(1).AddAsync(Arg.Any<CreditCardInvoice>()); // New open invoice
@@ -541,8 +612,11 @@ public class CreditCardInvoiceServiceTests
         };
 
         _accountRepoMock.GetAllAsync().Returns(new List<Account> { card });
+        _accountRepoMock.GetByIdAsync("card123").Returns(card);
         _invoiceRepoMock.GetByAccountIdAsync("card123").Returns(new List<CreditCardInvoice> { invoice });
         _invoiceRepoMock.GetByIdAsync("inv123").Returns(invoice);
+        _invoiceRepoMock.GetOpenInvoiceByAccountIdAsync("card123").Returns((CreditCardInvoice?)null);
+        _invoiceRepoMock.GetByReferenceMonthAsync("card123", Arg.Any<string>()).Returns((CreditCardInvoice?)null);
         _transactionRepoMock.GetAllAsync().Returns(new List<Transaction>
         {
             new() { Id = "t1", InvoiceId = "inv123", AccountId = "card123", Amount = 200m, Type = TransactionType.Expense, IsDeleted = false }
@@ -560,6 +634,67 @@ public class CreditCardInvoiceServiceTests
         Assert.Equal(1, summary.AccountsProcessed);
         Assert.Equal(1, summary.InvoicesRecalculated);
         Assert.Equal(250m, card.CommittedCredit);
+    }
+
+    [Fact]
+    public async Task ReconcileCreditCardDataAsync_ShouldNormalizeStaleOpenInvoice()
+    {
+        // Arrange
+        var userId = "user123";
+        var today = DateTime.Today;
+        var closingDay = Math.Min(today.Day, 28);
+        var expectedClosingDate = today.Day <= closingDay
+            ? new DateTime(today.Year, today.Month, closingDay)
+            : new DateTime(today.AddMonths(1).Year, today.AddMonths(1).Month, closingDay);
+
+        var card = new Account
+        {
+            Id = "card123",
+            UserId = userId,
+            Type = AccountType.CreditCard,
+            Balance = 100m,
+            CommittedCredit = 100m,
+            CreditLimit = 5000m,
+            InvoiceClosingDay = closingDay,
+            InvoiceDueDayOffset = 7
+        };
+
+        var staleOpenInvoice = new CreditCardInvoice
+        {
+            Id = "inv-open",
+            AccountId = "card123",
+            UserId = userId,
+            Status = InvoiceStatus.Open,
+            ReferenceMonth = today.AddMonths(-1).ToString("yyyy-MM"),
+            PeriodEnd = today.AddDays(-1),
+            TotalAmount = 100m,
+            RemainingAmount = 100m
+        };
+
+        _accountRepoMock.GetAllAsync().Returns(new List<Account> { card });
+        _accountRepoMock.GetByIdAsync("card123").Returns(card);
+        _invoiceRepoMock.GetOpenInvoiceByAccountIdAsync("card123").Returns(staleOpenInvoice, staleOpenInvoice, (CreditCardInvoice?)null);
+        _invoiceRepoMock.GetByReferenceMonthAsync("card123", expectedClosingDate.ToString("yyyy-MM")).Returns((CreditCardInvoice?)null);
+        _invoiceRepoMock.GetByAccountIdAsync("card123").Returns(
+            new List<CreditCardInvoice> { staleOpenInvoice },
+            new List<CreditCardInvoice> { staleOpenInvoice });
+        _invoiceRepoMock.GetByIdAsync("inv-open").Returns(staleOpenInvoice);
+        _transactionRepoMock.GetAllAsync().Returns(new List<Transaction>
+        {
+            new() { Id = "t1", InvoiceId = "inv-open", AccountId = "card123", Amount = 100m, Type = TransactionType.Expense, IsDeleted = false }
+        });
+        _unitOfWorkMock.RecurringTransactions.Returns(Substitute.For<IRepository<RecurringTransaction>>());
+        _unitOfWorkMock.RecurringTransactions.GetAllAsync().Returns(new List<RecurringTransaction>());
+
+        // Act
+        await _invoiceService.ReconcileCreditCardDataAsync(userId);
+
+        // Assert
+        Assert.Equal(InvoiceStatus.Closed, staleOpenInvoice.Status);
+        Assert.Equal(staleOpenInvoice.PeriodEnd.Date, card.LastInvoiceClosedAt);
+        await _invoiceRepoMock.Received(1).AddAsync(Arg.Is<CreditCardInvoice>(invoice =>
+            invoice.ReferenceMonth == expectedClosingDate.ToString("yyyy-MM") &&
+            invoice.Status == InvoiceStatus.Open));
     }
 
     [Fact]

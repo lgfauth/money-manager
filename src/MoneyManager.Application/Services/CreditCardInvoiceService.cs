@@ -29,21 +29,62 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
     {
         _processLogger.AddStep("Getting or creating open invoice", new Dictionary<string, object?> { ["accountId"] = accountId });
 
-        // Verificar se já existe uma fatura aberta
-        var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(accountId);
-        if (openInvoice != null)
-        {
-            _processLogger.AddStep("Found existing open invoice", new Dictionary<string, object?> { ["invoiceId"] = openInvoice.Id });
-            return openInvoice;
-        }
-
-        // Buscar informações do cartão
         var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
         if (account == null || account.UserId != userId)
             throw new KeyNotFoundException("Account not found");
 
         if (account.Type != AccountType.CreditCard)
             throw new InvalidOperationException("Account is not a credit card");
+
+        var expectedClosingDate = CalculateNextClosingDate(DateTime.Today, account);
+        var expectedReferenceMonth = expectedClosingDate.ToString("yyyy-MM");
+
+        // Verificar se já existe uma fatura aberta
+        var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(accountId);
+        if (openInvoice != null)
+        {
+            if (string.Equals(openInvoice.ReferenceMonth, expectedReferenceMonth, StringComparison.Ordinal))
+            {
+                _processLogger.AddStep("Found existing open invoice", new Dictionary<string, object?> { ["invoiceId"] = openInvoice.Id });
+                return openInvoice;
+            }
+
+            _processLogger.AddWarning("Found stale open invoice, normalizing before returning current invoice", new Dictionary<string, object?>
+            {
+                ["invoiceId"] = openInvoice.Id,
+                ["staleReferenceMonth"] = openInvoice.ReferenceMonth,
+                ["expectedReferenceMonth"] = expectedReferenceMonth
+            });
+
+            await NormalizeStaleOpenInvoiceAsync(userId, account, openInvoice);
+
+            var normalizedInvoice = await _unitOfWork.CreditCardInvoices.GetByReferenceMonthAsync(accountId, expectedReferenceMonth);
+            if (normalizedInvoice != null)
+            {
+                _processLogger.AddStep("Using normalized open invoice", new Dictionary<string, object?> { ["invoiceId"] = normalizedInvoice.Id });
+                return normalizedInvoice;
+            }
+
+            _processLogger.AddStep("Found existing open invoice", new Dictionary<string, object?> { ["invoiceId"] = openInvoice.Id });
+        }
+
+        var expectedInvoice = await _unitOfWork.CreditCardInvoices.GetByReferenceMonthAsync(accountId, expectedReferenceMonth);
+        if (expectedInvoice != null)
+        {
+            if (expectedInvoice.Status != InvoiceStatus.Open)
+            {
+                expectedInvoice.Status = InvoiceStatus.Open;
+                expectedInvoice.ClosedAt = null;
+                expectedInvoice.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.CreditCardInvoices.UpdateAsync(expectedInvoice);
+
+                account.CurrentOpenInvoiceId = expectedInvoice.Id;
+                await _unitOfWork.Accounts.UpdateAsync(account);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            return expectedInvoice;
+        }
 
         _processLogger.AddStep("Creating new open invoice", new Dictionary<string, object?> { ["accountId"] = accountId });
 
@@ -138,7 +179,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         {
             var newInvoice = await CreateNewOpenInvoiceAsync(account);
             account.CurrentOpenInvoiceId = newInvoice.Id;
-            account.LastInvoiceClosedAt = DateTime.UtcNow;
+            account.LastInvoiceClosedAt = invoice.PeriodEnd.Date;
             await _unitOfWork.Accounts.UpdateAsync(account);
         }
 
@@ -196,7 +237,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
                 // Atualizar cartão
                 card.CurrentOpenInvoiceId = newInvoice.Id;
-                card.LastInvoiceClosedAt = DateTime.UtcNow;
+                card.LastInvoiceClosedAt = openInvoice.PeriodEnd.Date;
                 await _unitOfWork.Accounts.UpdateAsync(card);
 
                 closedCount++;
@@ -431,6 +472,8 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         {
             summary.AccountsProcessed++;
 
+            await EnsureCurrentOpenInvoiceAsync(userId, card);
+
             var invoices = (await _unitOfWork.CreditCardInvoices.GetByAccountIdAsync(card.Id))
                 .Where(invoice => !invoice.IsDeleted)
                 .ToList();
@@ -478,21 +521,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
     private async Task<CreditCardInvoice> CreateNewOpenInvoiceAsync(Account account)
     {
         var today = DateTime.Today;
-        var closingDay = account.InvoiceClosingDay ?? 1;
-
-        // Calcular próximo fechamento
-        DateTime nextClosing;
-        if (today.Day <= closingDay)
-        {
-            // Próximo fechamento é este mês
-            nextClosing = new DateTime(today.Year, today.Month, Math.Min(closingDay, DateTime.DaysInMonth(today.Year, today.Month)));
-        }
-        else
-        {
-            // Próximo fechamento é mês que vem
-            var nextMonth = today.AddMonths(1);
-            nextClosing = new DateTime(nextMonth.Year, nextMonth.Month, Math.Min(closingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month)));
-        }
+        var nextClosing = CalculateNextClosingDate(today, account);
 
         var periodStart = account.LastInvoiceClosedAt?.Date.AddDays(1) ?? today;
         var dueDate = nextClosing.AddDays(account.InvoiceDueDayOffset);
@@ -671,6 +700,47 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         _processLogger.AddStep("Payment processed", new Dictionary<string, object?> { ["invoiceId"] = invoice.Id, ["paidAmount"] = request.Amount, ["remaining"] = invoice.RemainingAmount });
     }
 
+    private async Task EnsureCurrentOpenInvoiceAsync(string userId, Account account)
+    {
+        var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(account.Id);
+
+        if (openInvoice == null)
+        {
+            await GetOrCreateOpenInvoiceAsync(userId, account.Id);
+            return;
+        }
+
+        var expectedReferenceMonth = CalculateNextClosingDate(DateTime.Today, account).ToString("yyyy-MM");
+        if (!string.Equals(openInvoice.ReferenceMonth, expectedReferenceMonth, StringComparison.Ordinal))
+        {
+            await GetOrCreateOpenInvoiceAsync(userId, account.Id);
+        }
+    }
+
+    private async Task NormalizeStaleOpenInvoiceAsync(string userId, Account account, CreditCardInvoice staleOpenInvoice)
+    {
+        await RecalculateInvoiceTotalAsync(userId, staleOpenInvoice.Id);
+
+        staleOpenInvoice.Status = staleOpenInvoice.RemainingAmount > 0m
+            ? InvoiceStatus.Closed
+            : InvoiceStatus.Paid;
+        staleOpenInvoice.ClosedAt = staleOpenInvoice.PeriodEnd.Date;
+        staleOpenInvoice.UpdatedAt = DateTime.UtcNow;
+
+        if (staleOpenInvoice.Status == InvoiceStatus.Paid && staleOpenInvoice.PaidAt == null)
+        {
+            staleOpenInvoice.PaidAt = staleOpenInvoice.PeriodEnd.Date;
+        }
+
+        await _unitOfWork.CreditCardInvoices.UpdateAsync(staleOpenInvoice);
+
+        account.LastInvoiceClosedAt = staleOpenInvoice.PeriodEnd.Date;
+        account.CurrentOpenInvoiceId = null;
+        account.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.Accounts.UpdateAsync(account);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
     private async Task<CreditCardInvoiceResponseDto> MapToDtoAsync(CreditCardInvoice invoice)
     {
         var account = await _unitOfWork.Accounts.GetByIdAsync(invoice.AccountId);
@@ -725,6 +795,25 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
     private static decimal CalculateCreditCardPaymentBalanceDelta(decimal currentBalance, decimal amount)
     {
         return currentBalance >= 0m ? -amount : amount;
+    }
+
+    private static DateTime CalculateNextClosingDate(DateTime currentDate, Account account)
+    {
+        var closingDay = account.InvoiceClosingDay ?? 1;
+
+        if (currentDate.Day <= closingDay)
+        {
+            return new DateTime(
+                currentDate.Year,
+                currentDate.Month,
+                Math.Min(closingDay, DateTime.DaysInMonth(currentDate.Year, currentDate.Month)));
+        }
+
+        var nextMonth = currentDate.AddMonths(1);
+        return new DateTime(
+            nextMonth.Year,
+            nextMonth.Month,
+            Math.Min(closingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month)));
     }
 
     private static string GetStatusLabel(InvoiceStatus status)
