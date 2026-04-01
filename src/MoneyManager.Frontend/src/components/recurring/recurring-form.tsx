@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { recurringSchema, type RecurringFormData } from "@/lib/validators";
@@ -99,11 +99,15 @@ export function RecurringForm({
     return cat.type === "Expense";
   });
 
+  const resetMutationState = useEffectEvent(() => {
+    createRecurring.reset();
+    updateRecurring.reset();
+  });
+
   useEffect(() => {
     if (!open) return;
 
-    createRecurring.reset();
-    updateRecurring.reset();
+    resetMutationState();
 
     if (editingRecurring) {
       reset({
@@ -131,7 +135,7 @@ export function RecurringForm({
         notes: "",
       });
     }
-  }, [open, editingRecurring, reset, createRecurring, updateRecurring]);
+  }, [open, editingRecurring, reset, resetMutationState]);
 
   const onSubmit = (data: RecurringFormData) => {
     if (isEditing) {

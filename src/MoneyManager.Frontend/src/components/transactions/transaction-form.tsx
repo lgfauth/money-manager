@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { transactionSchema, type TransactionFormData } from "@/lib/validators";
@@ -113,12 +113,16 @@ export function TransactionForm({
     return cat.type === "Expense";
   });
 
-  useEffect(() => {
-    if (!open) return;
-
+  const resetMutationState = useEffectEvent(() => {
     createTransaction.reset();
     updateTransaction.reset();
     createInstallment.reset();
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    resetMutationState();
 
     if (editingTransaction) {
       reset({
@@ -144,15 +148,7 @@ export function TransactionForm({
       setIsInstallment(false);
       setInstallmentCount(2);
     }
-  }, [
-    open,
-    editingTransaction,
-    defaultType,
-    reset,
-    createTransaction,
-    updateTransaction,
-    createInstallment,
-  ]);
+  }, [open, editingTransaction, defaultType, reset, resetMutationState]);
 
   const onSubmit = (data: TransactionFormData) => {
     const keepOpen = saveAndAddRef.current;

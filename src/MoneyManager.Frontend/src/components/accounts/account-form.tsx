@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { accountSchema, type AccountFormData } from "@/lib/validators";
@@ -88,11 +88,15 @@ export function AccountForm({
     return Number.isNaN(parsedValue) ? undefined : parsedValue;
   };
 
+  const resetMutationState = useEffectEvent(() => {
+    createAccount.reset();
+    updateAccount.reset();
+  });
+
   useEffect(() => {
     if (!open) return;
 
-    createAccount.reset();
-    updateAccount.reset();
+    resetMutationState();
 
     if (editingAccount) {
       reset({
@@ -123,7 +127,7 @@ export function AccountForm({
         color: "#00C896",
       });
     }
-  }, [open, editingAccount, reset, createAccount, updateAccount]);
+  }, [open, editingAccount, reset, resetMutationState]);
 
   useEffect(() => {
     if (selectedType !== AccountType.CreditCard) {
