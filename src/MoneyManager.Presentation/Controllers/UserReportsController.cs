@@ -37,13 +37,13 @@ public class UserReportsController : ControllerBase
     public async Task<IActionResult> Create([FromForm] string category, [FromForm] string description, IFormFile? attachment)
     {
         if (string.IsNullOrWhiteSpace(category) || !AllowedCategories.Contains(category))
-            return BadRequest("Categoria inválida.");
+            return this.ApiBadRequest("Categoria inválida.");
 
         if (string.IsNullOrWhiteSpace(description) || description.Length < 10)
-            return BadRequest("A descrição deve ter pelo menos 10 caracteres.");
+            return this.ApiBadRequest("A descrição deve ter pelo menos 10 caracteres.");
 
         if (description.Length > 5000)
-            return BadRequest("A descrição deve ter no máximo 5000 caracteres.");
+            return this.ApiBadRequest("A descrição deve ter no máximo 5000 caracteres.");
 
         string? attachmentUrl = null;
         string? attachmentFileName = null;
@@ -51,10 +51,10 @@ public class UserReportsController : ControllerBase
         if (attachment != null)
         {
             if (attachment.Length > MaxFileSize)
-                return BadRequest("Arquivo muito grande. Máximo 10 MB.");
+                return this.ApiBadRequest("Arquivo muito grande. Máximo 10 MB.");
 
             if (!AllowedMimeTypes.Contains(attachment.ContentType))
-                return BadRequest("Tipo de arquivo não suportado. Envie imagem ou vídeo.");
+                return this.ApiBadRequest("Tipo de arquivo não suportado. Envie imagem ou vídeo.");
 
             using var ms = new MemoryStream();
             await attachment.CopyToAsync(ms);

@@ -39,7 +39,7 @@ public class TransactionsController : ControllerBase
         {
             _logger.LogWarning("Transaction validation failed for user {UserId}: {Errors}",
                 userId, string.Join(", ", validation.Errors.Select(e => e.ErrorMessage)));
-            return BadRequest(validation.Errors);
+            return this.ApiValidationError(validation.Errors);
         }
 
         try
@@ -52,7 +52,7 @@ public class TransactionsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating transaction for user {UserId}", userId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -93,7 +93,7 @@ public class TransactionsController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching transactions for user {UserId}", userId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -107,11 +107,11 @@ public class TransactionsController : ControllerBase
         }
         catch (KeyNotFoundException)
         {
-            return NotFound();
+            return this.ApiNotFound();
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -124,7 +124,7 @@ public class TransactionsController : ControllerBase
 
         var validation = await _validator.ValidateAsync(request);
         if (!validation.IsValid)
-            return BadRequest(validation.Errors);
+            return this.ApiValidationError(validation.Errors);
 
         try
         {
@@ -137,13 +137,13 @@ public class TransactionsController : ControllerBase
         {
             _logger.LogWarning("Transaction {TransactionId} not found for user {UserId}",
                 id, userId);
-            return NotFound();
+            return this.ApiNotFound();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating transaction {TransactionId} for user {UserId}",
                 id, userId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -165,13 +165,13 @@ public class TransactionsController : ControllerBase
         {
             _logger.LogWarning("Transaction {TransactionId} not found for user {UserId}",
                 id, userId);
-            return NotFound();
+            return this.ApiNotFound();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting transaction {TransactionId} for user {UserId}",
                 id, userId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 }

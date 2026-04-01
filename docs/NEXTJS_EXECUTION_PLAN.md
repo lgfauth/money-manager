@@ -202,11 +202,11 @@
 - [x] Configurar animacoes globais (transicoes de pagina, stagger em listas, numeros animados)
 - [x] Configurar PWA com serwist (service worker, manifest, cache strategy)
 - [x] Configurar i18n com next-intl (pt-BR completo, estruturas en-US/es-ES/fr-FR)
-- [ ] Ajustar tema dark (testar todas as paginas em dark mode)
+- [x] Ajustar tema dark (testar todas as paginas em dark mode)
 - [x] Criar `Dockerfile` para producao (multi-stage, standalone output)
 - [x] Atualizar `railway.web.toml` para o novo frontend
-- [ ] Testar integracao completa com a API backend
-- [ ] Revisar responsividade em mobile
+- [x] Testar integracao completa com a API backend
+- [x] Revisar responsividade em mobile
 
 ---
 

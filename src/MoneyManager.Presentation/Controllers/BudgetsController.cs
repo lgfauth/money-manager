@@ -28,7 +28,7 @@ public class BudgetsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -42,11 +42,11 @@ public class BudgetsController : ControllerBase
         }
         catch (KeyNotFoundException)
         {
-            return NotFound();
+            return this.ApiNotFound();
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -60,7 +60,7 @@ public class BudgetsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -74,7 +74,7 @@ public class BudgetsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 }

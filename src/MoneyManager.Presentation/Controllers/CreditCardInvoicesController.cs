@@ -41,12 +41,12 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Account {AccountId} not found for user {UserId}: {Message}", accountId, userId, ex.Message);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting or creating open invoice for account {AccountId}", accountId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -67,12 +67,12 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Invoice {InvoiceId} not found for user {UserId}", invoiceId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting invoice {InvoiceId}", invoiceId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -93,7 +93,7 @@ public class CreditCardInvoicesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting invoices for account {AccountId}", accountId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -114,7 +114,7 @@ public class CreditCardInvoicesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting pending invoices");
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -135,7 +135,7 @@ public class CreditCardInvoicesController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting overdue invoices");
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -158,17 +158,17 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Invoice {InvoiceId} not found for user {UserId}", invoiceId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning("Cannot close invoice {InvoiceId}: {Message}", invoiceId, ex.Message);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error closing invoice {InvoiceId}", invoiceId);
-            return StatusCode(500, ex.Message);
+            return this.ApiServerError(ex.Message);
         }
     }
 
@@ -191,17 +191,17 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Invoice {InvoiceId} not found for user {UserId}", request.InvoiceId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning("Cannot pay invoice {InvoiceId}: {Message}", request.InvoiceId, ex.Message);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error paying invoice {InvoiceId}", request.InvoiceId);
-            return StatusCode(500, ex.Message);
+            return this.ApiServerError(ex.Message);
         }
     }
 
@@ -223,17 +223,17 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Invoice {InvoiceId} not found for user {UserId}", request.InvoiceId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning("Cannot pay invoice {InvoiceId}: {Message}", request.InvoiceId, ex.Message);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing partial payment for invoice {InvoiceId}", request.InvoiceId);
-            return StatusCode(500, ex.Message);
+            return this.ApiServerError(ex.Message);
         }
     }
 
@@ -256,12 +256,12 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Invoice {InvoiceId} not found for user {UserId}", invoiceId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting summary for invoice {InvoiceId}", invoiceId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -282,12 +282,12 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Invoice {InvoiceId} not found for user {UserId}", invoiceId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting transactions for invoice {InvoiceId}", invoiceId);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -310,12 +310,12 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Account {AccountId} not found for user {UserId}", accountId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error determining invoice for transaction");
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -336,12 +336,12 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Invoice {InvoiceId} not found for user {UserId}", invoiceId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error recalculating total for invoice {InvoiceId}", invoiceId);
-            return StatusCode(500, ex.Message);
+            return this.ApiServerError(ex.Message);
         }
     }
 
@@ -362,17 +362,17 @@ public class CreditCardInvoicesController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             _logger.LogWarning("Account {AccountId} not found for user {UserId}", accountId, userId);
-            return NotFound(ex.Message);
+            return this.ApiNotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning("Cannot create history invoice for account {AccountId}: {Message}", accountId, ex.Message);
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating history invoice for account {AccountId}", accountId);
-            return StatusCode(500, ex.Message);
+            return this.ApiServerError(ex.Message);
         }
     }
 }

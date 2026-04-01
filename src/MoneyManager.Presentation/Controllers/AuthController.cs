@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
 using FluentValidation;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -25,7 +26,7 @@ public class AuthController : ControllerBase
     {
         var validation = await _registerValidator.ValidateAsync(request);
         if (!validation.IsValid)
-            return BadRequest(validation.Errors);
+            return this.ApiValidationError(validation.Errors);
 
         try
         {
@@ -34,7 +35,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -43,7 +44,7 @@ public class AuthController : ControllerBase
     {
         var validation = await _loginValidator.ValidateAsync(request);
         if (!validation.IsValid)
-            return BadRequest(validation.Errors);
+            return this.ApiValidationError(validation.Errors);
 
         try
         {
@@ -52,7 +53,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            return Unauthorized(ex.Message);
+            return this.ApiUnauthorized(ex.Message);
         }
     }
 }

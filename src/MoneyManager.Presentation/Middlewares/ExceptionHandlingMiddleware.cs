@@ -1,4 +1,5 @@
 using MoneyManager.Domain.Exceptions;
+using MoneyManager.Presentation.Extensions;
 
 namespace MoneyManager.Presentation.Middlewares;
 
@@ -46,14 +47,14 @@ public class ExceptionHandlingMiddleware
     private Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
+        var statusCode = DetermineStatusCode(exception);
+        var response = ApiErrorResponseFactory.Create(
+            context,
+            statusCode,
+            exception.Message,
+            details: exception.InnerException?.Message);
 
-        var response = new
-        {
-            message = exception.Message,
-            details = exception.InnerException?.Message
-        };
-
-        context.Response.StatusCode = DetermineStatusCode(exception);
+        context.Response.StatusCode = statusCode;
 
         return context.Response.WriteAsJsonAsync(response);
     }

@@ -38,7 +38,7 @@ public class AdminController : ControllerBase
         var userId = HttpContext.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
-            return Unauthorized();
+            return this.ApiUnauthorized("Usuário não autenticado");
         }
 
         _logger.LogInformation("Starting credit card invoice migration for user {UserId}", userId);
@@ -129,12 +129,7 @@ public class AdminController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during migration");
-            return StatusCode(500, new
-            {
-                Success = false,
-                Message = "Erro durante a migração",
-                Error = ex.Message
-            });
+            return this.ApiServerError("Erro durante a migração", errors: [ex.Message]);
         }
     }
 
@@ -147,7 +142,7 @@ public class AdminController : ControllerBase
         var userId = HttpContext.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
-            return Unauthorized();
+            return this.ApiUnauthorized("Usuário não autenticado");
         }
 
         _logger.LogInformation("Recalculating invoices for user {UserId}", userId);
@@ -186,12 +181,7 @@ public class AdminController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error recalculating invoices");
-            return StatusCode(500, new
-            {
-                Success = false,
-                Message = "Erro ao recalcular faturas",
-                Error = ex.Message
-            });
+            return this.ApiServerError("Erro ao recalcular faturas", errors: [ex.Message]);
         }
     }
 
@@ -204,7 +194,7 @@ public class AdminController : ControllerBase
         var userId = HttpContext.GetUserId();
         if (string.IsNullOrEmpty(userId))
         {
-            return Unauthorized();
+            return this.ApiUnauthorized("Usuário não autenticado");
         }
 
         _logger.LogInformation("Creating missing open invoices for user {UserId}", userId);
@@ -246,12 +236,7 @@ public class AdminController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating open invoices");
-            return StatusCode(500, new
-            {
-                Success = false,
-                Message = "Erro ao criar faturas abertas",
-                Error = ex.Message
-            });
+            return this.ApiServerError("Erro ao criar faturas abertas", errors: [ex.Message]);
         }
     }
 }

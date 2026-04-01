@@ -27,7 +27,7 @@ public class ReportsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -41,7 +41,7 @@ public class ReportsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 }

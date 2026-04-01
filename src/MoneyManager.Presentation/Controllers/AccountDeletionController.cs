@@ -34,7 +34,7 @@ public class AccountDeletionController : ControllerBase
         var userId = HttpContext.GetUserId();
 
         if (string.IsNullOrEmpty(userId))
-            return Unauthorized(new { message = "Usuário não autenticado" });
+            return this.ApiUnauthorized("Usuário não autenticado");
 
         var count = await _accountDeletionService.GetUserDataCountAsync(userId);
 
@@ -52,7 +52,7 @@ public class AccountDeletionController : ControllerBase
         var userId = HttpContext.GetUserId();
 
         if (request.ConfirmationText != "DELETAR MINHA CONTA")
-            return BadRequest(new { message = "Texto de confirmação incorreto" });
+            return this.ApiBadRequest("Texto de confirmação incorreto");
 
         var result = await _accountDeletionService.DeleteUserAccountAsync(userId, request.Password);
 
@@ -65,6 +65,6 @@ public class AccountDeletionController : ControllerBase
             });
         }
 
-        return BadRequest(new { message = "Erro ao deletar conta" });
+        return this.ApiBadRequest("Erro ao deletar conta");
     }
 }

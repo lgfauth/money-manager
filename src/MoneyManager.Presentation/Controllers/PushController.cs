@@ -41,7 +41,7 @@ public class PushController : ControllerBase
             string.IsNullOrWhiteSpace(request.P256dh) ||
             string.IsNullOrWhiteSpace(request.Auth))
         {
-            return BadRequest(new { message = "Endpoint, p256dh and auth are required." });
+            return this.ApiBadRequest("Endpoint, p256dh and auth are required.");
         }
 
         var userId = HttpContext.GetUserId();
@@ -56,7 +56,7 @@ public class PushController : ControllerBase
     public async Task<IActionResult> Unsubscribe([FromBody] PushUnsubscribeRequestDto request)
     {
         if (string.IsNullOrWhiteSpace(request.Endpoint))
-            return BadRequest(new { message = "Endpoint is required." });
+            return this.ApiBadRequest("Endpoint is required.");
 
         var userId = HttpContext.GetUserId();
         _logger.LogInformation("Push unsubscribe request from user {UserId}", userId);

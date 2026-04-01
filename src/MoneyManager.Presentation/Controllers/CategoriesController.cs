@@ -27,7 +27,7 @@ public class CategoriesController : ControllerBase
     {
         var validation = await _validator.ValidateAsync(request);
         if (!validation.IsValid)
-            return BadRequest(validation.Errors);
+            return this.ApiValidationError(validation.Errors);
 
         try
         {
@@ -36,7 +36,7 @@ public class CategoriesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -50,7 +50,7 @@ public class CategoriesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -64,11 +64,11 @@ public class CategoriesController : ControllerBase
         }
         catch (KeyNotFoundException)
         {
-            return NotFound();
+            return this.ApiNotFound();
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -77,7 +77,7 @@ public class CategoriesController : ControllerBase
     {
         var validation = await _validator.ValidateAsync(request);
         if (!validation.IsValid)
-            return BadRequest(validation.Errors);
+            return this.ApiValidationError(validation.Errors);
 
         try
         {
@@ -86,11 +86,11 @@ public class CategoriesController : ControllerBase
         }
         catch (KeyNotFoundException)
         {
-            return NotFound();
+            return this.ApiNotFound();
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 
@@ -104,11 +104,11 @@ public class CategoriesController : ControllerBase
         }
         catch (KeyNotFoundException)
         {
-            return NotFound();
+            return this.ApiNotFound();
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return this.ApiBadRequest(ex.Message);
         }
     }
 }
