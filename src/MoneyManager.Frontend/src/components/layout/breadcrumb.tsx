@@ -19,6 +19,8 @@ const routeLabels: Record<string, string> = {
   onboarding: "Onboarding",
 };
 
+const nonNavigableBreadcrumbHrefs = new Set(["/credit-cards", "/invoices"]);
+
 interface BreadcrumbProps {
   pathname: string;
 }
@@ -44,11 +46,12 @@ export function Breadcrumb({ pathname }: BreadcrumbProps) {
         const href = "/" + segments.slice(0, index + 1).join("/");
         const isLast = index === segments.length - 1;
         const label = routeLabels[segment] ?? segment;
+        const isNavigable = !nonNavigableBreadcrumbHrefs.has(href);
 
         return (
           <Fragment key={href}>
             <ChevronRight className="h-3 w-3" />
-            {isLast ? (
+            {isLast || !isNavigable ? (
               <span className="font-medium text-foreground">{label}</span>
             ) : (
               <Link
