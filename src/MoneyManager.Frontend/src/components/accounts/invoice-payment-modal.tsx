@@ -73,7 +73,7 @@ export function InvoicePaymentModal({
     queryKey: queryKeys.invoices(creditCardAccount.id),
     queryFn: () =>
       apiClient.get<CreditCardInvoiceResponseDto[]>(
-        `/api/credit-card-invoices/account/${creditCardAccount.id}`
+        `/api/credit-card-invoices/accounts/${creditCardAccount.id}`
       ),
     enabled: open,
   });

@@ -9,6 +9,7 @@ export enum InvoiceStatus {
 export interface CreditCardInvoiceResponseDto {
   id: string;
   accountId: string;
+  accountName: string;
   referenceMonth: string;
   periodStart: string;
   periodEnd: string;
@@ -29,17 +30,9 @@ export interface InvoicePaymentRequestDto {
 }
 
 export interface InvoiceSummaryDto {
-  id: string;
-  accountId: string;
-  accountName: string;
-  referenceMonth: string;
-  periodStart: string;
-  periodEnd: string;
-  dueDate: string;
-  totalAmount: number;
-  paidAmount: number;
-  remainingAmount: number;
-  status: InvoiceStatus;
-  transactionCount: number;
-  daysUntilDue: number;
+  invoice: CreditCardInvoiceResponseDto;
+  transactions: import("@/types/transaction").TransactionResponseDto[];
+  averageTransactionAmount: number;
+  totalTransactions: number;
+  amountByCategory: Record<string, number>;
 }

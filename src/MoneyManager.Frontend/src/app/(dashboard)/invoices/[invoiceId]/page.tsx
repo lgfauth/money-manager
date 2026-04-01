@@ -75,6 +75,7 @@ export default function InvoiceDetailsPage() {
   const payMutation = usePayInvoiceDirect();
 
   const isLoading = loadingSummary || loadingTx;
+  const invoice = summary?.invoice;
 
   const categoryColorMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -116,7 +117,7 @@ export default function InvoiceDetailsPage() {
     );
   }
 
-  if (!summary) {
+  if (!summary || !invoice) {
     return (
       <EmptyState
         icon={Receipt}
@@ -129,13 +130,13 @@ export default function InvoiceDetailsPage() {
   }
 
   const isOverdue =
-    summary.status !== InvoiceStatus.Paid &&
-    new Date(summary.dueDate) < new Date();
+    invoice.status !== InvoiceStatus.Paid &&
+    new Date(invoice.dueDate) < new Date();
 
   const canPay =
-    summary.status !== InvoiceStatus.Paid &&
-    summary.status !== InvoiceStatus.Open &&
-    summary.remainingAmount > 0;
+    invoice.status !== InvoiceStatus.Paid &&
+    invoice.status !== InvoiceStatus.Open &&
+    invoice.remainingAmount > 0;
 
   const handlePay = () => {
     if (!sourceAccountId || paymentAmount <= 0) return;
@@ -147,7 +148,7 @@ export default function InvoiceDetailsPage() {
           paymentDate: new Date().toISOString(),
           amount: paymentAmount,
         },
-        remainingAmount: summary.remainingAmount,
+        remainingAmount: invoice.remainingAmount,
       },
       { onSuccess: () => setPayOpen(false) }
     );
@@ -156,10 +157,10 @@ export default function InvoiceDetailsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Fatura — ${summary.accountName}`}
-        description={`${format(new Date(summary.referenceMonth + "-01"), "MMMM yyyy", { locale: ptBR })}`}
+        title={`Fatura — ${invoice.accountName}`}
+        description={`${format(new Date(invoice.referenceMonth + "-01"), "MMMM yyyy", { locale: ptBR })}`}
       >
-        <Link href={`/credit-cards/${summary.accountId}`}>
+        <Link href={`/credit-cards/${invoice.accountId}`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
@@ -169,7 +170,7 @@ export default function InvoiceDetailsPage() {
           <Button
             size="sm"
             onClick={() => {
-              setPaymentAmount(summary.remainingAmount);
+              setPaymentAmount(invoice.remainingAmount);
               setPayOpen(true);
             }}
           >
@@ -182,24 +183,24 @@ export default function InvoiceDetailsPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total da Fatura"
-          value={fmt(summary.totalAmount)}
+          value={fmt(invoice.totalAmount)}
           icon={DollarSign}
         />
         <StatCard
           title="Valor Pago"
-          value={fmt(summary.paidAmount)}
+          value={fmt(invoice.paidAmount)}
           icon={CheckCircle}
           variant="income"
         />
         <StatCard
           title="Restante"
-          value={fmt(summary.remainingAmount)}
+          value={fmt(invoice.remainingAmount)}
           icon={CreditCard}
-          variant={summary.remainingAmount > 0 ? "expense" : "income"}
+          variant={invoice.remainingAmount > 0 ? "expense" : "income"}
         />
         <StatCard
           title="Vencimento"
-          value={format(new Date(summary.dueDate), "dd/MM/yyyy")}
+          value={format(new Date(invoice.dueDate), "dd/MM/yyyy")}
           icon={Calendar}
           variant={isOverdue ? "warning" : "default"}
         />
@@ -211,19 +212,19 @@ export default function InvoiceDetailsPage() {
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Referência:</span>
             <span className="font-medium capitalize">
-              {format(new Date(summary.referenceMonth + "-01"), "MMMM yyyy", { locale: ptBR })}
+              {format(new Date(invoice.referenceMonth + "-01"), "MMMM yyyy", { locale: ptBR })}
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Período:</span>
             <span>
-              {format(new Date(summary.periodStart), "dd/MM/yyyy", { locale: ptBR })} —{" "}
-              {format(new Date(summary.periodEnd), "dd/MM/yyyy", { locale: ptBR })}
+              {format(new Date(invoice.periodStart), "dd/MM/yyyy", { locale: ptBR })} —{" "}
+              {format(new Date(invoice.periodEnd), "dd/MM/yyyy", { locale: ptBR })}
             </span>
           </div>
-          <InvoiceStatusBadge status={summary.status} isOverdue={isOverdue} />
+          <InvoiceStatusBadge status={invoice.status} isOverdue={isOverdue} />
           <span className="text-sm text-muted-foreground">
-            {summary.transactionCount} transações
+            {invoice.transactionCount} transações
           </span>
         </CardContent>
       </Card>
@@ -238,8 +239,8 @@ export default function InvoiceDetailsPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {categoryBreakdown.map((cat) => {
                 const percentage =
-                  summary.totalAmount > 0
-                    ? (cat.total / summary.totalAmount) * 100
+                  invoice.totalAmount > 0
+                    ? (cat.total / invoice.totalAmount) * 100
                     : 0;
                 return (
                   <div
@@ -333,8 +334,8 @@ export default function InvoiceDetailsPage() {
           <DialogHeader>
             <DialogTitle>Pagar Fatura</DialogTitle>
             <DialogDescription>
-              Pagar fatura de {summary.accountName} —{" "}
-              {format(new Date(summary.referenceMonth + "-01"), "MMMM yyyy", {
+              Pagar fatura de {invoice.accountName} —{" "}
+              {format(new Date(invoice.referenceMonth + "-01"), "MMMM yyyy", {
                 locale: ptBR,
               })}
             </DialogDescription>
@@ -362,7 +363,7 @@ export default function InvoiceDetailsPage() {
               <Label>Valor do Pagamento</Label>
               <MoneyInput value={paymentAmount} onChange={setPaymentAmount} />
               <p className="text-xs text-muted-foreground">
-                Restante: {fmt(summary.remainingAmount)}
+                Restante: {fmt(invoice.remainingAmount)}
               </p>
             </div>
           </div>
@@ -375,7 +376,7 @@ export default function InvoiceDetailsPage() {
               disabled={
                 !sourceAccountId ||
                 paymentAmount <= 0 ||
-                paymentAmount > summary.remainingAmount ||
+                paymentAmount > invoice.remainingAmount ||
                 payMutation.isPending
               }
             >
