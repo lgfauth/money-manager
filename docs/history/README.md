@@ -8,4 +8,9 @@ Use this area for:
 2. implementation notes with long-term value
 3. feature notes that still help future maintenance
 
+Recommended starting points in this folder:
+
+1. [frontend-modernization-summary.md](frontend-modernization-summary.md)
+2. [features](features)
+
 For current architecture and active development rules, start from [../architecture/architecture-overview.md](../architecture/architecture-overview.md) and [../guides](../guides).

@@ -1,7 +1,7 @@
 # MoneyManager Next.js — Plano de Execucao por Fases
 
 > Documento de rastreamento para a reconstrucao do frontend em React + Next.js.
-> Baseado em `NEXTJS_FRONTEND_SPEC.md` e `FRONTEND_DOCUMENTATION.md`.
+> Consolidado a partir de [history/frontend-modernization-summary.md](history/frontend-modernization-summary.md) e das fontes arquivadas em [archive/frontend](archive/frontend).
 >
 > **Convencao:** [ ] = pendente, [~] = em progresso, [x] = concluido
 
