@@ -1,0 +1,11 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "src/MoneyManager.Administration/Dockerfile"
+watchPatterns = ["src/MoneyManager.Administration/**"]
+
+[build.args]
+NEXT_PUBLIC_ADMIN_API_URL = "${{ADMIN_API_URL}}"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

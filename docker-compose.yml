@@ -63,3 +63,40 @@ services:
       - ApiUrl=http://api:5000
     depends_on:
       - api
+
+  admin-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.admin-api
+    container_name: moneymanager-admin-api
+    ports:
+      - "5091:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - MongoDB__ConnectionString=mongodb://mongodb:27017
+      - MongoDB__DatabaseName=MoneyAgent
+      - AdminAuth__SecretKey=admin-secret-key-at-least-32-chars-long
+      - AdminAuth__Username=admin
+      - AdminAuth__Password=CHANGE_ME
+      - AdminAuth__Role=admin
+      - AdminCors__AllowedOrigins__0=http://localhost:3010
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - moneymanager-network
+
+  admin:
+    build:
+      context: src/MoneyManager.Administration
+      dockerfile: Dockerfile
+    container_name: moneymanager-admin
+    ports:
+      - "3010:3000"
+    environment:
+      - ADMIN_API_URL=http://admin-api:8080
+    depends_on:
+      - admin-api
+    networks:
+      - moneymanager-network
