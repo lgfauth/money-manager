@@ -14,6 +14,30 @@ interface MoneyInputProps {
   id?: string;
 }
 
+function parseMoneyInput(rawValue: string): number {
+  const sanitizedValue = rawValue.replace(/[^0-9.,]/g, "").trim();
+
+  if (!sanitizedValue) {
+    return 0;
+  }
+
+  const lastCommaIndex = sanitizedValue.lastIndexOf(",");
+  const lastDotIndex = sanitizedValue.lastIndexOf(".");
+  const decimalIndex = Math.max(lastCommaIndex, lastDotIndex);
+
+  if (decimalIndex === -1) {
+    const integerValue = Number(sanitizedValue.replace(/[.,]/g, ""));
+    return Number.isFinite(integerValue) ? integerValue : 0;
+  }
+
+  const integerPart = sanitizedValue.slice(0, decimalIndex).replace(/[.,]/g, "");
+  const decimalPart = sanitizedValue.slice(decimalIndex + 1).replace(/[.,]/g, "");
+  const normalizedValue = `${integerPart || "0"}.${decimalPart}`;
+  const parsedValue = Number(normalizedValue);
+
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+}
+
 export function MoneyInput({
   value,
   onChange,
@@ -52,12 +76,7 @@ export function MoneyInput({
 
   const handleBlur = () => {
     setIsFocused(false);
-    const parsed = parseFloat(displayValue.replace(/\./g, "").replace(",", "."));
-    if (!isNaN(parsed)) {
-      onChange(parsed);
-    } else {
-      onChange(0);
-    }
+    onChange(parseMoneyInput(displayValue));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
