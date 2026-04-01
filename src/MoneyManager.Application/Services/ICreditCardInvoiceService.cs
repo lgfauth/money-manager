@@ -51,14 +51,12 @@ public interface ICreditCardInvoiceService
     // ==================== PAGAMENTO DE FATURAS ====================
     
     /// <summary>
-    /// Paga uma fatura totalmente (atualiza apenas o status da fatura, não cria transação)
-    /// A transação de pagamento deve ser criada separadamente via TransactionService
+    /// Paga uma fatura totalmente, atualizando fatura, contas e limite comprometido.
     /// </summary>
     Task PayInvoiceAsync(string userId, PayInvoiceRequestDto request);
 
     /// <summary>
-    /// Paga uma fatura parcialmente (atualiza apenas o status da fatura, não cria transação)
-    /// A transação de pagamento deve ser criada separadamente via TransactionService
+    /// Paga uma fatura parcialmente, atualizando fatura, contas e limite comprometido.
     /// </summary>
     Task PayPartialInvoiceAsync(string userId, PayInvoiceRequestDto request);
 
@@ -90,4 +88,9 @@ public interface ICreditCardInvoiceService
     /// Cria fatura "Histórico" para migração de dados antigos
     /// </summary>
     Task<CreditCardInvoice> CreateHistoryInvoiceAsync(string userId, string accountId);
+
+    /// <summary>
+    /// Recalcula faturas e limite comprometido dos cartões de crédito do usuário.
+    /// </summary>
+    Task<CreditCardReconciliationSummaryDto> ReconcileCreditCardDataAsync(string userId);
 }

@@ -24,9 +24,22 @@ export interface CreditCardInvoiceResponseDto {
 
 export interface InvoicePaymentRequestDto {
   invoiceId: string;
-  sourceAccountId: string;
+  payFromAccountId: string;
   paymentDate: string;
   amount: number;
+}
+
+export interface CreditCardReconciliationSummaryDto {
+  accountsProcessed: number;
+  invoicesRecalculated: number;
+  accountsUpdated: number;
+  totalCommittedCredit: number;
+}
+
+export interface AdminActionResponse<T> {
+  success: boolean;
+  message: string;
+  result: T;
 }
 
 export interface InvoiceSummaryDto {

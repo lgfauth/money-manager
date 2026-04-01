@@ -82,6 +82,7 @@ public class RecurringTransactionService : IRecurringTransactionService
             return recurrences
                 .Where(r => r is not null)
                 .Where(r => r.UserId == userId && !r.IsDeleted)
+                .Where(r => !r.IsInstallmentSchedule)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToList();
         }
@@ -180,9 +181,18 @@ public class RecurringTransactionService : IRecurringTransactionService
                         Type = recurrence.Type,
                         Amount = recurrence.Amount,
                         Date = recurrence.NextOccurrenceDate.Date, // Ensure transaction date has no time component
-                        Description = $"{recurrence.Description} (Recorrente)",
+                        Description = recurrence.IsInstallmentSchedule
+                            ? recurrence.Description
+                            : $"{recurrence.Description} (Recorrente)",
                         Tags = recurrence.Tags,
-                        Status = TransactionStatus.Pending
+                        Notes = recurrence.Notes,
+                        Status = TransactionStatus.Pending,
+                        SkipAccountBalanceImpact = recurrence.SkipAccountBalanceImpact,
+                        SkipCommittedCreditImpact = recurrence.SkipCommittedCreditImpact,
+                        SkipCreditLimitValidation = recurrence.SkipCreditLimitValidation,
+                        InstallmentGroupId = recurrence.InstallmentGroupId,
+                        InstallmentNumber = recurrence.InstallmentNumber,
+                        InstallmentCount = recurrence.InstallmentCount
                     };
 
                     await _transactionService.CreateAsync(recurrence.UserId, transactionRequest);
@@ -191,6 +201,19 @@ public class RecurringTransactionService : IRecurringTransactionService
                     _processLogger.AddStep("Transaction created from recurring", new Dictionary<string, object?> { ["recurringId"] = recurrence.Id, ["date"] = recurrence.NextOccurrenceDate.ToString("O") });
 
                     recurrence.LastProcessedDate = recurrence.NextOccurrenceDate;
+
+                    if (recurrence.RemainingOccurrences.HasValue)
+                    {
+                        recurrence.RemainingOccurrences--;
+                        recurrence.UpdatedAt = DateTime.UtcNow;
+
+                        if (recurrence.RemainingOccurrences <= 0)
+                        {
+                            recurrence.IsActive = false;
+                            break;
+                        }
+                    }
+
                     recurrence.NextOccurrenceDate = await CalculateNextOccurrence(
                         recurrence.NextOccurrenceDate,
                         recurrence.Frequency,

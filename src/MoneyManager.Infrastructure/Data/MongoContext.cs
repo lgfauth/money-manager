@@ -171,7 +171,8 @@ public class MongoContext
         var runner = new MigrationRunner(_database);
         var migrations = new IMigration[]
         {
-            new Migration_20260326_01_Initial()
+            new Migration_20260326_01_Initial(),
+            new Migration_20260401_01_CreditCardCommittedCreditDefaults()
         };
 
         await runner.RunAsync(migrations);

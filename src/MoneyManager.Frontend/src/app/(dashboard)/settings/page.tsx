@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
-import { Palette, Bell, DollarSign } from "lucide-react";
+import { AlertCircle, Palette, Bell, DollarSign, RefreshCcw } from "lucide-react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +21,11 @@ import { MoneyInput } from "@/components/shared/money-input";
 import { ColorPicker } from "@/components/shared/color-picker";
 import { PageHeader } from "@/components/shared/page-header";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useReconcileCreditCards } from "@/hooks/use-invoices";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { useSettingsStore } from "@/stores/settings-store";
+import { AccountType } from "@/types/account";
 import { currencies } from "@/config/currencies";
 
 const DATE_FORMATS = [
@@ -38,9 +42,13 @@ const THEMES = [
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
+  const { data: accounts } = useAccounts();
   const update = useUpdateSettings();
+  const reconcileCards = useReconcileCreditCards();
   const { setTheme } = useTheme();
   const setStoreCurrency = useSettingsStore((s) => s.setCurrency);
+  const creditCardCount =
+    accounts?.filter((account) => account.type === AccountType.CreditCard).length ?? 0;
 
   // Sync theme from API to next-themes
   useEffect(() => {
@@ -257,6 +265,63 @@ export default function SettingsPage() {
               onChange={(v) => handleUpdate({ primaryColor: v })}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <RefreshCcw className="h-4 w-4" />
+            Manutenção de Cartões
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Quando usar a reconciliação</AlertTitle>
+            <AlertDescription>
+              Recalcule os totais de fatura e o limite comprometido quando houver divergência entre fatura atual, dívida do cartão e limite disponível. A rotina processa {creditCardCount} cartão(ões) deste usuário.
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              onClick={() => reconcileCards.mutate()}
+              disabled={reconcileCards.isPending || creditCardCount === 0}
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              {reconcileCards.isPending ? "Reconciliando..." : "Reconciliar cartões agora"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Atualiza contas, faturas e métricas do dashboard após o processamento.
+            </p>
+          </div>
+
+          {reconcileCards.data?.result ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Cartões processados</p>
+                <p className="mt-1 text-lg font-semibold">{reconcileCards.data.result.accountsProcessed}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Faturas recalculadas</p>
+                <p className="mt-1 text-lg font-semibold">{reconcileCards.data.result.invoicesRecalculated}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Contas atualizadas</p>
+                <p className="mt-1 text-lg font-semibold">{reconcileCards.data.result.accountsUpdated}</p>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Limite comprometido</p>
+                <p className="mt-1 text-lg font-semibold">
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: settings.currency,
+                  }).format(reconcileCards.data.result.totalCommittedCredit)}
+                </p>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>

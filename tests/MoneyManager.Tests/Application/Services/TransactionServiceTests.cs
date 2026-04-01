@@ -295,6 +295,71 @@ public class TransactionServiceTests
     }
 
     [Fact]
+    public async Task UpdateAsync_CreditCardExpense_ShouldPersistBeforeRecalculatingInvoice()
+    {
+        // Arrange
+        var userId = "user123";
+        var transactionId = "trans123";
+        var existingTransaction = new Transaction
+        {
+            Id = transactionId,
+            UserId = userId,
+            AccountId = "cc123",
+            CategoryId = "cat123",
+            Amount = 100m,
+            Type = TransactionType.Expense,
+            InvoiceId = "inv-old"
+        };
+
+        var updateRequest = new CreateTransactionRequestDto
+        {
+            AccountId = "cc123",
+            CategoryId = "cat123",
+            Type = TransactionType.Expense,
+            Amount = 150m,
+            Date = new DateTime(2026, 4, 10),
+            Description = "Updated purchase",
+            Status = TransactionStatus.Pending
+        };
+
+        var creditCard = new Account
+        {
+            Id = "cc123",
+            UserId = userId,
+            Type = AccountType.CreditCard,
+            Balance = -100m,
+            CreditLimit = 5000m,
+            CommittedCredit = 100m
+        };
+
+        _transactionRepoMock.GetByIdAsync(transactionId).Returns(existingTransaction);
+        _accountRepoMock.GetByIdAsync("cc123").Returns(creditCard);
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Mercado", Color = "#ef4444" });
+
+        var newInvoice = new CreditCardInvoice
+        {
+            Id = "inv-new",
+            AccountId = "cc123",
+            UserId = userId,
+            Status = InvoiceStatus.Open,
+            ReferenceMonth = "2026-04"
+        };
+
+        _invoiceServiceMock.DetermineInvoiceForTransactionAsync(userId, "cc123", updateRequest.Date).Returns(newInvoice);
+
+        // Act
+        await _transactionService.UpdateAsync(userId, transactionId, updateRequest);
+
+        // Assert
+        Received.InOrder(async () =>
+        {
+            await _transactionRepoMock.UpdateAsync(Arg.Is<Transaction>(t => t.Id == transactionId && t.InvoiceId == "inv-new"));
+            await _invoiceServiceMock.RecalculateInvoiceTotalAsync(userId, "inv-old");
+            await _invoiceServiceMock.RecalculateInvoiceTotalAsync(userId, "inv-new");
+        });
+    }
+
+    [Fact]
     public async Task DeleteAsync_ShouldRevertImpactAndMarkAsDeleted()
     {
         // Arrange
@@ -321,6 +386,159 @@ public class TransactionServiceTests
         Assert.Equal(1000m, account.Balance); // 800 + 200 reverted
         await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == "acc123"));
         await _transactionRepoMock.Received(1).UpdateAsync(Arg.Is<Transaction>(t => t.IsDeleted));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WithInvoice_ShouldPersistDeletionBeforeRecalculatingInvoice()
+    {
+        // Arrange
+        var userId = "user123";
+        var transactionId = "trans123";
+        var transaction = new Transaction
+        {
+            Id = transactionId,
+            UserId = userId,
+            AccountId = "cc123",
+            Amount = 200m,
+            Type = TransactionType.Expense,
+            InvoiceId = "inv123"
+        };
+
+        _transactionRepoMock.GetByIdAsync(transactionId).Returns(transaction);
+        _accountRepoMock.GetByIdAsync("cc123").Returns(new Account
+        {
+            Id = "cc123",
+            UserId = userId,
+            Type = AccountType.CreditCard,
+            Balance = -200m,
+            CommittedCredit = 200m
+        });
+
+        // Act
+        await _transactionService.DeleteAsync(userId, transactionId);
+
+        // Assert
+        Received.InOrder(async () =>
+        {
+            await _transactionRepoMock.UpdateAsync(Arg.Is<Transaction>(t => t.Id == transactionId && t.IsDeleted));
+            await _unitOfWorkMock.SaveChangesAsync();
+            await _invoiceServiceMock.RecalculateInvoiceTotalAsync(userId, "inv123");
+        });
+    }
+
+    [Fact]
+    public async Task CreateAsync_CreditCardExpense_ShouldIncreaseCommittedCredit()
+    {
+        // Arrange
+        var userId = "user123";
+        var accountId = "cc123";
+        var request = new CreateTransactionRequestDto
+        {
+            AccountId = accountId,
+            CategoryId = "cat123",
+            Type = TransactionType.Expense,
+            Amount = 125m,
+            Date = new DateTime(2026, 3, 15),
+            Description = "Restaurant",
+            Status = TransactionStatus.Pending
+        };
+
+        var creditCard = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Type = AccountType.CreditCard,
+            Balance = 0m,
+            CreditLimit = 5000m,
+            CommittedCredit = 0m
+        };
+        _accountRepoMock.GetByIdAsync(accountId).Returns(creditCard);
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Restaurante", Color = "#ef4444" });
+
+        var invoice = new CreditCardInvoice
+        {
+            Id = "inv-march",
+            AccountId = accountId,
+            UserId = userId,
+            Status = InvoiceStatus.Open,
+            ReferenceMonth = "2026-03"
+        };
+
+        _invoiceServiceMock.DetermineInvoiceForTransactionAsync(userId, accountId, request.Date).Returns(invoice);
+
+        // Act
+        await _transactionService.CreateAsync(userId, request);
+
+        // Assert
+        Assert.Equal(125m, creditCard.CommittedCredit);
+    }
+
+    [Fact]
+    public async Task CreateInstallmentPurchaseAsync_ShouldReserveFullLimitAndCreateFutureSchedules()
+    {
+        // Arrange
+        var userId = "user123";
+        var accountId = "cc123";
+        var request = new InstallmentPurchaseRequestDto
+        {
+            AccountId = accountId,
+            CategoryId = "cat123",
+            Type = TransactionType.Expense,
+            TotalAmount = 300m,
+            InstallmentCount = 3,
+            FirstInstallmentInCurrentInvoice = true,
+            Date = new DateTime(2026, 4, 15),
+            Description = "Notebook",
+            ClientRequestId = "installment-123"
+        };
+
+        var creditCard = new Account
+        {
+            Id = accountId,
+            UserId = userId,
+            Type = AccountType.CreditCard,
+            Balance = 0m,
+            CreditLimit = 1000m,
+            InvoiceClosingDay = 10,
+            Currency = "BRL"
+        };
+
+        var recurringRepo = Substitute.For<IRepository<RecurringTransaction>>();
+        recurringRepo.AddAsync(Arg.Any<RecurringTransaction>()).Returns(x => x.Arg<RecurringTransaction>());
+
+        _unitOfWorkMock.RecurringTransactions.Returns(recurringRepo);
+        _unitOfWorkMock.Accounts.GetByIdAsync(accountId).Returns(creditCard);
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Eletrônicos", Color = "#6366f1" });
+        _transactionRepoMock.GetByClientRequestIdAsync(userId, "installment-123").Returns((Transaction?)null);
+        recurringRepo.GetAllAsync().Returns(Array.Empty<RecurringTransaction>());
+
+        var invoice = new CreditCardInvoice
+        {
+            Id = "inv-current",
+            AccountId = accountId,
+            UserId = userId,
+            Status = InvoiceStatus.Open,
+            ReferenceMonth = "2026-04"
+        };
+        _invoiceServiceMock.DetermineInvoiceForTransactionAsync(userId, accountId, request.Date).Returns(invoice);
+
+        // Act
+        await _transactionService.CreateInstallmentPurchaseAsync(userId, request);
+
+        // Assert
+        Assert.Equal(300m, creditCard.Balance);
+        Assert.Equal(300m, creditCard.CommittedCredit);
+        await _transactionRepoMock.Received(1).AddAsync(Arg.Is<Transaction>(t =>
+            t.InstallmentGroupId == "installment-123" &&
+            t.InstallmentNumber == 1 &&
+            t.InstallmentCount == 3 &&
+            t.Amount == 100m &&
+            t.SkipAccountBalanceImpact));
+        await recurringRepo.Received(2).AddAsync(Arg.Is<RecurringTransaction>(r =>
+            r.IsInstallmentSchedule &&
+            r.SkipAccountBalanceImpact &&
+            r.SkipCommittedCreditImpact &&
+            r.RemainingOccurrences == 1));
     }
 
     [Fact]
@@ -569,10 +787,7 @@ public class TransactionServiceTests
 
         // Assert
         Assert.NotNull(result);
-        // Invoice total should be updated
-        Assert.Equal(300m, invoice.TotalAmount); // 100 + 200
-        Assert.Equal(300m, invoice.RemainingAmount);
-        await invoiceRepoMock.Received(1).UpdateAsync(Arg.Is<CreditCardInvoice>(i => i.Id == "inv-march"));
+        await _invoiceServiceMock.Received(1).RecalculateInvoiceTotalAsync(userId, "inv-march");
         // Transaction should have been created with InvoiceId
         await _transactionRepoMock.Received(1).AddAsync(Arg.Is<Transaction>(t => t.InvoiceId == "inv-march"));
     }

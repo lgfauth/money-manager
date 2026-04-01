@@ -27,6 +27,8 @@ export interface AccountResponseDto {
   invoiceClosingDay?: number;
   invoiceDueDayOffset?: number;
   creditLimit?: number;
+  committedCredit: number;
+  availableCredit: number;
   createdAt: string;
   updatedAt: string;
 }

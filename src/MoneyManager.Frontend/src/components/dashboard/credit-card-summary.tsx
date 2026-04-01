@@ -24,8 +24,11 @@ export function CreditCardSummary({ cards }: CreditCardSummaryProps) {
       <CardContent>
         <div className="flex gap-6 overflow-x-auto pb-2">
           {cards.map((card) => {
+            const usedAmount = card.committedCredit ?? Math.abs(card.balance);
+            const availableAmount =
+              card.availableCredit ?? Math.max((card.creditLimit ?? 0) - usedAmount, 0);
             const used = card.creditLimit
-              ? (Math.abs(card.balance) / card.creditLimit) * 100
+              ? (usedAmount / card.creditLimit) * 100
               : 0;
             return (
               <Link
@@ -44,15 +47,23 @@ export function CreditCardSummary({ cards }: CreditCardSummaryProps) {
                 <div className="min-w-0">
                   <p className="text-[15px] font-semibold truncate text-white">{card.name}</p>
                   <p className="text-xs mt-0.5" style={{ color: "#8B9AB0" }}>
+                    Comprometido {" "}
                     {new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: card.currency,
-                    }).format(Math.abs(card.balance))}{" "}
+                    }).format(usedAmount)}{" "}
                     /{" "}
                     {new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: card.currency,
                     }).format(card.creditLimit ?? 0)}
+                  </p>
+                  <p className="text-[11px] mt-1" style={{ color: "#C9D4E2" }}>
+                    Disponível {" "}
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: card.currency,
+                    }).format(availableAmount)}
                   </p>
                 </div>
               </Link>

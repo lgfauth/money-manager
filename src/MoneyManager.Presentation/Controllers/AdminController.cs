@@ -185,6 +185,35 @@ public class AdminController : ControllerBase
         }
     }
 
+    [HttpPost("reconcile-credit-cards")]
+    public async Task<IActionResult> ReconcileCreditCards()
+    {
+        var userId = HttpContext.GetUserId();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return this.ApiUnauthorized("Usuário não autenticado");
+        }
+
+        _logger.LogInformation("Reconciling credit card data for user {UserId}", userId);
+
+        try
+        {
+            var summary = await _invoiceService.ReconcileCreditCardDataAsync(userId);
+
+            return Ok(new
+            {
+                Success = true,
+                Message = "Reconciliação de cartões concluída com sucesso",
+                Result = summary
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reconciling credit cards for user {UserId}", userId);
+            return this.ApiServerError("Erro ao reconciliar cartões de crédito", errors: [ex.Message]);
+        }
+    }
+
     /// <summary>
     /// Cria fatura aberta para cartões que não têm
     /// </summary>

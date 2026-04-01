@@ -35,6 +35,9 @@ public class Account
     [BsonElement("creditLimit")]
     public decimal? CreditLimit { get; set; }
 
+    [BsonElement("committedCredit")]
+    public decimal CommittedCredit { get; set; }
+
     /// <summary>
     /// For credit card accounts, defines the invoice closing day (1..31).
     /// Installment purchases should post to the invoice as of (closing day + 1).

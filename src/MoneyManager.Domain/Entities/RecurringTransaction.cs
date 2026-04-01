@@ -56,6 +56,30 @@ public class RecurringTransaction
     [BsonElement("notes")]
     public string? Notes { get; set; }
 
+    [BsonElement("skipAccountBalanceImpact")]
+    public bool SkipAccountBalanceImpact { get; set; }
+
+    [BsonElement("skipCommittedCreditImpact")]
+    public bool SkipCommittedCreditImpact { get; set; }
+
+    [BsonElement("skipCreditLimitValidation")]
+    public bool SkipCreditLimitValidation { get; set; }
+
+    [BsonElement("isInstallmentSchedule")]
+    public bool IsInstallmentSchedule { get; set; }
+
+    [BsonElement("installmentGroupId")]
+    public string? InstallmentGroupId { get; set; }
+
+    [BsonElement("installmentNumber")]
+    public int? InstallmentNumber { get; set; }
+
+    [BsonElement("installmentCount")]
+    public int? InstallmentCount { get; set; }
+
+    [BsonElement("remainingOccurrences")]
+    public int? RemainingOccurrences { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

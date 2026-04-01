@@ -2,10 +2,13 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { queryKeys } from "@/lib/query-client";
 import { toast } from "sonner";
 import type {
+  AdminActionResponse,
   CreditCardInvoiceResponseDto,
+  CreditCardReconciliationSummaryDto,
   InvoiceSummaryDto,
   InvoicePaymentRequestDto,
 } from "@/types/invoice";
@@ -82,7 +85,7 @@ export function usePayInvoice(accountId: string) {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Pagamento registrado com sucesso");
     },
-    onError: () => toast.error("Erro ao registrar pagamento"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao registrar pagamento")),
   });
 }
 
@@ -108,6 +111,30 @@ export function usePayInvoiceDirect() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Pagamento registrado com sucesso");
     },
-    onError: () => toast.error("Erro ao registrar pagamento"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao registrar pagamento")),
+  });
+}
+
+export function useReconcileCreditCards() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<AdminActionResponse<CreditCardReconciliationSummaryDto>>(
+        "/api/admin/reconcile-credit-cards",
+        {}
+      ),
+    onSuccess: ({ result }) => {
+      qc.invalidateQueries({ queryKey: queryKeys.accounts });
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success(
+        `${result.accountsProcessed} cartões reconciliados e ${result.invoicesRecalculated} faturas recalculadas`
+      );
+    },
+    onError: (error) =>
+      toast.error(
+        getApiErrorMessage(error, "Erro ao reconciliar cartões de crédito")
+      ),
   });
 }

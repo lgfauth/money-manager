@@ -285,13 +285,12 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (invoice == null || invoice.UserId != userId)
             throw new KeyNotFoundException("Invoice not found");
 
-        var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
-        var invoiceTransactions = allTransactions
-            .Where(t => t.InvoiceId == invoiceId && !t.IsDeleted)
+        var invoiceTransactions = await GetEligibleInvoiceTransactionsAsync(invoiceId);
+        var orderedTransactions = invoiceTransactions
             .OrderBy(t => t.Date)
             .ToList();
 
-        return await MapTransactionsToDtoAsync(userId, invoiceTransactions);
+        return await MapTransactionsToDtoAsync(userId, orderedTransactions);
     }
 
     // ==================== UTILITÁRIOS ====================
@@ -351,15 +350,12 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (invoice == null || invoice.UserId != userId)
             throw new KeyNotFoundException("Invoice not found");
 
-        var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
-        var invoiceTransactions = allTransactions
-            .Where(t => t.InvoiceId == invoiceId && !t.IsDeleted && t.Type == TransactionType.Expense)
-            .ToList();
+        var invoiceTransactions = await GetEligibleInvoiceTransactionsAsync(invoiceId);
 
         var total = invoiceTransactions.Sum(t => t.Amount);
 
         invoice.TotalAmount = total;
-        invoice.RemainingAmount = total - invoice.PaidAmount;
+        invoice.RemainingAmount = Math.Max(0m, total - invoice.PaidAmount);
         invoice.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
@@ -420,6 +416,61 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         _processLogger.AddStep("History invoice created", new Dictionary<string, object?> { ["accountId"] = accountId, ["transactionCount"] = oldTransactions.Count });
 
         return historyInvoice;
+    }
+
+    public async Task<CreditCardReconciliationSummaryDto> ReconcileCreditCardDataAsync(string userId)
+    {
+        var accounts = await _unitOfWork.Accounts.GetAllAsync();
+        var creditCards = accounts
+            .Where(account => account.UserId == userId && !account.IsDeleted && account.Type == AccountType.CreditCard)
+            .ToList();
+
+        var summary = new CreditCardReconciliationSummaryDto();
+
+        foreach (var card in creditCards)
+        {
+            summary.AccountsProcessed++;
+
+            var invoices = (await _unitOfWork.CreditCardInvoices.GetByAccountIdAsync(card.Id))
+                .Where(invoice => !invoice.IsDeleted)
+                .ToList();
+
+            foreach (var invoice in invoices)
+            {
+                await RecalculateInvoiceTotalAsync(userId, invoice.Id);
+                summary.InvoicesRecalculated++;
+            }
+
+            invoices = (await _unitOfWork.CreditCardInvoices.GetByAccountIdAsync(card.Id))
+                .Where(invoice => !invoice.IsDeleted)
+                .ToList();
+
+            var activeInstallmentSchedules = (await _unitOfWork.RecurringTransactions.GetAllAsync())
+                .Where(recurrence => recurrence.UserId == userId
+                    && !recurrence.IsDeleted
+                    && recurrence.IsActive
+                    && recurrence.IsInstallmentSchedule
+                    && recurrence.AccountId == card.Id)
+                .ToList();
+
+            var unpaidInvoicesTotal = invoices
+                .Where(invoice => invoice.Status != InvoiceStatus.Paid)
+                .Sum(invoice => Math.Max(0m, invoice.RemainingAmount));
+
+            var scheduledInstallmentsTotal = activeInstallmentSchedules.Sum(recurrence => recurrence.Amount);
+            var recomputedCommittedCredit = Math.Max(Math.Abs(card.Balance), unpaidInvoicesTotal + scheduledInstallmentsTotal);
+
+            card.CommittedCredit = recomputedCommittedCredit;
+            card.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.Accounts.UpdateAsync(card);
+
+            summary.AccountsUpdated++;
+            summary.TotalCommittedCredit += recomputedCommittedCredit;
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        return summary;
     }
 
     // ==================== MÉTODOS PRIVADOS ====================
@@ -562,22 +613,59 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (payFromAccount.Type == AccountType.CreditCard)
             throw new InvalidOperationException("Cannot pay invoice from a credit card");
 
+        if (request.Amount <= 0)
+            throw new InvalidOperationException("Payment amount must be greater than zero");
+
+        if (payFromAccount.Balance < request.Amount)
+            throw new InvalidOperationException("Insufficient balance in payment account");
+
+        var creditCardAccount = await _unitOfWork.Accounts.GetByIdAsync(invoice.AccountId);
+        if (creditCardAccount == null || creditCardAccount.UserId != userId || creditCardAccount.IsDeleted)
+            throw new KeyNotFoundException("Credit card account not found");
+
+        if (creditCardAccount.Type != AccountType.CreditCard)
+            throw new InvalidOperationException("Invoice account is not a credit card");
+
         // Atualizar fatura
         invoice.PaidAmount += request.Amount;
-        invoice.RemainingAmount = invoice.TotalAmount - invoice.PaidAmount;
+        invoice.RemainingAmount = Math.Max(0m, invoice.TotalAmount - invoice.PaidAmount);
         invoice.UpdatedAt = DateTime.UtcNow;
 
         if (invoice.RemainingAmount <= 0)
         {
             invoice.Status = InvoiceStatus.Paid;
-            invoice.PaidAt = DateTime.UtcNow;
+            invoice.PaidAt = request.PaymentDate;
         }
         else
         {
             invoice.Status = InvoiceStatus.PartiallyPaid;
+            invoice.PaidAt = null;
         }
 
+        payFromAccount.Balance -= request.Amount;
+        payFromAccount.UpdatedAt = DateTime.UtcNow;
+
+        creditCardAccount.Balance += CalculateCreditCardPaymentBalanceDelta(creditCardAccount.Balance, request.Amount);
+        creditCardAccount.CommittedCredit = Math.Max(0m, GetCommittedCreditSnapshot(creditCardAccount) - request.Amount);
+        creditCardAccount.UpdatedAt = DateTime.UtcNow;
+
+        var paymentTransaction = new Transaction
+        {
+            UserId = userId,
+            AccountId = payFromAccount.Id,
+            ToAccountId = creditCardAccount.Id,
+            Type = TransactionType.Transfer,
+            Amount = request.Amount,
+            Currency = payFromAccount.Currency,
+            Date = request.PaymentDate,
+            Description = request.Description ?? $"Pagamento de fatura {invoice.ReferenceMonth}",
+            Status = TransactionStatus.Completed
+        };
+
         await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
+        await _unitOfWork.Accounts.UpdateAsync(payFromAccount);
+        await _unitOfWork.Accounts.UpdateAsync(creditCardAccount);
+        await _unitOfWork.Transactions.AddAsync(paymentTransaction);
         await _unitOfWork.SaveChangesAsync();
 
         _processLogger.AddStep("Payment processed", new Dictionary<string, object?> { ["invoiceId"] = invoice.Id, ["paidAmount"] = request.Amount, ["remaining"] = invoice.RemainingAmount });
@@ -610,10 +698,33 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         };
 
         // Contar transações
-        var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
-        dto.TransactionCount = allTransactions.Count(t => t.InvoiceId == invoice.Id && !t.IsDeleted);
+        dto.TransactionCount = (await GetEligibleInvoiceTransactionsAsync(invoice.Id)).Count;
 
         return dto;
+    }
+
+    private async Task<List<Transaction>> GetEligibleInvoiceTransactionsAsync(string invoiceId)
+    {
+        var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
+
+        return allTransactions
+            .Where(t => t.InvoiceId == invoiceId && !t.IsDeleted && t.Type == TransactionType.Expense)
+            .ToList();
+    }
+
+    private static decimal GetCommittedCreditSnapshot(Account account)
+    {
+        if (account.Type != AccountType.CreditCard)
+        {
+            return 0m;
+        }
+
+        return Math.Max(account.CommittedCredit, Math.Abs(account.Balance));
+    }
+
+    private static decimal CalculateCreditCardPaymentBalanceDelta(decimal currentBalance, decimal amount)
+    {
+        return currentBalance >= 0m ? -amount : amount;
     }
 
     private static string GetStatusLabel(InvoiceStatus status)

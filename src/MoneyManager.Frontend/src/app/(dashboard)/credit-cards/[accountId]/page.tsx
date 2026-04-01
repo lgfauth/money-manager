@@ -5,9 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, CreditCard } from "lucide-react";
+import { AlertCircle, ArrowLeft, CreditCard, DollarSign, Receipt, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/shared/stat-card";
 import {
   Table,
   TableBody,
@@ -74,8 +76,14 @@ export default function CreditCardDashboardPage() {
     );
   }
 
-  const usedAmount = Math.abs(account.balance);
+  const usedAmount = account.committedCredit ?? Math.abs(account.balance);
   const creditLimit = account.creditLimit ?? 0;
+  const availableCredit =
+    account.availableCredit ?? Math.max(creditLimit - usedAmount, 0);
+  const cardDebt = Math.abs(account.balance);
+  const currentInvoiceAmount = openInvoice?.totalAmount ?? 0;
+  const currentInvoiceRemaining = openInvoice?.remainingAmount ?? 0;
+  const futureReservedAmount = Math.max(usedAmount - currentInvoiceAmount, 0);
 
   // Find the next invoice to pay (overdue for this account, or first closed)
   const overdueForAccount = overdueInvoices?.filter(
@@ -107,6 +115,41 @@ export default function CreditCardDashboardPage() {
           </Button>
         </Link>
       </PageHeader>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          title="Fatura Atual"
+          value={fmt(currentInvoiceAmount, account.currency)}
+          icon={Receipt}
+          variant={currentInvoiceAmount > 0 ? "expense" : "default"}
+        />
+        <StatCard
+          title="Débito do Cartão"
+          value={fmt(cardDebt, account.currency)}
+          icon={CreditCard}
+          variant={cardDebt > 0 ? "expense" : "default"}
+        />
+        <StatCard
+          title="Limite Comprometido"
+          value={fmt(usedAmount, account.currency)}
+          icon={DollarSign}
+          variant={usedAmount > 0 ? "warning" : "default"}
+        />
+        <StatCard
+          title="Limite Disponível"
+          value={fmt(availableCredit, account.currency)}
+          icon={Wallet}
+          variant={availableCredit > 0 ? "income" : "expense"}
+        />
+      </div>
+
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Leitura dos números do cartão</AlertTitle>
+        <AlertDescription>
+          A fatura atual mostra apenas as compras do período em aberto. O débito do cartão representa a dívida contabilizada do cartão, enquanto o limite comprometido inclui a fatura atual e parcelas futuras já reservadas. Neste momento, {fmt(futureReservedAmount, account.currency)} do limite estão reservados fora da fatura atual e {fmt(currentInvoiceRemaining, account.currency)} permanecem em aberto na fatura corrente.
+        </AlertDescription>
+      </Alert>
 
       {/* Top section: gauge + invoice cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

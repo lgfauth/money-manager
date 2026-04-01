@@ -66,7 +66,7 @@ export function InvoicePaymentModal({
 }: InvoicePaymentModalProps) {
   const qc = useQueryClient();
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>("");
-  const [sourceAccountId, setSourceAccountId] = useState<string>("");
+  const [payFromAccountId, setPayFromAccountId] = useState<string>("");
   const [amount, setAmount] = useState(0);
 
   const { data: invoices } = useQuery({
@@ -85,8 +85,19 @@ export function InvoicePaymentModal({
   });
 
   const payInvoice = useMutation({
-    mutationFn: (data: InvoicePaymentRequestDto) =>
-      apiClient.post<void>("/api/credit-card-invoices/pay", data),
+    mutationFn: ({
+      data,
+      remainingAmount,
+    }: {
+      data: InvoicePaymentRequestDto;
+      remainingAmount: number;
+    }) => {
+      const endpoint =
+        data.amount < remainingAmount
+          ? "/api/credit-card-invoices/pay-partial"
+          : "/api/credit-card-invoices/pay";
+      return apiClient.post<void>(endpoint, data);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({
@@ -115,12 +126,15 @@ export function InvoicePaymentModal({
   );
 
   const handlePay = () => {
-    if (!selectedInvoiceId || !sourceAccountId || amount <= 0) return;
+    if (!selectedInvoiceId || !selectedInvoice || !payFromAccountId || amount <= 0) return;
     payInvoice.mutate({
-      invoiceId: selectedInvoiceId,
-      sourceAccountId,
-      paymentDate: new Date().toISOString(),
-      amount,
+      data: {
+        invoiceId: selectedInvoiceId,
+        payFromAccountId,
+        paymentDate: new Date().toISOString(),
+        amount,
+      },
+      remainingAmount: selectedInvoice.remainingAmount,
     });
   };
 
@@ -187,8 +201,8 @@ export function InvoicePaymentModal({
               <div className="space-y-2">
                 <Label>Conta de Debito</Label>
                 <Select
-                  value={sourceAccountId}
-                  onValueChange={(v) => v && setSourceAccountId(v)}
+                  value={payFromAccountId}
+                  onValueChange={(v) => v && setPayFromAccountId(v)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione a conta" />
@@ -234,7 +248,7 @@ export function InvoicePaymentModal({
             onClick={handlePay}
             disabled={
               !selectedInvoiceId ||
-              !sourceAccountId ||
+              !payFromAccountId ||
               amount <= 0 ||
               payInvoice.isPending
             }

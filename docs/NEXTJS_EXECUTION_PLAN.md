@@ -254,3 +254,135 @@ Todas      ──> Fase 15 (Polish + Deploy)
 | 14 | Perfil + Config | Medio | 5 |
 | 15 | Polish + Deploy | Medio | 8 |
 | **Total** | | | **~104 arquivos** |
+
+---
+
+## Plano de Correcao — Faturas e Limite de Cartao
+
+### Objetivo
+
+Equalizar a regra de negocio e a implementacao tecnica para que:
+
+- o total da fatura bata com a soma das transacoes elegiveis daquela fatura;
+- o pagamento de fatura atualize fatura, saldo e limite de forma consistente;
+- compras parceladas comprometam o limite total no momento da compra;
+- a liberacao do limite aconteca gradualmente conforme o pagamento das faturas.
+
+### Diagnostico Consolidado
+
+- O total persistido da fatura pode ficar defasado em relacao as transacoes da fatura por ordem incorreta de recalculo durante update de transacao.
+- O fluxo de pagamento de fatura no frontend Next.js e no backend nao fecha o ciclo contabil completo.
+- O dominio atual usa `Account.Balance` para representar divida do cartao, mas nao possui um conceito persistido separado para limite comprometido/limite disponivel.
+- O parcelamento atual nao reserva o valor total da compra no limite desde a origem; ele materializa apenas parcelas ao longo do tempo.
+
+### Decisao de Modelagem
+
+Adotar modelo persistido para cartao de credito, separando explicitamente:
+
+- `Balance`: divida contabil acumulada do cartao;
+- `CreditLimit`: limite total configurado;
+- `CommittedCredit`: limite atualmente comprometido por compras ja realizadas, incluindo parcelas futuras ainda nao faturadas;
+- `AvailableCredit`: limite disponivel derivado ou persistido a partir de `CreditLimit - CommittedCredit`.
+
+### Regras de Negocio Alvo
+
+1. Compra a vista no cartao:
+   entra integralmente na fatura correspondente;
+   consome integralmente o limite no momento da compra.
+
+2. Compra parcelada no cartao:
+   cada parcela entra apenas na fatura do seu periodo;
+   o valor total da compra consome o limite no momento da compra.
+
+3. Pagamento de fatura:
+   reduz o saldo devido do cartao;
+   libera limite gradualmente no montante efetivamente pago;
+   nao altera retroativamente o valor historico das parcelas/compras.
+
+4. Total da fatura:
+   deve refletir apenas transacoes de compra/despesa elegiveis para aquela fatura;
+   deve bater com a soma das transacoes exibidas na tela de detalhe.
+
+### Ordem de Execucao
+
+#### Etapa 1 — Testes de Regressao e Contrato
+
+- Criar testes para `TransactionService.UpdateAsync` cobrindo alteracao de valor/data/conta/fatura.
+- Criar testes para `CreditCardInvoiceService.RecalculateInvoiceTotalAsync` e `GetInvoiceTransactionsAsync` com a mesma regra de composicao.
+- Criar testes para pagamento total/parcial validando reflexo em fatura, conta pagadora, cartao e limite comprometido.
+- Criar testes para compra parcelada validando reserva imediata do limite total e apropriacao mensal das parcelas.
+
+#### Etapa 2 — Equalizacao de Faturas
+
+- Corrigir a ordem de persistencia e recalculo em `TransactionService.UpdateAsync`.
+- Centralizar a logica de sincronizacao de fatura em um fluxo unico pos-persistencia.
+- Garantir que listagem de transacoes da fatura e total da fatura usem a mesma regra de elegibilidade.
+
+#### Etapa 3 — Fluxo Completo de Pagamento
+
+- Corrigir o contrato frontend/backend de pagamento (`sourceAccountId` x `PayFromAccountId`).
+- Tornar o pagamento atomico no backend, incluindo:
+  atualizacao da fatura;
+  movimentacao financeira entre conta pagadora e cartao;
+  atualizacao do limite comprometido.
+- Eliminar dependencia de logica compensatoria no frontend/Blazor legado.
+
+#### Etapa 4 — Modelo Persistido de Limite
+
+- Evoluir `Account` para armazenar `CommittedCredit` e campo derivado/persistido de disponivel conforme decisoes de implementacao.
+- Atualizar DTOs, validadores, mapeamentos e hooks para expor corretamente limite total, utilizado e disponivel.
+- Ajustar a validacao de limite no backend para usar `CommittedCredit`, e nao apenas `Balance`.
+
+#### Etapa 5 — Parcelamento Real no Backend Next.js
+
+- Implementar fluxo explicito de compra parcelada no backend.
+- Criar a compra parcelada como operacao de dominio unica, nao como efeito distribuido no frontend.
+- Registrar o total da compra no limite comprometido imediatamente.
+- Registrar cada parcela no calendario/fatura correspondente, respeitando `firstInstallmentInCurrentInvoice`.
+
+#### Etapa 6 — Reconciliacao de Dados Existentes
+
+- Criar rotina de reconciliacao para recalcular totais de fatura a partir das transacoes persistidas.
+- Criar rotina para recomputar `CommittedCredit` dos cartoes com base em compras e pagamentos historicos.
+- Executar reconciliacao antes de expor a nova logica em producao.
+
+#### Etapa 7 — Ajustes de UI e Comunicacao
+
+- Atualizar dashboard e paginas de cartao/fatura para exibir separadamente:
+  fatura atual;
+  saldo/debito do cartao;
+  limite total;
+  limite comprometido;
+  limite disponivel.
+- Revisar nomenclatura visual para evitar ambiguidade entre "saldo do cartao" e "fatura atual".
+
+Status em 2026-04-01:
+
+- concluido no frontend Next.js com cards/alertas explicativos nas telas de cartao e fatura;
+- concluido com ajuste de nomenclatura visual para priorizar "limite comprometido" e "limite disponivel";
+- concluido com acao manual de reconciliacao em Configuracoes para suporte operacional.
+
+### Impacto Tecnico Esperado
+
+- Backend:
+  `Account`, `TransactionService`, `CreditCardInvoiceService`, DTOs, validadores, controller de transacoes e pagamentos.
+- Frontend:
+  hooks de invoices/transacoes/contas, dashboard de cartao, detalhe de fatura, cards e gauges de limite.
+- Dados:
+  necessidade de rotina de migracao/reconciliacao para usuarios que ja possuem cartoes e faturas cadastrados.
+
+### Riscos e Cuidados
+
+- Nao misturar conceito de fatura com conceito de limite utilizado.
+- Nao liberar limite no fechamento da fatura; a liberacao deve ocorrer no pagamento.
+- Evitar que transferencias/pagamentos entrem na soma de compras da fatura.
+- Garantir idempotencia no fluxo de pagamento e no fluxo de parcelamento.
+
+### Criterios de Aceite
+
+- O total da fatura e a soma das transacoes exibidas na fatura devem ser identicos.
+- Compra a vista deve consumir limite total e aparecer integralmente na fatura correta.
+- Compra parcelada deve consumir limite total imediatamente e distribuir parcelas entre faturas futuras.
+- Pagamento parcial deve liberar limite apenas no valor pago.
+- Pagamento total deve zerar a fatura e liberar integralmente o limite correspondente.
+- Dashboard e telas de cartao devem exibir numeros coerentes entre si, sem ambiguidade semantica.

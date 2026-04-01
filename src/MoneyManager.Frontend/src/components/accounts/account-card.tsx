@@ -31,9 +31,14 @@ interface AccountCardProps {
 
 export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
   const isCreditCard = account.type === AccountType.CreditCard;
+  const usedAmount = isCreditCard ? account.committedCredit ?? Math.abs(account.balance) : 0;
+  const availableAmount = isCreditCard
+    ? account.availableCredit ?? Math.max((account.creditLimit ?? 0) - usedAmount, 0)
+    : 0;
+  const cardDebt = isCreditCard ? Math.abs(account.balance) : 0;
   const usedPercent =
     isCreditCard && account.creditLimit
-      ? (Math.abs(account.balance) / account.creditLimit) * 100
+      ? (usedAmount / account.creditLimit) * 100
       : 0;
 
   const formattedBalance = new Intl.NumberFormat("pt-BR", {
@@ -87,7 +92,7 @@ export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <CreditCard className="h-3 w-3" />
-                Limite utilizado
+                Limite comprometido
               </span>
               <span>{usedPercent.toFixed(0)}%</span>
             </div>
@@ -100,7 +105,7 @@ export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
                 {new Intl.NumberFormat("pt-BR", {
                   style: "currency",
                   currency: account.currency,
-                }).format(Math.abs(account.balance))}
+                }).format(usedAmount)}
               </span>
               <span>
                 {new Intl.NumberFormat("pt-BR", {
@@ -108,6 +113,26 @@ export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
                   currency: account.currency,
                 }).format(account.creditLimit)}
               </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
+              <div>
+                <p>Débito do cartão</p>
+                <p className="mt-0.5 font-medium text-foreground">
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: account.currency,
+                  }).format(cardDebt)}
+                </p>
+              </div>
+              <div>
+                <p>Disponível</p>
+                <p className="mt-0.5 font-medium text-income">
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: account.currency,
+                  }).format(availableAmount)}
+                </p>
+              </div>
             </div>
             <Link
               href={`/credit-cards/${account.id}`}

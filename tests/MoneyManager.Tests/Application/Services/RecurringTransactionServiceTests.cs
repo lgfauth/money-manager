@@ -329,4 +329,77 @@ public class RecurringTransactionServiceTests
         await _transactionServiceMock.DidNotReceive().CreateAsync(Arg.Any<string>(), Arg.Any<CreateTransactionRequestDto>());
         await recurringRepo.DidNotReceive().UpdateAsync(Arg.Any<RecurringTransaction>());
     }
+
+    [Fact]
+    public async Task GetAllAsync_ShouldHideSystemGeneratedInstallmentSchedules()
+    {
+        // Arrange
+        var userId = "user123";
+        var recurring = new List<RecurringTransaction>
+        {
+            new() { Id = "1", UserId = userId, Description = "Academia", IsActive = true },
+            new() { Id = "2", UserId = userId, Description = "Notebook (2/10)", IsActive = true, IsInstallmentSchedule = true }
+        };
+
+        var recurringRepo = Substitute.For<IRepository<RecurringTransaction>>();
+        recurringRepo.GetAllAsync().Returns(recurring);
+        _unitOfWorkMock.RecurringTransactions.Returns(recurringRepo);
+
+        // Act
+        var result = (await _recurringTransactionService.GetAllAsync(userId)).ToList();
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("1", result[0].Id);
+    }
+
+    [Fact]
+    public async Task ProcessDueRecurrencesAsync_InstallmentSchedule_ShouldCreateNoImpactTransactionAndDeactivate()
+    {
+        // Arrange
+        var userId = "user123";
+        var today = DateTime.UtcNow.Date;
+
+        var dueRecurrence = new RecurringTransaction
+        {
+            Id = "rec-installment",
+            UserId = userId,
+            AccountId = "cc123",
+            CategoryId = "cat123",
+            Type = TransactionType.Expense,
+            Amount = 250m,
+            Description = "Notebook (2/3)",
+            Frequency = RecurrenceFrequency.Monthly,
+            NextOccurrenceDate = today.AddDays(-1),
+            IsActive = true,
+            IsDeleted = false,
+            IsInstallmentSchedule = true,
+            SkipAccountBalanceImpact = true,
+            SkipCommittedCreditImpact = true,
+            SkipCreditLimitValidation = true,
+            InstallmentGroupId = "group-123",
+            InstallmentNumber = 2,
+            InstallmentCount = 3,
+            RemainingOccurrences = 1
+        };
+
+        var recurringRepo = Substitute.For<IRepository<RecurringTransaction>>();
+        recurringRepo.GetAllAsync().Returns(new List<RecurringTransaction> { dueRecurrence });
+        _unitOfWorkMock.RecurringTransactions.Returns(recurringRepo);
+
+        // Act
+        await _recurringTransactionService.ProcessDueRecurrencesAsync();
+
+        // Assert
+        await _transactionServiceMock.Received(1).CreateAsync(userId, Arg.Is<CreateTransactionRequestDto>(request =>
+            request.SkipAccountBalanceImpact &&
+            request.SkipCommittedCreditImpact &&
+            request.SkipCreditLimitValidation &&
+            request.InstallmentGroupId == "group-123" &&
+            request.InstallmentNumber == 2 &&
+            request.InstallmentCount == 3 &&
+            request.Description == "Notebook (2/3)"));
+        Assert.False(dueRecurrence.IsActive);
+        Assert.Equal(0, dueRecurrence.RemainingOccurrences);
+    }
 }

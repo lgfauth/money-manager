@@ -29,27 +29,27 @@ export function CreditLimitGauge({
   currency = "BRL",
 }: CreditLimitGaugeProps) {
   const percentage = creditLimit > 0 ? (usedAmount / creditLimit) * 100 : 0;
-  const available = creditLimit - usedAmount;
+  const available = Math.max(creditLimit - usedAmount, 0);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Limite de Crédito</CardTitle>
+        <CardTitle className="text-base">Limite Comprometido</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4">
         <RadialChart
           value={Math.min(percentage, 100)}
-          label="Utilizado"
+          label="Comprometido"
           color={getGaugeColor(percentage)}
           size={180}
         />
         <div className="grid w-full grid-cols-3 gap-2 text-center text-sm">
           <div>
-            <p className="text-muted-foreground">Limite</p>
+            <p className="text-muted-foreground">Total</p>
             <p className="font-semibold">{formatCurrency(creditLimit, currency)}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Utilizado</p>
+            <p className="text-muted-foreground">Comprometido</p>
             <p className="font-semibold text-expense">
               {formatCurrency(usedAmount, currency)}
             </p>
@@ -57,7 +57,7 @@ export function CreditLimitGauge({
           <div>
             <p className="text-muted-foreground">Disponível</p>
             <p className="font-semibold text-income">
-              {formatCurrency(Math.max(available, 0), currency)}
+              {formatCurrency(available, currency)}
             </p>
           </div>
         </div>

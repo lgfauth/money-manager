@@ -65,6 +65,24 @@ public class Transaction
     [BsonElement("clientRequestId")]
     public string? ClientRequestId { get; set; }
 
+    [BsonElement("skipAccountBalanceImpact")]
+    public bool SkipAccountBalanceImpact { get; set; }
+
+    [BsonElement("skipCommittedCreditImpact")]
+    public bool SkipCommittedCreditImpact { get; set; }
+
+    [BsonElement("skipCreditLimitValidation")]
+    public bool SkipCreditLimitValidation { get; set; }
+
+    [BsonElement("installmentGroupId")]
+    public string? InstallmentGroupId { get; set; }
+
+    [BsonElement("installmentNumber")]
+    public int? InstallmentNumber { get; set; }
+
+    [BsonElement("installmentCount")]
+    public int? InstallmentCount { get; set; }
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 }

@@ -6,13 +6,16 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  AlertCircle,
   ArrowLeft,
   Calendar,
   CreditCard,
   DollarSign,
   Receipt,
   CheckCircle,
+  Wallet,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,7 +68,7 @@ export default function InvoiceDetailsPage() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
-  const [sourceAccountId, setSourceAccountId] = useState("");
+  const [payFromAccountId, setPayFromAccountId] = useState("");
   const [paymentAmount, setPaymentAmount] = useState(0);
 
   const { data: summary, isLoading: loadingSummary } = useInvoiceSummary(invoiceId);
@@ -76,6 +79,7 @@ export default function InvoiceDetailsPage() {
 
   const isLoading = loadingSummary || loadingTx;
   const invoice = summary?.invoice;
+  const account = accounts?.find((item) => item.id === invoice?.accountId);
 
   const categoryColorMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -138,13 +142,19 @@ export default function InvoiceDetailsPage() {
     invoice.status !== InvoiceStatus.Open &&
     invoice.remainingAmount > 0;
 
+  const cardDebt = account ? Math.abs(account.balance) : invoice.remainingAmount;
+  const committedCredit = account?.committedCredit ?? cardDebt;
+  const availableCredit =
+    account?.availableCredit ?? Math.max((account?.creditLimit ?? 0) - committedCredit, 0);
+  const futureReservedAmount = Math.max(committedCredit - invoice.totalAmount, 0);
+
   const handlePay = () => {
-    if (!sourceAccountId || paymentAmount <= 0) return;
+    if (!payFromAccountId || paymentAmount <= 0) return;
     payMutation.mutate(
       {
         data: {
           invoiceId,
-          sourceAccountId,
+          payFromAccountId,
           paymentDate: new Date().toISOString(),
           amount: paymentAmount,
         },
@@ -205,6 +215,42 @@ export default function InvoiceDetailsPage() {
           variant={isOverdue ? "warning" : "default"}
         />
       </div>
+
+      {account && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Débito do Cartão"
+            value={fmt(cardDebt, account.currency)}
+            icon={CreditCard}
+            variant={cardDebt > 0 ? "expense" : "default"}
+          />
+          <StatCard
+            title="Limite Total"
+            value={fmt(account.creditLimit ?? 0, account.currency)}
+            icon={DollarSign}
+          />
+          <StatCard
+            title="Limite Comprometido"
+            value={fmt(committedCredit, account.currency)}
+            icon={Receipt}
+            variant={committedCredit > 0 ? "warning" : "default"}
+          />
+          <StatCard
+            title="Limite Disponível"
+            value={fmt(availableCredit, account.currency)}
+            icon={Wallet}
+            variant={availableCredit > 0 ? "income" : "expense"}
+          />
+        </div>
+      )}
+
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Esta tela mostra apenas uma fatura</AlertTitle>
+        <AlertDescription>
+          O total desta fatura corresponde somente às compras elegíveis deste período. O limite comprometido do cartão pode ser maior porque inclui parcelas futuras já reservadas. Hoje, {fmt(futureReservedAmount, account?.currency ?? "BRL")} do limite estão fora desta fatura específica.
+        </AlertDescription>
+      </Alert>
 
       {/* Period info */}
       <Card>
@@ -302,7 +348,14 @@ export default function InvoiceDetailsPage() {
                         {format(new Date(tx.date), "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {tx.description}
+                        <div className="space-y-1">
+                          <p>{tx.description}</p>
+                          {tx.installmentCount && tx.installmentCount > 1 && tx.installmentNumber ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              Parcela {tx.installmentNumber}/{tx.installmentCount}
+                            </Badge>
+                          ) : null}
+                        </div>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <div className="flex items-center gap-1.5">
@@ -344,8 +397,8 @@ export default function InvoiceDetailsPage() {
             <div className="space-y-2">
               <Label>Conta de Débito</Label>
               <Select
-                value={sourceAccountId}
-                onValueChange={(v) => v && setSourceAccountId(v)}
+                value={payFromAccountId}
+                onValueChange={(v) => v && setPayFromAccountId(v)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione a conta" />
@@ -374,7 +427,7 @@ export default function InvoiceDetailsPage() {
             <Button
               onClick={handlePay}
               disabled={
-                !sourceAccountId ||
+                !payFromAccountId ||
                 paymentAmount <= 0 ||
                 paymentAmount > invoice.remainingAmount ||
                 payMutation.isPending

@@ -56,6 +56,25 @@ public class TransactionsController : ControllerBase
         }
     }
 
+    [HttpPost("installment-purchase")]
+    public async Task<IActionResult> CreateInstallmentPurchase([FromBody] InstallmentPurchaseRequestDto request)
+    {
+        var userId = HttpContext.GetUserId();
+        _logger.LogInformation("Creating installment purchase for user {UserId}, account {AccountId}, total {Amount}, installments {InstallmentCount}",
+            userId, request.AccountId, request.TotalAmount, request.InstallmentCount);
+
+        try
+        {
+            await _transactionService.CreateInstallmentPurchaseAsync(userId, request);
+            return Ok(new { Message = "Installment purchase created successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating installment purchase for user {UserId}", userId);
+            return this.ApiBadRequest(ex.Message);
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int? page = null,

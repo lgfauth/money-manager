@@ -42,6 +42,9 @@ export interface TransactionResponseDto {
   categoryName: string;
   categoryColor: string;
   notes?: string;
+  installmentGroupId?: string;
+  installmentNumber?: number;
+  installmentCount?: number;
   createdAt: string;
   updatedAt: string;
 }
