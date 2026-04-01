@@ -59,7 +59,7 @@ public class TransactionService : ITransactionService
                     ["clientRequestId"] = request.ClientRequestId,
                     ["existingTransactionId"] = existing.Id
                 });
-                return MapToDto(existing);
+                return await MapToDtoAsync(userId, existing);
             }
         }
 
@@ -193,15 +193,17 @@ public class TransactionService : ITransactionService
             ["transactionId"] = transaction.Id
         });
 
-        return MapToDto(transaction);
+        return await MapToDtoAsync(userId, transaction, account);
     }
 
     public async Task<IEnumerable<TransactionResponseDto>> GetAllAsync(string userId)
     {
         var transactions = await _unitOfWork.Transactions.GetAllAsync();
-        return transactions
+        return await MapToDtosAsync(
+            userId,
+            transactions
             .Where(t => t.UserId == userId && !t.IsDeleted)
-            .Select(MapToDto);
+            .ToList());
     }
 
     public async Task<PagedResultDto<TransactionResponseDto>> GetAllPagedAsync(
@@ -216,9 +218,11 @@ public class TransactionService : ITransactionService
         var (items, totalCount) = await _unitOfWork.Transactions.GetPagedByUserAsync(
             userId, page, pageSize, startDate, endDate, type, sortBy);
 
+        var mappedItems = await MapToDtosAsync(userId, items.ToList());
+
         return new PagedResultDto<TransactionResponseDto>
         {
-            Items = items.Select(MapToDto),
+            Items = mappedItems,
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize
@@ -231,7 +235,7 @@ public class TransactionService : ITransactionService
         if (transaction == null || transaction.UserId != userId || transaction.IsDeleted)
             throw new KeyNotFoundException("Transaction not found");
 
-        return MapToDto(transaction);
+        return await MapToDtoAsync(userId, transaction);
     }
 
     public async Task<TransactionResponseDto> UpdateAsync(string userId, string id, CreateTransactionRequestDto request)
@@ -300,7 +304,7 @@ public class TransactionService : ITransactionService
         await _unitOfWork.SaveChangesAsync();
 
         _processLogger.AddStep("Transaction updated successfully");
-        return MapToDto(transaction);
+        return await MapToDtoAsync(userId, transaction, newAccount);
     }
 
     public async Task DeleteAsync(string userId, string id)
@@ -446,13 +450,82 @@ public class TransactionService : ITransactionService
         return impact;
     }
 
-    private static TransactionResponseDto MapToDto(Transaction transaction)
+    private async Task<List<TransactionResponseDto>> MapToDtosAsync(string userId, IReadOnlyCollection<Transaction> transactions)
+    {
+        if (transactions.Count == 0)
+        {
+            return [];
+        }
+
+        var accountIds = transactions
+            .Select(t => t.AccountId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
+            .ToHashSet();
+
+        var categoryIds = transactions
+            .Where(t => !string.IsNullOrWhiteSpace(t.CategoryId))
+            .Select(t => t.CategoryId!)
+            .Distinct()
+            .ToHashSet();
+
+        var accounts = (await _unitOfWork.Accounts.GetAllAsync())
+            .Where(account => account.UserId == userId && !account.IsDeleted && accountIds.Contains(account.Id))
+            .ToDictionary(account => account.Id);
+
+        var categories = (await _unitOfWork.Categories.GetAllAsync())
+            .Where(category => category.UserId == userId && !category.IsDeleted && categoryIds.Contains(category.Id))
+            .ToDictionary(category => category.Id);
+
+        return transactions
+            .Select(transaction =>
+            {
+                accounts.TryGetValue(transaction.AccountId, out var account);
+                var category = transaction.CategoryId != null && categories.TryGetValue(transaction.CategoryId, out var resolvedCategory)
+                    ? resolvedCategory
+                    : null;
+
+                return MapToDto(transaction, account, category);
+            })
+            .ToList();
+    }
+
+    private async Task<TransactionResponseDto> MapToDtoAsync(
+        string userId,
+        Transaction transaction,
+        Account? account = null,
+        Category? category = null)
+    {
+        account ??= await _unitOfWork.Accounts.GetByIdAsync(transaction.AccountId);
+
+        if (!string.IsNullOrWhiteSpace(transaction.CategoryId) && category == null)
+        {
+            var resolvedCategory = await _unitOfWork.Categories.GetByIdAsync(transaction.CategoryId);
+            if (resolvedCategory != null && resolvedCategory.UserId == userId && !resolvedCategory.IsDeleted)
+            {
+                category = resolvedCategory;
+            }
+        }
+
+        if (account != null && (account.UserId != userId || account.IsDeleted))
+        {
+            account = null;
+        }
+
+        return MapToDto(transaction, account, category);
+    }
+
+    private static TransactionResponseDto MapToDto(Transaction transaction, Account? account = null, Category? category = null)
     {
         return new TransactionResponseDto
         {
             Id = transaction.Id,
             AccountId = transaction.AccountId,
+            AccountName = account?.Name ?? string.Empty,
+            AccountColor = account?.Color ?? "#00C896",
             CategoryId = transaction.CategoryId,
+            CategoryName = category?.Name ?? string.Empty,
+            CategoryColor = category?.Color ?? "#64748b",
             Type = transaction.Type,
             Amount = transaction.Amount,
             Currency = transaction.Currency,
@@ -461,7 +534,8 @@ public class TransactionService : ITransactionService
             Tags = transaction.Tags,
             Notes = transaction.Notes,
             Status = transaction.Status,
-            CreatedAt = transaction.CreatedAt
+            CreatedAt = transaction.CreatedAt,
+            UpdatedAt = transaction.UpdatedAt
         };
     }
 }

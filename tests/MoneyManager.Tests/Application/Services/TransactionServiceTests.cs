@@ -13,6 +13,7 @@ public class TransactionServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly IRepository<Account> _accountRepoMock;
+    private readonly IRepository<Category> _categoryRepoMock;
     private readonly ITransactionRepository _transactionRepoMock;
     private readonly ICreditCardInvoiceService _invoiceServiceMock;
     private readonly IProcessLogger _processLoggerMock;
@@ -22,14 +23,18 @@ public class TransactionServiceTests
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _accountRepoMock = Substitute.For<IRepository<Account>>();
+        _categoryRepoMock = Substitute.For<IRepository<Category>>();
         _transactionRepoMock = Substitute.For<ITransactionRepository>();
         _invoiceServiceMock = Substitute.For<ICreditCardInvoiceService>();
         _processLoggerMock = Substitute.For<IProcessLogger>();
 
         _unitOfWorkMock.Accounts.Returns(_accountRepoMock);
+        _unitOfWorkMock.Categories.Returns(_categoryRepoMock);
         _unitOfWorkMock.Transactions.Returns(_transactionRepoMock);
 
         _transactionRepoMock.AddAsync(Arg.Any<Transaction>()).Returns(x => x.Arg<Transaction>());
+        _accountRepoMock.GetAllAsync().Returns(Array.Empty<Account>());
+        _categoryRepoMock.GetAllAsync().Returns(Array.Empty<Category>());
 
         _transactionService = new TransactionService(_unitOfWorkMock, _invoiceServiceMock, _processLoggerMock);
     }
@@ -53,6 +58,7 @@ public class TransactionServiceTests
 
         var account = new Account { Id = accountId, UserId = userId, Balance = 1000m };
         _accountRepoMock.GetByIdAsync(accountId).Returns(account);
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Salario", Color = "#22c55e" });
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);
@@ -61,6 +67,7 @@ public class TransactionServiceTests
         Assert.NotNull(result);
         Assert.Equal(request.Amount, result.Amount);
         Assert.Equal(request.Description, result.Description);
+        Assert.Equal(accountId, result.AccountId);
         Assert.Equal(1500m, account.Balance);
         await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Id == accountId));
         await _transactionRepoMock.Received(1).AddAsync(Arg.Any<Transaction>());
@@ -85,6 +92,7 @@ public class TransactionServiceTests
 
         var account = new Account { Id = accountId, UserId = userId, Balance = 1000m };
         _accountRepoMock.GetByIdAsync(accountId).Returns(account);
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Mercado", Color = "#ef4444" });
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);
@@ -193,12 +201,22 @@ public class TransactionServiceTests
         var userId = "user123";
         var transactions = new List<Transaction>
         {
-            new Transaction { Id = "1", UserId = userId, Amount = 100, Type = TransactionType.Income },
-            new Transaction { Id = "2", UserId = userId, Amount = 50, Type = TransactionType.Expense },
+            new Transaction { Id = "1", UserId = userId, AccountId = "acc-income", CategoryId = "cat-income", Amount = 100, Type = TransactionType.Income },
+            new Transaction { Id = "2", UserId = userId, AccountId = "acc-expense", CategoryId = "cat-expense", Amount = 50, Type = TransactionType.Expense },
             new Transaction { Id = "3", UserId = "other", Amount = 200, Type = TransactionType.Income }
         };
 
         _transactionRepoMock.GetAllAsync().Returns(transactions);
+        _accountRepoMock.GetAllAsync().Returns(new List<Account>
+        {
+            new Account { Id = "acc-income", UserId = userId, Name = "Conta Corrente", Color = "#00C896" },
+            new Account { Id = "acc-expense", UserId = userId, Name = "Carteira", Color = "#3b82f6" }
+        });
+        _categoryRepoMock.GetAllAsync().Returns(new List<Category>
+        {
+            new Category { Id = "cat-income", UserId = userId, Name = "Salario", Color = "#22c55e" },
+            new Category { Id = "cat-expense", UserId = userId, Name = "Mercado", Color = "#ef4444" }
+        });
 
         // Act
         var result = await _transactionService.GetAllAsync(userId);
@@ -217,11 +235,15 @@ public class TransactionServiceTests
         {
             Id = transactionId,
             UserId = userId,
+            AccountId = "acc123",
+            CategoryId = "cat123",
             Amount = 100,
             Type = TransactionType.Income
         };
 
         _transactionRepoMock.GetByIdAsync(transactionId).Returns(transaction);
+        _accountRepoMock.GetByIdAsync("acc123").Returns(new Account { Id = "acc123", UserId = userId, Name = "Conta Principal", Color = "#00C896" });
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Salario", Color = "#22c55e" });
 
         // Act
         var result = await _transactionService.GetByIdAsync(userId, transactionId);
@@ -229,6 +251,7 @@ public class TransactionServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(transactionId, result.Id);
+        Assert.Equal("Conta Principal", result.AccountName);
     }
 
     [Fact]
@@ -261,6 +284,7 @@ public class TransactionServiceTests
 
         var account = new Account { Id = "acc123", UserId = userId, Balance = 1000m };
         _accountRepoMock.GetByIdAsync("acc123").Returns(account);
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Categoria Atualizada", Color = "#6366f1" });
 
         // Act
         var result = await _transactionService.UpdateAsync(userId, transactionId, updateRequest);
@@ -346,6 +370,7 @@ public class TransactionServiceTests
             Id = "trans-existing",
             UserId = userId,
             AccountId = "acc123",
+            CategoryId = "cat123",
             Amount = 500m,
             Type = TransactionType.Income,
             Description = "Original",
@@ -364,6 +389,8 @@ public class TransactionServiceTests
         };
 
         _transactionRepoMock.GetByClientRequestIdAsync(userId, clientRequestId).Returns(existingTransaction);
+    _accountRepoMock.GetByIdAsync("acc123").Returns(new Account { Id = "acc123", UserId = userId, Name = "Conta Principal", Color = "#00C896" });
+    _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Salario", Color = "#22c55e" });
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);
@@ -396,6 +423,7 @@ public class TransactionServiceTests
 
         var account = new Account { Id = "acc123", UserId = userId, Balance = 1000m };
         _accountRepoMock.GetByIdAsync("acc123").Returns(account);
+        _categoryRepoMock.GetByIdAsync("cat123").Returns(new Category { Id = "cat123", UserId = userId, Name = "Receita", Color = "#22c55e" });
 
         // Act
         var result = await _transactionService.CreateAsync(userId, request);

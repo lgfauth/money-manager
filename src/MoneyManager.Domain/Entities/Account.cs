@@ -23,6 +23,9 @@ public class Account
     [BsonElement("currency")]
     public string Currency { get; set; } = "BRL";
 
+    [BsonElement("color")]
+    public string Color { get; set; } = "#00C896";
+
     [BsonElement("balance")]
     public decimal Balance { get; set; }
 

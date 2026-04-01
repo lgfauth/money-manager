@@ -19,7 +19,7 @@ export function AccountsChart({ accounts }: AccountsChartProps) {
   const chartData = accounts.map((a) => ({
     name: a.name,
     value: a.balance,
-    color: a.type === AccountType.CreditCard ? "#4E9BFF" : "#00C896",
+    color: a.color || (a.type === AccountType.CreditCard ? "#4E9BFF" : "#00C896"),
   }));
 
   const { checkingTotal, creditTotal, netBalance } = useMemo(() => {

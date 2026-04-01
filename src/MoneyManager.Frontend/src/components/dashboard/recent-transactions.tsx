@@ -7,6 +7,15 @@ import { TransactionType, type TransactionResponseDto } from "@/types/transactio
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 
+function ColorDot({ color }: { color: string }) {
+  return (
+    <span
+      className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+      style={{ backgroundColor: color }}
+    />
+  );
+}
+
 interface RecentTransactionsProps {
   transactions: TransactionResponseDto[];
 }
@@ -42,7 +51,8 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                     {format(new Date(tx.date), "dd/MM", { locale: ptBR })}
                   </span>
                   <span className="truncate">{tx.description}</span>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">
+                  <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:inline-flex">
+                    <ColorDot color={tx.categoryColor || "#64748b"} />
                     {tx.categoryName}
                   </span>
                 </div>

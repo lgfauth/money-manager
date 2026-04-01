@@ -40,6 +40,7 @@ public class AccountService : IAccountService
             Balance = request.InitialBalance,
             InitialBalance = request.InitialBalance,
             Currency = request.Currency,
+            Color = request.Color,
             InvoiceClosingDay = invoiceClosingDay,
             InvoiceDueDayOffset = invoiceDueDayOffset,
             CreditLimit = creditLimit
@@ -77,6 +78,7 @@ public class AccountService : IAccountService
         account.Name = request.Name;
         account.Type = request.Type;
         account.Currency = request.Currency;
+        account.Color = request.Color;
         account.InvoiceClosingDay = account.Type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
         account.InvoiceDueDayOffset = account.Type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
         account.CreditLimit = account.Type == AccountType.CreditCard ? request.CreditLimit : null;
@@ -146,12 +148,14 @@ public class AccountService : IAccountService
             Balance = account.Balance,
             InitialBalance = account.InitialBalance,
             Currency = account.Currency,
+            Color = account.Color,
             CreditLimit = account.CreditLimit,
             InvoiceClosingDay = account.InvoiceClosingDay,
             InvoiceDueDayOffset = account.InvoiceDueDayOffset,
             LastInvoiceClosedAt = account.LastInvoiceClosedAt,
             CurrentOpenInvoiceId = account.CurrentOpenInvoiceId,
-            CreatedAt = account.CreatedAt
+            CreatedAt = account.CreatedAt,
+            UpdatedAt = account.UpdatedAt
         };
     }
 }

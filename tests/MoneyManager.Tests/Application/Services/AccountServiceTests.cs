@@ -41,7 +41,8 @@ public class AccountServiceTests
         {
             Name = "Checking Account",
             Type = AccountType.Checking,
-            InitialBalance = 1000m
+            InitialBalance = 1000m,
+            Color = "#123456"
         };
 
         // Act
@@ -51,6 +52,7 @@ public class AccountServiceTests
         Assert.NotNull(result);
         Assert.Equal(request.Name, result.Name);
         Assert.Equal(request.InitialBalance, result.Balance);
+        Assert.Equal(request.Color, result.Color);
         await _accountRepoMock.Received(1).AddAsync(Arg.Any<Account>());
     }
 
@@ -201,7 +203,8 @@ public class AccountServiceTests
         var request = new CreateAccountRequestDto
         {
             Name = "New Name",
-            Type = AccountType.Checking
+            Type = AccountType.Checking,
+            Color = "#654321"
         };
 
         // Act
@@ -209,7 +212,8 @@ public class AccountServiceTests
 
         // Assert
         Assert.Equal("New Name", result.Name);
-        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Name == "New Name"));
+        Assert.Equal("#654321", result.Color);
+        await _accountRepoMock.Received(1).UpdateAsync(Arg.Is<Account>(a => a.Name == "New Name" && a.Color == "#654321"));
     }
 
     [Fact]

@@ -8,6 +8,7 @@ public class CreateAccountRequestDto
     public AccountType Type { get; set; }
     public decimal InitialBalance { get; set; }
     public string Currency { get; set; } = "BRL";
+    public string Color { get; set; } = "#00C896";
 
     /// <summary>
     /// Only applicable to credit card accounts. Day of invoice closing (1..31).

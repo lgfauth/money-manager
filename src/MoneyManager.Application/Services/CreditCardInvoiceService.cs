@@ -291,20 +291,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             .OrderBy(t => t.Date)
             .ToList();
 
-        // Mapear para DTO (assumindo que TransactionResponseDto existe)
-        return invoiceTransactions.Select(t => new TransactionResponseDto
-        {
-            Id = t.Id,
-            AccountId = t.AccountId,
-            CategoryId = t.CategoryId,
-            Type = t.Type,
-            Amount = t.Amount,
-            Date = t.Date,
-            Description = t.Description,
-            Tags = t.Tags,
-            Status = t.Status,
-            CreatedAt = t.CreatedAt
-        });
+        return await MapTransactionsToDtoAsync(userId, invoiceTransactions);
     }
 
     // ==================== UTILITÁRIOS ====================
@@ -478,6 +465,63 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         await _unitOfWork.CreditCardInvoices.AddAsync(invoice);
 
         return invoice;
+    }
+
+    private async Task<List<TransactionResponseDto>> MapTransactionsToDtoAsync(string userId, IReadOnlyCollection<Transaction> transactions)
+    {
+        if (transactions.Count == 0)
+        {
+            return [];
+        }
+
+        var accountIds = transactions
+            .Select(t => t.AccountId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
+            .ToHashSet();
+
+        var categoryIds = transactions
+            .Where(t => !string.IsNullOrWhiteSpace(t.CategoryId))
+            .Select(t => t.CategoryId!)
+            .Distinct()
+            .ToHashSet();
+
+        var accounts = (await _unitOfWork.Accounts.GetAllAsync())
+            .Where(account => account.UserId == userId && !account.IsDeleted && accountIds.Contains(account.Id))
+            .ToDictionary(account => account.Id);
+
+        var categories = (await _unitOfWork.Categories.GetAllAsync())
+            .Where(category => category.UserId == userId && !category.IsDeleted && categoryIds.Contains(category.Id))
+            .ToDictionary(category => category.Id);
+
+        return transactions.Select(transaction =>
+        {
+            accounts.TryGetValue(transaction.AccountId, out var account);
+            var category = transaction.CategoryId != null && categories.TryGetValue(transaction.CategoryId, out var resolvedCategory)
+                ? resolvedCategory
+                : null;
+
+            return new TransactionResponseDto
+            {
+                Id = transaction.Id,
+                AccountId = transaction.AccountId,
+                AccountName = account?.Name ?? string.Empty,
+                AccountColor = account?.Color ?? "#00C896",
+                CategoryId = transaction.CategoryId,
+                CategoryName = category?.Name ?? string.Empty,
+                CategoryColor = category?.Color ?? "#64748b",
+                Type = transaction.Type,
+                Amount = transaction.Amount,
+                Currency = transaction.Currency,
+                Date = transaction.Date,
+                Description = transaction.Description,
+                Tags = transaction.Tags,
+                Notes = transaction.Notes,
+                Status = transaction.Status,
+                CreatedAt = transaction.CreatedAt,
+                UpdatedAt = transaction.UpdatedAt
+            };
+        }).ToList();
     }
 
     private async Task<CreditCardInvoice> CreateInvoiceForClosingDateAsync(Account account, DateTime closingDate)

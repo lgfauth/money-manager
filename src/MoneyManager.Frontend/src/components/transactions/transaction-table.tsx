@@ -57,6 +57,24 @@ interface TransactionTableProps {
   onDelete: (transaction: TransactionResponseDto) => void;
 }
 
+function EntityBadge({
+  label,
+  color,
+}: {
+  label: string;
+  color: string;
+}) {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full bg-muted/70 px-2.5 py-1 text-xs font-medium text-foreground">
+      <span
+        className="h-2.5 w-2.5 rounded-full shrink-0"
+        style={{ backgroundColor: color }}
+      />
+      <span className="truncate">{label}</span>
+    </div>
+  );
+}
+
 function MobileCard({
   transaction,
   onEdit,
@@ -79,16 +97,23 @@ function MobileCard({
           <p className="text-sm font-medium truncate">
             {transaction.description}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {transaction.categoryName} · {transaction.accountName}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <EntityBadge
+              label={transaction.categoryName || "Sem categoria"}
+              color={transaction.categoryColor || "#64748b"}
+            />
+            <EntityBadge
+              label={transaction.accountName || "Conta"}
+              color={transaction.accountColor || "#00C896"}
+            />
+          </div>
         </div>
         <div className="text-right">
           <p className={cn("text-sm font-semibold font-heading", config.className)}>
             {transaction.type === TransactionType.Income ? "+" : "-"}
             {new Intl.NumberFormat("pt-BR", {
               style: "currency",
-              currency: "BRL",
+              currency: transaction.currency || "BRL",
             }).format(transaction.amount)}
           </p>
           <p className="text-[10px] text-muted-foreground">
@@ -148,8 +173,18 @@ export function TransactionTable({
                   <TableCell className="max-w-[200px] truncate">
                     {tx.description}
                   </TableCell>
-                  <TableCell>{tx.categoryName}</TableCell>
-                  <TableCell>{tx.accountName}</TableCell>
+                  <TableCell>
+                    <EntityBadge
+                      label={tx.categoryName || "Sem categoria"}
+                      color={tx.categoryColor || "#64748b"}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <EntityBadge
+                      label={tx.accountName || "Conta"}
+                      color={tx.accountColor || "#00C896"}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className={config.className}>
                       {config.label}
@@ -161,7 +196,7 @@ export function TransactionTable({
                     {tx.type === TransactionType.Income ? "+" : "-"}
                     {new Intl.NumberFormat("pt-BR", {
                       style: "currency",
-                      currency: "BRL",
+                      currency: tx.currency || "BRL",
                     }).format(tx.amount)}
                   </TableCell>
                   <TableCell>

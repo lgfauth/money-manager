@@ -22,6 +22,10 @@ public class CreateAccountValidator : AbstractValidator<CreateAccountRequestDto>
             .NotEmpty().WithMessage("Currency is required")
             .Length(3).WithMessage("Currency must be a 3-letter ISO code (e.g. BRL, USD, EUR)");
 
+        RuleFor(x => x.Color)
+            .NotEmpty().WithMessage("Account color is required")
+            .Matches("^#[0-9A-Fa-f]{6}$").WithMessage("Account color must be a valid hex code (e.g. #00C896)");
+
         RuleFor(x => x.InvoiceClosingDay)
             .InclusiveBetween(1, 31)
             .When(x => x.Type == AccountType.CreditCard && x.InvoiceClosingDay.HasValue)

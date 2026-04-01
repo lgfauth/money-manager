@@ -54,6 +54,16 @@ export default function ReportsPage() {
     [report.expensesByCategory]
   );
 
+  const accountDonutData = useMemo(
+    () =>
+      report.movementByAccount.map((account) => ({
+        name: account.accountName,
+        value: account.total,
+        color: account.color,
+      })),
+    [report.movementByAccount]
+  );
+
   const trendSeries = useMemo(
     () => [
       { dataKey: "income", name: "Receitas", color: "var(--color-income)" },
@@ -168,29 +178,58 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
-            {/* Donut chart - expenses by category */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Despesas por Categoria
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {donutData.length > 0 ? (
-                  <DonutChart
-                    data={donutData}
-                    centerValue={formatCurrency(report.totalExpense)}
-                    centerLabel="Total"
-                    height={300}
-                    formatter={formatCurrency}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-10">
-                    Nenhuma despesa no período.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <div className="grid gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Despesas por Categoria
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {donutData.length > 0 ? (
+                    <DonutChart
+                      data={donutData}
+                      centerValue={formatCurrency(report.totalExpense)}
+                      centerLabel="Total"
+                      height={300}
+                      formatter={formatCurrency}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-10">
+                      Nenhuma despesa no período.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Movimentação por Conta
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {accountDonutData.length > 0 ? (
+                    <DonutChart
+                      data={accountDonutData}
+                      centerValue={formatCurrency(
+                        report.movementByAccount.reduce(
+                          (sum, account) => sum + account.total,
+                          0
+                        )
+                      )}
+                      centerLabel="Movimento"
+                      height={300}
+                      formatter={formatCurrency}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-10">
+                      Nenhuma movimentação por conta no período.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           {/* Category breakdown table */}

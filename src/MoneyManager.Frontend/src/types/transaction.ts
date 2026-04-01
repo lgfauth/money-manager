@@ -32,12 +32,15 @@ export interface TransactionResponseDto {
   id: string;
   description: string;
   amount: number;
+  currency: string;
   date: string;
   type: TransactionType;
   accountId: string;
   accountName: string;
+  accountColor: string;
   categoryId: string;
   categoryName: string;
+  categoryColor: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;

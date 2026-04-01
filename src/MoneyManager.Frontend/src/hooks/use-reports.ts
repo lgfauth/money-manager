@@ -6,7 +6,6 @@ import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiClient } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
-import { useCategories } from "./use-categories";
 import type {
   TransactionResponseDto,
   PaginatedResponse,
@@ -20,6 +19,14 @@ interface ReportPeriod {
 interface CategoryBreakdown {
   categoryId: string;
   categoryName: string;
+  color: string;
+  total: number;
+  percentage: number;
+}
+
+interface AccountBreakdown {
+  accountId: string;
+  accountName: string;
   color: string;
   total: number;
   percentage: number;
@@ -39,12 +46,11 @@ export interface ReportData {
   netBalance: number;
   savingsRate: number;
   expensesByCategory: CategoryBreakdown[];
+  movementByAccount: AccountBreakdown[];
   monthlyTrends: MonthlyTrend[];
 }
 
 export function useReports(period: ReportPeriod): ReportData {
-  const { data: categories } = useCategories();
-
   const transactions = useQuery({
     queryKey: queryKeys.reports(period),
     queryFn: () =>
@@ -53,22 +59,20 @@ export function useReports(period: ReportPeriod): ReportData {
       ),
   });
 
-  const { totalIncome, totalExpense, expensesByCategory, monthlyTrends } =
+  const { totalIncome, totalExpense, expensesByCategory, movementByAccount, monthlyTrends } =
     useMemo(() => {
       const items = transactions.data?.items ?? [];
-      const categoryColorMap: Record<string, string> = {};
-      const categoryNameMap: Record<string, string> = {};
-      categories?.forEach((c) => {
-        categoryColorMap[c.id] = c.color;
-        categoryNameMap[c.id] = c.name;
-      });
-
       let income = 0;
       let expense = 0;
 
       const categoryAcc: Record<
         string,
-        { name: string; total: number }
+        { name: string; color: string; total: number }
+      > = {};
+
+      const accountAcc: Record<
+        string,
+        { name: string; color: string; total: number }
       > = {};
 
       const monthAcc: Record<
@@ -84,11 +88,23 @@ export function useReports(period: ReportPeriod): ReportData {
 
           if (!categoryAcc[t.categoryId]) {
             categoryAcc[t.categoryId] = {
-              name: categoryNameMap[t.categoryId] ?? t.categoryName ?? t.categoryId,
+              name: t.categoryName || t.categoryId,
+              color: t.categoryColor || "#64748b",
               total: 0,
             };
           }
           categoryAcc[t.categoryId].total += t.amount;
+        }
+
+        if (t.accountId) {
+          if (!accountAcc[t.accountId]) {
+            accountAcc[t.accountId] = {
+              name: t.accountName || t.accountId,
+              color: t.accountColor || "#00C896",
+              total: 0,
+            };
+          }
+          accountAcc[t.accountId].total += Math.abs(t.amount);
         }
 
         const monthKey = t.date.substring(0, 7);
@@ -105,12 +121,27 @@ export function useReports(period: ReportPeriod): ReportData {
       }
 
       const expByCategory = Object.entries(categoryAcc)
-        .map(([categoryId, { name, total }]) => ({
+        .map(([categoryId, { name, color, total }]) => ({
           categoryId,
           categoryName: name,
-          color: categoryColorMap[categoryId] ?? "#64748b",
+          color,
           total,
           percentage: expense > 0 ? (total / expense) * 100 : 0,
+        }))
+        .sort((a, b) => b.total - a.total);
+
+      const totalMovement = Object.values(accountAcc).reduce(
+        (sum, account) => sum + account.total,
+        0
+      );
+
+      const movementBreakdown = Object.entries(accountAcc)
+        .map(([accountId, { name, color, total }]) => ({
+          accountId,
+          accountName: name,
+          color,
+          total,
+          percentage: totalMovement > 0 ? (total / totalMovement) * 100 : 0,
         }))
         .sort((a, b) => b.total - a.total);
 
@@ -122,9 +153,10 @@ export function useReports(period: ReportPeriod): ReportData {
         totalIncome: income,
         totalExpense: expense,
         expensesByCategory: expByCategory,
+        movementByAccount: movementBreakdown,
         monthlyTrends: trends,
       };
-    }, [transactions.data, categories]);
+    }, [transactions.data]);
 
   const netBalance = totalIncome - totalExpense;
   const savingsRate =
@@ -137,6 +169,7 @@ export function useReports(period: ReportPeriod): ReportData {
     netBalance,
     savingsRate,
     expensesByCategory,
+    movementByAccount,
     monthlyTrends,
   };
 }

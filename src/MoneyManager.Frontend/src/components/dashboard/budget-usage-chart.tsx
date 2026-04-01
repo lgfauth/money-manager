@@ -8,6 +8,7 @@ interface CategoryData {
   id: string;
   name: string;
   amount: number;
+  color: string;
 }
 
 interface BudgetUsageChartProps {
@@ -25,7 +26,7 @@ export function BudgetUsageChart({ data }: BudgetUsageChartProps) {
   const chartData = data.map((d, i) => ({
     name: d.name,
     value: d.amount,
-    color: COLOR_PRESETS[i % COLOR_PRESETS.length],
+    color: d.color || COLOR_PRESETS[i % COLOR_PRESETS.length],
   }));
 
   return (

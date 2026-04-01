@@ -37,7 +37,7 @@ export function CreditCardSummary({ cards }: CreditCardSummaryProps) {
                 <RadialChart
                   value={Math.min(used, 100)}
                   size={52}
-                  color="#00C896"
+                  color={card.color || "#00C896"}
                   trackColor="rgba(255,255,255,0.08)"
                   textClassName="text-white font-heading text-[13px] font-semibold"
                 />

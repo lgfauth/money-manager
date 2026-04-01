@@ -5,7 +5,6 @@ import { apiClient } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useBudget } from "@/hooks/use-budgets";
-import { useCategories } from "@/hooks/use-categories";
 import type { TransactionResponseDto, PaginatedResponse } from "@/types/transaction";
 import type { AccountResponseDto } from "@/types/account";
 import { AccountType } from "@/types/account";
@@ -29,13 +28,6 @@ export function useDashboard() {
 
   const accounts = useAccounts();
   const budget = useBudget(month);
-  const { data: categories } = useCategories();
-
-  // Build category name map for resolving names (API doesn't return categoryName)
-  const categoryNameMap: Record<string, string> = {};
-  categories?.forEach((c) => {
-    categoryNameMap[c.id] = c.name;
-  });
 
   const transactions = useQuery({
     queryKey: queryKeys.transactions({
@@ -95,9 +87,13 @@ export function useDashboard() {
   // Group expenses by category for donut chart
   const expensesByCategory = monthTx
     .filter((t) => t.type === "Expense")
-    .reduce<Record<string, { name: string; amount: number }>>((acc, t) => {
+    .reduce<Record<string, { name: string; amount: number; color: string }>>((acc, t) => {
       if (!acc[t.categoryId]) {
-        acc[t.categoryId] = { name: categoryNameMap[t.categoryId] ?? t.categoryName ?? t.categoryId, amount: 0 };
+        acc[t.categoryId] = {
+          name: t.categoryName || t.categoryId,
+          amount: 0,
+          color: t.categoryColor || "#64748b",
+        };
       }
       acc[t.categoryId].amount += t.amount;
       return acc;
@@ -125,7 +121,7 @@ export function useDashboard() {
     creditCards,
     budget: budget.data,
     expensesByCategory: Object.entries(expensesByCategory).map(
-      ([id, { name, amount }]) => ({ id, name, amount })
+      ([id, { name, amount, color }]) => ({ id, name, amount, color })
     ),
     dailyData: Object.values(dailyData).sort((a, b) =>
       a.date.localeCompare(b.date)
