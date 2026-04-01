@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, LogOut, User, Settings, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +13,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useProfile } from "@/hooks/use-profile";
+import {
+  getProfileImageSrc,
+  getUserDisplayName,
+  getUserInitials,
+} from "@/lib/user-display";
 import { useAuthStore } from "@/stores/auth-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useLogout } from "@/hooks/use-auth";
@@ -20,19 +26,19 @@ import { Breadcrumb } from "./breadcrumb";
 
 export function Header() {
   const { user } = useAuthStore();
+  const { data: profile } = useProfile();
   const { toggleSidebar } = useUIStore();
   const handleLogout = useLogout();
   const pathname = usePathname();
   const router = useRouter();
 
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "?";
+  const displayName = getUserDisplayName(
+    profile?.fullName || profile?.name || user?.name,
+    profile?.email || user?.email
+  );
+  const displayEmail = profile?.email || user?.email || "";
+  const initials = getUserInitials(displayName, displayEmail);
+  const profileImageSrc = getProfileImageSrc(profile?.profilePicture);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card/80 px-4 backdrop-blur-sm md:px-6">
@@ -56,6 +62,12 @@ export function Header() {
       <DropdownMenu>
         <DropdownMenuTrigger className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <Avatar className="h-9 w-9 ring-2 ring-primary/30">
+            {profileImageSrc && (
+              <AvatarImage
+                src={profileImageSrc}
+                alt={`Foto de ${displayName}`}
+              />
+            )}
             <AvatarFallback className="bg-primary text-white text-xs font-semibold">
               {initials}
             </AvatarFallback>
@@ -65,8 +77,8 @@ export function Header() {
           <DropdownMenuGroup>
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
+                <p className="text-sm font-medium">{displayName}</p>
+                <p className="text-xs text-muted-foreground">{displayEmail}</p>
               </div>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
