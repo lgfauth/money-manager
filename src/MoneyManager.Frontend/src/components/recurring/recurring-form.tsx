@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { recurringSchema, type RecurringFormData } from "@/lib/validators";
@@ -93,21 +93,22 @@ export function RecurringForm({
   const selectedType = watch("type");
   const amountValue = watch("amount");
   const mutationError = isEditing ? updateRecurring.error : createRecurring.error;
+  const resetMutationsRef = useRef(() => {});
+
+  resetMutationsRef.current = () => {
+    createRecurring.reset();
+    updateRecurring.reset();
+  };
 
   const filteredCategories = categories?.filter((cat) => {
     if (selectedType === TransactionType.Income) return cat.type === "Income";
     return cat.type === "Expense";
   });
 
-  const resetMutationState = useEffectEvent(() => {
-    createRecurring.reset();
-    updateRecurring.reset();
-  });
-
   useEffect(() => {
     if (!open) return;
 
-    resetMutationState();
+    resetMutationsRef.current();
 
     if (editingRecurring) {
       reset({
@@ -135,7 +136,7 @@ export function RecurringForm({
         notes: "",
       });
     }
-  }, [open, editingRecurring, reset, resetMutationState]);
+  }, [open, editingRecurring, reset]);
 
   const onSubmit = (data: RecurringFormData) => {
     if (isEditing) {

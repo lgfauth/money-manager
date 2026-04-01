@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { transactionSchema, type TransactionFormData } from "@/lib/validators";
@@ -107,22 +107,23 @@ export function TransactionForm({
     : isInstallment && isCreditCardAccount
       ? createInstallment.error
       : createTransaction.error;
+  const resetMutationsRef = useRef(() => {});
+
+  resetMutationsRef.current = () => {
+    createTransaction.reset();
+    updateTransaction.reset();
+    createInstallment.reset();
+  };
 
   const filteredCategories = categories?.filter((cat) => {
     if (selectedType === TransactionType.Income) return cat.type === "Income";
     return cat.type === "Expense";
   });
 
-  const resetMutationState = useEffectEvent(() => {
-    createTransaction.reset();
-    updateTransaction.reset();
-    createInstallment.reset();
-  });
-
   useEffect(() => {
     if (!open) return;
 
-    resetMutationState();
+    resetMutationsRef.current();
 
     if (editingTransaction) {
       reset({
@@ -148,7 +149,7 @@ export function TransactionForm({
       setIsInstallment(false);
       setInstallmentCount(2);
     }
-  }, [open, editingTransaction, defaultType, reset, resetMutationState]);
+  }, [open, editingTransaction, defaultType, reset]);
 
   const onSubmit = (data: TransactionFormData) => {
     const keepOpen = saveAndAddRef.current;
