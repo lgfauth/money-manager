@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { KeyboardEvent, useState } from "react";
 import { login } from "@/lib/admin-api";
 import { saveAdminToken } from "@/lib/admin-auth";
 
@@ -10,8 +10,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function handleLogin() {
+    if (isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -26,12 +29,19 @@ export default function LoginPage() {
     }
   }
 
+  function handlePasswordKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void handleLogin();
+    }
+  }
+
   return (
     <div className="login-wrap">
       <div className="login-card">
         <h1>Admin Login</h1>
         <p className="muted">Use credenciais configuradas por variavel de ambiente.</p>
-        <form onSubmit={handleSubmit}>
+        <div>
           <input
             placeholder="Username"
             value={username}
@@ -42,12 +52,13 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            onKeyDown={handlePasswordKeyDown}
           />
           {error && <p className="error">{error}</p>}
-          <button className="btn btn-primary" type="submit" disabled={isSubmitting}>
+          <button className="btn btn-primary" type="button" disabled={isSubmitting} onClick={() => void handleLogin()}>
             {isSubmitting ? "Entrando..." : "Entrar"}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
