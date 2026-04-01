@@ -79,7 +79,7 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Invalid credentials");
         }
 
-        var token = _tokenService.GenerateToken(user.Id, user.Email);
+        var token = _tokenService.GenerateToken(user.Id, user.Email, user.Name);
 
         _processLogger.AddStep("User logged in successfully", new Dictionary<string, object?>
         {

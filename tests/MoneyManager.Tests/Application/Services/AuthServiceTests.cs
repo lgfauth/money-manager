@@ -95,7 +95,7 @@ public class AuthServiceTests
         userRepository.GetByEmailAsync(request.Email).Returns(user);
 
         _unitOfWorkMock.Users.Returns(userRepository);
-        _tokenServiceMock.GenerateToken(user.Id, user.Email).Returns("token");
+        _tokenServiceMock.GenerateToken(user.Id, user.Email, user.Name).Returns("token");
 
         // Act
         var result = await _authService.LoginAsync(request);
