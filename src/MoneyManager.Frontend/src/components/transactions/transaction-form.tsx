@@ -102,6 +102,11 @@ export function TransactionForm({
 
   const selectedAccount = accounts?.find((a) => a.id === selectedAccountId);
   const isCreditCardAccount = selectedAccount?.type === AccountType.CreditCard;
+  const mutationError = isEditing
+    ? updateTransaction.error
+    : isInstallment && isCreditCardAccount
+      ? createInstallment.error
+      : createTransaction.error;
 
   const filteredCategories = categories?.filter((cat) => {
     if (selectedType === TransactionType.Income) return cat.type === "Income";
@@ -110,6 +115,11 @@ export function TransactionForm({
 
   useEffect(() => {
     if (!open) return;
+
+    createTransaction.reset();
+    updateTransaction.reset();
+    createInstallment.reset();
+
     if (editingTransaction) {
       reset({
         description: editingTransaction.description,
@@ -134,7 +144,15 @@ export function TransactionForm({
       setIsInstallment(false);
       setInstallmentCount(2);
     }
-  }, [open, editingTransaction, defaultType, reset]);
+  }, [
+    open,
+    editingTransaction,
+    defaultType,
+    reset,
+    createTransaction,
+    updateTransaction,
+    createInstallment,
+  ]);
 
   const onSubmit = (data: TransactionFormData) => {
     const keepOpen = saveAndAddRef.current;
@@ -205,7 +223,11 @@ export function TransactionForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <FormErrorSummary errors={errors} submitCount={submitCount} />
+          <FormErrorSummary
+            errors={errors}
+            submitCount={submitCount}
+            apiError={mutationError}
+          />
 
           {/* Segmented type selector */}
           <div className="space-y-2">

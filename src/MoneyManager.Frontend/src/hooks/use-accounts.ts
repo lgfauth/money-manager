@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { queryKeys } from "@/lib/query-client";
 import type {
   AccountRequestDto,
@@ -26,7 +27,7 @@ export function useCreateAccount() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Conta criada com sucesso");
     },
-    onError: () => toast.error("Erro ao criar conta"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar conta")),
   });
 }
 
@@ -40,7 +41,7 @@ export function useUpdateAccount() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Conta atualizada");
     },
-    onError: () => toast.error("Erro ao atualizar conta"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar conta")),
   });
 }
 
@@ -53,6 +54,6 @@ export function useDeleteAccount() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Conta excluida");
     },
-    onError: () => toast.error("Erro ao excluir conta"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir conta")),
   });
 }

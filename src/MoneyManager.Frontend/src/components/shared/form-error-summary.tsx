@@ -3,11 +3,13 @@
 import { AlertCircle } from "lucide-react";
 import type { FieldErrors, FieldValues } from "react-hook-form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getApiErrorMessages } from "@/lib/api-errors";
 
 interface FormErrorSummaryProps<TFieldValues extends FieldValues> {
   errors?: FieldErrors<TFieldValues>;
   submitCount?: number;
   messages?: string[];
+  apiError?: unknown;
   title?: string;
   description?: string;
   className?: string;
@@ -35,15 +37,21 @@ export function FormErrorSummary<TFieldValues extends FieldValues>({
   errors,
   submitCount = 0,
   messages,
+  apiError,
   title = "Nao foi possivel enviar o formulario",
   description = "Revise os campos destacados e corrija os itens abaixo.",
   className,
 }: FormErrorSummaryProps<TFieldValues>) {
   const fieldMessages = errors ? collectErrorMessages(errors) : [];
-  const allMessages = [...fieldMessages, ...(messages ?? [])];
+  const apiMessages = getApiErrorMessages(apiError);
+  const allMessages = [...fieldMessages, ...(messages ?? []), ...apiMessages];
   const uniqueMessages = Array.from(new Set(allMessages));
 
-  if (submitCount < 1 || uniqueMessages.length === 0) {
+  if (uniqueMessages.length === 0) {
+    return null;
+  }
+
+  if (submitCount < 1 && apiMessages.length === 0) {
     return null;
   }
 

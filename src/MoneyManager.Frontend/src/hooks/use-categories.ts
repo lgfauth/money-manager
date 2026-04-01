@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { queryKeys } from "@/lib/query-client";
 import type {
   CategoryRequestDto,
@@ -25,7 +26,7 @@ export function useCreateCategory() {
       qc.invalidateQueries({ queryKey: queryKeys.categories });
       toast.success("Categoria criada com sucesso");
     },
-    onError: () => toast.error("Erro ao criar categoria"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar categoria")),
   });
 }
 
@@ -38,7 +39,7 @@ export function useUpdateCategory() {
       qc.invalidateQueries({ queryKey: queryKeys.categories });
       toast.success("Categoria atualizada");
     },
-    onError: () => toast.error("Erro ao atualizar categoria"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar categoria")),
   });
 }
 
@@ -50,6 +51,6 @@ export function useDeleteCategory() {
       qc.invalidateQueries({ queryKey: queryKeys.categories });
       toast.success("Categoria excluida");
     },
-    onError: () => toast.error("Erro ao excluir categoria"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir categoria")),
   });
 }

@@ -51,7 +51,11 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
-          <FormErrorSummary errors={errors} submitCount={submitCount} />
+          <FormErrorSummary
+            errors={errors}
+            submitCount={submitCount}
+            apiError={registerMutation.error}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>

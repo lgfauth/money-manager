@@ -77,6 +77,7 @@ export function AccountForm({
   const balanceValue = watch("initialBalance");
   const isCreditCard = selectedType === AccountType.CreditCard;
   const isEditing = !!editingAccount;
+  const mutationError = isEditing ? updateAccount.error : createAccount.error;
 
   const parseOptionalNumber = (value: string) => {
     if (value === "") {
@@ -89,6 +90,10 @@ export function AccountForm({
 
   useEffect(() => {
     if (!open) return;
+
+    createAccount.reset();
+    updateAccount.reset();
+
     if (editingAccount) {
       reset({
         name: editingAccount.name,
@@ -118,7 +123,7 @@ export function AccountForm({
         color: "#00C896",
       });
     }
-  }, [open, editingAccount, reset]);
+  }, [open, editingAccount, reset, createAccount, updateAccount]);
 
   useEffect(() => {
     if (selectedType !== AccountType.CreditCard) {
@@ -162,7 +167,11 @@ export function AccountForm({
         </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-4">
-          <FormErrorSummary errors={errors} submitCount={submitCount} />
+          <FormErrorSummary
+            errors={errors}
+            submitCount={submitCount}
+            apiError={mutationError}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>

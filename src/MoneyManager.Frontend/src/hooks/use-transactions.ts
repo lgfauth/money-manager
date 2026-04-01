@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { queryKeys } from "@/lib/query-client";
 import type {
   TransactionRequestDto,
@@ -56,7 +57,7 @@ export function useCreateTransaction() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Transacao criada com sucesso");
     },
-    onError: () => toast.error("Erro ao criar transacao"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar transacao")),
   });
 }
 
@@ -72,7 +73,7 @@ export function useCreateInstallment() {
       qc.invalidateQueries({ queryKey: ["invoices"] });
       toast.success("Compra parcelada registrada");
     },
-    onError: () => toast.error("Erro ao registrar parcelamento"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao registrar parcelamento")),
   });
 }
 
@@ -87,7 +88,7 @@ export function useUpdateTransaction() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Transacao atualizada");
     },
-    onError: () => toast.error("Erro ao atualizar transacao"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar transacao")),
   });
 }
 
@@ -102,6 +103,6 @@ export function useDeleteTransaction() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Transacao excluida");
     },
-    onError: () => toast.error("Erro ao excluir transacao"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir transacao")),
   });
 }

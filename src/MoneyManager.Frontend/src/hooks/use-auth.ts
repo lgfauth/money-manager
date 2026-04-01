@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { useAuthStore } from "@/stores/auth-store";
 import { queryClient } from "@/lib/query-client";
 import type { LoginRequestDto, LoginResponseDto, RegisterRequestDto } from "@/types/api";
@@ -19,8 +20,8 @@ export function useLogin() {
       login(response.token);
       router.push("/");
     },
-    onError: () => {
-      toast.error("E-mail ou senha inválidos");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "E-mail ou senha inválidos"));
     },
   });
 }
@@ -36,8 +37,8 @@ export function useRegister() {
       login(response.token);
       router.push("/onboarding");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Erro ao criar conta");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Erro ao criar conta"));
     },
   });
 }

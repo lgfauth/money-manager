@@ -194,6 +194,12 @@ export default function ProfilePage() {
         <CardContent className="space-y-4">
           {editing ? (
             <>
+              <FormErrorSummary
+                apiError={updateProfile.error}
+                title="Nao foi possivel salvar o perfil"
+                description="Revise os dados informados e tente novamente."
+              />
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Nome</Label>
@@ -261,6 +267,7 @@ export default function ProfilePage() {
             <FormErrorSummary
               errors={passwordForm.formState.errors}
               submitCount={passwordForm.formState.submitCount}
+              apiError={changePassword.error}
             />
 
             <div className="space-y-2">
@@ -340,6 +347,7 @@ export default function ProfilePage() {
             <FormErrorSummary
               errors={emailForm.formState.errors}
               submitCount={emailForm.formState.submitCount}
+              apiError={updateEmail.error}
             />
 
             <div className="space-y-2">
@@ -422,6 +430,12 @@ export default function ProfilePage() {
                 <Separator />
 
                 <div className="space-y-4 max-w-md">
+                  <FormErrorSummary
+                    apiError={deleteAccount.error}
+                    title="Nao foi possivel excluir a conta"
+                    description="Confira a senha e o texto de confirmacao antes de tentar novamente."
+                  />
+
                   <div className="space-y-2">
                     <Label>1. Digite sua senha</Label>
                     <Input

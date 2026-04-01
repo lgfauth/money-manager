@@ -1,6 +1,26 @@
 import { useAuthStore } from "@/stores/auth-store";
+import { createApiClientError } from "@/lib/api-errors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+async function parseResponseBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+
+  if (!text) {
+    return undefined;
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return text;
+    }
+  }
+
+  return text;
+}
 
 async function fetchWithAuth<T>(
   path: string,
@@ -22,17 +42,16 @@ async function fetchWithAuth<T>(
     if (typeof window !== "undefined") {
       window.location.href = "/login";
     }
-    throw new Error("Unauthorized");
+    throw createApiClientError(401, "Sessao expirada. Faca login novamente.");
   }
+
+  const body = await parseResponseBody(res);
 
   if (!res.ok) {
-    const error = await res.text();
-    throw new Error(error || `HTTP ${res.status}`);
+    throw createApiClientError(res.status, body, `HTTP ${res.status}`);
   }
 
-  const text = await res.text();
-  if (!text) return undefined as T;
-  return JSON.parse(text) as T;
+  return body as T;
 }
 
 export const apiClient = {
@@ -56,15 +75,16 @@ export const apiClient = {
       if (res.status === 401) {
         useAuthStore.getState().logout();
         if (typeof window !== "undefined") window.location.href = "/login";
-        throw new Error("Unauthorized");
+        throw createApiClientError(401, "Sessao expirada. Faca login novamente.");
       }
+
+      const body = await parseResponseBody(res);
+
       if (!res.ok) {
-        const error = await res.text();
-        throw new Error(error || `HTTP ${res.status}`);
+        throw createApiClientError(res.status, body, `HTTP ${res.status}`);
       }
-      const text = await res.text();
-      if (!text) return undefined as T;
-      return JSON.parse(text) as T;
+
+      return body as T;
     });
   },
 

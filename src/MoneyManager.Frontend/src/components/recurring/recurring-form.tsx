@@ -92,6 +92,7 @@ export function RecurringForm({
 
   const selectedType = watch("type");
   const amountValue = watch("amount");
+  const mutationError = isEditing ? updateRecurring.error : createRecurring.error;
 
   const filteredCategories = categories?.filter((cat) => {
     if (selectedType === TransactionType.Income) return cat.type === "Income";
@@ -100,6 +101,10 @@ export function RecurringForm({
 
   useEffect(() => {
     if (!open) return;
+
+    createRecurring.reset();
+    updateRecurring.reset();
+
     if (editingRecurring) {
       reset({
         description: editingRecurring.description,
@@ -126,7 +131,7 @@ export function RecurringForm({
         notes: "",
       });
     }
-  }, [open, editingRecurring, reset]);
+  }, [open, editingRecurring, reset, createRecurring, updateRecurring]);
 
   const onSubmit = (data: RecurringFormData) => {
     if (isEditing) {
@@ -158,7 +163,11 @@ export function RecurringForm({
         </SheetHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-4">
-          <FormErrorSummary errors={errors} submitCount={submitCount} />
+          <FormErrorSummary
+            errors={errors}
+            submitCount={submitCount}
+            apiError={mutationError}
+          />
 
           {/* Type selector */}
           <div className="space-y-2">

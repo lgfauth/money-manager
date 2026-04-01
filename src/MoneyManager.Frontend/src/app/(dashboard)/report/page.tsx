@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { useAuthStore } from "@/stores/auth-store";
 
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
@@ -79,8 +80,8 @@ export default function ReportPage() {
       setSubmitted(true);
       toast.success("Report enviado com sucesso!");
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Erro ao enviar report.");
+    onError: (error) => {
+      toast.error(getApiErrorMessage(error, "Erro ao enviar report."));
     },
   });
 
@@ -182,6 +183,7 @@ export default function ReportPage() {
             <FormErrorSummary
               submitCount={submitCount}
               messages={validationErrors}
+              apiError={submitReport.error}
             />
 
             {/* Category */}

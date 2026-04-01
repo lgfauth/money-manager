@@ -72,12 +72,16 @@ export default function CategoriesPage() {
   const selectedColor = watch("color");
 
   const openCreate = () => {
+    createMutation.reset();
+    updateMutation.reset();
     setEditingCategory(null);
     reset({ name: "", type: CategoryType.Expense, color: "#00C896" });
     setDialogOpen(true);
   };
 
   const openEdit = (cat: CategoryResponseDto) => {
+    createMutation.reset();
+    updateMutation.reset();
     setEditingCategory(cat);
     reset({ name: cat.name, type: cat.type, color: cat.color });
     setDialogOpen(true);
@@ -215,7 +219,11 @@ export default function CategoriesPage() {
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <FormErrorSummary errors={errors} submitCount={submitCount} />
+            <FormErrorSummary
+              errors={errors}
+              submitCount={submitCount}
+              apiError={editingCategory ? updateMutation.error : createMutation.error}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>

@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { queryKeys } from "@/lib/query-client";
 import type {
   RecurringTransactionRequestDto,
@@ -31,7 +32,7 @@ export function useCreateRecurring() {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
       toast.success("Transacao recorrente criada");
     },
-    onError: () => toast.error("Erro ao criar recorrente"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar recorrente")),
   });
 }
 
@@ -50,7 +51,7 @@ export function useUpdateRecurring() {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
       toast.success("Recorrente atualizada");
     },
-    onError: () => toast.error("Erro ao atualizar recorrente"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar recorrente")),
   });
 }
 
@@ -63,6 +64,6 @@ export function useDeleteRecurring() {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
       toast.success("Recorrente excluida");
     },
-    onError: () => toast.error("Erro ao excluir recorrente"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir recorrente")),
   });
 }

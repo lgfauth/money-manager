@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { queryKeys } from "@/lib/query-client";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MoneyInput } from "@/components/shared/money-input";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
 
 import type { AccountResponseDto } from "@/types/account";
 import { AccountType } from "@/types/account";
@@ -94,7 +96,7 @@ export function InvoicePaymentModal({
       toast.success("Pagamento registrado com sucesso");
       onOpenChange(false);
     },
-    onError: () => toast.error("Erro ao registrar pagamento"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao registrar pagamento")),
   });
 
   const debitAccounts = accounts?.filter(
@@ -133,6 +135,12 @@ export function InvoicePaymentModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          <FormErrorSummary
+            apiError={payInvoice.error}
+            title="Nao foi possivel registrar o pagamento"
+            description="Revise os dados informados e tente novamente."
+          />
+
           <div className="space-y-2">
             <Label>Fatura</Label>
             {payableInvoices && payableInvoices.length > 0 ? (

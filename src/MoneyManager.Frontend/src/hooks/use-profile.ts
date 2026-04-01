@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
+import { getApiErrorMessage } from "@/lib/api-errors";
 import { queryKeys } from "@/lib/query-client";
 import { toast } from "sonner";
 import type {
@@ -26,7 +27,7 @@ export function useUpdateProfile() {
       qc.invalidateQueries({ queryKey: queryKeys.profile });
       toast.success("Perfil atualizado com sucesso");
     },
-    onError: () => toast.error("Erro ao atualizar perfil"),
+    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar perfil")),
   });
 }
 
@@ -35,7 +36,8 @@ export function useChangePassword() {
     mutationFn: (data: ChangePasswordDto) =>
       apiClient.post<void>("/api/profile/change-password", data),
     onSuccess: () => toast.success("Senha alterada com sucesso"),
-    onError: () => toast.error("Erro ao alterar senha. Verifique a senha atual."),
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao alterar senha. Verifique a senha atual.")),
   });
 }
 
@@ -48,7 +50,8 @@ export function useUpdateEmail() {
       qc.invalidateQueries({ queryKey: queryKeys.profile });
       toast.success("E-mail atualizado com sucesso");
     },
-    onError: () => toast.error("Erro ao atualizar e-mail. Verifique a senha."),
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao atualizar e-mail. Verifique a senha.")),
   });
 }
 
@@ -67,5 +70,7 @@ export function useDeleteAccount() {
   return useMutation({
     mutationFn: (data: { password: string; confirmationText: string }) =>
       apiClient.post<void>("/api/accountdeletion/delete-account", data),
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao deletar conta")),
   });
 }

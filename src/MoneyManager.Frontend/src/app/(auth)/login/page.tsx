@@ -49,7 +49,12 @@ export default function LoginPage() {
         <p className="login-subtitle">Entre com suas credenciais</p>
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          <FormErrorSummary errors={errors} submitCount={submitCount} className="mb-4" />
+          <FormErrorSummary
+            errors={errors}
+            submitCount={submitCount}
+            apiError={loginMutation.error}
+            className="mb-4"
+          />
 
           <div className="login-field">
             <label htmlFor="email">E-MAIL</label>
