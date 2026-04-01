@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useState } from "react";
+import { FormEvent, useState } from "react";
 import { login } from "@/lib/admin-api";
 import { saveAdminToken } from "@/lib/admin-auth";
 
@@ -29,36 +29,43 @@ export default function LoginPage() {
     }
   }
 
-  function handlePasswordKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      void handleLogin();
-    }
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void handleLogin();
   }
 
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <h1>Admin Login</h1>
-        <p className="muted">Use credenciais configuradas por variavel de ambiente.</p>
-        <div>
-          <input
-            placeholder="Username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            onKeyDown={handlePasswordKeyDown}
-          />
+        <h1>Painel Administrativo</h1>
+        <p className="muted">Entre com as credenciais configuradas para o backoffice.</p>
+        <form className="login-form" method="post" action="/api/login" onSubmit={handleSubmit}>
+          <label className="login-field">
+            <span>Usuário</span>
+            <input
+              name="username"
+              autoComplete="username"
+              placeholder="admin"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+            />
+          </label>
+          <label className="login-field">
+            <span>Senha</span>
+            <input
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="********"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
           {error && <p className="error">{error}</p>}
-          <button className="btn btn-primary" type="button" disabled={isSubmitting} onClick={() => void handleLogin()}>
+          <button className="btn btn-primary login-btn" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Entrando..." : "Entrar"}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
