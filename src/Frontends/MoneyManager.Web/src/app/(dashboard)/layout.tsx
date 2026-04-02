@@ -12,17 +12,17 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, token } = useAuthStore();
+  const { isAuthenticated, token, isHydrated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isAuthenticated && !token) {
+    if (isHydrated && !isAuthenticated && !token) {
       router.replace(`/login?returnUrl=${encodeURIComponent(pathname)}`);
     }
-  }, [isAuthenticated, token, router, pathname]);
+  }, [isHydrated, isAuthenticated, token, router, pathname]);
 
-  if (!isAuthenticated && !token) {
+  if (!isHydrated || (!isAuthenticated && !token)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />

@@ -9,10 +9,11 @@ import {
   type TimeChartOptions,
 } from 'lightweight-charts';
 
-const DEFAULT_OPTIONS: DeepPartial<TimeChartOptions> & { attributionLogo?: boolean } = {
+const DEFAULT_OPTIONS: DeepPartial<TimeChartOptions> = {
   layout: {
     background: { type: ColorType.Solid, color: '#1a1d27' },
     textColor: '#8892a4',
+    attributionLogo: false,
   },
   grid: {
     vertLines: { color: '#2a2f45' },
@@ -20,7 +21,6 @@ const DEFAULT_OPTIONS: DeepPartial<TimeChartOptions> & { attributionLogo?: boole
   },
   rightPriceScale: { borderColor: '#2a2f45' },
   timeScale: { borderColor: '#2a2f45', timeVisible: false },
-  attributionLogo: false,
 };
 
 interface UseChartParams {

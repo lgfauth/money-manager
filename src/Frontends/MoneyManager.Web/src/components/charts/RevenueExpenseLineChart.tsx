@@ -32,12 +32,13 @@ export function RevenueExpenseLineChart({ data, height = 220 }: RevenueExpenseLi
       return;
     }
 
-    const chartOptions: DeepPartial<TimeChartOptions> & { attributionLogo?: boolean } = {
+    const chartOptions: DeepPartial<TimeChartOptions> = {
       width: container.clientWidth,
       height,
       layout: {
         background: { type: ColorType.Solid, color: '#ffffff' },
         textColor: '#8892a4',
+        attributionLogo: false,
       },
       grid: {
         vertLines: { color: '#f0f2f8' },
@@ -46,7 +47,6 @@ export function RevenueExpenseLineChart({ data, height = 220 }: RevenueExpenseLi
       rightPriceScale: { borderColor: '#e8eaf0' },
       timeScale: { borderColor: '#e8eaf0', timeVisible: false },
       crosshair: { mode: CrosshairMode.Normal },
-      attributionLogo: false,
     };
 
     const chart: IChartApi = createChart(container, chartOptions as DeepPartial<TimeChartOptions>);

@@ -33,6 +33,7 @@ interface AuthState {
   token: string | null;
   user: DecodedUser | null;
   isAuthenticated: boolean;
+  isHydrated: boolean;
   login: (token: string) => void;
   logout: () => void;
   hydrate: () => void;
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   token: null,
   user: null,
   isAuthenticated: false,
+  isHydrated: false,
 
   login: (token: string) => {
     if (typeof window !== "undefined") {
@@ -63,10 +65,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     const token = sessionStorage.getItem(SESSION_TOKEN_KEY);
     if (token && !isTokenExpired(token)) {
       const user = decodeToken(token);
-      set({ token, user, isAuthenticated: !!user });
+      set({ token, user, isAuthenticated: !!user, isHydrated: true });
     } else {
       if (token) sessionStorage.removeItem(SESSION_TOKEN_KEY);
-      set({ token: null, user: null, isAuthenticated: false });
+      set({ token: null, user: null, isAuthenticated: false, isHydrated: true });
     }
   },
 }));
