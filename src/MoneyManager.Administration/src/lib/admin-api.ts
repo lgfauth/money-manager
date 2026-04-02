@@ -2,7 +2,10 @@
 
 import { clearAdminToken, getAdminToken } from "@/lib/admin-auth";
 
-const API_URL = process.env.NEXT_PUBLIC_ADMIN_API_URL ?? "http://localhost:5091";
+const rawApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL?.trim();
+const API_URL = rawApiUrl && !rawApiUrl.includes("__NEXT_PUBLIC_ADMIN_API_URL_PLACEHOLDER__")
+  ? rawApiUrl
+  : "/api/proxy";
 
 async function request<T>(path: string): Promise<T> {
   const token = getAdminToken();
