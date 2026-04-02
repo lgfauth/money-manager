@@ -9,6 +9,7 @@ import {
   PiggyBank,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader } from "@/components/shared/page-header";
@@ -16,7 +17,7 @@ import { StatCard } from "@/components/shared/stat-card";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DonutChart } from "@/components/charts/pie-chart";
-import { CategoryLineChart, MonthlyHistogramChart } from "@/components/charts";
+import { CategoryBarChart, RevenueExpenseLineChart } from "@/components/charts";
 import { useReports, getPresetPeriod, getDefaultPeriod } from "@/hooks/use-reports";
 import { useTransactions } from "@/hooks/use-transactions";
 import { PeriodSelector } from "@/components/shared/period-selector";
@@ -30,6 +31,9 @@ function formatCurrency(value: number): string {
 export default function ReportsPage() {
   const [preset, setPreset] = useState<Preset>("current");
   const [period, setPeriod] = useState(getDefaultPeriod);
+  const [selectedMonth, setSelectedMonth] = useState<string>(
+    new Date().toISOString().slice(0, 7)
+  );
   const sixMonthsStart = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
   const sixMonthsEnd = format(new Date(), "yyyy-MM-dd");
 
@@ -101,53 +105,74 @@ export default function ReportsPage() {
       }));
   }, [transactions6m.data?.items]);
 
-  const categoryPalette = useMemo(
-    () => ({
-      "Alimentação": "#3b82f6",
-      "Transporte": "#a855f7",
-      "Lazer": "#f59e0b",
-      Outros: "#22c55e",
-    }),
-    []
-  );
-
-  const categoryLineSeries = useMemo(() => {
+  const availableMonths = useMemo(() => {
+    const months = new Set<string>();
     const items = transactions6m.data?.items ?? [];
-    const monthKeys = new Set<string>();
-    const categoryMonthTotals = new Map<string, Map<string, number>>();
 
     for (const transaction of items) {
-      if (transaction.type !== "Expense") {
+      months.add(transaction.date.slice(0, 7));
+    }
+
+    if (months.size === 0) {
+      months.add(new Date().toISOString().slice(0, 7));
+    }
+
+    return Array.from(months).sort((a, b) => b.localeCompare(a));
+  }, [transactions6m.data?.items]);
+
+  const effectiveSelectedMonth =
+    availableMonths.find((month) => month === selectedMonth) ?? availableMonths[0];
+
+  const categoryBarData = useMemo(() => {
+    const items = transactions6m.data?.items ?? [];
+    const monthCategoryTotals = new Map<string, { name: string; color: string; value: number }>();
+
+    for (const transaction of items) {
+      if (
+        transaction.type !== "Expense" ||
+        transaction.date.slice(0, 7) !== effectiveSelectedMonth
+      ) {
         continue;
       }
 
-      const monthKey = `${transaction.date.slice(0, 7)}-01`;
-      const categoryName = transaction.categoryName || "Outros";
-      monthKeys.add(monthKey);
+      const key = transaction.categoryId || transaction.categoryName || "outros";
+      const current = monthCategoryTotals.get(key) ?? {
+        name: transaction.categoryName || "Outros",
+        color: transaction.categoryColor || "#22c55e",
+        value: 0,
+      };
 
-      const perCategory = categoryMonthTotals.get(categoryName) ?? new Map<string, number>();
-      perCategory.set(monthKey, (perCategory.get(monthKey) ?? 0) + transaction.amount);
-      categoryMonthTotals.set(categoryName, perCategory);
+      current.value += transaction.amount;
+      monthCategoryTotals.set(key, current);
     }
 
-    const orderedMonths = Array.from(monthKeys).sort((a, b) => a.localeCompare(b));
-    const fallbackColors = ["#3b82f6", "#a855f7", "#f59e0b", "#22c55e", "#ef4444", "#06b6d4"];
-    let colorIndex = 0;
+    return Array.from(monthCategoryTotals.values())
+      .filter((category) => category.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [transactions6m.data?.items, effectiveSelectedMonth]);
 
-    return Array.from(categoryMonthTotals.entries()).map(([name, monthMap]) => {
-      const color =
-        categoryPalette[name as keyof typeof categoryPalette] ?? fallbackColors[colorIndex++ % fallbackColors.length];
+  const revenueExpenseLineData = useMemo(
+    () => histogramData.map((point) => ({ time: point.time, income: point.income, expense: point.expense })),
+    [histogramData]
+  );
 
-      return {
-        name,
-        color,
-        data: orderedMonths.map((month) => ({
-          time: month,
-          value: monthMap.get(month) ?? 0,
-        })),
-      };
-    });
-  }, [transactions6m.data?.items, categoryPalette]);
+  const averageIncome = useMemo(() => {
+    if (histogramData.length === 0) {
+      return 0;
+    }
+
+    const totalIncome = histogramData.reduce((sum, point) => sum + point.income, 0);
+    return totalIncome / histogramData.length;
+  }, [histogramData]);
+
+  const averageExpense = useMemo(() => {
+    if (histogramData.length === 0) {
+      return 0;
+    }
+
+    const totalExpense = histogramData.reduce((sum, point) => sum + point.expense, 0);
+    return totalExpense / histogramData.length;
+  }, [histogramData]);
 
   if (report.isLoading) {
     return (
@@ -233,17 +258,31 @@ export default function ReportsPage() {
 
           {/* Charts */}
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* Lightweight charts - trends */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Receitas e Despesas (6 meses)</CardTitle>
+                <CardTitle className="text-base">Gastos por Categoria</CardTitle>
+                <p className="text-sm text-muted-foreground">Selecione o mês</p>
               </CardHeader>
               <CardContent>
-                {histogramData.length > 0 ? (
-                  <MonthlyHistogramChart data={histogramData} height={220} />
+                <div className="mb-4 flex flex-wrap gap-2">
+                  {availableMonths.map((month) => (
+                    <Button
+                      key={month}
+                      size="sm"
+                      variant={month === effectiveSelectedMonth ? "default" : "outline"}
+                      onClick={() => setSelectedMonth(month)}
+                      className="rounded-full px-3 text-xs"
+                    >
+                      {month}
+                    </Button>
+                  ))}
+                </div>
+
+                {categoryBarData.length > 0 ? (
+                  <CategoryBarChart data={categoryBarData} />
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-10">
-                    Dados insuficientes para o gráfico.
+                    Sem despesas para o mês selecionado.
                   </p>
                 )}
               </CardContent>
@@ -305,14 +344,26 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Tendência por Categoria (6 meses)</CardTitle>
+              <CardTitle className="text-base">Receitas e Despesas</CardTitle>
+              <p className="text-sm text-muted-foreground">Últimos 6 meses</p>
             </CardHeader>
             <CardContent>
-              {categoryLineSeries.length > 0 ? (
-                <CategoryLineChart series={categoryLineSeries} height={420} />
+              <div className="mb-4 grid gap-2 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Receita média do período</p>
+                  <p className="text-sm font-semibold text-green-600">{formatCurrency(averageIncome)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Despesa média do período</p>
+                  <p className="text-sm font-semibold text-red-600">{formatCurrency(averageExpense)}</p>
+                </div>
+              </div>
+
+              {revenueExpenseLineData.length > 0 ? (
+                <RevenueExpenseLineChart data={revenueExpenseLineData} height={220} />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-10">
-                  Sem despesas categorizadas para o período.
+                  Sem dados suficientes para o período.
                 </p>
               )}
             </CardContent>

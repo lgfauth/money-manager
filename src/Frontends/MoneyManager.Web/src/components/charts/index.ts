@@ -1,5 +1,5 @@
 export { BalanceAreaChart } from './BalanceAreaChart';
+export { CategoryBarChart } from './CategoryBarChart';
 export { SpendingBaselineChart } from './SpendingBaselineChart';
-export { MonthlyHistogramChart } from './MonthlyHistogramChart';
 export { InvoiceHistoryChart } from './InvoiceHistoryChart';
-export { CategoryLineChart } from './CategoryLineChart';
+export { RevenueExpenseLineChart } from './RevenueExpenseLineChart';

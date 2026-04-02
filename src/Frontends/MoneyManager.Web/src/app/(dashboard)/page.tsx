@@ -13,7 +13,7 @@ import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { CreditCardSummary } from "@/components/dashboard/credit-card-summary";
 import {
   BalanceAreaChart,
-  MonthlyHistogramChart,
+  RevenueExpenseLineChart,
   SpendingBaselineChart,
 } from "@/components/charts";
 
@@ -113,8 +113,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-medium text-foreground">Receitas e Despesas por Mês</h3>
-        <MonthlyHistogramChart data={histogramData} height={220} />
+        <h3 className="mb-3 text-sm font-medium text-foreground">Receitas e Despesas (6 meses)</h3>
+        <RevenueExpenseLineChart data={histogramData} height={200} />
       </div>
 
       <AccountsChart accounts={accounts} />
