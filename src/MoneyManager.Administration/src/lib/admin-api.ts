@@ -6,10 +6,25 @@ const rawApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL?.trim();
 const API_URL = rawApiUrl && !rawApiUrl.includes("__NEXT_PUBLIC_ADMIN_API_URL_PLACEHOLDER__")
   ? rawApiUrl
   : "/api/proxy";
+const IS_PROXY_MODE = API_URL === "/api/proxy";
+
+function resolvePath(path: string): string {
+  if (!IS_PROXY_MODE) {
+    return path;
+  }
+
+  // In proxy mode, /api/proxy forwards to ADMIN_API_URL root.
+  // Strip the first "/api" to avoid browser URLs like /api/proxy/api/...
+  if (path.startsWith("/api/")) {
+    return path.substring(4);
+  }
+
+  return path;
+}
 
 async function request<T>(path: string): Promise<T> {
   const token = getAdminToken();
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${API_URL}${resolvePath(path)}`, {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -33,7 +48,7 @@ async function request<T>(path: string): Promise<T> {
 
 async function postJson<TResponse, TBody>(path: string, body: TBody): Promise<TResponse> {
   const token = getAdminToken();
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${API_URL}${resolvePath(path)}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -204,7 +219,7 @@ export async function resumeJob(jobName: string, reason?: string): Promise<JobCo
 
 export async function updateJobSchedule(jobName: string, input: UpdateJobScheduleRequest): Promise<JobScheduleResponse> {
   const token = getAdminToken();
-  const response = await fetch(`${API_URL}/api/admin/jobs/${encodeURIComponent(jobName)}/schedule`, {
+  const response = await fetch(`${API_URL}${resolvePath(`/api/admin/jobs/${encodeURIComponent(jobName)}/schedule`)}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
@@ -296,7 +311,7 @@ export async function getMonthlyAuditReport(year: number, month: number): Promis
 }
 
 export async function login(username: string, password: string): Promise<{ accessToken: string; expiresAtUtc: string }> {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
+  const response = await fetch(`${API_URL}${resolvePath("/api/auth/login")}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
