@@ -69,11 +69,7 @@ export function useDashboard() {
     .reduce((s, t) => s + t.amount, 0);
 
   const netBalance = accountList
-    .filter(
-      (a) =>
-        a.type !== AccountType.CreditCard &&
-        a.type !== AccountType.Investment
-    )
+    .filter((a) => a.type !== AccountType.CreditCard)
     .reduce((s, a) => s + a.balance, 0);
 
   const totalAssets = accountList

@@ -11,14 +11,13 @@ interface StatCardProps {
     value: number;
     label: string;
   };
-  variant?: "default" | "income" | "expense" | "investment" | "warning";
+  variant?: "default" | "income" | "expense" | "warning";
 }
 
 const variantTopBar: Record<string, string> = {
   default: "before:bg-primary",
   income: "before:bg-income",
   expense: "before:bg-expense",
-  investment: "before:bg-investment",
   warning: "before:bg-warning",
 };
 
@@ -26,7 +25,6 @@ const variantIcon: Record<string, string> = {
   default: "bg-primary/10 text-primary",
   income: "bg-income/10 text-income",
   expense: "bg-expense/10 text-expense",
-  investment: "bg-investment/10 text-investment",
   warning: "bg-warning/10 text-warning",
 };
 

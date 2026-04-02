@@ -36,7 +36,6 @@ const frequencyLabels: Record<string, string> = {
 const typeColors: Record<string, string> = {
   Income: "text-income",
   Expense: "text-expense",
-  Investment: "text-investment",
 };
 
 interface RecurringCardProps {

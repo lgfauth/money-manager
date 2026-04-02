@@ -5,7 +5,6 @@ import { ptBR } from "date-fns/locale";
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  TrendingUp,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -43,11 +42,6 @@ const typeConfig: Record<
     label: "Despesa",
     icon: ArrowUpRight,
     className: "text-expense",
-  },
-  [TransactionType.Investment]: {
-    label: "Investimento",
-    icon: TrendingUp,
-    className: "text-investment",
   },
 };
 

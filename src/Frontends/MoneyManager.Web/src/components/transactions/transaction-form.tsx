@@ -50,11 +50,6 @@ interface TransactionFormProps {
 const typeOptions = [
   { value: TransactionType.Expense, label: "Despesa", color: "text-expense" },
   { value: TransactionType.Income, label: "Receita", color: "text-income" },
-  {
-    value: TransactionType.Investment,
-    label: "Investimento",
-    color: "text-investment",
-  },
 ];
 
 export function TransactionForm({

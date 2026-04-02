@@ -43,7 +43,6 @@ interface RecurringFormProps {
 const typeOptions = [
   { value: TransactionType.Expense, label: "Despesa" },
   { value: TransactionType.Income, label: "Receita" },
-  { value: TransactionType.Investment, label: "Investimento" },
 ];
 
 const frequencyOptions = [

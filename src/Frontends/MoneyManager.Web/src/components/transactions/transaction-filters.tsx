@@ -29,7 +29,6 @@ interface TransactionFiltersProps {
 const typeLabels: Record<string, string> = {
   [TransactionType.Income]: "Receita",
   [TransactionType.Expense]: "Despesa",
-  [TransactionType.Investment]: "Investimento",
 };
 
 const getTypeLabel = (type?: string): string => {
@@ -73,9 +72,6 @@ export function TransactionFilters({
             <SelectItem value="">Todos</SelectItem>
             <SelectItem value={TransactionType.Income}>Receita</SelectItem>
             <SelectItem value={TransactionType.Expense}>Despesa</SelectItem>
-            <SelectItem value={TransactionType.Investment}>
-              Investimento
-            </SelectItem>
           </SelectContent>
         </Select>
       </div>

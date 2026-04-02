@@ -6,6 +6,7 @@ import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiClient } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
+import { useAccounts } from "@/hooks/use-accounts";
 import type {
   TransactionResponseDto,
   PaginatedResponse,
@@ -51,6 +52,8 @@ export interface ReportData {
 }
 
 export function useReports(period: ReportPeriod): ReportData {
+  const { data: accounts } = useAccounts();
+
   const transactions = useQuery({
     queryKey: queryKeys.reports(period),
     queryFn: () =>
@@ -62,6 +65,12 @@ export function useReports(period: ReportPeriod): ReportData {
   const { totalIncome, totalExpense, expensesByCategory, movementByAccount, monthlyTrends } =
     useMemo(() => {
       const items = transactions.data?.items ?? [];
+      const activeAccountIds = new Set((accounts ?? []).map((account) => account.id));
+      const scopedItems =
+        activeAccountIds.size > 0
+          ? items.filter((transaction) => activeAccountIds.has(transaction.accountId))
+          : items;
+
       let income = 0;
       let expense = 0;
 
@@ -80,7 +89,7 @@ export function useReports(period: ReportPeriod): ReportData {
         { month: string; income: number; expense: number }
       > = {};
 
-      for (const t of items) {
+      for (const t of scopedItems) {
         if (t.type === "Income") {
           income += t.amount;
         } else if (t.type === "Expense") {
@@ -156,7 +165,7 @@ export function useReports(period: ReportPeriod): ReportData {
         movementByAccount: movementBreakdown,
         monthlyTrends: trends,
       };
-    }, [transactions.data]);
+    }, [transactions.data, accounts]);
 
   const netBalance = totalIncome - totalExpense;
   const savingsRate =

@@ -20,7 +20,6 @@ const accountTypeLabels: Record<string, string> = {
   Savings: "Poupança",
   Cash: "Dinheiro",
   CreditCard: "Cartão de Crédito",
-  Investment: "Investimento",
 };
 
 interface AccountCardProps {

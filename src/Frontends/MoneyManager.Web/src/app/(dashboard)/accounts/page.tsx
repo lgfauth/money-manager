@@ -19,9 +19,8 @@ type SortField = "name" | "balance" | "type";
 const typeOrder: Record<string, number> = {
   [AccountType.Checking]: 0,
   [AccountType.Savings]: 1,
-  [AccountType.Investment]: 2,
-  [AccountType.CreditCard]: 3,
-  [AccountType.Cash]: 4,
+  [AccountType.CreditCard]: 2,
+  [AccountType.Cash]: 3,
 };
 
 export default function AccountsPage() {

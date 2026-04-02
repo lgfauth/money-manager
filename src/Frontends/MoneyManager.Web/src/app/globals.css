@@ -50,7 +50,6 @@
   /* Financial semantic colors */
   --color-income: var(--income);
   --color-expense: var(--expense);
-  --color-investment: var(--investment);
   --color-warning: var(--warning);
   --color-credit-card: var(--credit-card);
 }
@@ -101,7 +100,6 @@
   /* Financial semantic colors */
   --income: #00C896;
   --expense: #FF5E5E;
-  --investment: #4E9BFF;
   --warning: #F5A623;
   --credit-card: #8B5CF6;
 
@@ -144,7 +142,6 @@
   /* Financial semantic colors */
   --income: #34D399;
   --expense: #FF6B6B;
-  --investment: #60A5FA;
   --warning: #FBBF24;
   --credit-card: #A78BFA;
 

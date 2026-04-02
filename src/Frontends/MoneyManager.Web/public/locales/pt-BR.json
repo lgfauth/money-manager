@@ -84,8 +84,7 @@
       "Checking": "Conta Corrente",
       "Savings": "Poupança",
       "Cash": "Dinheiro",
-      "CreditCard": "Cartão de Crédito",
-      "Investment": "Investimento"
+      "CreditCard": "Cartão de Crédito"
     },
     "form": {
       "name": "Nome",
@@ -118,8 +117,7 @@
     "pagination": "{count} transações · Página {current} de {total}",
     "types": {
       "Income": "Receita",
-      "Expense": "Despesa",
-      "Investment": "Investimento"
+      "Expense": "Despesa"
     },
     "table": {
       "date": "Data",

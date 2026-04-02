@@ -3,7 +3,6 @@ export enum AccountType {
   Savings = "Savings",
   Cash = "Cash",
   CreditCard = "CreditCard",
-  Investment = "Investment",
 }
 
 export interface AccountRequestDto {

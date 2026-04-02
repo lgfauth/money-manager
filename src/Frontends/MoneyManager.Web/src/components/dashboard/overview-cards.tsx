@@ -34,7 +34,7 @@ export function OverviewCards({
         title="Total em Ativos"
         value={fmt(totalAssets)}
         icon={TrendingUp}
-        variant="investment"
+        variant="default"
       />
       <StatCard
         title="Receitas do Mes"
