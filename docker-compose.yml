@@ -33,7 +33,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/MoneyManager.Presentation/Dockerfile
+      dockerfile: src/APIs/MoneyManager.Api.Operational/Dockerfile
     container_name: moneymanager-api
     ports:
       - "5000:5000"
@@ -89,7 +89,7 @@ services:
 
   admin:
     build:
-      context: src/MoneyManager.Administration
+      context: src/Frontends/MoneyManager.Backoffice
       dockerfile: Dockerfile
     container_name: moneymanager-admin
     ports:

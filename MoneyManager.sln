@@ -1,31 +1,27 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Domain", "src\MoneyManager.Domain\MoneyManager.Domain.csproj", "{50129A45-D71A-4652-A11C-3A55A0F9080D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Domain", "src\Supports\MoneyManager.Domain\MoneyManager.Domain.csproj", "{50129A45-D71A-4652-A11C-3A55A0F9080D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Application", "src\MoneyManager.Application\MoneyManager.Application.csproj", "{F5954B76-CD7C-41BF-B554-2B686D89D5B2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Application", "src\Supports\MoneyManager.Application\MoneyManager.Application.csproj", "{F5954B76-CD7C-41BF-B554-2B686D89D5B2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Infrastructure", "src\MoneyManager.Infrastructure\MoneyManager.Infrastructure.csproj", "{D45B2984-FDC0-449B-BB24-8BD0D7DF8A57}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Infrastructure", "src\Supports\MoneyManager.Infrastructure\MoneyManager.Infrastructure.csproj", "{D45B2984-FDC0-449B-BB24-8BD0D7DF8A57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Presentation", "src\MoneyManager.Presentation\MoneyManager.Presentation.csproj", "{CD6E2330-F4D8-453F-9AF8-13D49B5A0613}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Api.Operational", "src\APIs\MoneyManager.Api.Operational\MoneyManager.Api.Operational.csproj", "{CD6E2330-F4D8-453F-9AF8-13D49B5A0613}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Tests", "tests\MoneyManager.Tests\MoneyManager.Tests.csproj", "{6BDFFF16-A4C0-4B42-8171-9C2A37F22CC3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Web", "src\MoneyManager.Web\MoneyManager.Web.csproj", "{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Web.Host", "src\MoneyManager.Web.Host\MoneyManager.Web.Host.csproj", "{B7BA511D-E995-422B-86DD-DB0AB067C928}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Worker", "src\MoneyManager.Worker\MoneyManager.Worker.csproj", "{EA0887DA-3C95-73D8-111B-FB03EBD8AA9D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Worker.Operational", "src\Workers\MoneyManager.Worker.Operational\MoneyManager.Worker.Operational.csproj", "{EA0887DA-3C95-73D8-111B-FB03EBD8AA9D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Observability", "src\MoneyManager.Observability\MoneyManager.Observability.csproj", "{A37E3F4D-B3C2-469D-BDC7-2DEAF4A31F63}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Observability", "src\Supports\MoneyManager.Observability\MoneyManager.Observability.csproj", "{A37E3F4D-B3C2-469D-BDC7-2DEAF4A31F63}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Api.Administration", "src\MoneyManager.Api.Administration\MoneyManager.Api.Administration.csproj", "{FFCC89AC-387D-4AA4-81E7-DA64324E46D8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoneyManager.Api.Backoffice", "src\APIs\MoneyManager.Api.Backoffice\MoneyManager.Api.Backoffice.csproj", "{FFCC89AC-387D-4AA4-81E7-DA64324E46D8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -97,30 +93,6 @@ Global
 		{6BDFFF16-A4C0-4B42-8171-9C2A37F22CC3}.Release|x64.Build.0 = Release|Any CPU
 		{6BDFFF16-A4C0-4B42-8171-9C2A37F22CC3}.Release|x86.ActiveCfg = Release|Any CPU
 		{6BDFFF16-A4C0-4B42-8171-9C2A37F22CC3}.Release|x86.Build.0 = Release|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Debug|x64.Build.0 = Debug|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Debug|x86.Build.0 = Debug|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Release|x64.ActiveCfg = Release|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Release|x64.Build.0 = Release|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Release|x86.ActiveCfg = Release|Any CPU
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72}.Release|x86.Build.0 = Release|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Debug|x64.Build.0 = Debug|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Debug|x86.Build.0 = Debug|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Release|x64.ActiveCfg = Release|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Release|x64.Build.0 = Release|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Release|x86.ActiveCfg = Release|Any CPU
-		{B7BA511D-E995-422B-86DD-DB0AB067C928}.Release|x86.Build.0 = Release|Any CPU
 		{EA0887DA-3C95-73D8-111B-FB03EBD8AA9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EA0887DA-3C95-73D8-111B-FB03EBD8AA9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA0887DA-3C95-73D8-111B-FB03EBD8AA9D}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -167,8 +139,6 @@ Global
 		{D45B2984-FDC0-449B-BB24-8BD0D7DF8A57} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{CD6E2330-F4D8-453F-9AF8-13D49B5A0613} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{6BDFFF16-A4C0-4B42-8171-9C2A37F22CC3} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-		{9481F992-D3AC-4368-B4C4-8ACA0B1F5B72} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-		{B7BA511D-E995-422B-86DD-DB0AB067C928} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{EA0887DA-3C95-73D8-111B-FB03EBD8AA9D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{A37E3F4D-B3C2-469D-BDC7-2DEAF4A31F63} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{FFCC89AC-387D-4AA4-81E7-DA64324E46D8} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}

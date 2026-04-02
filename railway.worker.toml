@@ -12,10 +12,10 @@ nixPkgs = ["dotnet-sdk_9"]
 
 [build.nixpacksPlan.phases.build]
 cmds = [
-  "dotnet restore src/MoneyManager.Worker/MoneyManager.Worker.csproj",
-  "dotnet build src/MoneyManager.Worker/MoneyManager.Worker.csproj --configuration Release --no-restore",
-  "dotnet publish src/MoneyManager.Worker/MoneyManager.Worker.csproj --configuration Release --no-build --output /app/publish"
+  "dotnet restore src/Workers/MoneyManager.Worker.Operational/MoneyManager.Worker.Operational.csproj",
+  "dotnet build src/Workers/MoneyManager.Worker.Operational/MoneyManager.Worker.Operational.csproj --configuration Release --no-restore",
+  "dotnet publish src/Workers/MoneyManager.Worker.Operational/MoneyManager.Worker.Operational.csproj --configuration Release --no-build --output /app/publish"
 ]
 
 [build.nixpacksPlan.start]
-cmd = "dotnet /app/publish/MoneyManager.Worker.dll"
+cmd = "dotnet /app/publish/MoneyManager.Worker.Operational.dll"

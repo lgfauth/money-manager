@@ -3,6 +3,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
+import { useInvoiceSummary } from "@/hooks/use-invoices";
 
 const routeLabels: Record<string, string> = {
   "": "Dashboard",
@@ -25,8 +26,35 @@ interface BreadcrumbProps {
   pathname: string;
 }
 
+function getInvoiceBreadcrumbLabel(referenceMonth?: string, accountName?: string) {
+  if (referenceMonth) {
+    const match = referenceMonth.match(/^(\d{4})-(\d{2})$/);
+    if (match) {
+      const [, year, month] = match;
+      return `Fatura ${month}/${year}`;
+    }
+  }
+
+  if (accountName && accountName.trim().length > 0) {
+    return `Fatura ${accountName.trim()}`;
+  }
+
+  return "Fatura";
+}
+
 export function Breadcrumb({ pathname }: BreadcrumbProps) {
   const segments = pathname.split("/").filter(Boolean);
+  const invoicesIndex = segments.findIndex((segment) => segment === "invoices");
+  const invoiceId =
+    invoicesIndex >= 0 && segments.length > invoicesIndex + 1
+      ? segments[invoicesIndex + 1]
+      : "";
+
+  const { data: invoiceSummary } = useInvoiceSummary(invoiceId);
+  const invoiceBreadcrumbLabel = getInvoiceBreadcrumbLabel(
+    invoiceSummary?.invoice.referenceMonth,
+    invoiceSummary?.invoice.accountName
+  );
 
   if (segments.length === 0) {
     return (
@@ -45,7 +73,11 @@ export function Breadcrumb({ pathname }: BreadcrumbProps) {
       {segments.map((segment, index) => {
         const href = "/" + segments.slice(0, index + 1).join("/");
         const isLast = index === segments.length - 1;
-        const label = routeLabels[segment] ?? segment;
+        const isInvoiceIdSegment =
+          invoicesIndex >= 0 && index === invoicesIndex + 1 && segment === invoiceId;
+        const label = isInvoiceIdSegment
+          ? invoiceBreadcrumbLabel
+          : (routeLabels[segment] ?? segment);
         const isNavigable = !nonNavigableBreadcrumbHrefs.has(href);
 
         return (

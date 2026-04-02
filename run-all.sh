@@ -10,7 +10,7 @@ echo "Web will run on: https://localhost:7001"
 echo ""
 
 # Start API in background
-dotnet run --project src/MoneyManager.Presentation/MoneyManager.Presentation.csproj --launch-profile https &
+dotnet run --project src/APIs/MoneyManager.Api.Operational/MoneyManager.Api.Operational.csproj --launch-profile https &
 API_PID=$!
 
 # Wait a bit for API to start

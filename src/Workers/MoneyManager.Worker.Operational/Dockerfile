@@ -22,4 +22,6 @@ FROM mcr.microsoft.com/dotnet/runtime:9.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Railway injects PORT for HTTP services; this worker does not expose HTTP.
+# Keep PORT unused; the process just needs to keep running.
 ENTRYPOINT ["dotnet", "MoneyManager.Worker.Operational.dll"]

@@ -4,8 +4,8 @@ WORKDIR /src
 
 # Copy csproj files and restore dependencies
 COPY ["src/MoneyManager.Web/MoneyManager.Web.csproj", "src/MoneyManager.Web/"]
-COPY ["src/MoneyManager.Application/MoneyManager.Application.csproj", "src/MoneyManager.Application/"]
-COPY ["src/MoneyManager.Domain/MoneyManager.Domain.csproj", "src/MoneyManager.Domain/"]
+COPY ["src/Supports/MoneyManager.Application/MoneyManager.Application.csproj", "src/Supports/MoneyManager.Application/"]
+COPY ["src/Supports/MoneyManager.Domain/MoneyManager.Domain.csproj", "src/Supports/MoneyManager.Domain/"]
 
 RUN dotnet restore "src/MoneyManager.Web/MoneyManager.Web.csproj"
 
