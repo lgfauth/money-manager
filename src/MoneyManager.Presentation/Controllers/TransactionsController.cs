@@ -82,6 +82,7 @@ public class TransactionsController : ControllerBase
         [FromQuery] DateTime? startDate = null,
         [FromQuery] DateTime? endDate = null,
         [FromQuery] TransactionType? type = null,
+        [FromQuery] string? accountId = null,
         [FromQuery] string sortBy = "date_desc")
     {
         var userId = HttpContext.GetUserId();
@@ -97,6 +98,7 @@ public class TransactionsController : ControllerBase
                     startDate,
                     endDate,
                     type,
+                    accountId,
                     sortBy);
 
                 _logger.LogDebug("Retrieved page {Page} ({Count}/{Total}) transactions for user {UserId}",

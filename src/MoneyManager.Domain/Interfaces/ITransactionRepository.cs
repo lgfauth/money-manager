@@ -14,5 +14,6 @@ public interface ITransactionRepository : IRepository<Transaction>
         DateTime? startDate = null,
         DateTime? endDate = null,
         TransactionType? type = null,
+        string? accountId = null,
         string sortBy = "date_desc");
 }

@@ -26,6 +26,17 @@ interface TransactionFiltersProps {
   onFiltersChange: (filters: FilterValues) => void;
 }
 
+const typeLabels: Record<string, string> = {
+  [TransactionType.Income]: "Receita",
+  [TransactionType.Expense]: "Despesa",
+  [TransactionType.Investment]: "Investimento",
+};
+
+const getTypeLabel = (type?: string): string => {
+  if (!type) return "Todos";
+  return typeLabels[type] || "Todos";
+};
+
 export function TransactionFilters({
   filters,
   onFiltersChange,
@@ -39,6 +50,10 @@ export function TransactionFilters({
     onFiltersChange({ type: undefined, accountId: undefined, startDate: undefined, endDate: undefined });
   };
 
+  const selectedAccount = filters.accountId
+    ? accounts?.find((a) => a.id === filters.accountId)?.name
+    : undefined;
+
   return (
     <div className="flex flex-wrap items-end gap-3">
       <div className="space-y-1">
@@ -50,7 +65,9 @@ export function TransactionFilters({
           }
         >
           <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Todos" />
+            <SelectValue placeholder="Todos">
+              {getTypeLabel(filters.type)}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">Todos</SelectItem>
@@ -73,9 +90,7 @@ export function TransactionFilters({
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Todas">
-              {filters.accountId
-                ? accounts?.find((a) => a.id === filters.accountId)?.name
-                : undefined}
+              {selectedAccount || "Todas"}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
