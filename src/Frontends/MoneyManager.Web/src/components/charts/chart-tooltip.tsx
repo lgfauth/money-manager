@@ -22,7 +22,7 @@ export function ChartTooltip({
   const formatValue = formatter ?? ((v: number) => v.toLocaleString("pt-BR"));
 
   return (
-    <div className="rounded-lg border bg-card p-3 shadow-md">
+    <div className="relative z-50 rounded-lg border bg-card p-3 shadow-md">
       {label && (
         <p className="mb-1.5 text-xs font-medium text-muted-foreground">
           {label}

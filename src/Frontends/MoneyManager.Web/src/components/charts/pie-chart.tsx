@@ -50,6 +50,7 @@ export function DonutChart({
             ))}
           </Pie>
           <Tooltip
+            wrapperStyle={{ zIndex: 40 }}
             content={({ active, payload }) => (
               <ChartTooltip
                 active={active}
@@ -67,7 +68,7 @@ export function DonutChart({
 
       {/* Center text */}
       {(centerLabel || centerValue) && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center">
           {centerValue && (
             <span className="text-lg font-bold">{centerValue}</span>
           )}
