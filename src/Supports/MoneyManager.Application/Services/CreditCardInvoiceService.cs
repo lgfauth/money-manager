@@ -208,12 +208,30 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             try
             {
                 var closingDay = card.InvoiceClosingDay ?? 1;
+                var effectiveClosingDay = GetEffectiveClosingDay(closingDay, today.Year, today.Month);
+
+                if (effectiveClosingDay != closingDay)
+                {
+                    _processLogger.AddStep("Adjusted configured closing day for short month", new Dictionary<string, object?>
+                    {
+                        ["cardId"] = card.Id,
+                        ["configuredClosingDay"] = closingDay,
+                        ["effectiveClosingDay"] = effectiveClosingDay,
+                        ["year"] = today.Year,
+                        ["month"] = today.Month
+                    });
+                }
                 
                 // Verificar se hoje é o dia de fechamento
-                if (today.Day != closingDay)
+                if (today.Day != effectiveClosingDay)
                     continue;
 
-                _processLogger.AddStep("Processing invoice closure", new Dictionary<string, object?> { ["cardId"] = card.Id, ["closingDay"] = closingDay });
+                _processLogger.AddStep("Processing invoice closure", new Dictionary<string, object?>
+                {
+                    ["cardId"] = card.Id,
+                    ["closingDay"] = closingDay,
+                    ["effectiveClosingDay"] = effectiveClosingDay
+                });
 
                 // Buscar fatura aberta
                 var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(card.Id);
@@ -253,6 +271,41 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         await _unitOfWork.SaveChangesAsync();
 
         _processLogger.AddStep("Monthly invoice closure completed", new Dictionary<string, object?> { ["closedCount"] = closedCount });
+    }
+
+    public async Task<int> MarkOverdueInvoicesAsync(DateTime? referenceDate = null)
+    {
+        var today = (referenceDate?.Date ?? DateTime.UtcNow.Date);
+        var invoices = await _unitOfWork.CreditCardInvoices.GetAllAsync();
+
+        var overdueCandidates = invoices
+            .Where(invoice => !invoice.IsDeleted
+                && invoice.DueDate.Date < today
+                && (invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.PartiallyPaid))
+            .ToList();
+
+        if (overdueCandidates.Count == 0)
+        {
+            _processLogger.AddStep("No overdue invoices found", new Dictionary<string, object?> { ["referenceDate"] = today.ToString("O") });
+            return 0;
+        }
+
+        foreach (var invoice in overdueCandidates)
+        {
+            invoice.Status = InvoiceStatus.Overdue;
+            invoice.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        _processLogger.AddStep("Overdue invoices updated", new Dictionary<string, object?>
+        {
+            ["referenceDate"] = today.ToString("O"),
+            ["updatedCount"] = overdueCandidates.Count
+        });
+
+        return overdueCandidates.Count;
     }
 
     // ==================== PAGAMENTO DE FATURAS ====================
@@ -814,6 +867,12 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             nextMonth.Year,
             nextMonth.Month,
             Math.Min(closingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month)));
+    }
+
+    private static int GetEffectiveClosingDay(int configuredClosingDay, int year, int month)
+    {
+        var normalizedClosingDay = Math.Clamp(configuredClosingDay, 1, 31);
+        return Math.Min(normalizedClosingDay, DateTime.DaysInMonth(year, month));
     }
 
     private static string GetStatusLabel(InvoiceStatus status)

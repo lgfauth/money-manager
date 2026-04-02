@@ -174,6 +174,24 @@ public class RecurringTransactionService : IRecurringTransactionService
                 while (recurrence.NextOccurrenceDate.Date <= today 
                        && (!recurrence.EndDate.HasValue || recurrence.NextOccurrenceDate.Date <= recurrence.EndDate.Value.Date))
                 {
+                    if (recurrence.IsInstallmentSchedule &&
+                        (!recurrence.SkipAccountBalanceImpact ||
+                         !recurrence.SkipCommittedCreditImpact ||
+                         !recurrence.SkipCreditLimitValidation))
+                    {
+                        recurrence.SkipAccountBalanceImpact = true;
+                        recurrence.SkipCommittedCreditImpact = true;
+                        recurrence.SkipCreditLimitValidation = true;
+                        recurrence.UpdatedAt = DateTime.UtcNow;
+
+                        _processLogger.AddWarning("Installment schedule normalized to keep idempotent account impact", new Dictionary<string, object?>
+                        {
+                            ["recurringId"] = recurrence.Id,
+                            ["installmentGroupId"] = recurrence.InstallmentGroupId,
+                            ["installmentNumber"] = recurrence.InstallmentNumber
+                        });
+                    }
+
                     var transactionRequest = new CreateTransactionRequestDto
                     {
                         AccountId = recurrence.AccountId,

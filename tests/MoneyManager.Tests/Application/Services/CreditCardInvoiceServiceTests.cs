@@ -1,4 +1,5 @@
 using NSubstitute;
+using System.Reflection;
 using Xunit;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
@@ -948,6 +949,49 @@ public class CreditCardInvoiceServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _invoiceService.GetOrCreateOpenInvoiceAsync(userId, accountId));
+    }
+
+    [Fact]
+    public void GetEffectiveClosingDay_WithShortMonth_ShouldUseLastDayOfMonth()
+    {
+        // Arrange
+        var method = typeof(CreditCardInvoiceService).GetMethod("GetEffectiveClosingDay", BindingFlags.NonPublic | BindingFlags.Static);
+
+        // Act
+        var februaryDay = method?.Invoke(null, new object[] { 31, 2026, 2 });
+        var aprilDay = method?.Invoke(null, new object[] { 30, 2026, 4 });
+
+        // Assert
+        Assert.Equal(28, februaryDay);
+        Assert.Equal(30, aprilDay);
+    }
+
+    [Fact]
+    public async Task MarkOverdueInvoicesAsync_ShouldUpdateClosedAndPartiallyPaidPastDueOnly()
+    {
+        // Arrange
+        var today = new DateTime(2026, 4, 10);
+        var invoices = new List<CreditCardInvoice>
+        {
+            new() { Id = "i1", UserId = "u1", Status = InvoiceStatus.Closed, DueDate = today.AddDays(-1), IsDeleted = false },
+            new() { Id = "i2", UserId = "u1", Status = InvoiceStatus.PartiallyPaid, DueDate = today.AddDays(-2), IsDeleted = false },
+            new() { Id = "i3", UserId = "u1", Status = InvoiceStatus.Paid, DueDate = today.AddDays(-3), IsDeleted = false },
+            new() { Id = "i4", UserId = "u1", Status = InvoiceStatus.Closed, DueDate = today.AddDays(1), IsDeleted = false },
+            new() { Id = "i5", UserId = "u1", Status = InvoiceStatus.Overdue, DueDate = today.AddDays(-1), IsDeleted = false }
+        };
+
+        _invoiceRepoMock.GetAllAsync().Returns(invoices);
+
+        // Act
+        var changed = await _invoiceService.MarkOverdueInvoicesAsync(today);
+
+        // Assert
+        Assert.Equal(2, changed);
+        Assert.Equal(InvoiceStatus.Overdue, invoices[0].Status);
+        Assert.Equal(InvoiceStatus.Overdue, invoices[1].Status);
+        Assert.Equal(InvoiceStatus.Paid, invoices[2].Status);
+        Assert.Equal(InvoiceStatus.Closed, invoices[3].Status);
+        await _invoiceRepoMock.Received(2).UpdateAsync(Arg.Is<CreditCardInvoice>(i => i.Status == InvoiceStatus.Overdue));
     }
 }
 

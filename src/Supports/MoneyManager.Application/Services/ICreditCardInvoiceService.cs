@@ -48,6 +48,11 @@ public interface ICreditCardInvoiceService
     /// </summary>
     Task ProcessMonthlyInvoiceClosuresAsync();
 
+    /// <summary>
+    /// Marca automaticamente faturas em atraso (Closed/PartiallyPaid com vencimento passado)
+    /// </summary>
+    Task<int> MarkOverdueInvoicesAsync(DateTime? referenceDate = null);
+
     // ==================== PAGAMENTO DE FATURAS ====================
     
     /// <summary>

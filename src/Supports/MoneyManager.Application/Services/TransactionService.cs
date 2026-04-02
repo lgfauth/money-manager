@@ -330,7 +330,7 @@ public class TransactionService : ITransactionService
                 account.InvoiceClosingDay.GetValueOrDefault(1),
                 firstScheduledMonthOffset + (installmentNumber - firstInstallmentNumberToSchedule));
 
-            await _unitOfWork.RecurringTransactions.AddAsync(new RecurringTransaction
+            var recurrence = new RecurringTransaction
             {
                 UserId = userId,
                 AccountId = request.AccountId,
@@ -351,7 +351,10 @@ public class TransactionService : ITransactionService
                 InstallmentNumber = installmentNumber,
                 InstallmentCount = request.InstallmentCount,
                 RemainingOccurrences = 1
-            });
+            };
+
+            EnsureInstallmentScheduleSafeguards(recurrence);
+            await _unitOfWork.RecurringTransactions.AddAsync(recurrence);
         }
 
         await _unitOfWork.SaveChangesAsync();
@@ -727,6 +730,14 @@ public class TransactionService : ITransactionService
         var day = Math.Min(postingDay, DateTime.DaysInMonth(targetMonth.Year, targetMonth.Month));
 
         return new DateTime(targetMonth.Year, targetMonth.Month, day);
+    }
+
+    private static void EnsureInstallmentScheduleSafeguards(RecurringTransaction recurrence)
+    {
+        recurrence.SkipAccountBalanceImpact = true;
+        recurrence.SkipCommittedCreditImpact = true;
+        recurrence.SkipCreditLimitValidation = true;
+        recurrence.IsInstallmentSchedule = true;
     }
 
     private static string BuildInstallmentDescription(string description, int installmentNumber, int installmentCount)
