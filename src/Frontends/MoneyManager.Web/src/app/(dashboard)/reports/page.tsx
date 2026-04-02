@@ -232,15 +232,15 @@ export default function ReportsPage() {
           </div>
 
           {/* Charts */}
-          <div className="grid gap-6 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* Lightweight charts - trends */}
-            <Card className="lg:col-span-2">
+            <Card>
               <CardHeader>
                 <CardTitle className="text-base">Receitas e Despesas (6 meses)</CardTitle>
               </CardHeader>
               <CardContent>
                 {histogramData.length > 0 ? (
-                  <MonthlyHistogramChart data={histogramData} height={300} />
+                  <MonthlyHistogramChart data={histogramData} height={220} />
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-10">
                     Dados insuficientes para o gráfico.
@@ -309,7 +309,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               {categoryLineSeries.length > 0 ? (
-                <CategoryLineChart series={categoryLineSeries} height={300} />
+                <CategoryLineChart series={categoryLineSeries} height={420} />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-10">
                   Sem despesas categorizadas para o período.

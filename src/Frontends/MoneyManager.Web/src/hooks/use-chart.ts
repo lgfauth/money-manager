@@ -20,8 +20,7 @@ const DEFAULT_OPTIONS: DeepPartial<TimeChartOptions> & { attributionLogo?: boole
   },
   rightPriceScale: { borderColor: '#2a2f45' },
   timeScale: { borderColor: '#2a2f45', timeVisible: false },
-  // Keep logo visible to comply with attribution requirements.
-  attributionLogo: true,
+  attributionLogo: false,
 };
 
 interface UseChartParams {

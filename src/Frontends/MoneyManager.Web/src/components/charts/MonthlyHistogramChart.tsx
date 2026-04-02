@@ -16,7 +16,7 @@ interface Props {
 const formatBRL = (value: number) =>
   `R$ ${Math.abs(value).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
-export function MonthlyHistogramChart({ data, height = 180 }: Props) {
+export function MonthlyHistogramChart({ data, height = 220 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chart = useChart({
     containerRef,
@@ -41,6 +41,14 @@ export function MonthlyHistogramChart({ data, height = 180 }: Props) {
 
     const expenseSeries = chart.addSeries(HistogramSeries, {
       color: '#ef4444',
+    });
+
+    chart.priceScale('right').applyOptions({
+      autoScale: true,
+      scaleMargins: {
+        top: 0.08,
+        bottom: 0.08,
+      },
     });
 
     incomeSeries.setData(
