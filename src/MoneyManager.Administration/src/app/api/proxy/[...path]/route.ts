@@ -17,7 +17,8 @@ async function forward(request: Request, params: RouteParams["params"]) {
 
   const { path } = await params;
   const incomingUrl = new URL(request.url);
-  const targetUrl = `${adminApiBaseUrl}/${path.join("/")}${incomingUrl.search}`;
+  const upstreamPath = path.join("/");
+  const targetUrl = `${adminApiBaseUrl}/api/${upstreamPath}${incomingUrl.search}`;
 
   const headers = new Headers();
   const authorization = request.headers.get("authorization");
