@@ -42,7 +42,11 @@ export function BalanceAreaChart({ data, height = 220 }: Props) {
     chart.timeScale().fitContent();
 
     return () => {
-      chart.removeSeries(areaSeries);
+      try {
+        chart.removeSeries(areaSeries);
+      } catch {
+        // Chart may already be disposed during route transitions.
+      }
     };
   }, [chart, data]);
 

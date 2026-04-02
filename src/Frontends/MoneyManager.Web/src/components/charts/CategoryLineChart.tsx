@@ -50,7 +50,11 @@ export function CategoryLineChart({ series, height = 280 }: Props) {
 
     return () => {
       createdSeries.forEach((lineSeries) => {
-        chart.removeSeries(lineSeries);
+        try {
+          chart.removeSeries(lineSeries);
+        } catch {
+          // Chart may already be disposed during route transitions.
+        }
       });
     };
   }, [chart, series]);

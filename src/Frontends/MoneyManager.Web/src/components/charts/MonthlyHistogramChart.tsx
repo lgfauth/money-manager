@@ -60,8 +60,16 @@ export function MonthlyHistogramChart({ data, height = 180 }: Props) {
     chart.timeScale().fitContent();
 
     return () => {
-      chart.removeSeries(incomeSeries);
-      chart.removeSeries(expenseSeries);
+      try {
+        chart.removeSeries(incomeSeries);
+      } catch {
+        // Chart may already be disposed during route transitions.
+      }
+      try {
+        chart.removeSeries(expenseSeries);
+      } catch {
+        // Chart may already be disposed during route transitions.
+      }
     };
   }, [chart, data]);
 

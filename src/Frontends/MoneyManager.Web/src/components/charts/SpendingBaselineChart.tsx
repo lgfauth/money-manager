@@ -47,7 +47,11 @@ export function SpendingBaselineChart({ data, budget, height = 180 }: Props) {
     chart.timeScale().fitContent();
 
     return () => {
-      chart.removeSeries(baselineSeries);
+      try {
+        chart.removeSeries(baselineSeries);
+      } catch {
+        // Chart may already be disposed during route transitions.
+      }
     };
   }, [chart, data, budget]);
 

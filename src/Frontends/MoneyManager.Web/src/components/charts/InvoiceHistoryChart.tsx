@@ -79,8 +79,16 @@ export function InvoiceHistoryChart({ data, height = 240 }: Props) {
     chart.timeScale().fitContent();
 
     return () => {
-      chart.removeSeries(totalSeries);
-      chart.removeSeries(paidSeries);
+      try {
+        chart.removeSeries(totalSeries);
+      } catch {
+        // Chart may already be disposed during route transitions.
+      }
+      try {
+        chart.removeSeries(paidSeries);
+      } catch {
+        // Chart may already be disposed during route transitions.
+      }
     };
   }, [chart, data]);
 
