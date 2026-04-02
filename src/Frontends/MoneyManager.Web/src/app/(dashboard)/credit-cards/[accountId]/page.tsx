@@ -25,6 +25,7 @@ import { CreditLimitGauge } from "@/components/credit-cards/credit-limit-gauge";
 import { InvoiceCard } from "@/components/credit-cards/invoice-card";
 import { InvoiceStatusBadge } from "@/components/credit-cards/invoice-status-badge";
 import { InvoicePaymentModal } from "@/components/accounts/invoice-payment-modal";
+import { InvoiceHistoryChart } from "@/components/charts";
 import { useAccounts } from "@/hooks/use-accounts";
 import {
   useOpenInvoice,
@@ -101,6 +102,15 @@ export default function CreditCardDashboardPage() {
   const invoiceHistory = [...(invoices ?? [])].sort(
     (a, b) => b.referenceMonth.localeCompare(a.referenceMonth)
   );
+
+  const invoiceHistoryChartData = invoiceHistory
+    .slice()
+    .reverse()
+    .map((invoice) => ({
+      time: invoice.dueDate.slice(0, 10),
+      invoiceTotal: invoice.totalAmount,
+      paidAmount: invoice.paidAmount,
+    }));
 
   return (
     <div className="space-y-6">
@@ -191,6 +201,21 @@ export default function CreditCardDashboardPage() {
           </Card>
         )}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Evolução de Faturas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {invoiceHistoryChartData.length > 0 ? (
+            <InvoiceHistoryChart data={invoiceHistoryChartData} height={260} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Sem histórico suficiente para gráfico.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Invoice history table */}
       <Card>

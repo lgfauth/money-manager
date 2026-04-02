@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { format, startOfMonth, subMonths } from "date-fns";
 import {
   DollarSign,
   TrendingDown,
@@ -15,8 +16,9 @@ import { StatCard } from "@/components/shared/stat-card";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DonutChart } from "@/components/charts/pie-chart";
-import { AreaChartComponent } from "@/components/charts/area-chart";
+import { CategoryLineChart, MonthlyHistogramChart } from "@/components/charts";
 import { useReports, getPresetPeriod, getDefaultPeriod } from "@/hooks/use-reports";
+import { useTransactions } from "@/hooks/use-transactions";
 import { PeriodSelector } from "@/components/shared/period-selector";
 
 type Preset = "current" | "previous" | "3m" | "6m" | "year" | "custom";
@@ -28,8 +30,17 @@ function formatCurrency(value: number): string {
 export default function ReportsPage() {
   const [preset, setPreset] = useState<Preset>("current");
   const [period, setPeriod] = useState(getDefaultPeriod);
+  const sixMonthsStart = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
+  const sixMonthsEnd = format(new Date(), "yyyy-MM-dd");
 
   const report = useReports(period);
+  const transactions6m = useTransactions({
+    page: 1,
+    pageSize: 10000,
+    sortBy: "date",
+    startDate: sixMonthsStart,
+    endDate: sixMonthsEnd,
+  });
 
   const handlePreset = (p: string) => {
     const val = p as Preset;
@@ -64,13 +75,79 @@ export default function ReportsPage() {
     [report.movementByAccount]
   );
 
-  const trendSeries = useMemo(
-    () => [
-      { dataKey: "income", name: "Receitas", color: "var(--color-income)" },
-      { dataKey: "expense", name: "Despesas", color: "var(--color-expense)" },
-    ],
+  const histogramData = useMemo(() => {
+    const items = transactions6m.data?.items ?? [];
+    const monthTotals = new Map<string, { income: number; expense: number }>();
+
+    for (const transaction of items) {
+      const monthKey = `${transaction.date.slice(0, 7)}-01`;
+      const current = monthTotals.get(monthKey) ?? { income: 0, expense: 0 };
+
+      if (transaction.type === "Income") {
+        current.income += transaction.amount;
+      } else if (transaction.type === "Expense") {
+        current.expense += transaction.amount;
+      }
+
+      monthTotals.set(monthKey, current);
+    }
+
+    return Array.from(monthTotals.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([time, values]) => ({
+        time,
+        income: values.income,
+        expense: values.expense,
+      }));
+  }, [transactions6m.data?.items]);
+
+  const categoryPalette = useMemo(
+    () => ({
+      "Alimentação": "#3b82f6",
+      "Transporte": "#a855f7",
+      "Lazer": "#f59e0b",
+      Outros: "#22c55e",
+    }),
     []
   );
+
+  const categoryLineSeries = useMemo(() => {
+    const items = transactions6m.data?.items ?? [];
+    const monthKeys = new Set<string>();
+    const categoryMonthTotals = new Map<string, Map<string, number>>();
+
+    for (const transaction of items) {
+      if (transaction.type !== "Expense") {
+        continue;
+      }
+
+      const monthKey = `${transaction.date.slice(0, 7)}-01`;
+      const categoryName = transaction.categoryName || "Outros";
+      monthKeys.add(monthKey);
+
+      const perCategory = categoryMonthTotals.get(categoryName) ?? new Map<string, number>();
+      perCategory.set(monthKey, (perCategory.get(monthKey) ?? 0) + transaction.amount);
+      categoryMonthTotals.set(categoryName, perCategory);
+    }
+
+    const orderedMonths = Array.from(monthKeys).sort((a, b) => a.localeCompare(b));
+    const fallbackColors = ["#3b82f6", "#a855f7", "#f59e0b", "#22c55e", "#ef4444", "#06b6d4"];
+    let colorIndex = 0;
+
+    return Array.from(categoryMonthTotals.entries()).map(([name, monthMap]) => {
+      const color =
+        categoryPalette[name as keyof typeof categoryPalette] ?? fallbackColors[colorIndex++ % fallbackColors.length];
+
+      return {
+        name,
+        color,
+        data: orderedMonths.map((month) => ({
+          time: month,
+          value: monthMap.get(month) ?? 0,
+        })),
+      };
+    });
+  }, [transactions6m.data?.items, categoryPalette]);
 
   if (report.isLoading) {
     return (
@@ -156,20 +233,14 @@ export default function ReportsPage() {
 
           {/* Charts */}
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* Area chart - trends */}
+            {/* Lightweight charts - trends */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle className="text-base">Tendências Mensais</CardTitle>
+                <CardTitle className="text-base">Receitas e Despesas (6 meses)</CardTitle>
               </CardHeader>
               <CardContent>
-                {report.monthlyTrends.length > 0 ? (
-                  <AreaChartComponent
-                    data={report.monthlyTrends}
-                    series={trendSeries}
-                    xAxisKey="month"
-                    height={300}
-                    formatter={formatCurrency}
-                  />
+                {histogramData.length > 0 ? (
+                  <MonthlyHistogramChart data={histogramData} height={300} />
                 ) : (
                   <p className="text-sm text-muted-foreground text-center py-10">
                     Dados insuficientes para o gráfico.
@@ -231,6 +302,21 @@ export default function ReportsPage() {
               </Card>
             </div>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Tendência por Categoria (6 meses)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {categoryLineSeries.length > 0 ? (
+                <CategoryLineChart series={categoryLineSeries} height={300} />
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-10">
+                  Sem despesas categorizadas para o período.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Category breakdown table */}
           {report.expensesByCategory.length > 0 && (
