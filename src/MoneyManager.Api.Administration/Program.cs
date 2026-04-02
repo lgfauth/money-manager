@@ -37,8 +37,8 @@ builder.Services.AddProcessLogger();
 
 var adminIssuer = builder.Configuration["AdminAuth:Issuer"] ?? "MoneyManager.Admin";
 var adminAudience = builder.Configuration["AdminAuth:Audience"] ?? "MoneyManager.Admin.Users";
-var adminSecret = builder.Configuration["AdminAuth:SecretKey"]
-    ?? Environment.GetEnvironmentVariable("ADMIN_AUTH_SECRET")
+var adminSecret = Environment.GetEnvironmentVariable("ADMIN_AUTH_SECRET")
+    ?? builder.Configuration["AdminAuth:SecretKey"]
     ?? "change-this-admin-secret-key-with-at-least-32-characters";
 
 builder.Services

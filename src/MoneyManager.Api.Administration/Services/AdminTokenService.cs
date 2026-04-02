@@ -68,20 +68,20 @@ public sealed class AdminTokenService
 
         var configUsername = _configuration["AdminAuth:Username"];
         var envUsername = Environment.GetEnvironmentVariable("ADMIN_USERNAME");
-        var expectedUsername = _configuration["AdminAuth:Username"]
-            ?? Environment.GetEnvironmentVariable("ADMIN_USERNAME")
+        var expectedUsername = Environment.GetEnvironmentVariable("ADMIN_USERNAME")
+            ?? _configuration["AdminAuth:Username"]
             ?? "admin";
 
         var configPassword = _configuration["AdminAuth:Password"];
         var envPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
-        var expectedPassword = _configuration["AdminAuth:Password"]
-            ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
+        var expectedPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
+            ?? _configuration["AdminAuth:Password"]
             ?? string.Empty;
 
         var configRole = _configuration["AdminAuth:Role"];
         var envRole = Environment.GetEnvironmentVariable("ADMIN_ROLE");
-        var expectedRole = _configuration["AdminAuth:Role"]
-            ?? Environment.GetEnvironmentVariable("ADMIN_ROLE")
+        var expectedRole = Environment.GetEnvironmentVariable("ADMIN_ROLE")
+            ?? _configuration["AdminAuth:Role"]
             ?? AdminRoles.Admin;
 
         _logger.LogInformation(
@@ -127,8 +127,8 @@ public sealed class AdminTokenService
     {
         var issuer = _configuration["AdminAuth:Issuer"] ?? "MoneyManager.Admin";
         var audience = _configuration["AdminAuth:Audience"] ?? "MoneyManager.Admin.Users";
-        var secret = _configuration["AdminAuth:SecretKey"]
-            ?? Environment.GetEnvironmentVariable("ADMIN_AUTH_SECRET")
+        var secret = Environment.GetEnvironmentVariable("ADMIN_AUTH_SECRET")
+            ?? _configuration["AdminAuth:SecretKey"]
             ?? "change-this-admin-secret-key-with-at-least-32-characters";
 
         var expirationMinutesRaw = _configuration["AdminAuth:TokenExpirationMinutes"];
