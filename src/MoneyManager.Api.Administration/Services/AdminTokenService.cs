@@ -10,10 +10,12 @@ namespace MoneyManager.Api.Administration.Services;
 public sealed class AdminTokenService
 {
     private readonly IConfiguration _configuration;
+    private readonly ILogger<AdminTokenService> _logger;
 
-    public AdminTokenService(IConfiguration configuration)
+    public AdminTokenService(IConfiguration configuration, ILogger<AdminTokenService> logger)
     {
         _configuration = configuration;
+        _logger = logger;
     }
 
     public bool ValidateCredentials(string username, string password)
@@ -25,9 +27,26 @@ public sealed class AdminTokenService
     {
         role = AdminRoles.Viewer;
 
+        _logger.LogInformation(
+            "Validating admin credentials. RequestUsername={RequestUsername}, RequestPasswordLength={RequestPasswordLength}",
+            username,
+            password?.Length ?? 0);
+
         var configuredUsers = _configuration.GetSection("AdminAuth:Users").Get<List<AdminUserCredential>>() ?? [];
+        _logger.LogInformation("AdminAuth:Users configured count={UsersCount}", configuredUsers.Count);
+
         if (configuredUsers.Count > 0)
         {
+            var usersDebug = configuredUsers.Select(user => new
+            {
+                Username = user.Username,
+                Role = user.Role,
+                HasPassword = !string.IsNullOrWhiteSpace(user.Password),
+                PasswordLength = user.Password?.Length ?? 0
+            }).ToList();
+
+            _logger.LogInformation("Using AdminAuth:Users credentials source. Users={UsersDebug}", usersDebug);
+
             var matchingUser = configuredUsers.FirstOrDefault(user =>
                 string.Equals(user.Username, username, StringComparison.Ordinal)
                 && string.Equals(user.Password, password, StringComparison.Ordinal)
@@ -35,38 +54,70 @@ public sealed class AdminTokenService
 
             if (matchingUser is null)
             {
+                _logger.LogWarning("No matching user found in AdminAuth:Users for RequestUsername={RequestUsername}", username);
                 return false;
             }
 
             role = matchingUser.Role.ToLowerInvariant();
+            _logger.LogInformation(
+                "Matched user in AdminAuth:Users. Username={Username}, Role={Role}",
+                matchingUser.Username,
+                role);
             return true;
         }
 
+        var configUsername = _configuration["AdminAuth:Username"];
+        var envUsername = Environment.GetEnvironmentVariable("ADMIN_USERNAME");
         var expectedUsername = _configuration["AdminAuth:Username"]
             ?? Environment.GetEnvironmentVariable("ADMIN_USERNAME")
             ?? "admin";
 
+        var configPassword = _configuration["AdminAuth:Password"];
+        var envPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
         var expectedPassword = _configuration["AdminAuth:Password"]
             ?? Environment.GetEnvironmentVariable("ADMIN_PASSWORD")
             ?? string.Empty;
 
+        var configRole = _configuration["AdminAuth:Role"];
+        var envRole = Environment.GetEnvironmentVariable("ADMIN_ROLE");
         var expectedRole = _configuration["AdminAuth:Role"]
             ?? Environment.GetEnvironmentVariable("ADMIN_ROLE")
             ?? AdminRoles.Admin;
 
+        _logger.LogInformation(
+            "Using single-user credentials source. ConfigUsernameSet={ConfigUsernameSet}, EnvUsernameSet={EnvUsernameSet}, EffectiveUsername={EffectiveUsername}, ConfigPasswordSet={ConfigPasswordSet}, EnvPasswordSet={EnvPasswordSet}, EffectivePasswordLength={EffectivePasswordLength}, ConfigRoleSet={ConfigRoleSet}, EnvRoleSet={EnvRoleSet}, EffectiveRole={EffectiveRole}",
+            !string.IsNullOrWhiteSpace(configUsername),
+            !string.IsNullOrWhiteSpace(envUsername),
+            expectedUsername,
+            !string.IsNullOrWhiteSpace(configPassword),
+            !string.IsNullOrWhiteSpace(envPassword),
+            expectedPassword.Length,
+            !string.IsNullOrWhiteSpace(configRole),
+            !string.IsNullOrWhiteSpace(envRole),
+            expectedRole);
+
         if (string.IsNullOrWhiteSpace(expectedPassword))
         {
+            _logger.LogWarning("Expected admin password is empty. Login will always fail.");
             return false;
         }
 
         var valid = string.Equals(username, expectedUsername, StringComparison.Ordinal)
             && string.Equals(password, expectedPassword, StringComparison.Ordinal);
 
+        _logger.LogInformation(
+            "Single-user credential comparison result. UsernameMatched={UsernameMatched}, PasswordMatched={PasswordMatched}, FinalValid={FinalValid}",
+            string.Equals(username, expectedUsername, StringComparison.Ordinal),
+            string.Equals(password, expectedPassword, StringComparison.Ordinal),
+            valid);
+
         if (valid)
         {
             role = AdminRoles.IsValid(expectedRole)
                 ? expectedRole.ToLowerInvariant()
                 : AdminRoles.Admin;
+
+            _logger.LogInformation("Admin role resolved after successful login. Role={Role}", role);
         }
 
         return valid;
@@ -84,6 +135,15 @@ public sealed class AdminTokenService
         var expirationMinutes = int.TryParse(expirationMinutesRaw, out var parsed)
             ? parsed
             : 60;
+
+        _logger.LogInformation(
+            "Generating admin JWT. Username={Username}, Role={Role}, Issuer={Issuer}, Audience={Audience}, SecretLength={SecretLength}, ExpirationMinutes={ExpirationMinutes}",
+            username,
+            role,
+            issuer,
+            audience,
+            secret.Length,
+            expirationMinutes);
 
         var expiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes);
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
