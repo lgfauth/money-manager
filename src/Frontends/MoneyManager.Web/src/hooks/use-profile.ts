@@ -9,13 +9,21 @@ import type {
   UserProfileDto,
   ChangePasswordDto,
   UpdateEmailDto,
+  AcceptTermsDto,
 } from "@/types/profile";
 
-export function useProfile() {
+export function useProfile(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: queryKeys.profile,
     queryFn: () => apiClient.get<UserProfileDto>("/api/profile"),
+    enabled: options?.enabled ?? true,
   });
+}
+
+export function useRefreshProfile() {
+  const qc = useQueryClient();
+
+  return () => qc.invalidateQueries({ queryKey: queryKeys.profile });
 }
 
 export function useUpdateProfile() {
@@ -72,5 +80,19 @@ export function useDeleteAccount() {
       apiClient.post<void>("/api/accountdeletion/delete-account", data),
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Erro ao deletar conta")),
+  });
+}
+
+export function useAcceptTerms() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: AcceptTermsDto) =>
+      apiClient.post<UserProfileDto>("/api/users/accept-terms", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.profile });
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao aceitar os termos")),
   });
 }

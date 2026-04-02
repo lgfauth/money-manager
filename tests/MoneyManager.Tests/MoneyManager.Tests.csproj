@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\APIs\MoneyManager.Api.Operational\MoneyManager.Api.Operational.csproj" />
     <ProjectReference Include="..\..\src\Supports\MoneyManager.Domain\MoneyManager.Domain.csproj" />
     <ProjectReference Include="..\..\src\Supports\MoneyManager.Application\MoneyManager.Application.csproj" />
     <ProjectReference Include="..\..\src\Supports\MoneyManager.Infrastructure\MoneyManager.Infrastructure.csproj" />

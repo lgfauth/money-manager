@@ -20,3 +20,8 @@ public class UpdateEmailRequestDto
     public string NewEmail { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
+
+public class AcceptTermsRequestDto
+{
+    public string TermsVersion { get; set; } = string.Empty;
+}

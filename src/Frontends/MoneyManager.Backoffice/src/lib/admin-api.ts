@@ -71,6 +71,31 @@ async function postJson<TResponse, TBody>(path: string, body: TBody): Promise<TR
   return response.json() as Promise<TResponse>;
 }
 
+async function putJson<TResponse, TBody>(path: string, body: TBody): Promise<TResponse> {
+  const token = getAdminToken();
+  const response = await fetch(`${API_URL}${resolvePath(path)}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (response.status === 401) {
+    clearAdminToken();
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<TResponse>;
+}
+
 export type SystemStatus = {
   apiStatus: string;
   mongoStatus: string;
@@ -309,6 +334,52 @@ export async function getMonthlyAuditReport(year: number, month: number): Promis
 
   return request<AdminMonthlyAuditReport>(`/api/admin/audit/report/monthly?${params.toString()}`);
 }
+
+// ── Legal Documents ──────────────────────────────────────────────────────────
+
+export type LegalDocumentSummary = {
+  slug: string;
+  title: string;
+  version: string;
+  lastUpdatedAt: string;
+  updatedBy: string;
+};
+
+export type LegalDocumentDetail = LegalDocumentSummary & {
+  content: string;
+};
+
+export type UpdateLegalDocumentRequest = {
+  title: string;
+  content: string;
+  version: string;
+};
+
+export type PreviewLegalDocumentRequest = {
+  content: string;
+};
+
+export type PreviewLegalDocumentResponse = {
+  html: string;
+};
+
+export async function getLegalDocuments(): Promise<LegalDocumentSummary[]> {
+  return request<LegalDocumentSummary[]>("/api/admin/documents");
+}
+
+export async function getLegalDocument(slug: string): Promise<LegalDocumentDetail> {
+  return request<LegalDocumentDetail>(`/api/admin/documents/${slug}`);
+}
+
+export async function updateLegalDocument(slug: string, body: UpdateLegalDocumentRequest): Promise<LegalDocumentDetail> {
+  return putJson<LegalDocumentDetail, UpdateLegalDocumentRequest>(`/api/admin/documents/${slug}`, body);
+}
+
+export async function previewLegalDocument(content: string): Promise<PreviewLegalDocumentResponse> {
+  return postJson<PreviewLegalDocumentResponse, PreviewLegalDocumentRequest>("/api/admin/documents/preview", { content });
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
 
 export async function login(username: string, password: string): Promise<{ accessToken: string; expiresAtUtc: string }> {
   const response = await fetch(`${API_URL}${resolvePath("/api/auth/login")}`, {

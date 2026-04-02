@@ -31,6 +31,8 @@ builder.Services.AddSingleton<IProcessLogHistoryReader>(sp => sp.GetRequiredServ
 builder.Services.AddControllers();
 builder.Services.AddSingleton<AdminTokenService>();
 builder.Services.AddSingleton<AdminAuditService>();
+builder.Services.AddSingleton<MoneyManager.Api.Administration.Services.LegalDocumentService>();
+builder.Services.AddSingleton<MoneyManager.Api.Administration.Services.DocumentSeeder>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
 builder.Services.AddProcessLogger();
@@ -181,5 +183,9 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapControllers();
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
+
+// Seed legal documents on startup
+var documentSeeder = app.Services.GetRequiredService<MoneyManager.Api.Administration.Services.DocumentSeeder>();
+await documentSeeder.SeedAsync();
 
 app.Run();

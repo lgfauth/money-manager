@@ -10,6 +10,7 @@ public interface IUserProfileService
     Task<UserProfileResponseDto> UpdateProfileAsync(string userId, UpdateProfileRequestDto request);
     Task<bool> ChangePasswordAsync(string userId, ChangePasswordRequestDto request);
     Task<UserProfileResponseDto> UpdateEmailAsync(string userId, UpdateEmailRequestDto request);
+    Task<UserProfileResponseDto> AcceptTermsAsync(string userId, AcceptTermsRequestDto request);
 }
 
 public class UserProfileService : IUserProfileService
@@ -36,6 +37,9 @@ public class UserProfileService : IUserProfileService
             Phone = user.Phone,
             ProfilePicture = user.ProfilePicture,
             PreferredLanguage = user.PreferredLanguage,
+            TermsAcceptedAt = user.TermsAcceptedAt,
+            TermsVersion = user.TermsVersion,
+            TermsAccepted = user.TermsAcceptedAt.HasValue,
             CreatedAt = user.CreatedAt
         };
     }
@@ -63,6 +67,9 @@ public class UserProfileService : IUserProfileService
             Phone = user.Phone,
             ProfilePicture = user.ProfilePicture,
             PreferredLanguage = user.PreferredLanguage,
+            TermsAcceptedAt = user.TermsAcceptedAt,
+            TermsVersion = user.TermsVersion,
+            TermsAccepted = user.TermsAcceptedAt.HasValue,
             CreatedAt = user.CreatedAt
         };
     }
@@ -121,6 +128,40 @@ public class UserProfileService : IUserProfileService
             Phone = user.Phone,
             ProfilePicture = user.ProfilePicture,
             PreferredLanguage = user.PreferredLanguage,
+            TermsAcceptedAt = user.TermsAcceptedAt,
+            TermsVersion = user.TermsVersion,
+            TermsAccepted = user.TermsAcceptedAt.HasValue,
+            CreatedAt = user.CreatedAt
+        };
+    }
+
+    public async Task<UserProfileResponseDto> AcceptTermsAsync(string userId, AcceptTermsRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.TermsVersion))
+            throw new InvalidOperationException("Terms version is required");
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        if (user == null || user.IsDeleted)
+            throw new KeyNotFoundException("User not found");
+
+        user.TermsAcceptedAt = DateTime.UtcNow;
+        user.TermsVersion = request.TermsVersion.Trim();
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.Users.UpdateAsync(user);
+
+        return new UserProfileResponseDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            FullName = user.FullName,
+            Phone = user.Phone,
+            ProfilePicture = user.ProfilePicture,
+            PreferredLanguage = user.PreferredLanguage,
+            TermsAcceptedAt = user.TermsAcceptedAt,
+            TermsVersion = user.TermsVersion,
+            TermsAccepted = user.TermsAcceptedAt.HasValue,
             CreatedAt = user.CreatedAt
         };
     }

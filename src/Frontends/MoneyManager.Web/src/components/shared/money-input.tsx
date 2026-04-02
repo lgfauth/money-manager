@@ -12,10 +12,13 @@ interface MoneyInputProps {
   className?: string;
   placeholder?: string;
   id?: string;
+  allowNegative?: boolean;
 }
 
-function parseMoneyInput(rawValue: string): number {
-  const sanitizedValue = rawValue.replace(/[^0-9.,]/g, "").trim();
+function parseMoneyInput(rawValue: string, allowNegative = false): number {
+  const trimmedValue = rawValue.trim();
+  const isNegative = allowNegative && trimmedValue.startsWith("-");
+  const sanitizedValue = trimmedValue.replace(/[^0-9.,]/g, "").trim();
 
   if (!sanitizedValue) {
     return 0;
@@ -27,7 +30,11 @@ function parseMoneyInput(rawValue: string): number {
 
   if (decimalIndex === -1) {
     const integerValue = Number(sanitizedValue.replace(/[.,]/g, ""));
-    return Number.isFinite(integerValue) ? integerValue : 0;
+    if (!Number.isFinite(integerValue)) {
+      return 0;
+    }
+
+    return isNegative ? -integerValue : integerValue;
   }
 
   const integerPart = sanitizedValue.slice(0, decimalIndex).replace(/[.,]/g, "");
@@ -35,7 +42,11 @@ function parseMoneyInput(rawValue: string): number {
   const normalizedValue = `${integerPart || "0"}.${decimalPart}`;
   const parsedValue = Number(normalizedValue);
 
-  return Number.isFinite(parsedValue) ? parsedValue : 0;
+  if (!Number.isFinite(parsedValue)) {
+    return 0;
+  }
+
+  return isNegative ? -parsedValue : parsedValue;
 }
 
 export function MoneyInput({
@@ -46,6 +57,7 @@ export function MoneyInput({
   className,
   placeholder,
   id,
+  allowNegative = false,
 }: MoneyInputProps) {
   const [displayValue, setDisplayValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -76,11 +88,14 @@ export function MoneyInput({
 
   const handleBlur = () => {
     setIsFocused(false);
-    onChange(parseMoneyInput(displayValue));
+    onChange(parseMoneyInput(displayValue, allowNegative));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value.replace(/[^0-9.,]/g, "");
+    const inputValue = e.target.value;
+    const hasLeadingMinus = allowNegative && inputValue.trimStart().startsWith("-");
+    const numericPart = inputValue.replace(/[^0-9.,]/g, "");
+    const raw = hasLeadingMinus ? `-${numericPart}` : numericPart;
     setDisplayValue(raw);
   };
 

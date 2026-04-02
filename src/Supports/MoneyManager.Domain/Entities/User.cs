@@ -41,6 +41,14 @@ public class User
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    [BsonElement("termsAcceptedAt")]
+    [BsonIgnoreIfNull]
+    public DateTime? TermsAcceptedAt { get; set; }
+
+    [BsonElement("termsVersion")]
+    [BsonIgnoreIfNull]
+    public string? TermsVersion { get; set; }
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 }

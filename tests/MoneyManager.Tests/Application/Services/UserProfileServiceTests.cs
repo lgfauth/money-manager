@@ -244,4 +244,38 @@ public class UserProfileServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => 
             _userProfileService.UpdateEmailAsync(userId, request));
     }
+
+    [Fact]
+    public async Task AcceptTermsAsync_WithValidRequest_ShouldPersistTermsAcceptance()
+    {
+        // Arrange
+        var userId = "user123";
+        var user = new User
+        {
+            Id = userId,
+            Name = "John Doe",
+            Email = "john@example.com"
+        };
+
+        var request = new AcceptTermsRequestDto
+        {
+            TermsVersion = "2026-03"
+        };
+
+        var userRepo = Substitute.For<IUserRepository>();
+        userRepo.GetByIdAsync(userId).Returns(user);
+        _unitOfWorkMock.Users.Returns(userRepo);
+
+        // Act
+        var result = await _userProfileService.AcceptTermsAsync(userId, request);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.TermsAccepted);
+        Assert.Equal("2026-03", result.TermsVersion);
+        Assert.NotNull(result.TermsAcceptedAt);
+        await userRepo.Received(1).UpdateAsync(Arg.Is<User>(u =>
+            u.TermsAcceptedAt.HasValue &&
+            u.TermsVersion == "2026-03"));
+    }
 }

@@ -9,5 +9,8 @@ public class UserProfileResponseDto
     public string? Phone { get; set; }
     public string? ProfilePicture { get; set; }
     public string? PreferredLanguage { get; set; }
+    public DateTime? TermsAcceptedAt { get; set; }
+    public string? TermsVersion { get; set; }
+    public bool TermsAccepted { get; set; }
     public DateTime CreatedAt { get; set; }
 }

@@ -214,6 +214,7 @@ export function AccountForm({
               value={balanceValue}
               onChange={(v) => setValue("initialBalance", v)}
               currencyCode={selectedCurrency}
+              allowNegative
             />
           </div>
 

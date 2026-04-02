@@ -12,6 +12,7 @@ export default function SecureLayout({ children }: { children: React.ReactNode }
           <Link href="/errors-latency">Erros e Latencia</Link>
           <Link href="/financial-maintenance">Manutencao Financeira</Link>
           <Link href="/audit">Auditoria</Link>
+          <Link href="/documents">Documentos Legais</Link>
         </nav>
       </aside>
       <main className="admin-main">
