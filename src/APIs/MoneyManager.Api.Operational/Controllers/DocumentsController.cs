@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
+using MoneyManager.Infrastructure.Data;
+using MoneyManager.Presentation.Models;
 
 namespace MoneyManager.Presentation.Controllers;
 
@@ -6,58 +9,47 @@ namespace MoneyManager.Presentation.Controllers;
 [Route("api/documents")]
 public class DocumentsController : ControllerBase
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
-    private readonly ILogger<DocumentsController> _logger;
+    private static readonly HashSet<string> AllowedSlugs = ["termos", "privacidade"];
 
-    public DocumentsController(
-        IHttpClientFactory httpClientFactory,
-        IConfiguration configuration,
-        ILogger<DocumentsController> logger)
+    private readonly IMongoCollection<LegalDocument> _collection;
+
+    public DocumentsController(MongoContext mongoContext)
     {
-        _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
-        _logger = logger;
+        _collection = mongoContext.GetCollection<LegalDocument>("legal_documents");
     }
 
     [HttpGet("{slug}")]
     public async Task<IActionResult> Get(string slug)
     {
-        var allowedSlugs = new HashSet<string> { "termos", "privacidade" };
-        if (!allowedSlugs.Contains(slug))
+        if (!AllowedSlugs.Contains(slug))
             return NotFound(new { message = $"Documento '{slug}' nao encontrado" });
 
-        var backofficeBaseUrl = _configuration["BackofficeBaseUrl"]
-            ?? Environment.GetEnvironmentVariable("BACKOFFICE_BASE_URL");
+        var doc = await _collection.Find(d => d.Slug == slug).FirstOrDefaultAsync()
+                  ?? CreatePlaceholder(slug);
 
-        if (string.IsNullOrWhiteSpace(backofficeBaseUrl))
+        Response.Headers["Cache-Control"] = "public, max-age=300";
+
+        return Ok(new
         {
-            _logger.LogWarning("BackofficeBaseUrl is not configured; cannot proxy legal document '{Slug}'", slug);
-            return StatusCode(503, new { message = "Documento temporariamente indisponivel" });
-        }
+            doc.Slug,
+            doc.Title,
+            doc.Content,
+            doc.Version,
+            doc.LastUpdatedAt
+        });
+    }
 
-        try
+    private static LegalDocument CreatePlaceholder(string slug)
+    {
+        var title = slug == "termos" ? "Termos de Uso" : "Politica de Privacidade";
+        return new LegalDocument
         {
-            var httpClient = _httpClientFactory.CreateClient("backoffice");
-            var response = await httpClient.GetAsync($"api/documents/{slug}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning(
-                    "Backoffice returned {Status} for document '{Slug}'",
-                    response.StatusCode, slug);
-                return StatusCode(503, new { message = "Documento temporariamente indisponivel" });
-            }
-
-            Response.Headers["Cache-Control"] = "public, max-age=300";
-
-            var content = await response.Content.ReadAsStringAsync();
-            return Content(content, "application/json");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error proxying legal document '{Slug}' from backoffice", slug);
-            return StatusCode(503, new { message = "Documento temporariamente indisponivel" });
-        }
+            Slug = slug,
+            Title = title,
+            Content = $"# {title}\n\n[Conteudo a ser preenchido pelo administrador]",
+            Version = "1.0",
+            LastUpdatedAt = DateTime.UtcNow,
+            UpdatedBy = "system"
+        };
     }
 }

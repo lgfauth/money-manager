@@ -1,6 +1,6 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using MongoDB.Driver;
 using MoneyManager.Api.Administration.Models;
+using MoneyManager.Infrastructure.Data;
 
 namespace MoneyManager.Api.Administration.Services;
 
@@ -8,21 +8,12 @@ public sealed class LegalDocumentService
 {
     private static readonly HashSet<string> AllowedSlugs = ["termos", "privacidade"];
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    private readonly string _basePath;
+    private readonly IMongoCollection<LegalDocument> _collection;
     private readonly ILogger<LegalDocumentService> _logger;
 
-    public LegalDocumentService(IConfiguration configuration, ILogger<LegalDocumentService> logger)
+    public LegalDocumentService(MongoContext mongoContext, ILogger<LegalDocumentService> logger)
     {
-        _basePath = configuration["DocumentsPath"]
-            ?? Environment.GetEnvironmentVariable("DOCUMENTS_PATH")
-            ?? Path.Combine(Directory.GetCurrentDirectory(), "data", "documents");
-
+        _collection = mongoContext.GetCollection<LegalDocument>("legal_documents");
         _logger = logger;
     }
 
@@ -30,38 +21,28 @@ public sealed class LegalDocumentService
 
     public async Task<LegalDocument> GetAsync(string slug)
     {
-        var path = FilePath(slug);
-
-        if (!File.Exists(path))
-        {
-            return CreatePlaceholder(slug);
-        }
-
         try
         {
-            var json = await File.ReadAllTextAsync(path);
-            return JsonSerializer.Deserialize<LegalDocument>(json, JsonOptions)
-                   ?? CreatePlaceholder(slug);
+            var doc = await _collection.Find(d => d.Slug == slug).FirstOrDefaultAsync();
+            return doc ?? CreatePlaceholder(slug);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to read legal document '{Slug}' from {Path}", slug, path);
+            _logger.LogError(ex, "Failed to read legal document '{Slug}' from MongoDB", slug);
             return CreatePlaceholder(slug);
         }
     }
 
     public async Task SaveAsync(LegalDocument document)
     {
-        Directory.CreateDirectory(_basePath);
+        var filter = Builders<LegalDocument>.Filter.Eq(d => d.Slug, document.Slug);
+        var options = new ReplaceOptions { IsUpsert = true };
 
-        var path = FilePath(document.Slug);
-        var json = JsonSerializer.Serialize(document, JsonOptions);
-
-        await File.WriteAllTextAsync(path, json);
+        await _collection.ReplaceOneAsync(filter, document, options);
 
         _logger.LogInformation(
-            "Legal document '{Slug}' v{Version} saved at {Path} by {UpdatedBy}",
-            document.Slug, document.Version, path, document.UpdatedBy);
+            "Legal document '{Slug}' v{Version} saved to MongoDB by {UpdatedBy}",
+            document.Slug, document.Version, document.UpdatedBy);
     }
 
     public async Task<IReadOnlyList<LegalDocument>> ListAllAsync()
@@ -77,9 +58,6 @@ public sealed class LegalDocumentService
     }
 
     // -------------------------------------------------------------------------
-
-    private string FilePath(string slug) =>
-        Path.Combine(_basePath, $"{slug}.json");
 
     private static LegalDocument CreatePlaceholder(string slug)
     {

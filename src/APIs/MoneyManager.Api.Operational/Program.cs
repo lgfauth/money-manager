@@ -72,18 +72,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Register HttpClient for backoffice service communication
-var backofficeBaseUrl = builder.Configuration["BackofficeBaseUrl"]
-    ?? Environment.GetEnvironmentVariable("BACKOFFICE_BASE_URL")
-    ?? string.Empty;
-
-builder.Services.AddHttpClient("backoffice", client =>
-{
-    if (!string.IsNullOrWhiteSpace(backofficeBaseUrl))
-        client.BaseAddress = new Uri(backofficeBaseUrl.TrimEnd('/') + "/");
-    client.Timeout = TimeSpan.FromSeconds(5);
-});
-
 // Add controllers
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

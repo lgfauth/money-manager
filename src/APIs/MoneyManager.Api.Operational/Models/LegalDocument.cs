@@ -1,6 +1,6 @@
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace MoneyManager.Api.Administration.Models;
+namespace MoneyManager.Presentation.Models;
 
 public sealed class LegalDocument
 {
