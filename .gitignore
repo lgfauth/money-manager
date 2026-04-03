@@ -116,3 +116,6 @@ appsettings.Local.json
 **/appsettings.*.json
 !**/appsettings.json
 !**/appsettings.Production.json
+
+# context-mem
+.context-mem/
