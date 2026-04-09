@@ -5,10 +5,18 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertCircle, ArrowLeft, CreditCard, DollarSign, Receipt, Wallet } from "lucide-react";
+import { AlertCircle, ArrowLeft, CreditCard, DollarSign, Lock, Receipt, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { StatCard } from "@/components/shared/stat-card";
 import {
   Table,
@@ -31,6 +39,7 @@ import {
   useOpenInvoice,
   useAccountInvoices,
   useOverdueInvoices,
+  useCloseInvoice,
 } from "@/hooks/use-invoices";
 import { AccountType } from "@/types/account";
 import { InvoiceStatus } from "@/types/invoice";
@@ -43,6 +52,7 @@ export default function CreditCardDashboardPage() {
   const { accountId } = useParams<{ accountId: string }>();
   const router = useRouter();
   const [payModalOpen, setPayModalOpen] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
 
   const { data: accounts, isLoading: loadingAccounts } = useAccounts();
   const account = accounts?.find((a) => a.id === accountId);
@@ -51,6 +61,8 @@ export default function CreditCardDashboardPage() {
   const { data: invoices, isLoading: loadingInvoices } =
     useAccountInvoices(accountId);
   const { data: overdueInvoices } = useOverdueInvoices();
+
+  const closeMutation = useCloseInvoice();
 
   const isLoading = loadingAccounts || loadingInvoices;
 
@@ -97,6 +109,11 @@ export default function CreditCardDashboardPage() {
         inv.status === InvoiceStatus.Closed ||
         inv.status === InvoiceStatus.PartiallyPaid
     );
+
+  const canManualCloseOpen =
+    !!openInvoice &&
+    openInvoice.status === InvoiceStatus.Open &&
+    new Date() >= new Date(openInvoice.periodEnd);
 
   // History: all invoices sorted by referenceMonth desc
   const invoiceHistory = [...(invoices ?? [])].sort(
@@ -160,6 +177,62 @@ export default function CreditCardDashboardPage() {
           A fatura atual mostra apenas as compras do período em aberto. O débito do cartão representa a dívida contabilizada do cartão, enquanto o limite comprometido inclui a fatura atual e parcelas futuras já reservadas. Neste momento, {fmt(futureReservedAmount, account.currency)} do limite estão reservados fora da fatura atual e {fmt(currentInvoiceRemaining, account.currency)} permanecem em aberto na fatura corrente.
         </AlertDescription>
       </Alert>
+
+      {canManualCloseOpen && (
+        <Alert className="border-yellow-500/50 bg-yellow-500/5">
+          <Lock className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-700 dark:text-yellow-400">
+            Fatura não fechada automaticamente
+          </AlertTitle>
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              A data de fechamento desta fatura já passou e o fechamento automático não ocorreu.
+              Feche manualmente para iniciar um novo período.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 border-yellow-500 text-yellow-700 hover:bg-yellow-500/10 dark:text-yellow-400"
+              onClick={() => setCloseConfirmOpen(true)}
+              disabled={closeMutation.isPending}
+            >
+              <Lock className="mr-2 h-4 w-4" />
+              {closeMutation.isPending ? "Fechando..." : "Fechar fatura manualmente e abrir novo período de fatura"}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Close invoice confirmation dialog */}
+      {openInvoice && (
+        <Dialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Fechar Fatura Manualmente</DialogTitle>
+              <DialogDescription>
+                A fatura de <strong>{account.name}</strong> será fechada agora.
+                Um novo período de fatura será aberto automaticamente.
+                Novas transações serão lançadas na próxima fatura.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCloseConfirmOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() =>
+                  closeMutation.mutate(openInvoice.id, {
+                    onSuccess: () => setCloseConfirmOpen(false),
+                  })
+                }
+                disabled={closeMutation.isPending}
+              >
+                {closeMutation.isPending ? "Fechando..." : "Confirmar Fechamento"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Top section: gauge + invoice cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

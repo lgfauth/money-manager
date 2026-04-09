@@ -44,9 +44,10 @@ public interface ICreditCardInvoiceService
     Task<CreditCardInvoiceResponseDto> CloseInvoiceAsync(string userId, string invoiceId);
 
     /// <summary>
-    /// Processa fechamento automático de faturas (chamado pelo Worker)
+    /// Processa fechamento automático de faturas (chamado pelo Worker).
+    /// <paramref name="referenceDate"/> deve estar no fuso horário local configurado para o worker.
     /// </summary>
-    Task ProcessMonthlyInvoiceClosuresAsync();
+    Task ProcessMonthlyInvoiceClosuresAsync(DateTime referenceDate);
 
     /// <summary>
     /// Marca automaticamente faturas em atraso (Closed/PartiallyPaid com vencimento passado)

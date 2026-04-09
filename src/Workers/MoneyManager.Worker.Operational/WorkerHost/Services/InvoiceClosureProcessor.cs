@@ -7,13 +7,13 @@ internal sealed class InvoiceClosureProcessor(
     IProcessLogger processLogger,
     ICreditCardInvoiceService invoiceService)
 {
-    public async Task ProcessAsync(CancellationToken cancellationToken)
+    public async Task ProcessAsync(DateTime referenceDateLocal, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         processLogger.AddStep("Iniciando fechamento de faturas");
 
-        await invoiceService.ProcessMonthlyInvoiceClosuresAsync();
+        await invoiceService.ProcessMonthlyInvoiceClosuresAsync(referenceDateLocal);
 
         processLogger.AddStep("Fechamento de faturas processado com sucesso");
 

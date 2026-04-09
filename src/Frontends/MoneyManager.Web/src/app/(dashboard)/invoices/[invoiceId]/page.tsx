@@ -13,6 +13,7 @@ import {
   DollarSign,
   Receipt,
   CheckCircle,
+  Lock,
   Wallet,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -54,6 +55,7 @@ import {
   useInvoiceSummary,
   useInvoiceTransactions,
   usePayInvoiceDirect,
+  useCloseInvoice,
 } from "@/hooks/use-invoices";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
@@ -68,6 +70,7 @@ export default function InvoiceDetailsPage() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const router = useRouter();
   const [payOpen, setPayOpen] = useState(false);
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [payFromAccountId, setPayFromAccountId] = useState("");
   const [paymentAmount, setPaymentAmount] = useState(0);
 
@@ -76,6 +79,7 @@ export default function InvoiceDetailsPage() {
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
   const payMutation = usePayInvoiceDirect();
+  const closeMutation = useCloseInvoice();
 
   const isLoading = loadingSummary || loadingTx;
   const invoice = summary?.invoice;
@@ -142,6 +146,10 @@ export default function InvoiceDetailsPage() {
     invoice.status !== InvoiceStatus.Open &&
     invoice.remainingAmount > 0;
 
+  const canManualClose =
+    invoice.status === InvoiceStatus.Open &&
+    new Date() >= new Date(invoice.periodEnd);
+
   const cardDebt = account ? Math.abs(account.balance) : invoice.remainingAmount;
   const committedCredit = account?.committedCredit ?? cardDebt;
   const availableCredit =
@@ -185,6 +193,16 @@ export default function InvoiceDetailsPage() {
             }}
           >
             Pagar Fatura
+          </Button>
+        )}
+        {canManualClose && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setCloseConfirmOpen(true)}
+          >
+            <Lock className="mr-2 h-4 w-4" />
+            Fechar fatura manualmente e abrir novo período de fatura
           </Button>
         )}
       </PageHeader>
@@ -380,6 +398,36 @@ export default function InvoiceDetailsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Close invoice confirmation dialog */}
+      <Dialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fechar Fatura Manualmente</DialogTitle>
+            <DialogDescription>
+              A fatura de <strong>{invoice.accountName}</strong> —{" "}
+              {format(new Date(invoice.referenceMonth + "-01"), "MMMM yyyy", { locale: ptBR })} será fechada agora.
+              Um novo período de fatura será aberto automaticamente.
+              Novas transações serão lançadas na próxima fatura.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() =>
+                closeMutation.mutate(invoiceId, {
+                  onSuccess: () => setCloseConfirmOpen(false),
+                })
+              }
+              disabled={closeMutation.isPending}
+            >
+              {closeMutation.isPending ? "Fechando..." : "Confirmar Fechamento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Payment dialog */}
       <Dialog open={payOpen} onOpenChange={setPayOpen}>

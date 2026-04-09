@@ -48,7 +48,8 @@ public class BudgetService : IBudgetService
         await UpdateSpentAmountsAsync(budget);
         await _unitOfWork.SaveChangesAsync();
 
-        return MapToDto(budget);
+        var categories = (await _unitOfWork.Categories.GetAllAsync()).ToDictionary(c => c.Id);
+        return MapToDto(budget, categories);
     }
 
     public async Task<BudgetResponseDto> GetByMonthAsync(string userId, string month)
@@ -60,7 +61,8 @@ public class BudgetService : IBudgetService
             throw new KeyNotFoundException("Budget not found");
 
         await UpdateSpentAmountsAsync(budget);
-        return MapToDto(budget);
+        var categories = (await _unitOfWork.Categories.GetAllAsync()).ToDictionary(c => c.Id);
+        return MapToDto(budget, categories);
     }
 
     public async Task<IEnumerable<BudgetResponseDto>> GetAllAsync(string userId)
@@ -73,7 +75,8 @@ public class BudgetService : IBudgetService
             await UpdateSpentAmountsAsync(budget);
         }
 
-        return userBudgets.Select(MapToDto);
+        var categories = (await _unitOfWork.Categories.GetAllAsync()).ToDictionary(c => c.Id);
+        return userBudgets.Select(b => MapToDto(b, categories));
     }
 
     public async Task DeleteAsync(string userId, string id)
@@ -108,17 +111,23 @@ public class BudgetService : IBudgetService
         }
     }
 
-    private static BudgetResponseDto MapToDto(Budget budget)
+    private static BudgetResponseDto MapToDto(Budget budget, Dictionary<string, Domain.Entities.Category> categories)
     {
         return new BudgetResponseDto
         {
             Id = budget.Id,
             Month = budget.Month,
-            Items = budget.Items.Select(i => new BudgetItemResponseDto
+            Items = budget.Items.Select(i =>
             {
-                CategoryId = i.CategoryId,
-                LimitAmount = i.LimitAmount,
-                SpentAmount = i.SpentAmount
+                categories.TryGetValue(i.CategoryId, out var cat);
+                return new BudgetItemResponseDto
+                {
+                    CategoryId = i.CategoryId,
+                    CategoryName = cat?.Name ?? i.CategoryId,
+                    CategoryColor = cat?.Color ?? "#64748b",
+                    LimitAmount = i.LimitAmount,
+                    SpentAmount = i.SpentAmount
+                };
             }).ToList(),
             CreatedAt = budget.CreatedAt
         };

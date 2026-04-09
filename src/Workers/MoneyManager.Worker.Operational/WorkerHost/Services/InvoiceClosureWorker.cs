@@ -58,7 +58,10 @@ internal sealed class InvoiceClosureWorker(
                         }
                         else
                         {
-                            var runNowResult = await RunOnceAsync(timeProvider.GetUtcNow(), stoppingToken, "run-now");
+                            var runNowUtc = timeProvider.GetUtcNow();
+                            var runNowTz = ResolveTimeZone(effectiveTimeZoneId);
+                            var runNowLocal = TimeZoneInfo.ConvertTime(runNowUtc, runNowTz);
+                            var runNowResult = await RunOnceAsync(runNowUtc, runNowLocal.DateTime, stoppingToken, "run-now");
                             await commandQueue.CompleteAsync(claimedCommand.CommandId, runNowResult.Success, runNowResult.ErrorMessage);
                         }
                     }
@@ -79,7 +82,7 @@ internal sealed class InvoiceClosureWorker(
 
                 if (nowUtc >= nextRunUtc && !AlreadyRanForSlot(nextRunUtc))
                 {
-                    await RunOnceAsync(nowUtc, stoppingToken, "schedule");
+                    await RunOnceAsync(nowUtc, nowLocal.DateTime, stoppingToken, "schedule");
                     _lastRunAt = nextRunUtc;
                 }
             }
@@ -99,7 +102,7 @@ internal sealed class InvoiceClosureWorker(
         logger.LogInformation("InvoiceClosureWorker finalizado.");
     }
 
-    private async Task<(bool Success, string? ErrorMessage)> RunOnceAsync(DateTimeOffset runStartedAtUtc, CancellationToken stoppingToken, string triggerType)
+    private async Task<(bool Success, string? ErrorMessage)> RunOnceAsync(DateTimeOffset runStartedAtUtc, DateTime referenceDateLocal, CancellationToken stoppingToken, string triggerType)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var processLogger = scope.ServiceProvider.GetRequiredService<IProcessLogger>();
@@ -110,7 +113,8 @@ internal sealed class InvoiceClosureWorker(
             ["source"] = "Worker",
             ["worker"] = nameof(InvoiceClosureWorker),
             ["triggerType"] = triggerType,
-            ["triggeredAt"] = runStartedAtUtc.ToString("O")
+            ["triggeredAt"] = runStartedAtUtc.ToString("O"),
+            ["referenceDateLocal"] = referenceDateLocal.ToString("yyyy-MM-dd")
         });
 
         try
@@ -118,7 +122,7 @@ internal sealed class InvoiceClosureWorker(
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
             timeoutCts.CancelAfter(TimeSpan.FromMinutes(_options.ExecutionTimeoutMinutes));
 
-            await processor.ProcessAsync(timeoutCts.Token);
+            await processor.ProcessAsync(referenceDateLocal, timeoutCts.Token);
             processLogger.Finish(success: true);
             return (true, null);
         }

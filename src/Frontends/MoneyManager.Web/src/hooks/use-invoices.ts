@@ -115,6 +115,22 @@ export function usePayInvoiceDirect() {
   });
 }
 
+export function useCloseInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (invoiceId: string) =>
+      apiClient.post<void>(`/api/credit-card-invoices/${invoiceId}/close`, {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.accounts });
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Fatura fechada com sucesso. Novo período iniciado.");
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao fechar fatura")),
+  });
+}
+
 export function useReconcileCreditCards() {
   const qc = useQueryClient();
 

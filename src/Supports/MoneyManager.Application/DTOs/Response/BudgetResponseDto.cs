@@ -11,6 +11,8 @@ public class BudgetResponseDto
 public class BudgetItemResponseDto
 {
     public string CategoryId { get; set; } = string.Empty;
+    public string CategoryName { get; set; } = string.Empty;
+    public string CategoryColor { get; set; } = "#64748b";
     public decimal LimitAmount { get; set; }
     public decimal SpentAmount { get; set; }
 }

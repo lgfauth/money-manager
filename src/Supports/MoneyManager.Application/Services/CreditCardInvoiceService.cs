@@ -190,9 +190,9 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         return await MapToDtoAsync(invoice);
     }
 
-    public async Task ProcessMonthlyInvoiceClosuresAsync()
+    public async Task ProcessMonthlyInvoiceClosuresAsync(DateTime referenceDate)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = referenceDate.Date;
         _processLogger.AddStep("Processing monthly invoice closures", new Dictionary<string, object?> { ["date"] = today.ToString("O") });
 
         // Buscar todos os cartões de crédito
