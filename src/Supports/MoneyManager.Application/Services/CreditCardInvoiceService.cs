@@ -177,9 +177,11 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         var account = await _unitOfWork.Accounts.GetByIdAsync(invoice.AccountId);
         if (account != null)
         {
+            // IMPORTANTE: atualizar LastInvoiceClosedAt ANTES de criar a nova fatura
+            // para que periodStart seja calculado corretamente como PeriodEnd + 1 dia.
+            account.LastInvoiceClosedAt = invoice.PeriodEnd.Date;
             var newInvoice = await CreateNewOpenInvoiceAsync(account);
             account.CurrentOpenInvoiceId = newInvoice.Id;
-            account.LastInvoiceClosedAt = invoice.PeriodEnd.Date;
             await _unitOfWork.Accounts.UpdateAsync(account);
         }
 
@@ -250,12 +252,15 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
                 openInvoice.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(openInvoice);
 
+                // IMPORTANTE: atualizar LastInvoiceClosedAt ANTES de criar a nova fatura
+                // para que periodStart seja calculado corretamente como PeriodEnd + 1 dia.
+                card.LastInvoiceClosedAt = openInvoice.PeriodEnd.Date;
+
                 // Criar nova fatura aberta
                 var newInvoice = await CreateNewOpenInvoiceAsync(card);
 
                 // Atualizar cartão
                 card.CurrentOpenInvoiceId = newInvoice.Id;
-                card.LastInvoiceClosedAt = openInvoice.PeriodEnd.Date;
                 await _unitOfWork.Accounts.UpdateAsync(card);
 
                 closedCount++;
@@ -592,10 +597,13 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
 
     private async Task<CreditCardInvoice> CreateNewOpenInvoiceAsync(Account account)
     {
-        var today = DateTime.Today;
-        var nextClosing = CalculateNextClosingDate(today, account);
+        // periodStart = dia seguinte ao último fechamento, ou hoje se nunca fechou
+        var periodStart = account.LastInvoiceClosedAt?.Date.AddDays(1) ?? DateTime.Today;
 
-        var periodStart = account.LastInvoiceClosedAt?.Date.AddDays(1) ?? today;
+        // Calcular próximo fechamento estritamente após periodStart,
+        // garantindo que a nova fatura sempre cobre pelo menos um mês completo.
+        var nextClosing = CalculateNextClosingDateAfter(periodStart, account);
+
         var dueDate = nextClosing.AddDays(account.InvoiceDueDayOffset);
 
         var invoice = new CreditCardInvoice
@@ -882,6 +890,33 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         }
 
         var nextMonth = currentDate.AddMonths(1);
+        return new DateTime(
+            nextMonth.Year,
+            nextMonth.Month,
+            Math.Min(closingDay, DateTime.DaysInMonth(nextMonth.Year, nextMonth.Month)));
+    }
+
+    /// <summary>
+    /// Calcula a próxima data de fechamento ESTRITAMENTE após <paramref name="periodStart"/>.
+    /// Usada ao criar nova fatura aberta após um fechamento, garantindo que o PeriodEnd
+    /// seja sempre no mês seguinte ao início do período.
+    /// </summary>
+    private static DateTime CalculateNextClosingDateAfter(DateTime periodStart, Account account)
+    {
+        var closingDay = account.InvoiceClosingDay ?? 1;
+
+        var candidateThisMonth = new DateTime(
+            periodStart.Year,
+            periodStart.Month,
+            Math.Min(closingDay, DateTime.DaysInMonth(periodStart.Year, periodStart.Month)));
+
+        // Se o candidato deste mês é estritamente posterior ao início do período, usa ele.
+        // Caso contrário (periodStart >= candidato, ex: periodStart = dia 9 e closingDay = 9)
+        // avança para o mês seguinte.
+        if (candidateThisMonth > periodStart)
+            return candidateThisMonth;
+
+        var nextMonth = periodStart.AddMonths(1);
         return new DateTime(
             nextMonth.Year,
             nextMonth.Month,
