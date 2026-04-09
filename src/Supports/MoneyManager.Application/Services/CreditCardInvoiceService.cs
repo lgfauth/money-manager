@@ -429,6 +429,25 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         var referenceMonth = targetClosingDate.ToString("yyyy-MM");
         var invoice = await _unitOfWork.CreditCardInvoices.GetByReferenceMonthAsync(accountId, referenceMonth);
 
+        // Se a fatura encontrada já foi fechada/paga, a transação deve ir para a fatura aberta.
+        // Isso ocorre quando o fechamento manual acontece no mesmo dia do closing day: a fatura "deste mês"
+        // já está Closed e a nova fatura aberta pertence ao próximo período.
+        if (invoice != null && invoice.Status != InvoiceStatus.Open)
+        {
+            var openInvoice = await _unitOfWork.CreditCardInvoices.GetOpenInvoiceByAccountIdAsync(accountId);
+            if (openInvoice != null)
+            {
+                _processLogger.AddStep("Invoice for referenceMonth is not Open, routing to current open invoice", new Dictionary<string, object?>
+                {
+                    ["accountId"] = accountId,
+                    ["referenceMonth"] = referenceMonth,
+                    ["invoiceStatus"] = invoice.Status.ToString(),
+                    ["openInvoiceId"] = openInvoice.Id
+                });
+                return openInvoice;
+            }
+        }
+
         if (invoice != null)
             return invoice;
 
