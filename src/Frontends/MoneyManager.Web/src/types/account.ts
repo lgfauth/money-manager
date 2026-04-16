@@ -2,6 +2,7 @@ export enum AccountType {
   Checking = "Checking",
   Savings = "Savings",
   Cash = "Cash",
+  CreditCard = "CreditCard",
 }
 
 export interface AccountRequestDto {
