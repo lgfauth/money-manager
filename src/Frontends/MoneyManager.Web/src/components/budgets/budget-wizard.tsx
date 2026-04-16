@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCategories } from "@/hooks/use-categories";
 import { useCreateBudget, useUpdateBudget } from "@/hooks/use-budgets";
@@ -36,8 +36,10 @@ export function BudgetWizard({
   const createBudget = useCreateBudget();
   const updateBudget = useUpdateBudget();
 
-  const expenseCategories =
-    categories?.filter((c) => c.type === "Expense") ?? [];
+  const expenseCategories = useMemo(
+    () => categories?.filter((c) => c.type === "Expense") ?? [],
+    [categories]
+  );
 
   const [step, setStep] = useState(0);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
