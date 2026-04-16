@@ -7,7 +7,6 @@ import { useAccounts } from "@/hooks/use-accounts";
 import { useBudget } from "@/hooks/use-budgets";
 import type { TransactionResponseDto, PaginatedResponse } from "@/types/transaction";
 import type { AccountResponseDto } from "@/types/account";
-import { AccountType } from "@/types/account";
 import { format } from "date-fns";
 
 export interface DashboardData {
@@ -17,7 +16,6 @@ export interface DashboardData {
   monthlyExpense: number;
   netBalance: number;
   totalAssets: number;
-  creditCards: AccountResponseDto[];
 }
 
 export function useDashboard() {
@@ -69,16 +67,10 @@ export function useDashboard() {
     .reduce((s, t) => s + t.amount, 0);
 
   const netBalance = accountList
-    .filter((a) => a.type !== AccountType.CreditCard)
     .reduce((s, a) => s + a.balance, 0);
 
   const totalAssets = accountList
-    .filter((a) => a.type !== AccountType.CreditCard)
     .reduce((s, a) => s + a.balance, 0);
-
-  const creditCards = accountList.filter(
-    (a) => a.type === AccountType.CreditCard
-  );
 
   // Group expenses by category for donut chart
   const expensesByCategory = monthTx
@@ -114,7 +106,6 @@ export function useDashboard() {
     monthlyExpense,
     netBalance,
     totalAssets,
-    creditCards,
     budget: budget.data,
     expensesByCategory: Object.entries(expensesByCategory).map(
       ([id, { name, amount, color }]) => ({ id, name, amount, color })

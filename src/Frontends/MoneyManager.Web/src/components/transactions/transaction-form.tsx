@@ -8,11 +8,9 @@ import {
   TransactionType,
   type TransactionResponseDto,
 } from "@/types/transaction";
-import { AccountType } from "@/types/account";
 import {
   useCreateTransaction,
   useUpdateTransaction,
-  useCreateInstallment,
 } from "@/hooks/use-transactions";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
@@ -60,13 +58,8 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
-  const createInstallment = useCreateInstallment();
   const { data: accounts } = useAccounts();
   const { data: categories } = useCategories();
-
-  const [isInstallment, setIsInstallment] = useState(false);
-  const [installmentCount, setInstallmentCount] = useState(2);
-  const [firstInCurrentInvoice, setFirstInCurrentInvoice] = useState(true);
 
   const isEditing = !!editingTransaction;
   const saveAndAddRef = useRef(false);
@@ -95,19 +88,14 @@ export function TransactionForm({
   const selectedAccountId = watch("accountId");
   const amountValue = watch("amount");
 
-  const selectedAccount = accounts?.find((a) => a.id === selectedAccountId);
-  const isCreditCardAccount = selectedAccount?.type === AccountType.CreditCard;
   const mutationError = isEditing
     ? updateTransaction.error
-    : isInstallment && isCreditCardAccount
-      ? createInstallment.error
-      : createTransaction.error;
+    : createTransaction.error;
   const resetMutationsRef = useRef(() => {});
 
   resetMutationsRef.current = () => {
     createTransaction.reset();
     updateTransaction.reset();
-    createInstallment.reset();
   };
 
   const filteredCategories = categories?.filter((cat) => {
@@ -130,7 +118,6 @@ export function TransactionForm({
         categoryId: editingTransaction.categoryId,
         notes: editingTransaction.notes ?? "",
       });
-      setIsInstallment(false);
     } else {
       reset({
         description: "",
@@ -141,8 +128,6 @@ export function TransactionForm({
         categoryId: "",
         notes: "",
       });
-      setIsInstallment(false);
-      setInstallmentCount(2);
     }
   }, [open, editingTransaction, defaultType, reset]);
 
@@ -166,23 +151,7 @@ export function TransactionForm({
       }
     };
 
-    if (isInstallment && isCreditCardAccount && !isEditing) {
-      createInstallment.mutate(
-        {
-          description: data.description,
-          totalAmount: data.amount,
-          installmentCount,
-          firstInstallmentInCurrentInvoice: firstInCurrentInvoice,
-          date: data.date,
-          type: data.type,
-          accountId: data.accountId,
-          categoryId: data.categoryId,
-          notes: data.notes,
-          clientRequestId: crypto.randomUUID(),
-        },
-        { onSuccess }
-      );
-    } else if (isEditing) {
+    if (isEditing) {
       updateTransaction.mutate(
         { id: editingTransaction!.id, data },
         { onSuccess }
@@ -197,8 +166,7 @@ export function TransactionForm({
 
   const isPending =
     createTransaction.isPending ||
-    updateTransaction.isPending ||
-    createInstallment.isPending;
+    updateTransaction.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -354,68 +322,6 @@ export function TransactionForm({
             />
           </div>
 
-          {/* Installment section — only for CC accounts on new transactions */}
-          {isCreditCardAccount && !isEditing && (
-            <div className="space-y-3 rounded-lg border p-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="installment"
-                  checked={isInstallment}
-                  onChange={(e) => setIsInstallment(e.target.checked)}
-                  className="h-4 w-4 rounded border-input"
-                />
-                <Label htmlFor="installment" className="text-sm">
-                  Parcelamento
-                </Label>
-              </div>
-
-              {isInstallment && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="installmentCount">
-                      Numero de parcelas
-                    </Label>
-                    <Input
-                      id="installmentCount"
-                      type="number"
-                      min={2}
-                      max={48}
-                      value={installmentCount}
-                      onChange={(e) =>
-                        setInstallmentCount(Number(e.target.value))
-                      }
-                    />
-                    {amountValue > 0 && installmentCount >= 2 && (
-                      <p className="text-xs text-muted-foreground">
-                        {installmentCount}x de{" "}
-                        {new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format(amountValue / installmentCount)}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="firstInCurrentInvoice"
-                      checked={firstInCurrentInvoice}
-                      onChange={(e) =>
-                        setFirstInCurrentInvoice(e.target.checked)
-                      }
-                      className="h-4 w-4 rounded border-input"
-                    />
-                    <Label htmlFor="firstInCurrentInvoice" className="text-sm">
-                          1ª parcela na fatura atual
-                    </Label>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
           <DialogFooter>
             {!isEditing && (
               <Button
@@ -441,9 +347,7 @@ export function TransactionForm({
                 ? "Salvando..."
                 : isEditing
                   ? "Salvar Alterações"
-                  : isInstallment
-                    ? `Parcelar em ${installmentCount}x`
-                    : "Criar Transação"}
+                  : "Criar Transação"}
             </Button>
           </DialogFooter>
         </form>

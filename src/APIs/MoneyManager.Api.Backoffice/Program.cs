@@ -34,7 +34,6 @@ builder.Services.AddSingleton<AdminAuditService>();
 builder.Services.AddSingleton<MoneyManager.Api.Administration.Services.LegalDocumentService>();
 builder.Services.AddSingleton<MoneyManager.Api.Administration.Services.DocumentSeeder>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
 builder.Services.AddProcessLogger();
 
 var adminIssuer = builder.Configuration["AdminAuth:Issuer"] ?? "MoneyManager.Admin";

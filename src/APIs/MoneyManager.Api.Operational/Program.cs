@@ -38,7 +38,6 @@ builder.Services.AddScoped<IUserSettingsService, UserSettingsService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 builder.Services.AddScoped<IAccountDeletionService, AccountDeletionService>();
-builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
 builder.Services.AddScoped<IUserReportService, UserReportService>();
 
 // Register VAPID settings and push service

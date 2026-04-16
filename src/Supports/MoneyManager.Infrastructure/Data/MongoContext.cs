@@ -106,23 +106,6 @@ public class MongoContext
                 .Ascending(b => b.Month)
         ));
 
-        // Create credit_card_invoices collection
-        if (!collectionNames.Contains("credit_card_invoices"))
-        {
-            await _database.CreateCollectionAsync("credit_card_invoices");
-        }
-        var invoicesCollection = _database.GetCollection<MoneyManager.Domain.Entities.CreditCardInvoice>("credit_card_invoices");
-        await invoicesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoice>(
-            Builders<MoneyManager.Domain.Entities.CreditCardInvoice>.IndexKeys
-                .Ascending(i => i.AccountId)
-                .Ascending(i => i.IsDeleted)
-        ));
-        await invoicesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoice>(
-            Builders<MoneyManager.Domain.Entities.CreditCardInvoice>.IndexKeys
-                .Ascending(i => i.AccountId)
-                .Ascending(i => i.ReferenceMonth)
-        ));
-
         // Create push_subscriptions collection
         if (!collectionNames.Contains("push_subscriptions"))
         {
@@ -171,8 +154,7 @@ public class MongoContext
         var runner = new MigrationRunner(_database);
         var migrations = new IMigration[]
         {
-            new Migration_20260326_01_Initial(),
-            new Migration_20260401_01_CreditCardCommittedCreditDefaults()
+            new Migration_20260326_01_Initial()
         };
 
         await runner.RunAsync(migrations);

@@ -24,16 +24,6 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services
-            .AddOptions<InvoiceClosureScheduleOptions>()
-            .Bind(configuration.GetSection(InvoiceClosureScheduleOptions.SectionName))
-            .ValidateOnStart();
-
-        services
-            .AddOptions<OverdueInvoiceScheduleOptions>()
-            .Bind(configuration.GetSection(OverdueInvoiceScheduleOptions.SectionName))
-            .ValidateOnStart();
-
-        services
             .AddOptions<DailyReminderScheduleOptions>()
             .Bind(configuration.GetSection(DailyReminderScheduleOptions.SectionName))
             .ValidateOnStart();
@@ -43,13 +33,9 @@ public static class ServiceCollectionExtensions
 
         // Only recurring transactions are processed by the worker.
         services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();
-        services.AddScoped<InvoiceClosureProcessor>();
-        services.AddScoped<OverdueInvoiceProcessor>();
         services.AddScoped<DailyReminderProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
-        services.AddHostedService<InvoiceClosureWorker>();
-        services.AddHostedService<OverdueInvoiceWorker>();
         services.AddHostedService<DailyReminderWorker>();
 
         return services;

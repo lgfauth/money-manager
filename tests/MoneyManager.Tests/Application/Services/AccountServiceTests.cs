@@ -13,7 +13,6 @@ public class AccountServiceTests
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly IRepository<Account> _accountRepoMock;
     private readonly ITransactionRepository _transactionRepoMock;
-    private readonly ICreditCardInvoiceRepository _invoiceRepoMock;
     private readonly IAccountService _accountService;
 
     public AccountServiceTests()
@@ -21,13 +20,9 @@ public class AccountServiceTests
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _accountRepoMock = Substitute.For<IRepository<Account>>();
         _transactionRepoMock = Substitute.For<ITransactionRepository>();
-        _invoiceRepoMock = Substitute.For<ICreditCardInvoiceRepository>();
 
         _unitOfWorkMock.Accounts.Returns(_accountRepoMock);
         _unitOfWorkMock.Transactions.Returns(_transactionRepoMock);
-        _unitOfWorkMock.CreditCardInvoices.Returns(_invoiceRepoMock);
-
-        _accountRepoMock.AddAsync(Arg.Any<Account>()).Returns(x => x.Arg<Account>());
 
         _accountService = new AccountService(_unitOfWorkMock);
     }
@@ -54,52 +49,6 @@ public class AccountServiceTests
         Assert.Equal(request.InitialBalance, result.Balance);
         Assert.Equal(request.Color, result.Color);
         await _accountRepoMock.Received(1).AddAsync(Arg.Any<Account>());
-    }
-
-    [Fact]
-    public async Task CreateAsync_CreditCard_ShouldSetCreditCardFields()
-    {
-        // Arrange
-        var userId = "user123";
-        var request = new CreateAccountRequestDto
-        {
-            Name = "My Credit Card",
-            Type = AccountType.CreditCard,
-            InitialBalance = 0m,
-            CreditLimit = 5000m,
-            InvoiceClosingDay = 15,
-            InvoiceDueDayOffset = 10
-        };
-
-        // Act
-        var result = await _accountService.CreateAsync(userId, request);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(5000m, result.CreditLimit);
-        Assert.Equal(15, result.InvoiceClosingDay);
-        Assert.Equal(10, result.InvoiceDueDayOffset);
-    }
-
-    [Fact]
-    public async Task CreateAsync_NonCreditCard_ShouldNotSetCreditCardFields()
-    {
-        // Arrange
-        var userId = "user123";
-        var request = new CreateAccountRequestDto
-        {
-            Name = "Checking",
-            Type = AccountType.Checking,
-            InitialBalance = 1000m,
-            CreditLimit = 9999m // Should be ignored
-        };
-
-        // Act
-        var result = await _accountService.CreateAsync(userId, request);
-
-        // Assert
-        Assert.Null(result.CreditLimit);
-        Assert.Null(result.InvoiceClosingDay);
     }
 
     [Fact]
@@ -237,7 +186,6 @@ public class AccountServiceTests
         var account = new Account { Id = "acc1", UserId = userId };
         _accountRepoMock.GetByIdAsync("acc1").Returns(account);
         _transactionRepoMock.GetAllAsync().Returns(new List<Transaction>());
-        _invoiceRepoMock.GetByAccountIdAsync("acc1").Returns(new List<CreditCardInvoice>());
 
         // Act
         await _accountService.DeleteAsync(userId, "acc1");
@@ -276,7 +224,6 @@ public class AccountServiceTests
 
         _accountRepoMock.GetByIdAsync(accountId).Returns(account);
         _transactionRepoMock.GetAllAsync().Returns(transactions);
-        _invoiceRepoMock.GetByAccountIdAsync(accountId).Returns(new List<CreditCardInvoice>());
 
         // Act
         await _accountService.DeleteAsync(userId, accountId);
@@ -286,68 +233,6 @@ public class AccountServiceTests
         Assert.True(transactions[0].IsDeleted); // t1
         Assert.True(transactions[1].IsDeleted); // t2
         Assert.False(transactions[2].IsDeleted); // t3 unchanged
-    }
-
-    [Fact]
-    public async Task DeleteAsync_ShouldCascadeSoftDeleteInvoices()
-    {
-        // Arrange
-        var userId = "user123";
-        var accountId = "cc1";
-        var account = new Account { Id = accountId, UserId = userId, Type = AccountType.CreditCard };
-
-        var invoices = new List<CreditCardInvoice>
-        {
-            new CreditCardInvoice { Id = "inv1", AccountId = accountId, UserId = userId, IsDeleted = false },
-            new CreditCardInvoice { Id = "inv2", AccountId = accountId, UserId = userId, IsDeleted = false },
-            new CreditCardInvoice { Id = "inv3", AccountId = accountId, UserId = userId, IsDeleted = true } // Already deleted
-        };
-
-        _accountRepoMock.GetByIdAsync(accountId).Returns(account);
-        _transactionRepoMock.GetAllAsync().Returns(new List<Transaction>());
-        _invoiceRepoMock.GetByAccountIdAsync(accountId).Returns(invoices);
-
-        // Act
-        await _accountService.DeleteAsync(userId, accountId);
-
-        // Assert — only inv1 and inv2 should be soft deleted
-        await _invoiceRepoMock.Received(2).UpdateAsync(Arg.Any<CreditCardInvoice>());
-        Assert.True(invoices[0].IsDeleted);
-        Assert.True(invoices[1].IsDeleted);
-    }
-
-    [Fact]
-    public async Task DeleteAsync_FullCascade_ShouldDeleteAccountTransactionsAndInvoices()
-    {
-        // Arrange
-        var userId = "user123";
-        var accountId = "cc1";
-        var account = new Account { Id = accountId, UserId = userId, Type = AccountType.CreditCard };
-
-        var transactions = new List<Transaction>
-        {
-            new Transaction { Id = "t1", UserId = userId, AccountId = accountId, IsDeleted = false },
-            new Transaction { Id = "t2", UserId = userId, AccountId = accountId, IsDeleted = false }
-        };
-
-        var invoices = new List<CreditCardInvoice>
-        {
-            new CreditCardInvoice { Id = "inv1", AccountId = accountId, UserId = userId, IsDeleted = false }
-        };
-
-        _accountRepoMock.GetByIdAsync(accountId).Returns(account);
-        _transactionRepoMock.GetAllAsync().Returns(transactions);
-        _invoiceRepoMock.GetByAccountIdAsync(accountId).Returns(invoices);
-
-        // Act
-        await _accountService.DeleteAsync(userId, accountId);
-
-        // Assert
-        Assert.True(account.IsDeleted);
-        Assert.True(transactions[0].IsDeleted);
-        Assert.True(transactions[1].IsDeleted);
-        Assert.True(invoices[0].IsDeleted);
-        await _unitOfWorkMock.Received(1).SaveChangesAsync();
     }
 
     [Fact]

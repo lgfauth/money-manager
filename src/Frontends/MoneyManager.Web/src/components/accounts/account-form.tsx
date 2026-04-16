@@ -41,7 +41,6 @@ const accountTypeLabels: Record<string, string> = {
   Checking: "Conta Corrente",
   Savings: "Poupança",
   Cash: "Dinheiro",
-  CreditCard: "Cartão de Crédito",
 };
 
 export function AccountForm({
@@ -74,7 +73,6 @@ export function AccountForm({
   const selectedColor = watch("color");
   const selectedCurrency = watch("currency");
   const balanceValue = watch("initialBalance");
-  const isCreditCard = selectedType === AccountType.CreditCard;
   const isEditing = !!editingAccount;
   const mutationError = isEditing ? updateAccount.error : createAccount.error;
   const resetMutationsRef = useRef(() => {});
@@ -105,18 +103,6 @@ export function AccountForm({
         initialBalance: editingAccount.balance,
         currency: editingAccount.currency,
         color: editingAccount.color,
-        invoiceClosingDay:
-          editingAccount.type === AccountType.CreditCard
-            ? editingAccount.invoiceClosingDay
-            : undefined,
-        invoiceDueDayOffset:
-          editingAccount.type === AccountType.CreditCard
-            ? editingAccount.invoiceDueDayOffset
-            : undefined,
-        creditLimit:
-          editingAccount.type === AccountType.CreditCard
-            ? editingAccount.creditLimit
-            : undefined,
       });
     } else {
       reset({
@@ -129,21 +115,7 @@ export function AccountForm({
     }
   }, [open, editingAccount, reset]);
 
-  useEffect(() => {
-    if (selectedType !== AccountType.CreditCard) {
-      setValue("invoiceClosingDay", undefined);
-      setValue("invoiceDueDayOffset", undefined);
-      setValue("creditLimit", undefined);
-    }
-  }, [selectedType, setValue]);
-
   const onSubmit = (data: AccountFormData) => {
-    if (!isCreditCard) {
-      delete data.invoiceClosingDay;
-      delete data.invoiceDueDayOffset;
-      delete data.creditLimit;
-    }
-
     if (isEditing) {
       updateAccount.mutate(
         { id: editingAccount!.id, data },
@@ -244,61 +216,6 @@ export function AccountForm({
               onChange={(c) => setValue("color", c)}
             />
           </div>
-
-          {isCreditCard && (
-            <div className="space-y-4 rounded-lg border p-4">
-              <p className="text-sm font-medium">Dados do Cartão de Crédito</p>
-
-              <div className="space-y-2">
-                <Label htmlFor="creditLimit">Limite</Label>
-                <MoneyInput
-                  value={watch("creditLimit") ?? 0}
-                  onChange={(v) => setValue("creditLimit", v)}
-                  currencyCode={selectedCurrency}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="invoiceClosingDay">
-                  Dia de fechamento (1–28)
-                </Label>
-                <Input
-                  id="invoiceClosingDay"
-                  type="number"
-                  min={1}
-                  max={28}
-                  {...register("invoiceClosingDay", {
-                    setValueAs: parseOptionalNumber,
-                  })}
-                />
-                {errors.invoiceClosingDay && (
-                  <p className="text-xs text-destructive">
-                    {errors.invoiceClosingDay.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="invoiceDueDayOffset">
-                  Dias até vencimento (1–30)
-                </Label>
-                <Input
-                  id="invoiceDueDayOffset"
-                  type="number"
-                  min={1}
-                  max={30}
-                  {...register("invoiceDueDayOffset", {
-                    setValueAs: parseOptionalNumber,
-                  })}
-                />
-                {errors.invoiceDueDayOffset && (
-                  <p className="text-xs text-destructive">
-                    {errors.invoiceDueDayOffset.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
 
           <SheetFooter className="px-0">
             <Button type="submit" className="w-full" disabled={isPending}>

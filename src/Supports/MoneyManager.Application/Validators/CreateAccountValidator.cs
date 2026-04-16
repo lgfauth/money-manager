@@ -1,6 +1,5 @@
 using FluentValidation;
 using MoneyManager.Application.DTOs.Request;
-using MoneyManager.Domain.Enums;
 
 namespace MoneyManager.Application.Validators;
 
@@ -25,10 +24,5 @@ public class CreateAccountValidator : AbstractValidator<CreateAccountRequestDto>
         RuleFor(x => x.Color)
             .NotEmpty().WithMessage("Account color is required")
             .Matches("^#[0-9A-Fa-f]{6}$").WithMessage("Account color must be a valid hex code (e.g. #00C896)");
-
-        RuleFor(x => x.InvoiceClosingDay)
-            .InclusiveBetween(1, 31)
-            .When(x => x.Type == AccountType.CreditCard && x.InvoiceClosingDay.HasValue)
-            .WithMessage("Invoice closing day must be between 1 and 31");
     }
 }

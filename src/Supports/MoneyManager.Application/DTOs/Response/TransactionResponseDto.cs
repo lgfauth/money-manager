@@ -18,9 +18,6 @@ public class TransactionResponseDto
     public string Description { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = [];
     public string? Notes { get; set; }
-    public string? InstallmentGroupId { get; set; }
-    public int? InstallmentNumber { get; set; }
-    public int? InstallmentCount { get; set; }
     public TransactionStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

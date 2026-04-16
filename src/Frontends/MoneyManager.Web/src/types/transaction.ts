@@ -14,19 +14,6 @@ export interface TransactionRequestDto {
   clientRequestId?: string;
 }
 
-export interface InstallmentPurchaseRequestDto {
-  description: string;
-  totalAmount: number;
-  installmentCount: number;
-  firstInstallmentInCurrentInvoice: boolean;
-  date: string;
-  type: TransactionType;
-  accountId: string;
-  categoryId: string;
-  notes?: string;
-  clientRequestId?: string;
-}
-
 export interface TransactionResponseDto {
   id: string;
   description: string;
@@ -41,9 +28,6 @@ export interface TransactionResponseDto {
   categoryName: string;
   categoryColor: string;
   notes?: string;
-  installmentGroupId?: string;
-  installmentNumber?: number;
-  installmentCount?: number;
   createdAt: string;
   updatedAt: string;
 }

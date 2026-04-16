@@ -82,7 +82,6 @@ public class RecurringTransactionService : IRecurringTransactionService
             return recurrences
                 .Where(r => r is not null)
                 .Where(r => r.UserId == userId && !r.IsDeleted)
-                .Where(r => !r.IsInstallmentSchedule)
                 .OrderByDescending(r => r.CreatedAt)
                 .ToList();
         }
@@ -174,24 +173,6 @@ public class RecurringTransactionService : IRecurringTransactionService
                 while (recurrence.NextOccurrenceDate.Date <= today 
                        && (!recurrence.EndDate.HasValue || recurrence.NextOccurrenceDate.Date <= recurrence.EndDate.Value.Date))
                 {
-                    if (recurrence.IsInstallmentSchedule &&
-                        (!recurrence.SkipAccountBalanceImpact ||
-                         !recurrence.SkipCommittedCreditImpact ||
-                         !recurrence.SkipCreditLimitValidation))
-                    {
-                        recurrence.SkipAccountBalanceImpact = true;
-                        recurrence.SkipCommittedCreditImpact = true;
-                        recurrence.SkipCreditLimitValidation = true;
-                        recurrence.UpdatedAt = DateTime.UtcNow;
-
-                        _processLogger.AddWarning("Installment schedule normalized to keep idempotent account impact", new Dictionary<string, object?>
-                        {
-                            ["recurringId"] = recurrence.Id,
-                            ["installmentGroupId"] = recurrence.InstallmentGroupId,
-                            ["installmentNumber"] = recurrence.InstallmentNumber
-                        });
-                    }
-
                     var transactionRequest = new CreateTransactionRequestDto
                     {
                         AccountId = recurrence.AccountId,
@@ -199,18 +180,10 @@ public class RecurringTransactionService : IRecurringTransactionService
                         Type = recurrence.Type,
                         Amount = recurrence.Amount,
                         Date = recurrence.NextOccurrenceDate.Date, // Ensure transaction date has no time component
-                        Description = recurrence.IsInstallmentSchedule
-                            ? recurrence.Description
-                            : $"{recurrence.Description} (Recorrente)",
+                        Description = recurrence.Description + " (Recorrente)",
                         Tags = recurrence.Tags,
                         Notes = recurrence.Notes,
                         Status = TransactionStatus.Pending,
-                        SkipAccountBalanceImpact = recurrence.SkipAccountBalanceImpact,
-                        SkipCommittedCreditImpact = recurrence.SkipCommittedCreditImpact,
-                        SkipCreditLimitValidation = recurrence.SkipCreditLimitValidation,
-                        InstallmentGroupId = recurrence.InstallmentGroupId,
-                        InstallmentNumber = recurrence.InstallmentNumber,
-                        InstallmentCount = recurrence.InstallmentCount
                     };
 
                     await _transactionService.CreateAsync(recurrence.UserId, transactionRequest);

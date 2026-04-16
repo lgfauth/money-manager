@@ -1,10 +1,9 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { CreditCard, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,14 +11,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { AccountResponseDto } from "@/types/account";
-import { AccountType } from "@/types/account";
-import Link from "next/link";
 
 const accountTypeLabels: Record<string, string> = {
   Checking: "Conta Corrente",
   Savings: "Poupança",
   Cash: "Dinheiro",
-  CreditCard: "Cartão de Crédito",
 };
 
 interface AccountCardProps {
@@ -29,17 +25,6 @@ interface AccountCardProps {
 }
 
 export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
-  const isCreditCard = account.type === AccountType.CreditCard;
-  const usedAmount = isCreditCard ? account.committedCredit ?? Math.abs(account.balance) : 0;
-  const availableAmount = isCreditCard
-    ? account.availableCredit ?? Math.max((account.creditLimit ?? 0) - usedAmount, 0)
-    : 0;
-  const cardDebt = isCreditCard ? Math.abs(account.balance) : 0;
-  const usedPercent =
-    isCreditCard && account.creditLimit
-      ? (usedAmount / account.creditLimit) * 100
-      : 0;
-
   const formattedBalance = new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: account.currency,
@@ -85,62 +70,6 @@ export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
             {accountTypeLabels[account.type] ?? account.type}
           </Badge>
         </div>
-
-        {isCreditCard && account.creditLimit && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <CreditCard className="h-3 w-3" />
-                Limite comprometido
-              </span>
-              <span>{usedPercent.toFixed(0)}%</span>
-            </div>
-            <Progress
-              value={Math.min(usedPercent, 100)}
-              className="h-2"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: account.currency,
-                }).format(usedAmount)}
-              </span>
-              <span>
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: account.currency,
-                }).format(account.creditLimit)}
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/40 p-2 text-[11px] text-muted-foreground">
-              <div>
-                <p>Débito do cartão</p>
-                <p className="mt-0.5 font-medium text-foreground">
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: account.currency,
-                  }).format(cardDebt)}
-                </p>
-              </div>
-              <div>
-                <p>Disponível</p>
-                <p className="mt-0.5 font-medium text-income">
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: account.currency,
-                  }).format(availableAmount)}
-                </p>
-              </div>
-            </div>
-            <Link
-              href={`/credit-cards/${account.id}`}
-              className="block text-xs text-primary hover:underline"
-            >
-              Ver faturas →
-            </Link>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

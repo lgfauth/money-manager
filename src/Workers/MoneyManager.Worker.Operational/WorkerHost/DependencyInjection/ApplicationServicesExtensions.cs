@@ -28,8 +28,6 @@ internal static class ApplicationServicesExtensions
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<IRecurringTransactionService, RecurringTransactionService>();
-        services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
-
         // Push notifications
         services.Configure<VapidSettings>(configuration.GetSection(VapidSettings.SectionName));
         services.AddScoped<IPushService, PushService>();

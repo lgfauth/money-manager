@@ -1,7 +1,6 @@
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
-using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
 
 namespace MoneyManager.Application.Services;
@@ -27,25 +26,15 @@ public class AccountService : IAccountService
 
     public async Task<AccountResponseDto> CreateAsync(string userId, CreateAccountRequestDto request)
     {
-        var type = request.Type;
-        int? invoiceClosingDay = type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
-        int invoiceDueDayOffset = type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
-        decimal? creditLimit = type == AccountType.CreditCard ? request.CreditLimit : null;
-        decimal committedCredit = type == AccountType.CreditCard ? Math.Abs(request.InitialBalance) : 0m;
-
         var account = new Account
         {
             UserId = userId,
             Name = request.Name,
-            Type = type,
+            Type = request.Type,
             Balance = request.InitialBalance,
             InitialBalance = request.InitialBalance,
             Currency = request.Currency,
-            Color = request.Color,
-            InvoiceClosingDay = invoiceClosingDay,
-            InvoiceDueDayOffset = invoiceDueDayOffset,
-            CreditLimit = creditLimit,
-            CommittedCredit = committedCredit
+            Color = request.Color
         };
 
         await _unitOfWork.Accounts.AddAsync(account);
@@ -77,21 +66,10 @@ public class AccountService : IAccountService
         if (account == null || account.UserId != userId || account.IsDeleted)
             throw new KeyNotFoundException("Account not found");
 
-        var existingType = account.Type;
-
         account.Name = request.Name;
         account.Type = request.Type;
         account.Currency = request.Currency;
         account.Color = request.Color;
-        account.InvoiceClosingDay = account.Type == AccountType.CreditCard ? (request.InvoiceClosingDay ?? 1) : null;
-        account.InvoiceDueDayOffset = account.Type == AccountType.CreditCard ? request.InvoiceDueDayOffset : 7;
-        account.CreditLimit = account.Type == AccountType.CreditCard ? request.CreditLimit : null;
-        account.CommittedCredit = account.Type switch
-        {
-            AccountType.CreditCard when existingType != AccountType.CreditCard => Math.Abs(account.Balance),
-            AccountType.CreditCard => account.CommittedCredit,
-            _ => 0m
-        };
         account.UpdatedAt = DateTime.UtcNow;
 
         await _unitOfWork.Accounts.UpdateAsync(account);
@@ -110,7 +88,6 @@ public class AccountService : IAccountService
         account.UpdatedAt = DateTime.UtcNow;
         await _unitOfWork.Accounts.UpdateAsync(account);
 
-        // Cascade soft delete: transações vinculadas a esta conta
         var allTransactions = await _unitOfWork.Transactions.GetAllAsync();
         var accountTransactions = allTransactions
             .Where(t => t.UserId == userId && t.AccountId == id && !t.IsDeleted)
@@ -121,15 +98,6 @@ public class AccountService : IAccountService
             transaction.IsDeleted = true;
             transaction.UpdatedAt = DateTime.UtcNow;
             await _unitOfWork.Transactions.UpdateAsync(transaction);
-        }
-
-        // Cascade soft delete: faturas de cartão de crédito vinculadas a esta conta
-        var accountInvoices = await _unitOfWork.CreditCardInvoices.GetByAccountIdAsync(id);
-        foreach (var invoice in accountInvoices.Where(i => !i.IsDeleted))
-        {
-            invoice.IsDeleted = true;
-            invoice.UpdatedAt = DateTime.UtcNow;
-            await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
         }
 
         await _unitOfWork.SaveChangesAsync();
@@ -150,11 +118,6 @@ public class AccountService : IAccountService
 
     private static AccountResponseDto MapToDto(Account account)
     {
-        var committedCredit = GetCommittedCreditSnapshot(account);
-        var availableCredit = account.Type == AccountType.CreditCard && account.CreditLimit.HasValue
-            ? Math.Max(0m, account.CreditLimit.Value - committedCredit)
-            : 0m;
-
         return new AccountResponseDto
         {
             Id = account.Id,
@@ -164,25 +127,8 @@ public class AccountService : IAccountService
             InitialBalance = account.InitialBalance,
             Currency = account.Currency,
             Color = account.Color,
-            CreditLimit = account.CreditLimit,
-            CommittedCredit = committedCredit,
-            AvailableCredit = availableCredit,
-            InvoiceClosingDay = account.InvoiceClosingDay,
-            InvoiceDueDayOffset = account.InvoiceDueDayOffset,
-            LastInvoiceClosedAt = account.LastInvoiceClosedAt,
-            CurrentOpenInvoiceId = account.CurrentOpenInvoiceId,
             CreatedAt = account.CreatedAt,
             UpdatedAt = account.UpdatedAt
         };
-    }
-
-    private static decimal GetCommittedCreditSnapshot(Account account)
-    {
-        if (account.Type != AccountType.CreditCard)
-        {
-            return 0m;
-        }
-
-        return Math.Max(account.CommittedCredit, Math.Abs(account.Balance));
     }
 }

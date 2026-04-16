@@ -10,7 +10,6 @@ import { IncomeExpenseChart } from "@/components/dashboard/income-expense-chart"
 import { BudgetUsageChart } from "@/components/dashboard/budget-usage-chart";
 import { AccountsChart } from "@/components/dashboard/accounts-chart";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
-import { CreditCardSummary } from "@/components/dashboard/credit-card-summary";
 import {
   BalanceAreaChart,
   RevenueExpenseLineChart,
@@ -30,7 +29,6 @@ export default function DashboardPage() {
     budget,
     accounts,
     recentTransactions,
-    creditCards,
     expensesByCategory,
     dailyData,
   } = useDashboard();
@@ -118,7 +116,6 @@ export default function DashboardPage() {
       </div>
 
       <AccountsChart accounts={accounts} />
-      <CreditCardSummary cards={creditCards} />
 
       <RecentTransactions transactions={recentTransactions} />
     </div>

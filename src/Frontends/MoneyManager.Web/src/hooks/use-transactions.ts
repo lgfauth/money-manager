@@ -13,7 +13,6 @@ import type {
   TransactionResponseDto,
   TransactionFilters,
   PaginatedResponse,
-  InstallmentPurchaseRequestDto,
 } from "@/types/transaction";
 import { toast } from "sonner";
 import { DEFAULT_PAGE_SIZE } from "@/config/constants";
@@ -61,21 +60,6 @@ export function useCreateTransaction() {
   });
 }
 
-export function useCreateInstallment() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: InstallmentPurchaseRequestDto) =>
-      apiClient.post<void>("/api/transactions/installment-purchase", data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["transactions"] });
-      qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-      qc.invalidateQueries({ queryKey: ["invoices"] });
-      toast.success("Compra parcelada registrada");
-    },
-    onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao registrar parcelamento")),
-  });
-}
 
 export function useUpdateTransaction() {
   const qc = useQueryClient();
