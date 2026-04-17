@@ -133,6 +133,59 @@ public class MongoContext
                 .Ascending(r => r.UserId)
                 .Descending(r => r.CreatedAt)
         ));
+
+        // Create credit_cards collection
+        if (!collectionNames.Contains("credit_cards"))
+        {
+            await _database.CreateCollectionAsync("credit_cards");
+        }
+        var creditCardsCollection = _database.GetCollection<MoneyManager.Domain.Entities.CreditCard>("credit_cards");
+        await creditCardsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCard>(
+            Builders<MoneyManager.Domain.Entities.CreditCard>.IndexKeys
+                .Ascending(c => c.UserId)
+                .Ascending(c => c.IsDeleted)
+        ));
+
+        // Create credit_card_invoices collection
+        if (!collectionNames.Contains("credit_card_invoices"))
+        {
+            await _database.CreateCollectionAsync("credit_card_invoices");
+        }
+        var creditCardInvoicesCollection = _database.GetCollection<MoneyManager.Domain.Entities.CreditCardInvoice>("credit_card_invoices");
+        await creditCardInvoicesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoice>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoice>.IndexKeys
+                .Ascending(i => i.UserId)
+                .Ascending(i => i.CreditCardId)
+                .Ascending(i => i.ReferenceMonth),
+            new CreateIndexOptions { Unique = true, Sparse = true }
+        ));
+        await creditCardInvoicesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoice>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoice>.IndexKeys
+                .Ascending(i => i.UserId)
+                .Ascending(i => i.Status)
+        ));
+
+        // Create credit_card_transactions collection
+        if (!collectionNames.Contains("credit_card_transactions"))
+        {
+            await _database.CreateCollectionAsync("credit_card_transactions");
+        }
+        var creditCardTransactionsCollection = _database.GetCollection<MoneyManager.Domain.Entities.CreditCardTransaction>("credit_card_transactions");
+        await creditCardTransactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardTransaction>(
+            Builders<MoneyManager.Domain.Entities.CreditCardTransaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.InvoiceId)
+        ));
+        await creditCardTransactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardTransaction>(
+            Builders<MoneyManager.Domain.Entities.CreditCardTransaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.CreditCardId)
+        ));
+        await creditCardTransactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardTransaction>(
+            Builders<MoneyManager.Domain.Entities.CreditCardTransaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.ParentTransactionId)
+        ));
     }
 
     public async Task TestConnectionAsync()
@@ -154,7 +207,8 @@ public class MongoContext
         var runner = new MigrationRunner(_database);
         var migrations = new IMigration[]
         {
-            new Migration_20260326_01_Initial()
+            new Migration_20260326_01_Initial(),
+            new Migration_20260416_01_CreditCards()
         };
 
         await runner.RunAsync(migrations);

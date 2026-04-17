@@ -14,7 +14,7 @@ public sealed class AdminJobsController : ControllerBase
     private static readonly HashSet<string> SupportedJobs =
     [
         "ScheduledTransactionWorker",
-        "InvoiceClosureWorker",
+        "CreditCardInvoiceWorker",
         "DailyReminderWorker"
     ];
 

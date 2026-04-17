@@ -17,6 +17,9 @@ public class UnitOfWork : IUnitOfWork
     private IRepository<UserSettings>? _userSettingsRepository;
     private IPushSubscriptionRepository? _pushSubscriptionRepository;
     private IRepository<UserReport>? _userReportRepository;
+    private ICreditCardRepository? _creditCardRepository;
+    private ICreditCardInvoiceRepository? _creditCardInvoiceRepository;
+    private ICreditCardTransactionRepository? _creditCardTransactionRepository;
 
     public UnitOfWork(MongoContext context)
     {
@@ -32,6 +35,9 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<UserSettings> UserSettings => _userSettingsRepository ??= new Repository<UserSettings>(_context, "user_settings");
     public IPushSubscriptionRepository PushSubscriptions => _pushSubscriptionRepository ??= new PushSubscriptionRepository(_context);
     public IRepository<UserReport> UserReports => _userReportRepository ??= new Repository<UserReport>(_context, "user_reports");
+    public ICreditCardRepository CreditCards => _creditCardRepository ??= new CreditCardRepository(_context);
+    public ICreditCardInvoiceRepository CreditCardInvoices => _creditCardInvoiceRepository ??= new CreditCardInvoiceRepository(_context);
+    public ICreditCardTransactionRepository CreditCardTransactions => _creditCardTransactionRepository ??= new CreditCardTransactionRepository(_context);
 
     public async Task<int> SaveChangesAsync()
     {

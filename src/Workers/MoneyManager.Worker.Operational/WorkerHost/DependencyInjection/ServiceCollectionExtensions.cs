@@ -28,15 +28,22 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(DailyReminderScheduleOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<CreditCardInvoiceScheduleOptions>()
+            .Bind(configuration.GetSection(CreditCardInvoiceScheduleOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddSingleton<ITimeProvider>(sp => new SystemTimeProvider(TimeProvider.System));
         services.AddProcessLogger();
 
         // Only recurring transactions are processed by the worker.
         services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();
         services.AddScoped<DailyReminderProcessor>();
+        services.AddScoped<CreditCardInvoiceProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
         services.AddHostedService<DailyReminderWorker>();
+        services.AddHostedService<CreditCardInvoiceWorker>();
 
         return services;
     }

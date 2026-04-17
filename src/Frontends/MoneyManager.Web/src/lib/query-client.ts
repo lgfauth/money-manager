@@ -19,13 +19,16 @@ export const queryKeys = {
   transactions: (filters: TransactionFilters) =>
     ["transactions", filters] as const,
   budgets: (month: string) => ["budgets", month] as const,
-  invoices: (accountId: string) => ["invoices", accountId] as const,
-  invoice: (id: string) => ["invoices", "detail", id] as const,
-  invoiceSummary: (id: string) => ["invoices", "summary", id] as const,
-  invoiceTransactions: (id: string) =>
-    ["invoices", "transactions", id] as const,
-  pendingInvoices: ["invoices", "pending"] as const,
-  overdueInvoices: ["invoices", "overdue"] as const,
+  creditCards: ["credit-cards"] as const,
+  creditCard: (id: string) => ["credit-cards", id] as const,
+  creditCardInvoices: (cardId: string) =>
+    ["credit-cards", cardId, "invoices"] as const,
+  creditCardInvoice: (cardId: string, invoiceId: string) =>
+    ["credit-cards", cardId, "invoices", invoiceId] as const,
+  creditCardTransactions: (cardId?: string) =>
+    cardId
+      ? (["credit-card-transactions", cardId] as const)
+      : (["credit-card-transactions"] as const),
   recurring: ["recurring"] as const,
   dashboard: (month: string) => ["dashboard", month] as const,
   reports: (filters: { startDate: string; endDate: string }) =>

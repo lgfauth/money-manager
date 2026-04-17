@@ -12,15 +12,13 @@ import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { AccountCard } from "@/components/accounts/account-card";
 import { AccountForm } from "@/components/accounts/account-form";
-import { InvoicePaymentModal } from "@/components/accounts/invoice-payment-modal";
 
 type SortField = "name" | "balance" | "type";
 
 const typeOrder: Record<string, number> = {
   [AccountType.Checking]: 0,
   [AccountType.Savings]: 1,
-  [AccountType.CreditCard]: 2,
-  [AccountType.Cash]: 3,
+  [AccountType.Cash]: 2,
 };
 
 export default function AccountsPage() {
@@ -31,8 +29,6 @@ export default function AccountsPage() {
   const [editingAccount, setEditingAccount] =
     useState<AccountResponseDto | null>(null);
   const [deletingAccount, setDeletingAccount] =
-    useState<AccountResponseDto | null>(null);
-  const [paymentAccount, setPaymentAccount] =
     useState<AccountResponseDto | null>(null);
   const [sortBy, setSortBy] = useState<SortField>("type");
 
@@ -64,14 +60,13 @@ export default function AccountsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Contas" description="Gerencie suas contas e cartões.">
+      <PageHeader title="Contas" description="Gerencie suas contas bancárias.">
         <Button onClick={handleNew}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Conta
         </Button>
       </PageHeader>
 
-      {/* Sort controls */}
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Ordenar por:</span>
         {(
@@ -135,16 +130,6 @@ export default function AccountsPage() {
         confirmLabel="Excluir"
         variant="destructive"
       />
-
-      {paymentAccount && (
-        <InvoicePaymentModal
-          open={!!paymentAccount}
-          onOpenChange={(open) => {
-            if (!open) setPaymentAccount(null);
-          }}
-          creditCardAccount={paymentAccount}
-        />
-      )}
     </div>
   );
 }

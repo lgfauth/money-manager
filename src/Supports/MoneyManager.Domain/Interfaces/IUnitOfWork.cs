@@ -13,5 +13,8 @@ public interface IUnitOfWork : IDisposable
     IRepository<UserSettings> UserSettings { get; }
     IPushSubscriptionRepository PushSubscriptions { get; }
     IRepository<UserReport> UserReports { get; }
+    ICreditCardRepository CreditCards { get; }
+    ICreditCardInvoiceRepository CreditCardInvoices { get; }
+    ICreditCardTransactionRepository CreditCardTransactions { get; }
     Task<int> SaveChangesAsync();
 }

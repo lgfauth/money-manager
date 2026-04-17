@@ -14,7 +14,7 @@ public sealed class AdminObservabilityController : ControllerBase
     private static readonly (string JobName, string ProcessName)[] JobCatalog =
     [
         ("ScheduledTransactionWorker", "RecurringTransactions"),
-        ("InvoiceClosureWorker", "InvoiceClosure"),
+        ("CreditCardInvoiceWorker", "CreditCardInvoiceStatus"),
         ("DailyReminderWorker", "DailyReminder")
     ];
 
