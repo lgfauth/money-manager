@@ -264,7 +264,12 @@ export function CreditCardForm({
               onValueChange={(v) => v && setValue("currency", v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione" />
+                <SelectValue placeholder="Selecione">
+                  {(value: string) => {
+                    const c = currencies.find((x) => x.code === value);
+                    return c ? `${c.symbol} — ${c.name}` : null;
+                  }}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {currencies.map((c) => (

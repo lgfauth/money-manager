@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { CreditCard as CreditCardIcon, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  ChevronRight,
+  CreditCard as CreditCardIcon,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -131,6 +137,14 @@ export function CreditCardCard({ card, onEdit, onDelete }: CreditCardCardProps) 
             <p className="text-muted-foreground">Sem fatura corrente</p>
           )}
         </div>
+
+        <Link
+          href={`/credit-cards/${card.id}`}
+          className="flex items-center justify-between rounded-lg border px-3 py-2 text-xs font-medium hover:bg-muted/50 transition-colors"
+        >
+          <span>Ver faturas</span>
+          <ChevronRight className="h-4 w-4" />
+        </Link>
       </CardContent>
     </Card>
   );

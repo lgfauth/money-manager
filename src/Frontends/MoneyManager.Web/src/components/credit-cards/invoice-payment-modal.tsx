@@ -116,7 +116,11 @@ export function InvoicePaymentModal({
               onValueChange={(v) => v && setValue("paidWithAccountId", v)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione a conta" />
+                <SelectValue placeholder="Selecione a conta">
+                  {(value: string) =>
+                    accounts?.find((a) => a.id === value)?.name
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {accounts?.map((acc) => (

@@ -1,0 +1,328 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+
+import { transactionSchema, type TransactionFormData } from "@/lib/validators";
+import {
+  TransactionType,
+  type TransactionResponseDto,
+} from "@/types/transaction";
+import {
+  useCreateTransaction,
+  useUpdateTransaction,
+} from "@/hooks/use-transactions";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useCategories } from "@/hooks/use-categories";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MoneyInput } from "@/components/shared/money-input";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
+import { cn } from "@/lib/utils";
+
+interface BankTransactionFormBodyProps {
+  open: boolean;
+  editingTransaction?: TransactionResponseDto | null;
+  defaultType?: TransactionType;
+  onClose: () => void;
+}
+
+const typeOptions = [
+  { value: TransactionType.Expense, label: "Despesa", color: "text-expense" },
+  { value: TransactionType.Income, label: "Receita", color: "text-income" },
+];
+
+export function BankTransactionFormBody({
+  open,
+  editingTransaction,
+  defaultType = TransactionType.Expense,
+  onClose,
+}: BankTransactionFormBodyProps) {
+  const createTransaction = useCreateTransaction();
+  const updateTransaction = useUpdateTransaction();
+  const { data: accounts } = useAccounts();
+  const { data: categories } = useCategories();
+
+  const isEditing = !!editingTransaction;
+  const saveAndAddRef = useRef(false);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, submitCount },
+  } = useForm<TransactionFormData>({
+    resolver: zodResolver(transactionSchema),
+    defaultValues: {
+      description: "",
+      amount: 0,
+      date: format(new Date(), "yyyy-MM-dd"),
+      type: defaultType,
+      accountId: "",
+      categoryId: "",
+      notes: "",
+    },
+  });
+
+  const selectedType = watch("type");
+  const selectedAccountId = watch("accountId");
+  const amountValue = watch("amount");
+
+  const mutationError = isEditing
+    ? updateTransaction.error
+    : createTransaction.error;
+  const resetMutationsRef = useRef(() => {});
+
+  resetMutationsRef.current = () => {
+    createTransaction.reset();
+    updateTransaction.reset();
+  };
+
+  const filteredCategories = categories?.filter((cat) => {
+    if (selectedType === TransactionType.Income) return cat.type === "Income";
+    return cat.type === "Expense";
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    resetMutationsRef.current();
+
+    if (editingTransaction) {
+      reset({
+        description: editingTransaction.description,
+        amount: editingTransaction.amount,
+        date: editingTransaction.date.split("T")[0],
+        type: editingTransaction.type,
+        accountId: editingTransaction.accountId,
+        categoryId: editingTransaction.categoryId,
+        notes: editingTransaction.notes ?? "",
+      });
+    } else {
+      reset({
+        description: "",
+        amount: 0,
+        date: format(new Date(), "yyyy-MM-dd"),
+        type: defaultType,
+        accountId: "",
+        categoryId: "",
+        notes: "",
+      });
+    }
+  }, [open, editingTransaction, defaultType, reset]);
+
+  const onSubmit = (data: TransactionFormData) => {
+    const keepOpen = saveAndAddRef.current;
+    saveAndAddRef.current = false;
+
+    const onSuccess = () => {
+      if (keepOpen) {
+        reset({
+          description: "",
+          amount: 0,
+          date: data.date,
+          type: data.type,
+          accountId: data.accountId,
+          categoryId: data.categoryId,
+          notes: "",
+        });
+      } else {
+        onClose();
+      }
+    };
+
+    if (isEditing) {
+      updateTransaction.mutate(
+        { id: editingTransaction!.id, data },
+        { onSuccess }
+      );
+    } else {
+      createTransaction.mutate(
+        { ...data, clientRequestId: crypto.randomUUID() },
+        { onSuccess }
+      );
+    }
+  };
+
+  const isPending =
+    createTransaction.isPending || updateTransaction.isPending;
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <FormErrorSummary
+        errors={errors}
+        submitCount={submitCount}
+        apiError={mutationError}
+      />
+
+      <div className="space-y-2">
+        <Label>Tipo</Label>
+        <div className="flex rounded-lg border p-1 gap-1">
+          {typeOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => setValue("type", opt.value)}
+              className={cn(
+                "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                selectedType === opt.value
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-muted"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Descrição</Label>
+        <Input
+          id="description"
+          placeholder="Ex: Supermercado"
+          {...register("description")}
+        />
+        {errors.description && (
+          <p className="text-xs text-destructive">
+            {errors.description.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Valor</Label>
+        <MoneyInput value={amountValue} onChange={(v) => setValue("amount", v)} />
+        {errors.amount && (
+          <p className="text-xs text-destructive">{errors.amount.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="date">Data</Label>
+        <Input id="date" type="date" {...register("date")} />
+        {errors.date && (
+          <p className="text-xs text-destructive">{errors.date.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Conta</Label>
+        <Select
+          value={selectedAccountId || null}
+          onValueChange={(v) => v && setValue("accountId", v)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione a conta">
+              {(value: string) => accounts?.find((a) => a.id === value)?.name}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {accounts?.map((acc) => (
+              <SelectItem key={acc.id} value={acc.id}>
+                {acc.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.accountId && (
+          <p className="text-xs text-destructive">{errors.accountId.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Categoria</Label>
+        <Select
+          value={watch("categoryId") || null}
+          onValueChange={(v) => v && setValue("categoryId", v)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione a categoria">
+              {(value: string) => {
+                const cat = categories?.find((c) => c.id === value);
+                if (!cat) return null;
+                return (
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: cat.color }}
+                    />
+                    {cat.name}
+                  </span>
+                );
+              }}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {filteredCategories?.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: cat.color }}
+                  />
+                  {cat.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.categoryId && (
+          <p className="text-xs text-destructive">
+            {errors.categoryId.message}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Observações</Label>
+        <Input id="notes" placeholder="Opcional" {...register("notes")} />
+      </div>
+
+      <DialogFooter>
+        {!isEditing && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full sm:w-auto sm:flex-1"
+            disabled={isPending}
+            onClick={() => {
+              saveAndAddRef.current = true;
+              handleSubmit(onSubmit)();
+            }}
+          >
+            Salvar e Adicionar Outra
+          </Button>
+        )}
+        <Button
+          type="submit"
+          className="w-full sm:w-auto sm:flex-1"
+          disabled={isPending}
+          onClick={() => {
+            saveAndAddRef.current = false;
+          }}
+        >
+          {isPending
+            ? "Salvando..."
+            : isEditing
+              ? "Salvar Alterações"
+              : "Criar Transação"}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+}

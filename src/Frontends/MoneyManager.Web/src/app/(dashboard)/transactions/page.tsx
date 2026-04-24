@@ -25,7 +25,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TransactionTable } from "@/components/transactions/transaction-table";
 import { TransactionFilters as Filters } from "@/components/transactions/transaction-filters";
 import { TransactionForm } from "@/components/transactions/transaction-form";
-import { CreditCardTransactionForm } from "@/components/transactions/credit-card-transaction-form";
+import {
+  TransactionEntryDialog,
+  type TransactionEntryTab,
+} from "@/components/transactions/transaction-entry-dialog";
 import { CreditCardTransactionTable } from "@/components/transactions/credit-card-transaction-table";
 
 type TabKind = "bank" | "card";
@@ -61,22 +64,24 @@ export default function TransactionsPage() {
   const { data: cards } = useCreditCards();
   const deleteCardTx = useDeleteCreditCardTransaction();
 
-  const [bankFormOpen, setBankFormOpen] = useState(
+  const [entryOpen, setEntryOpen] = useState(
     searchParams.get("new") === "true"
   );
-  const [cardFormOpen, setCardFormOpen] = useState(false);
+  const [entryDefaultTab, setEntryDefaultTab] =
+    useState<TransactionEntryTab>("bank");
+  const [editingTx, setEditingTx] = useState<TransactionResponseDto | null>(
+    null
+  );
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
       setEditingTx(null);
-      setBankFormOpen(true);
+      setEntryDefaultTab("bank");
+      setEntryOpen(true);
       router.replace("/transactions");
     }
   }, [searchParams, router]);
 
-  const [editingTx, setEditingTx] = useState<TransactionResponseDto | null>(
-    null
-  );
   const [deletingBankTx, setDeletingBankTx] =
     useState<TransactionResponseDto | null>(null);
   const [deletingCardTx, setDeletingCardTx] =
@@ -96,16 +101,12 @@ export default function TransactionsPage() {
 
   const handleEdit = (tx: TransactionResponseDto) => {
     setEditingTx(tx);
-    setBankFormOpen(true);
   };
 
   const handleNew = () => {
-    if (tab === "card") {
-      setCardFormOpen(true);
-    } else {
-      setEditingTx(null);
-      setBankFormOpen(true);
-    }
+    setEditingTx(null);
+    setEntryDefaultTab(tab === "card" ? "card" : "bank");
+    setEntryOpen(true);
   };
 
   const handleDeleteBank = () => {
@@ -142,7 +143,7 @@ export default function TransactionsPage() {
       >
         <Button onClick={handleNew}>
           <Plus className="mr-2 h-4 w-4" />
-          {tab === "card" ? "Nova Compra" : "Nova Transação"}
+          Nova Transação
         </Button>
       </PageHeader>
 
@@ -234,18 +235,18 @@ export default function TransactionsPage() {
         </TabsContent>
       </Tabs>
 
+      <TransactionEntryDialog
+        open={entryOpen}
+        onOpenChange={setEntryOpen}
+        defaultTab={entryDefaultTab}
+      />
+
       <TransactionForm
-        open={bankFormOpen}
+        open={!!editingTx}
         onOpenChange={(open) => {
-          setBankFormOpen(open);
           if (!open) setEditingTx(null);
         }}
         editingTransaction={editingTx}
-      />
-
-      <CreditCardTransactionForm
-        open={cardFormOpen}
-        onOpenChange={setCardFormOpen}
       />
 
       <ConfirmDialog
