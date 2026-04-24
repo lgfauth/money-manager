@@ -106,7 +106,6 @@ public class CreditCardService : ICreditCardService
         card.Color = request.Color;
         card.Currency = request.Currency;
         card.UpdatedAt = DateTime.UtcNow;
-        card.Version += 1;
 
         await _unitOfWork.CreditCards.UpdateAsync(card);
         await _unitOfWork.SaveChangesAsync();
@@ -122,7 +121,6 @@ public class CreditCardService : ICreditCardService
 
         card.IsDeleted = true;
         card.UpdatedAt = DateTime.UtcNow;
-        card.Version += 1;
         await _unitOfWork.CreditCards.UpdateAsync(card);
 
         var invoices = await _unitOfWork.CreditCardInvoices.GetByCardAsync(userId, id);
@@ -130,7 +128,6 @@ public class CreditCardService : ICreditCardService
         {
             invoice.IsDeleted = true;
             invoice.UpdatedAt = DateTime.UtcNow;
-            invoice.Version += 1;
             await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
         }
 
@@ -139,7 +136,6 @@ public class CreditCardService : ICreditCardService
         {
             transaction.IsDeleted = true;
             transaction.UpdatedAt = DateTime.UtcNow;
-            transaction.Version += 1;
             await _unitOfWork.CreditCardTransactions.UpdateAsync(transaction);
         }
 

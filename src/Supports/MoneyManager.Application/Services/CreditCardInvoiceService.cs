@@ -134,7 +134,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         invoice.PaidAmount = request.PaidAmount;
         invoice.PaymentTransactionId = debitTransaction.Id;
         invoice.UpdatedAt = DateTime.UtcNow;
-        invoice.Version += 1;
 
         await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
         await _unitOfWork.SaveChangesAsync();
@@ -162,7 +161,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             {
                 invoice.Status = InvoiceStatus.Open;
                 invoice.UpdatedAt = DateTime.UtcNow;
-                invoice.Version += 1;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
             }
         }
@@ -173,7 +171,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             {
                 invoice.Status = InvoiceStatus.Closed;
                 invoice.UpdatedAt = DateTime.UtcNow;
-                invoice.Version += 1;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
             }
         }
@@ -184,7 +181,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             {
                 invoice.Status = InvoiceStatus.Overdue;
                 invoice.UpdatedAt = DateTime.UtcNow;
-                invoice.Version += 1;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
             }
         }
@@ -238,7 +234,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         var transactions = await _unitOfWork.CreditCardTransactions.GetByInvoiceAsync(userId, invoiceId);
         invoice.TotalAmount = transactions.Sum(t => t.InstallmentAmount);
         invoice.UpdatedAt = DateTime.UtcNow;
-        invoice.Version += 1;
 
         await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
         await _unitOfWork.SaveChangesAsync();
@@ -261,7 +256,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             {
                 invoice.Status = InvoiceStatus.Open;
                 invoice.UpdatedAt = DateTime.UtcNow;
-                invoice.Version += 1;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
                 promoted++;
             }
@@ -274,7 +268,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             {
                 invoice.Status = InvoiceStatus.Closed;
                 invoice.UpdatedAt = DateTime.UtcNow;
-                invoice.Version += 1;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
                 closed++;
             }
@@ -287,7 +280,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             {
                 invoice.Status = InvoiceStatus.Overdue;
                 invoice.UpdatedAt = DateTime.UtcNow;
-                invoice.Version += 1;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
                 overdue++;
             }

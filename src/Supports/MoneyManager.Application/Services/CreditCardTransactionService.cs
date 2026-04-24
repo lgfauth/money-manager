@@ -207,7 +207,6 @@ public class CreditCardTransactionService : ICreditCardTransactionService
 
             installment.IsDeleted = true;
             installment.UpdatedAt = DateTime.UtcNow;
-            installment.Version += 1;
             await _unitOfWork.CreditCardTransactions.UpdateAsync(installment);
             invoiceIdsTouched.Add(inv.Id);
         }
