@@ -21,6 +21,7 @@ import {
   CREDIT_LIMIT_THRESHOLD_WARNING,
 } from "@/config/constants";
 import { cn } from "@/lib/utils";
+import { useBreadcrumbLabel } from "@/stores/breadcrumb-store";
 
 const fmt = (value: number, currency: string) =>
   new Intl.NumberFormat("pt-BR", {
@@ -36,6 +37,8 @@ export default function CreditCardDetailPage() {
   const { data: card, isLoading: cardLoading } = useCreditCard(cardId);
   const { data: invoices, isLoading: invoicesLoading } =
     useCreditCardInvoices(cardId);
+
+  useBreadcrumbLabel(cardId, card?.name);
 
   const sortedInvoices = useMemo(() => {
     if (!invoices) return [];

@@ -16,6 +16,7 @@ import {
   useDeleteCreditCardTransaction,
 } from "@/hooks/use-credit-cards";
 import type { CreditCardTransactionResponseDto } from "@/types/credit-card";
+import { useBreadcrumbLabel } from "@/stores/breadcrumb-store";
 
 const fmt = (value: number, currency: string) =>
   new Intl.NumberFormat("pt-BR", {
@@ -50,6 +51,12 @@ export default function InvoiceDetailPage() {
 
   const { data, isLoading } = useCreditCardInvoice(cardId, invoiceId);
   const deleteTx = useDeleteCreditCardTransaction();
+
+  useBreadcrumbLabel(cardId, data?.invoice.creditCardName);
+  useBreadcrumbLabel(
+    invoiceId,
+    data ? fmtRefMonth(data.invoice.referenceMonth) : undefined
+  );
 
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [deletingTx, setDeletingTx] =
