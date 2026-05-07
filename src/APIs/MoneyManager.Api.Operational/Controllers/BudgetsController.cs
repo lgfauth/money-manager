@@ -77,4 +77,23 @@ public class BudgetsController : ControllerBase
             return this.ApiBadRequest(ex.Message);
         }
     }
+
+    // Copia o orçamento do mês de origem para o mês informado no body
+    [HttpPost("{sourceMonth}/copy")]
+    public async Task<IActionResult> Copy(string sourceMonth, [FromBody] CopyBudgetRequestDto request)
+    {
+        try
+        {
+            var result = await _budgetService.CopyAsync(HttpContext.GetUserId(), sourceMonth, request.TargetMonth);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return this.ApiNotFound();
+        }
+        catch (Exception ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+    }
 }

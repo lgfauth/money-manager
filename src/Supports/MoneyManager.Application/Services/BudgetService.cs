@@ -12,6 +12,7 @@ public interface IBudgetService
     Task<BudgetResponseDto> GetByMonthAsync(string userId, string month);
     Task<IEnumerable<BudgetResponseDto>> GetAllAsync(string userId);
     Task DeleteAsync(string userId, string id);
+    Task<BudgetResponseDto> CopyAsync(string userId, string sourceMonth, string targetMonth);
 }
 
 public class BudgetService : IBudgetService
@@ -77,6 +78,20 @@ public class BudgetService : IBudgetService
 
         var categories = (await _unitOfWork.Categories.GetAllAsync()).ToDictionary(c => c.Id);
         return userBudgets.Select(b => MapToDto(b, categories));
+    }
+
+    // Copia os itens de um orçamento de origem para um novo mês, criando ou substituindo o destino
+    public async Task<BudgetResponseDto> CopyAsync(string userId, string sourceMonth, string targetMonth)
+    {
+        var budgets = await _unitOfWork.Budgets.GetAllAsync();
+        var source = budgets.FirstOrDefault(b => b.UserId == userId && b.Month == sourceMonth && !b.IsDeleted)
+            ?? throw new KeyNotFoundException("Source budget not found");
+
+        var items = source.Items
+            .Select(i => new BudgetItemRequestDto { CategoryId = i.CategoryId, LimitAmount = i.LimitAmount })
+            .ToList();
+
+        return await CreateOrUpdateAsync(userId, targetMonth, items);
     }
 
     public async Task DeleteAsync(string userId, string id)

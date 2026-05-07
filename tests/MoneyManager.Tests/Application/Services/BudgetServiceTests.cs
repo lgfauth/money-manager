@@ -405,4 +405,169 @@ public class BudgetServiceTests
         // Assert
         Assert.Equal(0m, result.Items.First().SpentAmount);
     }
+
+    [Fact]
+    public async Task CopyAsync_WithValidSource_ShouldCreateTargetBudget()
+    {
+        // Arrange
+        var userId = "user123";
+        var sourceMonth = "2024-01";
+        var targetMonth = "2024-02";
+        var sourceBudget = new Budget
+        {
+            Id = "budget1",
+            UserId = userId,
+            Month = sourceMonth,
+            Items = new List<BudgetItem>
+            {
+                new BudgetItem { CategoryId = "cat1", LimitAmount = 1000m },
+                new BudgetItem { CategoryId = "cat2", LimitAmount = 500m }
+            }
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        // Source exists; target does not
+        budgetRepo.GetAllAsync().Returns(new List<Budget> { sourceBudget });
+        budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 2).Returns(new List<Transaction>());
+        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+
+        // Act
+        var result = await _budgetService.CopyAsync(userId, sourceMonth, targetMonth);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(targetMonth, result.Month);
+        Assert.Equal(2, result.Items.Count);
+        await budgetRepo.Received(1).AddAsync(Arg.Is<Budget>(b => b.Month == targetMonth));
+    }
+
+    [Fact]
+    public async Task CopyAsync_WithNonExistentSource_ShouldThrowKeyNotFoundException()
+    {
+        // Arrange
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetAllAsync().Returns(new List<Budget>());
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _budgetService.CopyAsync("user123", "2024-01", "2024-02"));
+    }
+
+    [Fact]
+    public async Task CopyAsync_ShouldPreserveLimitAmountsFromSource()
+    {
+        // Arrange
+        var userId = "user123";
+        var sourceBudget = new Budget
+        {
+            Id = "budget1",
+            UserId = userId,
+            Month = "2024-03",
+            Items = new List<BudgetItem>
+            {
+                new BudgetItem { CategoryId = "food", LimitAmount = 800m },
+                new BudgetItem { CategoryId = "transport", LimitAmount = 300m }
+            }
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetAllAsync().Returns(new List<Budget> { sourceBudget });
+        budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 4).Returns(new List<Transaction>());
+        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+
+        // Act
+        var result = await _budgetService.CopyAsync(userId, "2024-03", "2024-04");
+
+        // Assert
+        Assert.Equal(800m, result.Items.First(i => i.CategoryId == "food").LimitAmount);
+        Assert.Equal(300m, result.Items.First(i => i.CategoryId == "transport").LimitAmount);
+    }
+
+    [Fact]
+    public async Task CopyAsync_WhenTargetAlreadyExists_ShouldOverwriteTarget()
+    {
+        // Arrange
+        var userId = "user123";
+        var sourceBudget = new Budget
+        {
+            Id = "budget-src",
+            UserId = userId,
+            Month = "2024-01",
+            Items = new List<BudgetItem>
+            {
+                new BudgetItem { CategoryId = "cat1", LimitAmount = 1200m }
+            }
+        };
+        var existingTargetBudget = new Budget
+        {
+            Id = "budget-tgt",
+            UserId = userId,
+            Month = "2024-02",
+            Items = new List<BudgetItem>
+            {
+                new BudgetItem { CategoryId = "cat99", LimitAmount = 50m }
+            }
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetAllAsync().Returns(new List<Budget> { sourceBudget, existingTargetBudget });
+        budgetRepo.UpdateAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 2).Returns(new List<Transaction>());
+        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+
+        // Act
+        var result = await _budgetService.CopyAsync(userId, "2024-01", "2024-02");
+
+        // Assert: target should be overwritten with source items
+        Assert.Single(result.Items);
+        Assert.Equal("cat1", result.Items.First().CategoryId);
+        Assert.Equal(1200m, result.Items.First().LimitAmount);
+        await budgetRepo.Received(1).UpdateAsync(Arg.Any<Budget>());
+        await budgetRepo.DidNotReceive().AddAsync(Arg.Any<Budget>());
+    }
+
+    [Fact]
+    public async Task CopyAsync_ShouldNotCopySpentAmountsFromSource()
+    {
+        // Arrange: source has spent amounts; target month has no transactions
+        var userId = "user123";
+        var sourceBudget = new Budget
+        {
+            Id = "budget1",
+            UserId = userId,
+            Month = "2024-01",
+            Items = new List<BudgetItem>
+            {
+                new BudgetItem { CategoryId = "cat1", LimitAmount = 1000m, SpentAmount = 750m }
+            }
+        };
+
+        var budgetRepo = Substitute.For<IRepository<Budget>>();
+        budgetRepo.GetAllAsync().Returns(new List<Budget> { sourceBudget });
+        budgetRepo.AddAsync(Arg.Any<Budget>()).Returns(x => x.Arg<Budget>());
+        _unitOfWorkMock.Budgets.Returns(budgetRepo);
+
+        var transactionRepo = Substitute.For<ITransactionRepository>();
+        transactionRepo.GetByUserAndMonthAsync(userId, 2024, 2).Returns(new List<Transaction>());
+        _unitOfWorkMock.Transactions.Returns(transactionRepo);
+
+        // Act
+        var result = await _budgetService.CopyAsync(userId, "2024-01", "2024-02");
+
+        // Assert: spent amounts reflect target month transactions (zero), not source
+        Assert.Equal(0m, result.Items.First().SpentAmount);
+    }
 }
+

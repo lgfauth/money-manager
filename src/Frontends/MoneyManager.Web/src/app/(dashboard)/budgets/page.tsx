@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, PiggyBank, Plus, Settings } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, PiggyBank, Plus, Settings } from "lucide-react";
 import { useBudget } from "@/hooks/use-budgets";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { StatCard } from "@/components/shared/stat-card";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { BudgetCard } from "@/components/budgets/budget-card";
 import { BudgetWizard } from "@/components/budgets/budget-wizard";
+import { CopyBudgetDialog } from "@/components/budgets/copy-budget-dialog";
 
 export default function BudgetsPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -21,6 +22,7 @@ export default function BudgetsPage() {
 
   const { data: budget, isLoading } = useBudget(month);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const stats = useMemo(() => {
     if (!budget || !budget.items.length)
@@ -50,19 +52,26 @@ export default function BudgetsPage() {
         title="Orçamentos"
         description="Defina limites de gastos por categoria."
       >
-        <Button onClick={() => setWizardOpen(true)}>
-          {budget ? (
-            <>
-              <Settings className="mr-2 h-4 w-4" />
-              Editar Orçamento
-            </>
-          ) : (
-            <>
-              <Plus className="mr-2 h-4 w-4" />
-              Criar Orçamento
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Copia um orçamento de mês anterior para o mês atual */}
+          <Button variant="outline" onClick={() => setCopyOpen(true)}>
+            <Copy className="mr-2 h-4 w-4" />
+            Copiar de outro mês
+          </Button>
+          <Button onClick={() => setWizardOpen(true)}>
+            {budget ? (
+              <>
+                <Settings className="mr-2 h-4 w-4" />
+                Editar Orçamento
+              </>
+            ) : (
+              <>
+                <Plus className="mr-2 h-4 w-4" />
+                Criar Orçamento
+              </>
+            )}
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Month navigator */}
@@ -146,6 +155,12 @@ export default function BudgetsPage() {
         onOpenChange={setWizardOpen}
         month={month}
         existingBudget={budget}
+      />
+
+      <CopyBudgetDialog
+        open={copyOpen}
+        onOpenChange={setCopyOpen}
+        targetMonth={month}
       />
     </div>
   );

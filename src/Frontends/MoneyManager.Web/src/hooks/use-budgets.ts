@@ -52,3 +52,34 @@ export function useUpdateBudget() {
     onError: () => toast.error("Erro ao atualizar orcamento"),
   });
 }
+
+export function useAllBudgets() {
+  return useQuery({
+    queryKey: ["budgets"],
+    queryFn: () => apiClient.get<BudgetResponseDto[]>("/api/budgets"),
+  });
+}
+
+// Copia os itens de um orçamento de origem para o mês destino
+export function useCopyBudget() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      sourceMonth,
+      targetMonth,
+    }: {
+      sourceMonth: string;
+      targetMonth: string;
+    }) =>
+      apiClient.post<BudgetResponseDto>(`/api/budgets/${sourceMonth}/copy`, {
+        targetMonth,
+      }),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: queryKeys.budgets(variables.targetMonth) });
+      qc.invalidateQueries({ queryKey: ["budgets"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Orçamento copiado com sucesso");
+    },
+    onError: () => toast.error("Erro ao copiar orçamento"),
+  });
+}
