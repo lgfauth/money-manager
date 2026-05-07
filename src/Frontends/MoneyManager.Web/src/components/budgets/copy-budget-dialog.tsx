@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { useAllBudgets, useCopyBudget } from "@/hooks/use-budgets";
+import { useAllBudgets } from "@/hooks/use-budgets";
+import type { BudgetResponseDto } from "@/types/budget";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,33 +18,37 @@ interface CopyBudgetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   targetMonth: string;
+  // Chamado quando o usuário confirma a seleção; a página abre o wizard para edição
+  onSelectBudget: (sourceBudget: BudgetResponseDto) => void;
 }
 
 export function CopyBudgetDialog({
   open,
   onOpenChange,
   targetMonth,
+  onSelectBudget,
 }: CopyBudgetDialogProps) {
   const { data: allBudgets, isLoading } = useAllBudgets(open);
-  const copyBudget = useCopyBudget();
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Exibe apenas orçamentos de outros meses
-  const availableBudgets = allBudgets?.filter((b) => b.month !== targetMonth) ?? [];
+  // Exibe apenas orçamentos de meses diferentes do mês destino, ordenados do mais recente
+  const availableBudgets = (allBudgets ?? [])
+    .filter((b) => b.month !== targetMonth)
+    .sort((a, b) => b.month.localeCompare(a.month));
 
   const formatMonth = (month: string) =>
-    format(parseISO(`${month}-01`), "MMMM yyyy", { locale: ptBR });
+    format(parseISO(`${month}-01`), "MM/yyyy");
 
-  const handleCopy = () => {
-    if (!selectedMonth) return;
-    copyBudget.mutate(
-      { sourceMonth: selectedMonth, targetMonth },
-      { onSuccess: () => { setSelectedMonth(null); onOpenChange(false); } }
-    );
+  const handleConfirm = () => {
+    const source = availableBudgets.find((b) => b.id === selectedId);
+    if (!source) return;
+    setSelectedId(null);
+    onOpenChange(false);
+    onSelectBudget(source);
   };
 
   const handleOpenChange = (value: boolean) => {
-    if (!value) setSelectedMonth(null);
+    if (!value) setSelectedId(null);
     onOpenChange(value);
   };
 
@@ -55,7 +59,8 @@ export function CopyBudgetDialog({
           <DialogTitle>Copiar orçamento</DialogTitle>
           <DialogDescription>
             Selecione o mês de origem para copiar para{" "}
-            <span className="font-medium capitalize">{formatMonth(targetMonth)}</span>.
+            <span className="font-medium">{formatMonth(targetMonth)}</span>.
+            Os valores poderão ser ajustados antes de salvar.
           </DialogDescription>
         </DialogHeader>
 
@@ -73,16 +78,17 @@ export function CopyBudgetDialog({
               <button
                 key={budget.id}
                 type="button"
-                onClick={() => setSelectedMonth(budget.month)}
+                onClick={() => setSelectedId(budget.id)}
                 className={`w-full flex items-center justify-between rounded-lg border p-3 text-left text-sm transition-colors ${
-                  selectedMonth === budget.month
+                  selectedId === budget.id
                     ? "border-primary bg-primary/5"
                     : "border-border hover:bg-muted"
                 }`}
               >
-                <span className="capitalize">{formatMonth(budget.month)}</span>
+                <span className="font-medium">{formatMonth(budget.month)}</span>
                 <span className="text-muted-foreground">
-                  {budget.items.length} {budget.items.length === 1 ? "categoria" : "categorias"}
+                  {budget.items.length}{" "}
+                  {budget.items.length === 1 ? "categoria" : "categorias"}
                 </span>
               </button>
             ))
@@ -93,11 +99,8 @@ export function CopyBudgetDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             Cancelar
           </Button>
-          <Button
-            onClick={handleCopy}
-            disabled={!selectedMonth || copyBudget.isPending}
-          >
-            {copyBudget.isPending ? "Copiando..." : "Copiar"}
+          <Button onClick={handleConfirm} disabled={!selectedId || isLoading}>
+            Próximo
           </Button>
         </DialogFooter>
       </DialogContent>

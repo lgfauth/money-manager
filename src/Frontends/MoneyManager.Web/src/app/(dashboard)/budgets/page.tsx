@@ -5,6 +5,7 @@ import { format, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Copy, PiggyBank, Plus, Settings } from "lucide-react";
 import { useBudget } from "@/hooks/use-budgets";
+import type { BudgetResponseDto } from "@/types/budget";
 
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -23,6 +24,18 @@ export default function BudgetsPage() {
   const { data: budget, isLoading } = useBudget(month);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [copyOpen, setCopyOpen] = useState(false);
+  // Orçamento de origem selecionado na cópia; passado ao wizard para pré-preenchimento
+  const [copySource, setCopySource] = useState<BudgetResponseDto | null>(null);
+
+  const handleCopySelect = (sourceBudget: BudgetResponseDto) => {
+    setCopySource(sourceBudget);
+    setWizardOpen(true);
+  };
+
+  const handleWizardClose = (open: boolean) => {
+    setWizardOpen(open);
+    if (!open) setCopySource(null);
+  };
 
   const stats = useMemo(() => {
     if (!budget || !budget.items.length)
@@ -152,15 +165,16 @@ export default function BudgetsPage() {
 
       <BudgetWizard
         open={wizardOpen}
-        onOpenChange={setWizardOpen}
+        onOpenChange={handleWizardClose}
         month={month}
-        existingBudget={budget}
+        existingBudget={copySource ?? budget}
       />
 
       <CopyBudgetDialog
         open={copyOpen}
         onOpenChange={setCopyOpen}
         targetMonth={month}
+        onSelectBudget={handleCopySelect}
       />
     </div>
   );

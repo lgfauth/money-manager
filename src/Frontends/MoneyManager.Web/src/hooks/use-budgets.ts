@@ -55,9 +55,11 @@ export function useUpdateBudget() {
 
 export function useAllBudgets(enabled = true) {
   return useQuery({
-    queryKey: ["budgets"],
+    // Chave isolada para não colidir com queryKeys.budgets(month) = ["budgets", month]
+    queryKey: ["budgets", "all"],
     queryFn: () => apiClient.get<BudgetResponseDto[]>("/api/budgets"),
     enabled,
+    staleTime: 0, // sempre busca dados frescos ao abrir o dialog
   });
 }
 
@@ -77,7 +79,7 @@ export function useCopyBudget() {
       }),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.budgets(variables.targetMonth) });
-      qc.invalidateQueries({ queryKey: ["budgets"] });
+      qc.invalidateQueries({ queryKey: ["budgets", "all"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Orçamento copiado com sucesso");
     },
