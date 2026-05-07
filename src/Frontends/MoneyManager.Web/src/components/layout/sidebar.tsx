@@ -133,7 +133,7 @@ export function Sidebar() {
         <div className="px-2 pb-1">
           {sidebarCollapsed ? (
             <Tooltip>
-              <TooltipTrigger asChild>
+              <TooltipTrigger>
                 <button
                   type="button"
                   onClick={() => setWhatsNewOpen(true)}
