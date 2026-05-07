@@ -53,10 +53,11 @@ export function useUpdateBudget() {
   });
 }
 
-export function useAllBudgets() {
+export function useAllBudgets(enabled = true) {
   return useQuery({
     queryKey: ["budgets"],
     queryFn: () => apiClient.get<BudgetResponseDto[]>("/api/budgets"),
+    enabled,
   });
 }
 

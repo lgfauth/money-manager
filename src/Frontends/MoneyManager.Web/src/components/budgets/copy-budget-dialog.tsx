@@ -25,7 +25,7 @@ export function CopyBudgetDialog({
   onOpenChange,
   targetMonth,
 }: CopyBudgetDialogProps) {
-  const { data: allBudgets } = useAllBudgets();
+  const { data: allBudgets, isLoading } = useAllBudgets(open);
   const copyBudget = useCopyBudget();
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
 
@@ -60,7 +60,11 @@ export function CopyBudgetDialog({
         </DialogHeader>
 
         <div className="space-y-2 max-h-60 overflow-y-auto">
-          {availableBudgets.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+          ) : availableBudgets.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               Nenhum orçamento anterior encontrado.
             </p>
