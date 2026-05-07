@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { TermsConsentModal } from "@/components/lgpd/terms-consent-modal";
+import { WhatsNewModal } from "@/components/layout/whats-new-modal";
 import {
   LEGAL_PRIVACY_POLICY_URL,
   LEGAL_TERMS_OF_USE_URL,
@@ -71,6 +72,7 @@ export default function DashboardLayout({
         privacyPolicyUrl={LEGAL_PRIVACY_POLICY_URL}
         onAccept={handleAcceptTerms}
       />
+      <WhatsNewModal />
     </div>
   );
 }

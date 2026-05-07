@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navigationItems } from "@/config/navigation";
 import { useUIStore } from "@/stores/ui-store";
@@ -18,7 +18,7 @@ import { Separator } from "@/components/ui/separator";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { sidebarCollapsed, toggleCollapsed } = useUIStore();
+  const { sidebarCollapsed, toggleCollapsed, setWhatsNewOpen } = useUIStore();
 
   const mainItems = navigationItems.filter((item) => item.group === "main");
   const userItems = navigationItems.filter((item) => item.group === "user");
@@ -128,6 +128,33 @@ export function Sidebar() {
             })}
           </ul>
         </nav>
+
+        {/* What's new */}
+        <div className="px-2 pb-1">
+          {sidebarCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setWhatsNewOpen(true)}
+                  className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-all text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                >
+                  <Sparkles className="h-4 w-4 shrink-0" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">O que há de novo</TooltipContent>
+            </Tooltip>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setWhatsNewOpen(true)}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+            >
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span>O que há de novo</span>
+            </button>
+          )}
+        </div>
 
         {/* Collapse toggle */}
         <div className="border-t border-sidebar-border p-2">

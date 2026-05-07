@@ -4,16 +4,19 @@ interface UIState {
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
   commandOpen: boolean;
+  whatsNewOpen: boolean;
   toggleSidebar: () => void;
   toggleCollapsed: () => void;
   toggleCommand: () => void;
   setSidebarOpen: (open: boolean) => void;
+  setWhatsNewOpen: (open: boolean) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
   sidebarOpen: false,
   sidebarCollapsed: false,
   commandOpen: false,
+  whatsNewOpen: false,
 
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   toggleCollapsed: () => {
@@ -27,4 +30,5 @@ export const useUIStore = create<UIState>((set) => ({
   },
   toggleCommand: () => set((s) => ({ commandOpen: !s.commandOpen })),
   setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
+  setWhatsNewOpen: (open: boolean) => set({ whatsNewOpen: open }),
 }));

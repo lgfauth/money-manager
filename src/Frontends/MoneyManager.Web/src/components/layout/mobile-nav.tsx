@@ -9,6 +9,7 @@ import {
   PieChart,
   MoreHorizontal,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -24,7 +25,7 @@ const bottomNavItems = [
 
 export function MobileNav() {
   const pathname = usePathname();
-  const { sidebarOpen, setSidebarOpen } = useUIStore();
+  const { sidebarOpen, setSidebarOpen, setWhatsNewOpen } = useUIStore();
 
   return (
     <>
@@ -97,6 +98,16 @@ export function MobileNav() {
                   );
                 })}
               </ul>
+              <div className="mt-2 border-t border-sidebar-border pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setSidebarOpen(false); setWhatsNewOpen(true); }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>O que há de novo</span>
+                </button>
+              </div>
             </nav>
           </SheetContent>
         </Sheet>
