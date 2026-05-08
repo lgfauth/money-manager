@@ -39,9 +39,10 @@ export function CopyBudgetDialog({
     }
   }, [open, refetch]);
 
-  // Exibe apenas os 3 orçamentos mais recentes de meses diferentes do mês destino
+  // Exibe apenas os 3 orçamentos mais recentes com mês válido (YYYY-MM) e diferentes do mês destino
+  const MONTH_REGEX = /^\d{4}-\d{2}$/;
   const availableBudgets = (allBudgets ?? [])
-    .filter((b) => b.month !== targetMonth)
+    .filter((b) => MONTH_REGEX.test(b.month) && b.month !== targetMonth)
     .sort((a, b) => b.month.localeCompare(a.month))
     .slice(0, 3);
 
