@@ -3,6 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MoneyManager.Domain.Entities;
 
+[BsonIgnoreExtraElements]
 public class Budget
 {
     [BsonId]

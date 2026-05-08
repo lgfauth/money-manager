@@ -110,9 +110,13 @@ public class BudgetService : IBudgetService
 
     private async Task UpdateSpentAmountsAsync(Budget budget)
     {
-        var parts = budget.Month.Split('-');
-        var year = int.Parse(parts[0]);
-        var month = int.Parse(parts[1]);
+        var parts = budget.Month?.Split('-');
+        if (parts == null || parts.Length < 2 ||
+            !int.TryParse(parts[0], out var year) ||
+            !int.TryParse(parts[1], out var month))
+        {
+            return;
+        }
 
         var monthTransactions = (await _unitOfWork.Transactions.GetByUserAndMonthAsync(budget.UserId, year, month))
             .Where(t => t.Type == TransactionType.Expense)
