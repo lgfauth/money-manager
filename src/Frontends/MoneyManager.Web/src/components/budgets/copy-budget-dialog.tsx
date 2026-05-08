@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { useAllBudgets } from "@/hooks/use-budgets";
 import type { BudgetResponseDto } from "@/types/budget";
@@ -28,13 +28,22 @@ export function CopyBudgetDialog({
   targetMonth,
   onSelectBudget,
 }: CopyBudgetDialogProps) {
-  const { data: allBudgets, isLoading } = useAllBudgets(open);
+  // enabled=false para não buscar automaticamente; refetch() é disparado pelo useEffect
+  const { data: allBudgets, isLoading, isError, refetch } = useAllBudgets(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Exibe apenas orçamentos de meses diferentes do mês destino, ordenados do mais recente
+  // Busca os orçamentos toda vez que o modal é aberto
+  useEffect(() => {
+    if (open) {
+      refetch();
+    }
+  }, [open, refetch]);
+
+  // Exibe apenas os 3 orçamentos mais recentes de meses diferentes do mês destino
   const availableBudgets = (allBudgets ?? [])
     .filter((b) => b.month !== targetMonth)
-    .sort((a, b) => b.month.localeCompare(a.month));
+    .sort((a, b) => b.month.localeCompare(a.month))
+    .slice(0, 3);
 
   const formatMonth = (month: string) =>
     format(parseISO(`${month}-01`), "MM/yyyy");
@@ -69,6 +78,10 @@ export function CopyBudgetDialog({
             <div className="flex items-center justify-center py-6">
               <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
+          ) : isError ? (
+            <p className="text-sm text-destructive text-center py-4">
+              Erro ao carregar orçamentos. Tente novamente.
+            </p>
           ) : availableBudgets.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               Nenhum orçamento anterior encontrado.
