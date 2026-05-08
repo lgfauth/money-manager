@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { useAllBudgets } from "@/hooks/use-budgets";
 import type { BudgetResponseDto } from "@/types/budget";
 import { Button } from "@/components/ui/button";
@@ -45,8 +45,11 @@ export function CopyBudgetDialog({
     .sort((a, b) => b.month.localeCompare(a.month))
     .slice(0, 3);
 
-  const formatMonth = (month: string) =>
-    format(parseISO(`${month}-01`), "MM/yyyy");
+  const formatMonth = (month: string): string => {
+    if (!month) return month;
+    const d = parseISO(`${month}-01`);
+    return isValid(d) ? format(d, "MM/yyyy") : month;
+  };
 
   const handleConfirm = () => {
     const source = availableBudgets.find((b) => b.id === selectedId);
@@ -74,7 +77,7 @@ export function CopyBudgetDialog({
         </DialogHeader>
 
         <div className="space-y-2 max-h-60 overflow-y-auto">
-          {isLoading ? (
+          {!open ? null : isLoading ? (
             <div className="flex items-center justify-center py-6">
               <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
