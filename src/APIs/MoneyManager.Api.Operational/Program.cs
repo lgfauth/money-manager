@@ -8,6 +8,7 @@ using MoneyManager.Domain.Interfaces;
 using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Repositories;
 using MoneyManager.Infrastructure.Security;
+using MoneyManager.Infrastructure.Services.AI;
 using MoneyManager.Observability;
 using MoneyManager.Presentation.Middlewares;
 using NLog.Web;
@@ -42,6 +43,10 @@ builder.Services.AddScoped<IUserReportService, UserReportService>();
 builder.Services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
 builder.Services.AddScoped<ICreditCardService, CreditCardService>();
 builder.Services.AddScoped<ICreditCardTransactionService, CreditCardTransactionService>();
+
+// Register receipt analysis service
+builder.Services.AddHttpClient("anthropic");
+builder.Services.AddScoped<IReceiptAnalysisService, AnthropicReceiptAnalysisService>();
 
 // Register VAPID settings and push service
 builder.Services.Configure<VapidSettings>(

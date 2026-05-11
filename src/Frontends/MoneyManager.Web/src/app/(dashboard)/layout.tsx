@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAcceptTerms, useProfile, useRefreshProfile } from "@/hooks/use-profile";
@@ -9,6 +9,9 @@ import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { TermsConsentModal } from "@/components/lgpd/terms-consent-modal";
 import { WhatsNewModal } from "@/components/layout/whats-new-modal";
+import { ReceiptFab } from "@/components/receipts/ReceiptFab";
+import { ReceiptConfirmationModal } from "@/components/receipts/ReceiptConfirmationModal";
+import type { ReceiptAnalysisResult } from "@/types/receipt";
 import {
   LEGAL_PRIVACY_POLICY_URL,
   LEGAL_TERMS_OF_USE_URL,
@@ -26,6 +29,7 @@ export default function DashboardLayout({
   const acceptTerms = useAcceptTerms();
   const router = useRouter();
   const pathname = usePathname();
+  const [receiptResult, setReceiptResult] = useState<ReceiptAnalysisResult | null>(null);
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated && !token) {
@@ -64,6 +68,12 @@ export default function DashboardLayout({
         </main>
       </div>
       <MobileNav />
+      <ReceiptFab onResult={(r) => setReceiptResult(r)} />
+      <ReceiptConfirmationModal
+        open={receiptResult !== null}
+        result={receiptResult}
+        onClose={() => setReceiptResult(null)}
+      />
       <TermsConsentModal
         open={requiresTermsAcceptance}
         isSubmitting={acceptTerms.isPending}
