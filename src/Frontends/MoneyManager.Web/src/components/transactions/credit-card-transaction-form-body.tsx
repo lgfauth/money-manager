@@ -74,6 +74,8 @@ export function CreditCardTransactionFormBody({
   const firstOnCurrent = watch("firstInstallmentOnCurrentInvoice");
   const selectedCard = cards?.find((c) => c.id === cardId);
 
+  const saveAndAddRef = useRef(false);
+
   const resetMutationsRef = useRef(() => {});
   resetMutationsRef.current = () => createTx.reset();
 
@@ -92,13 +94,31 @@ export function CreditCardTransactionFormBody({
   }, [open, defaultCardId, reset]);
 
   const onSubmit = (data: CreditCardTransactionFormData) => {
+    const keepOpen = saveAndAddRef.current;
+    saveAndAddRef.current = false;
+
     const payload = {
       ...data,
       categoryId: data.categoryId || undefined,
       clientRequestId: crypto.randomUUID(),
     };
     createTx.mutate(payload, {
-      onSuccess: () => onClose(),
+      onSuccess: () => {
+        if (keepOpen) {
+          createTx.reset();
+          reset({
+            creditCardId: data.creditCardId,
+            description: "",
+            categoryId: "",
+            purchaseDate: data.purchaseDate,
+            totalAmount: 0,
+            totalInstallments: 1,
+            firstInstallmentOnCurrentInvoice: data.firstInstallmentOnCurrentInvoice,
+          });
+        } else {
+          onClose();
+        }
+      },
     });
   };
 
@@ -272,9 +292,24 @@ export function CreditCardTransactionFormBody({
 
       <DialogFooter>
         <Button
-          type="submit"
-          className="w-full"
+          type="button"
+          variant="outline"
+          className="w-full sm:w-auto sm:flex-1"
           disabled={createTx.isPending}
+          onClick={() => {
+            saveAndAddRef.current = true;
+            handleSubmit(onSubmit)();
+          }}
+        >
+          Salvar e Adicionar Outra
+        </Button>
+        <Button
+          type="submit"
+          className="w-full sm:w-auto sm:flex-1"
+          disabled={createTx.isPending}
+          onClick={() => {
+            saveAndAddRef.current = false;
+          }}
         >
           {createTx.isPending ? "Salvando..." : "Registrar compra"}
         </Button>
