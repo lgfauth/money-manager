@@ -11,6 +11,16 @@ async function parseResponseBody(response: Response): Promise<unknown> {
   }
 
   const contentType = response.headers.get("content-type") ?? "";
+
+  // Descartar respostas HTML (páginas de erro do servidor/proxy/Next.js)
+  if (
+    contentType.includes("text/html") ||
+    text.trimStart().startsWith("<!") ||
+    text.trimStart().startsWith("<html")
+  ) {
+    return undefined;
+  }
+
   if (contentType.includes("application/json")) {
     try {
       return JSON.parse(text);
@@ -48,7 +58,13 @@ async function fetchWithAuth<T>(
   const body = await parseResponseBody(res);
 
   if (!res.ok) {
-    throw createApiClientError(res.status, body, `HTTP ${res.status}`);
+    const fallback =
+      res.status === 404
+        ? "Recurso não encontrado. Verifique a configuração do servidor."
+        : res.status >= 500
+          ? "Erro interno do servidor. Tente novamente em instantes."
+          : `HTTP ${res.status}`;
+    throw createApiClientError(res.status, body, fallback);
   }
 
   return body as T;
