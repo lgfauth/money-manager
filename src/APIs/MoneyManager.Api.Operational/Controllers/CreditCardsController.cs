@@ -157,6 +157,28 @@ public class CreditCardsController : ControllerBase
         }
     }
 
+    [HttpPost("{id}/invoices/open")]
+    public async Task<IActionResult> OpenCurrentInvoice(string id)
+    {
+        try
+        {
+            var result = await _invoiceService.OpenCurrentInvoiceAsync(HttpContext.GetUserId(), id);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return this.ApiNotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+    }
+
     [HttpPost("{id}/invoices/{invoiceId}/pay")]
     public async Task<IActionResult> PayInvoice(string id, string invoiceId, [FromBody] PayCreditCardInvoiceRequestDto request)
     {

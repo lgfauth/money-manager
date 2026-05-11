@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -15,6 +15,7 @@ import { InvoiceListItem } from "@/components/credit-cards/invoice-list-item";
 import {
   useCreditCard,
   useCreditCardInvoices,
+  useOpenCreditCardInvoice,
 } from "@/hooks/use-credit-cards";
 import {
   CREDIT_LIMIT_THRESHOLD_DANGER,
@@ -37,6 +38,7 @@ export default function CreditCardDetailPage() {
   const { data: card, isLoading: cardLoading } = useCreditCard(cardId);
   const { data: invoices, isLoading: invoicesLoading } =
     useCreditCardInvoices(cardId);
+  const openInvoiceMutation = useOpenCreditCardInvoice();
 
   useBreadcrumbLabel(cardId, card?.name);
 
@@ -124,9 +126,22 @@ export default function CreditCardDetailPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-muted-foreground">
-          Fatura corrente
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Fatura corrente
+          </h2>
+          {!invoicesLoading && !currentInvoice && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openInvoiceMutation.mutate(card.id)}
+              disabled={openInvoiceMutation.isPending}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Abrir fatura
+            </Button>
+          )}
+        </div>
         {invoicesLoading ? (
           <TableSkeleton rows={3} />
         ) : currentInvoice ? (

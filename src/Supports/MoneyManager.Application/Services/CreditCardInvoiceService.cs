@@ -12,6 +12,7 @@ public interface ICreditCardInvoiceService
     Task<IEnumerable<CreditCardInvoiceResponseDto>> GetByCardAsync(string userId, string creditCardId);
     Task<CreditCardInvoiceDetailResponseDto> GetDetailAsync(string userId, string invoiceId);
     Task<CreditCardInvoiceResponseDto> PayAsync(string userId, string invoiceId, PayCreditCardInvoiceRequestDto request);
+    Task<CreditCardInvoiceResponseDto> OpenCurrentInvoiceAsync(string userId, string creditCardId);
 
     Task<CreditCardInvoice> EnsureCurrentOpenInvoiceAsync(string userId, CreditCard card);
     Task<CreditCardInvoice> GetOrCreateInvoiceAsync(string userId, CreditCard card, string referenceMonth, InvoiceStatus initialStatus);
@@ -197,6 +198,20 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         }
 
         var referenceMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(today, card.ClosingDay);
+
+        // Verificar se há fatura pendente para o período de referência corrente e promovê-la
+        var pendingForTarget = refreshed.FirstOrDefault(i =>
+            i.ReferenceMonth == referenceMonth && i.Status == InvoiceStatus.Pending);
+
+        if (pendingForTarget != null)
+        {
+            pendingForTarget.Status = InvoiceStatus.Open;
+            pendingForTarget.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardInvoices.UpdateAsync(pendingForTarget);
+            await _unitOfWork.SaveChangesAsync();
+            return pendingForTarget;
+        }
+
         return await GetOrCreateInvoiceAsync(userId, card, referenceMonth, InvoiceStatus.Open);
     }
 
@@ -223,6 +238,46 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         await _unitOfWork.SaveChangesAsync();
 
         return invoice;
+    }
+
+    public async Task<CreditCardInvoiceResponseDto> OpenCurrentInvoiceAsync(string userId, string creditCardId)
+    {
+        var card = await _unitOfWork.CreditCards.GetByIdAsync(creditCardId);
+        if (card == null || card.UserId != userId || card.IsDeleted)
+            throw new KeyNotFoundException("Credit card not found");
+
+        var today = DateTime.UtcNow.Date;
+        var referenceMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(today, card.ClosingDay);
+
+        var invoices = (await _unitOfWork.CreditCardInvoices.GetByCardAsync(userId, creditCardId)).ToList();
+
+        // Se já existe fatura aberta para o período corrente, retornar sem alteração
+        var existingOpen = invoices.FirstOrDefault(i =>
+            i.Status == InvoiceStatus.Open && i.ReferenceMonth == referenceMonth);
+        if (existingOpen != null)
+            return MapToDto(existingOpen, card);
+
+        // Se há fatura pendente para o período corrente, promover para corrente
+        var pendingForPeriod = invoices.FirstOrDefault(i =>
+            i.Status == InvoiceStatus.Pending && i.ReferenceMonth == referenceMonth);
+        if (pendingForPeriod != null)
+        {
+            pendingForPeriod.Status = InvoiceStatus.Open;
+            pendingForPeriod.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardInvoices.UpdateAsync(pendingForPeriod);
+            await _unitOfWork.SaveChangesAsync();
+            return MapToDto(pendingForPeriod, card);
+        }
+
+        // Se já existe fatura em outro status para o período, não criar duplicata
+        var existingForPeriod = invoices.FirstOrDefault(i =>
+            i.ReferenceMonth == referenceMonth && !i.IsDeleted);
+        if (existingForPeriod != null)
+            throw new InvalidOperationException($"Já existe uma fatura para o período {referenceMonth} com status {existingForPeriod.Status}.");
+
+        // Criar nova fatura corrente
+        var newInvoice = await GetOrCreateInvoiceAsync(userId, card, referenceMonth, InvoiceStatus.Open);
+        return MapToDto(newInvoice, card);
     }
 
     public async Task RecalculateTotalAsync(string userId, string invoiceId)
@@ -261,6 +316,7 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             }
         }
 
+        var justClosed = new List<CreditCardInvoice>();
         var openInvoices = await _unitOfWork.CreditCardInvoices.GetByStatusAsync(InvoiceStatus.Open);
         foreach (var invoice in openInvoices)
         {
@@ -269,7 +325,30 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
                 invoice.Status = InvoiceStatus.Closed;
                 invoice.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
+                justClosed.Add(invoice);
                 closed++;
+            }
+        }
+
+        // Garantir fatura corrente após fechamento: promover pendente ou criar nova
+        foreach (var closedInvoice in justClosed)
+        {
+            var nextRefMonth = CreditCardDateUtils.AddMonths(closedInvoice.ReferenceMonth, 1);
+            var existingNext = await _unitOfWork.CreditCardInvoices.GetByCardAndReferenceAsync(
+                closedInvoice.UserId, closedInvoice.CreditCardId, nextRefMonth);
+
+            if (existingNext != null && existingNext.Status == InvoiceStatus.Pending)
+            {
+                existingNext.Status = InvoiceStatus.Open;
+                existingNext.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.CreditCardInvoices.UpdateAsync(existingNext);
+                promoted++;
+            }
+            else if (existingNext == null)
+            {
+                var card = await _unitOfWork.CreditCards.GetByIdAsync(closedInvoice.CreditCardId);
+                if (card != null && !card.IsDeleted)
+                    await GetOrCreateInvoiceAsync(closedInvoice.UserId, card, nextRefMonth, InvoiceStatus.Open);
             }
         }
 

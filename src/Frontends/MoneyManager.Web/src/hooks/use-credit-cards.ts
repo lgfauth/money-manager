@@ -97,6 +97,25 @@ export function useCreditCardInvoice(cardId: string | undefined, invoiceId: stri
   });
 }
 
+export function useOpenCreditCardInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (cardId: string) =>
+      apiClient.post<CreditCardInvoiceResponseDto>(
+        `/api/credit-cards/${cardId}/invoices/open`,
+        {}
+      ),
+    onSuccess: (_data, cardId) => {
+      qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      qc.invalidateQueries({ queryKey: queryKeys.creditCard(cardId) });
+      qc.invalidateQueries({ queryKey: queryKeys.creditCardInvoices(cardId) });
+      toast.success("Fatura corrente aberta com sucesso");
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao abrir fatura corrente")),
+  });
+}
+
 export function usePayCreditCardInvoice() {
   const qc = useQueryClient();
   return useMutation({
