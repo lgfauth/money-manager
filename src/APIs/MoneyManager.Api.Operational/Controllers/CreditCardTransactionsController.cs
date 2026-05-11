@@ -14,13 +14,16 @@ public class CreditCardTransactionsController : ControllerBase
 {
     private readonly ICreditCardTransactionService _service;
     private readonly IValidator<CreateCreditCardTransactionRequestDto> _validator;
+    private readonly IValidator<UpdateCreditCardTransactionRequestDto> _updateValidator;
 
     public CreditCardTransactionsController(
         ICreditCardTransactionService service,
-        IValidator<CreateCreditCardTransactionRequestDto> validator)
+        IValidator<CreateCreditCardTransactionRequestDto> validator,
+        IValidator<UpdateCreditCardTransactionRequestDto> updateValidator)
     {
         _service = service;
         _validator = validator;
+        _updateValidator = updateValidator;
     }
 
     [HttpPost]
@@ -63,6 +66,32 @@ public class CreditCardTransactionsController : ControllerBase
         catch (KeyNotFoundException)
         {
             return this.ApiNotFound();
+        }
+        catch (Exception ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateCreditCardTransactionRequestDto request)
+    {
+        var validation = await _updateValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+            return this.ApiValidationError(validation.Errors);
+
+        try
+        {
+            var result = await _service.UpdateAsync(HttpContext.GetUserId(), id, request);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return this.ApiNotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
         }
         catch (Exception ex)
         {

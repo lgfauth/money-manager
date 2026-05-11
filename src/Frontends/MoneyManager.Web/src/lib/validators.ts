@@ -104,6 +104,13 @@ export const payCreditCardInvoiceSchema = z.object({
   paidAt: z.string().min(1, "Data obrigatória"),
 });
 
+export const updateCreditCardTransactionSchema = z.object({
+  description: z.string().min(1, "Descrição obrigatória"),
+  categoryId: z.string().optional(),
+  purchaseDate: z.string().min(1, "Data obrigatória"),
+  totalAmount: z.number().positive("Valor deve ser maior que zero"),
+});
+
 export const recurringSchema = z.object({
   description: z.string().min(1, "Descrição obrigatória"),
   amount: z.number().positive("Valor deve ser positivo"),
@@ -128,3 +135,4 @@ export type RecurringFormData = z.infer<typeof recurringSchema>;
 export type CreditCardFormData = z.infer<typeof creditCardSchema>;
 export type CreditCardTransactionFormData = z.infer<typeof creditCardTransactionSchema>;
 export type PayCreditCardInvoiceFormData = z.infer<typeof payCreditCardInvoiceSchema>;
+export type UpdateCreditCardTransactionFormData = z.infer<typeof updateCreditCardTransactionSchema>;

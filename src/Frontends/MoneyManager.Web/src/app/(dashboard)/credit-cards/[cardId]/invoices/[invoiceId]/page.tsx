@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FileText, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -11,6 +11,7 @@ import { TableSkeleton } from "@/components/shared/loading-skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { InvoiceStatusBadge } from "@/components/credit-cards/invoice-status-badge";
 import { InvoicePaymentModal } from "@/components/credit-cards/invoice-payment-modal";
+import { CreditCardTransactionEditDialog } from "@/components/credit-cards/credit-card-transaction-edit-dialog";
 import {
   useCreditCardInvoice,
   useDeleteCreditCardTransaction,
@@ -60,6 +61,8 @@ export default function InvoiceDetailPage() {
 
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [deletingTx, setDeletingTx] =
+    useState<CreditCardTransactionResponseDto | null>(null);
+  const [editingTx, setEditingTx] =
     useState<CreditCardTransactionResponseDto | null>(null);
 
   if (isLoading) {
@@ -179,14 +182,24 @@ export default function InvoiceDetailPage() {
                     {fmt(tx.installmentAmount, tx.currency)}
                   </p>
                   {canRemoveTx && (
-                    <button
-                      type="button"
-                      onClick={() => setDeletingTx(tx)}
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Excluir transação"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setEditingTx(tx)}
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label="Editar transação"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingTx(tx)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Excluir transação"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
                   )}
                 </div>
               </li>
@@ -200,6 +213,15 @@ export default function InvoiceDetailPage() {
         onOpenChange={setPaymentOpen}
         cardId={invoice.creditCardId}
         invoice={invoice}
+      />
+
+      <CreditCardTransactionEditDialog
+        open={!!editingTx}
+        onOpenChange={(open) => {
+          if (!open) setEditingTx(null);
+        }}
+        transaction={editingTx}
+        currency={invoice.currency}
       />
 
       <ConfirmDialog

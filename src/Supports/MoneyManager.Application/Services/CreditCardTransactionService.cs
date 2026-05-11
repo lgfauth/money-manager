@@ -12,6 +12,7 @@ public interface ICreditCardTransactionService
     Task<IEnumerable<CreditCardTransactionResponseDto>> CreateAsync(string userId, CreateCreditCardTransactionRequestDto request);
     Task<IEnumerable<CreditCardTransactionResponseDto>> GetAllAsync(string userId);
     Task<IEnumerable<CreditCardTransactionResponseDto>> GetByCardAsync(string userId, string creditCardId);
+    Task<IEnumerable<CreditCardTransactionResponseDto>> UpdateAsync(string userId, string id, UpdateCreditCardTransactionRequestDto request);
     Task DeleteAsync(string userId, string id);
 }
 
@@ -160,6 +161,100 @@ public class CreditCardTransactionService : ICreditCardTransactionService
 
         var transactions = (await _unitOfWork.CreditCardTransactions.GetByCardAsync(userId, creditCardId)).ToList();
         return await BuildDtosAsync(userId, transactions);
+    }
+
+    public async Task<IEnumerable<CreditCardTransactionResponseDto>> UpdateAsync(string userId, string id, UpdateCreditCardTransactionRequestDto request)
+    {
+        _processLogger.AddStep("Updating credit card transaction", new Dictionary<string, object?>
+        {
+            ["transactionId"] = id,
+            ["totalAmount"] = request.TotalAmount
+        });
+
+        var transaction = await _unitOfWork.CreditCardTransactions.GetByIdAsync(id);
+        if (transaction == null || transaction.UserId != userId || transaction.IsDeleted)
+            throw new KeyNotFoundException("Transaction not found");
+
+        var invoice = await _unitOfWork.CreditCardInvoices.GetByIdAsync(transaction.InvoiceId);
+        if (invoice == null || invoice.IsDeleted)
+            throw new KeyNotFoundException("Invoice not found");
+
+        // Coletar todas as parcelas da mesma compra
+        var parentId = transaction.ParentTransactionId ?? transaction.Id;
+        var siblings = (await _unitOfWork.CreditCardTransactions.GetByParentAsync(userId, parentId)).ToList();
+
+        var allInstallments = new List<CreditCardTransaction> { transaction };
+        if (transaction.ParentTransactionId == null)
+        {
+            allInstallments.AddRange(siblings.Where(s => s.Id != transaction.Id));
+        }
+        else
+        {
+            var parent = await _unitOfWork.CreditCardTransactions.GetByIdAsync(parentId);
+            if (parent != null && !parent.IsDeleted)
+                allInstallments.Add(parent);
+            allInstallments.AddRange(siblings.Where(s => s.Id != transaction.Id));
+        }
+
+        allInstallments = allInstallments.DistinctBy(t => t.Id).OrderBy(t => t.InstallmentNumber).ToList();
+
+        // Validar que todas as faturas permitem edição
+        foreach (var installment in allInstallments)
+        {
+            var inv = await _unitOfWork.CreditCardInvoices.GetByIdAsync(installment.InvoiceId);
+            if (inv == null || inv.IsDeleted)
+                throw new KeyNotFoundException("Invoice not found");
+            if (inv.Status != InvoiceStatus.Open && inv.Status != InvoiceStatus.Pending)
+                throw new InvalidOperationException("Não é possível editar transações vinculadas a faturas fechadas, pagas ou vencidas");
+        }
+
+        var totalInstallments = allInstallments.Count;
+        var amountChanged = request.TotalAmount != transaction.TotalAmount;
+        decimal installmentAmount = 0;
+        decimal roundingDiff = 0;
+
+        if (amountChanged)
+        {
+            installmentAmount = Math.Round(request.TotalAmount / totalInstallments, 2, MidpointRounding.AwayFromZero);
+            roundingDiff = request.TotalAmount - (installmentAmount * totalInstallments);
+        }
+
+        var invoiceIdsTouched = new HashSet<string>();
+
+        for (var i = 0; i < allInstallments.Count; i++)
+        {
+            var inst = allInstallments[i];
+            inst.Description = request.Description;
+            inst.CategoryId = request.CategoryId;
+            inst.PurchaseDate = request.PurchaseDate;
+
+            if (amountChanged)
+            {
+                inst.TotalAmount = request.TotalAmount;
+                inst.InstallmentAmount = (i == allInstallments.Count - 1 && roundingDiff != 0)
+                    ? installmentAmount + roundingDiff
+                    : installmentAmount;
+            }
+
+            inst.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardTransactions.UpdateAsync(inst);
+            invoiceIdsTouched.Add(inst.InvoiceId);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        foreach (var invoiceId in invoiceIdsTouched)
+        {
+            await _invoiceService.RecalculateTotalAsync(userId, invoiceId);
+        }
+
+        _processLogger.AddStep("Credit card transaction updated", new Dictionary<string, object?>
+        {
+            ["transactionId"] = id,
+            ["installmentsUpdated"] = allInstallments.Count
+        });
+
+        return await BuildDtosAsync(userId, allInstallments);
     }
 
     public async Task DeleteAsync(string userId, string id)

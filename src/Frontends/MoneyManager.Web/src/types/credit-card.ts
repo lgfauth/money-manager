@@ -92,3 +92,10 @@ export interface PayCreditCardInvoiceRequest {
   paidAmount: number;
   paidAt: string;
 }
+
+export interface UpdateCreditCardTransactionRequest {
+  description: string;
+  categoryId?: string;
+  purchaseDate: string;
+  totalAmount: number;
+}

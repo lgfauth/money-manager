@@ -13,6 +13,7 @@ import type {
   CreditCardResponseDto,
   CreditCardTransactionResponseDto,
   PayCreditCardInvoiceRequest,
+  UpdateCreditCardTransactionRequest,
 } from "@/types/credit-card";
 
 export function useCreditCards() {
@@ -179,6 +180,26 @@ export function useCreateCreditCardTransaction() {
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Erro ao registrar compra")),
+  });
+}
+
+export function useUpdateCreditCardTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateCreditCardTransactionRequest }) =>
+      apiClient.put<CreditCardTransactionResponseDto[]>(
+        `/api/credit-card-transactions/${id}`,
+        data
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      qc.invalidateQueries({ queryKey: ["credit-card-transactions"] });
+      qc.invalidateQueries({ queryKey: ["credit-cards"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Compra atualizada");
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao atualizar compra")),
   });
 }
 
