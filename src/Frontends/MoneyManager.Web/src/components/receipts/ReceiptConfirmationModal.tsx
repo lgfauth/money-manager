@@ -46,7 +46,7 @@ function isCreditPayment(paymentMethod: string | null): boolean {
 
 const schema = z.object({
   description: z.string().min(1, "Descrição obrigatória"),
-  amount: z.coerce.number().positive("Valor deve ser positivo"),
+  amount: z.number().positive("Valor deve ser positivo"),
   date: z.string().min(1, "Data obrigatória"),
   transactionType: z.enum(["expense", "income"]),
   categoryId: z.string().optional(),
@@ -54,7 +54,7 @@ const schema = z.object({
   accountId: z.string().optional(),
   // Para cartão de crédito
   creditCardId: z.string().optional(),
-  installments: z.coerce.number().int().min(1).max(48).optional(),
+  installments: z.number().int().min(1).max(48).optional(),
   notes: z.string().optional(),
 });
 
