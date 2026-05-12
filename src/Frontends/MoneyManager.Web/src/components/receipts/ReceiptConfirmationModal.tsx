@@ -1,25 +1,17 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AlertCircle } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -28,6 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MoneyInput } from "@/components/shared/money-input";
+import { FormErrorSummary } from "@/components/shared/form-error-summary";
+import { cn } from "@/lib/utils";
 import { useCategories } from "@/hooks/use-categories";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCreditCards } from "@/hooks/use-credit-cards";
@@ -36,7 +31,7 @@ import { useCreateCreditCardTransaction } from "@/hooks/use-credit-cards";
 import { TransactionType } from "@/types/transaction";
 import type { ReceiptAnalysisResult } from "@/types/receipt";
 
-const CREDIT_KEYWORDS = ["crédito", "credito", "credit", "cartão", "cartao"];
+const CREDIT_KEYWORDS = ["crÃ©dito", "credito", "credit", "cartÃ£o", "cartao"];
 
 function isCreditPayment(paymentMethod: string | null): boolean {
   if (!paymentMethod) return false;
@@ -45,14 +40,12 @@ function isCreditPayment(paymentMethod: string | null): boolean {
 }
 
 const schema = z.object({
-  description: z.string().min(1, "Descrição obrigatória"),
+  description: z.string().min(1, "DescriÃ§Ã£o obrigatÃ³ria"),
   amount: z.number().positive("Valor deve ser positivo"),
-  date: z.string().min(1, "Data obrigatória"),
+  date: z.string().min(1, "Data obrigatÃ³ria"),
   transactionType: z.enum(["expense", "income"]),
   categoryId: z.string().optional(),
-  // Para conta bancária
   accountId: z.string().optional(),
-  // Para cartão de crédito
   creditCardId: z.string().optional(),
   installments: z.number().int().min(1).max(48).optional(),
   notes: z.string().optional(),
@@ -65,6 +58,16 @@ interface ReceiptConfirmationModalProps {
   result: ReceiptAnalysisResult | null;
   onClose: () => void;
 }
+
+const typeOptions = [
+  { value: "expense", label: "Despesa" },
+  { value: "income", label: "Receita" },
+] as const;
+
+const paymentModeOptions = [
+  { value: "account", label: "Conta" },
+  { value: "card", label: "CartÃ£o de crÃ©dito" },
+] as const;
 
 export function ReceiptConfirmationModal({
   open,
@@ -80,7 +83,14 @@ export function ReceiptConfirmationModal({
 
   const [useCard, setUseCard] = useState(false);
 
-  const form = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, submitCount },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       description: "",
@@ -95,7 +105,18 @@ export function ReceiptConfirmationModal({
     },
   });
 
-  // Preencher o formulário com os dados extraídos do comprovante
+  const selectedType = watch("transactionType");
+  const amountValue = watch("amount");
+  const categoryId = watch("categoryId");
+  const accountId = watch("accountId");
+  const creditCardId = watch("creditCardId");
+
+  const filteredCategories = categories?.filter((cat) => {
+    if (selectedType === "income") return cat.type === "Income";
+    return cat.type === "Expense";
+  });
+
+  // Preencher o formulÃ¡rio com os dados extraÃ­dos do comprovante
   useEffect(() => {
     if (!result) return;
 
@@ -105,7 +126,7 @@ export function ReceiptConfirmationModal({
 
     setUseCard(isCreditPayment(result.paymentMethod));
 
-    form.reset({
+    reset({
       description: result.description,
       amount: result.amount,
       date: result.date,
@@ -116,16 +137,18 @@ export function ReceiptConfirmationModal({
       installments: result.installments ?? 1,
       notes: result.notes ?? undefined,
     });
-  }, [result, categories, form]);
+  }, [result, categories, reset]);
 
   const isSubmitting =
     createTransaction.isPending || createCreditCardTransaction.isPending;
 
-  const handleSubmit = async (values: FormData) => {
+  const mutationError =
+    createTransaction.error ?? createCreditCardTransaction.error;
+
+  const onSubmit = async (values: FormData) => {
     try {
       if (useCard) {
         if (!values.creditCardId) {
-          form.setError("creditCardId", { message: "Selecione um cartão" });
           return;
         }
         await createCreditCardTransaction.mutateAsync({
@@ -136,10 +159,10 @@ export function ReceiptConfirmationModal({
           totalAmount: values.amount,
           totalInstallments: values.installments ?? 1,
           firstInstallmentOnCurrentInvoice: true,
+          clientRequestId: crypto.randomUUID(),
         });
       } else {
         if (!values.accountId) {
-          form.setError("accountId", { message: "Selecione uma conta" });
           return;
         }
         await createTransaction.mutateAsync({
@@ -153,6 +176,7 @@ export function ReceiptConfirmationModal({
           accountId: values.accountId,
           categoryId: values.categoryId ?? "",
           notes: values.notes,
+          clientRequestId: crypto.randomUUID(),
         });
       }
       onClose();
@@ -172,7 +196,6 @@ export function ReceiptConfirmationModal({
 
         {lowConfidence && (
           <div className="mb-4 flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               A leitura do comprovante pode ter sido imprecisa. Verifique os
               dados antes de confirmar.
@@ -180,233 +203,223 @@ export function ReceiptConfirmationModal({
           </div>
         )}
 
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="flex flex-col gap-4"
-          >
-            {/* Descrição */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <FormErrorSummary
+            errors={errors}
+            submitCount={submitCount}
+            apiError={mutationError}
+          />
 
-            {/* Valor + Data */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor (R$)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" min="0" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Tipo */}
-            <FormField
-              control={form.control}
-              name="transactionType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="expense">Despesa</SelectItem>
-                      <SelectItem value="income">Receita</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Categoria */}
-            <FormField
-              control={form.control}
-              name="categoryId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select
-                    value={field.value ?? ""}
-                    onValueChange={(v) => field.onChange(v || undefined)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories?.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Usar cartão ou conta */}
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant={!useCard ? "default" : "outline"}
-                size="sm"
-                onClick={() => setUseCard(false)}
-              >
-                Conta
-              </Button>
-              <Button
-                type="button"
-                variant={useCard ? "default" : "outline"}
-                size="sm"
-                onClick={() => setUseCard(true)}
-              >
-                Cartão de crédito
-              </Button>
-            </div>
-
-            {/* Conta bancária */}
-            {!useCard && (
-              <FormField
-                control={form.control}
-                name="accountId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Conta</FormLabel>
-                    <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecionar conta" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {accounts?.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {a.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {/* Cartão de crédito */}
-            {useCard && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="creditCardId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cartão</FormLabel>
-                      <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecionar cartão" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {creditCards?.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
+          {/* Tipo */}
+          <div className="space-y-2">
+            <Label>Tipo</Label>
+            <div className="flex rounded-lg border p-1 gap-1">
+              {typeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setValue("transactionType", opt.value)}
+                  className={cn(
+                    "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    selectedType === opt.value
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted"
                   )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="installments"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Parcelas</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="1" max="48" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
-
-            {/* Observações */}
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Observações</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Ações */}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" className="flex-1" disabled={isSubmitting}>
-                {isSubmitting ? "Salvando..." : "Confirmar"}
-              </Button>
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
-          </form>
-        </Form>
+          </div>
+
+          {/* DescriÃ§Ã£o */}
+          <div className="space-y-2">
+            <Label htmlFor="description">DescriÃ§Ã£o</Label>
+            <Input
+              id="description"
+              placeholder="Ex: Supermercado"
+              {...register("description")}
+            />
+            {errors.description && (
+              <p className="text-xs text-destructive">{errors.description.message}</p>
+            )}
+          </div>
+
+          {/* Valor + Data */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Valor</Label>
+              <MoneyInput value={amountValue} onChange={(v) => setValue("amount", v)} />
+              {errors.amount && (
+                <p className="text-xs text-destructive">{errors.amount.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Data</Label>
+              <Input id="date" type="date" {...register("date")} />
+              {errors.date && (
+                <p className="text-xs text-destructive">{errors.date.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Categoria */}
+          <div className="space-y-2">
+            <Label>Categoria</Label>
+            <Select
+              value={categoryId || null}
+              onValueChange={(v) => setValue("categoryId", v || undefined)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione a categoria">
+                  {(value: string) => {
+                    const cat = filteredCategories?.find((c) => c.id === value);
+                    if (!cat) return null;
+                    return (
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-2 w-2 rounded-full shrink-0"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.name}
+                      </span>
+                    );
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {filteredCategories?.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="h-2 w-2 rounded-full shrink-0"
+                        style={{ backgroundColor: cat.color }}
+                      />
+                      {cat.name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.categoryId && (
+              <p className="text-xs text-destructive">{errors.categoryId.message}</p>
+            )}
+          </div>
+
+          {/* Modo de pagamento */}
+          <div className="space-y-2">
+            <Label>Pagar com</Label>
+            <div className="flex rounded-lg border p-1 gap-1">
+              {paymentModeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setUseCard(opt.value === "card")}
+                  className={cn(
+                    "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    (opt.value === "card") === useCard
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-muted"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Conta bancÃ¡ria */}
+          {!useCard && (
+            <div className="space-y-2">
+              <Label>Conta</Label>
+              <Select
+                value={accountId || null}
+                onValueChange={(v) => v && setValue("accountId", v)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione a conta">
+                    {(value: string) => accounts?.find((a) => a.id === value)?.name}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts?.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.accountId && (
+                <p className="text-xs text-destructive">{errors.accountId.message}</p>
+              )}
+            </div>
+          )}
+
+          {/* CartÃ£o de crÃ©dito */}
+          {useCard && (
+            <>
+              <div className="space-y-2">
+                <Label>CartÃ£o</Label>
+                <Select
+                  value={creditCardId || null}
+                  onValueChange={(v) => v && setValue("creditCardId", v)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o cartÃ£o">
+                      {(value: string) => creditCards?.find((c) => c.id === value)?.name}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {creditCards?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.creditCardId && (
+                  <p className="text-xs text-destructive">{errors.creditCardId.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="installments">Parcelas</Label>
+                <Input
+                  id="installments"
+                  type="number"
+                  min="1"
+                  max="48"
+                  {...register("installments", { valueAsNumber: true })}
+                />
+                {errors.installments && (
+                  <p className="text-xs text-destructive">{errors.installments.message}</p>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ObservaÃ§Ãµes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">ObservaÃ§Ãµes</Label>
+            <Input id="notes" placeholder="Opcional" {...register("notes")} />
+          </div>
+
+          {/* AÃ§Ãµes */}
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : "Confirmar"}
+            </Button>
+          </div>
+        </form>
       </SheetContent>
     </Sheet>
   );
