@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -406,15 +407,18 @@ export function ReceiptConfirmationModal({
 
           {/* AÃ§Ãµes */}
           <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
+            <SheetClose
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={isSubmitting}
+                >
+                  Cancelar
+                </Button>
+              }
+            />
             <Button type="submit" className="flex-1" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Confirmar"}
             </Button>
