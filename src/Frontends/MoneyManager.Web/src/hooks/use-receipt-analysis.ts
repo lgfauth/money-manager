@@ -8,7 +8,7 @@ type ReceiptAnalysisStatus = "idle" | "analyzing" | "success" | "error";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-// Anthropic limita base64 a 5 MB (~3,75 MB antes da codificaÃ§Ã£o).
+// Anthropic limita base64 a 5 MB (~3,75 MB antes da codificação).
 // Limite conservador: 3,5 MB para o arquivo original.
 const MAX_BYTES_BEFORE_ENCODE = 3.5 * 1024 * 1024;
 const MAX_DIMENSION = 1920;
@@ -26,7 +26,7 @@ async function compressImageIfNeeded(file: File): Promise<File> {
 
       let { width, height } = img;
 
-      // Redimensionar mantendo proporÃ§Ã£o
+      // Redimensionar mantendo proporção
       if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
         if (width >= height) {
           height = Math.round((height * MAX_DIMENSION) / width);
@@ -43,7 +43,7 @@ async function compressImageIfNeeded(file: File): Promise<File> {
 
       const ctx = canvas.getContext("2d");
       if (!ctx) {
-        reject(new Error("Canvas nÃ£o disponÃ­vel"));
+        reject(new Error("Canvas não disponível"));
         return;
       }
 
@@ -64,7 +64,7 @@ async function compressImageIfNeeded(file: File): Promise<File> {
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error("Falha ao carregar imagem para compressÃ£o"));
+      reject(new Error("Falha ao carregar imagem para compressão"));
     };
 
     img.src = objectUrl;
@@ -78,7 +78,7 @@ export function useReceiptAnalysis() {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const analyze = async (file: File): Promise<void> => {
-    // Cancelar requisiÃ§Ã£o anterior se ainda estiver em andamento
+    // Cancelar requisição anterior se ainda estiver em andamento
     abortControllerRef.current?.abort();
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
@@ -107,17 +107,17 @@ export function useReceiptAnalysis() {
       if (response.status === 401) {
         useAuthStore.getState().logout();
         if (typeof window !== "undefined") window.location.href = "/login";
-        throw new Error("SessÃ£o expirada.");
+        throw new Error("Sessão expirada.");
       }
 
       if (!response.ok) {
         const body = await response.text().catch(() => "");
-        let message = "NÃ£o foi possÃ­vel ler o comprovante. Tente uma foto mais nÃ­tida.";
+        let message = "Não foi possível ler o comprovante. Tente uma foto mais nítida.";
         try {
           const parsed = JSON.parse(body);
           if (parsed?.message) message = parsed.message;
         } catch {
-          // manter mensagem padrÃ£o
+          // manter mensagem padrão
         }
         throw new Error(message);
       }
@@ -130,7 +130,7 @@ export function useReceiptAnalysis() {
       const message =
         err instanceof Error
           ? err.message
-          : "NÃ£o foi possÃ­vel ler o comprovante. Tente uma foto mais nÃ­tida.";
+          : "Não foi possível ler o comprovante. Tente uma foto mais nítida.";
       setError(message);
       setStatus("error");
     }

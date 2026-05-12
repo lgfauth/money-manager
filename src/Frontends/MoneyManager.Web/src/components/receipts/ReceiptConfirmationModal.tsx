@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   Sheet,
-  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -32,7 +31,7 @@ import { useCreateCreditCardTransaction } from "@/hooks/use-credit-cards";
 import { TransactionType } from "@/types/transaction";
 import type { ReceiptAnalysisResult } from "@/types/receipt";
 
-const CREDIT_KEYWORDS = ["crÃ©dito", "credito", "credit", "cartÃ£o", "cartao"];
+const CREDIT_KEYWORDS = ["crédito", "credito", "credit", "cartão", "cartao"];
 
 function isCreditPayment(paymentMethod: string | null): boolean {
   if (!paymentMethod) return false;
@@ -41,9 +40,9 @@ function isCreditPayment(paymentMethod: string | null): boolean {
 }
 
 const schema = z.object({
-  description: z.string().min(1, "DescriÃ§Ã£o obrigatÃ³ria"),
+  description: z.string().min(1, "Descrição obrigatória"),
   amount: z.number().positive("Valor deve ser positivo"),
-  date: z.string().min(1, "Data obrigatÃ³ria"),
+  date: z.string().min(1, "Data obrigatória"),
   transactionType: z.enum(["expense", "income"]),
   categoryId: z.string().optional(),
   accountId: z.string().optional(),
@@ -67,7 +66,7 @@ const typeOptions = [
 
 const paymentModeOptions = [
   { value: "account", label: "Conta" },
-  { value: "card", label: "CartÃ£o de crÃ©dito" },
+  { value: "card", label: "Cartão de crédito" },
 ] as const;
 
 export function ReceiptConfirmationModal({
@@ -117,7 +116,7 @@ export function ReceiptConfirmationModal({
     return cat.type === "Expense";
   });
 
-  // Preencher o formulÃ¡rio com os dados extraÃ­dos do comprovante
+  // Preencher o formulário com os dados extraídos do comprovante
   useEffect(() => {
     if (!result) return;
 
@@ -407,18 +406,15 @@ export function ReceiptConfirmationModal({
 
           {/* Ações */}
           <div className="flex gap-3 pt-2">
-            <SheetClose
-              render={
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  disabled={isSubmitting}
-                >
-                  Cancelar
-                </Button>
-              }
-            />
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              disabled={isSubmitting}
+              onClick={onClose}
+            >
+              Cancelar
+            </Button>
             <Button type="submit" className="flex-1" disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Confirmar"}
             </Button>
