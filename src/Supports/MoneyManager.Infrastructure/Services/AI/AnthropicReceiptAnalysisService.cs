@@ -59,6 +59,10 @@ public class AnthropicReceiptAnalysisService : IReceiptAnalysisService
 
     public async Task<ReceiptAnalysisResultDto> AnalyzeAsync(string fileBase64, string mimeType)
     {
+        if (string.IsNullOrWhiteSpace(_apiKey))
+            throw new InvalidOperationException(
+                "Serviço de análise indisponível: chave de API não configurada. Defina a variável de ambiente 'Anthropic__ApiKey'.");
+
         var requestBody = new
         {
             model = _model,
