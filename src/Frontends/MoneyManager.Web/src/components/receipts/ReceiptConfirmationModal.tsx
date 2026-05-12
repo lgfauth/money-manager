@@ -233,9 +233,9 @@ export function ReceiptConfirmationModal({
             </div>
           </div>
 
-          {/* DescriÃ§Ã£o */}
+          {/* Descrição */}
           <div className="space-y-2">
-            <Label htmlFor="description">DescriÃ§Ã£o</Label>
+            <Label htmlFor="description">Descrição</Label>
             <Input
               id="description"
               placeholder="Ex: Supermercado"
@@ -329,7 +329,7 @@ export function ReceiptConfirmationModal({
             </div>
           </div>
 
-          {/* Conta bancÃ¡ria */}
+          {/* Conta bancária */}
           {!useCard && (
             <div className="space-y-2">
               <Label>Conta</Label>
@@ -356,17 +356,17 @@ export function ReceiptConfirmationModal({
             </div>
           )}
 
-          {/* CartÃ£o de crÃ©dito */}
+          {/* Cartão de crédito */}
           {useCard && (
             <>
               <div className="space-y-2">
-                <Label>CartÃ£o</Label>
+                <Label>Cartão</Label>
                 <Select
                   value={creditCardId || null}
                   onValueChange={(v) => v && setValue("creditCardId", v)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o cartÃ£o">
+                    <SelectValue placeholder="Selecione o cartão">
                       {(value: string) => creditCards?.find((c) => c.id === value)?.name}
                     </SelectValue>
                   </SelectTrigger>
@@ -399,13 +399,13 @@ export function ReceiptConfirmationModal({
             </>
           )}
 
-          {/* ObservaÃ§Ãµes */}
+          {/* Observações */}
           <div className="space-y-2">
-            <Label htmlFor="notes">ObservaÃ§Ãµes</Label>
+            <Label htmlFor="notes">Observações</Label>
             <Input id="notes" placeholder="Opcional" {...register("notes")} />
           </div>
 
-          {/* AÃ§Ãµes */}
+          {/* Ações */}
           <div className="flex gap-3 pt-2">
             <SheetClose
               render={
