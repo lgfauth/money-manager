@@ -80,7 +80,7 @@ export function CreditCardTransactionEditDialog({
       purchaseDate: format(new Date(transaction.purchaseDate), "yyyy-MM-dd"),
       totalAmount: transaction.totalAmount,
     });
-  }, [open, transaction, reset]);
+  }, [open, transaction, reset, updateTx]);
 
   const onSubmit = (data: UpdateCreditCardTransactionFormData) => {
     if (!transaction) return;

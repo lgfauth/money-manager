@@ -18,7 +18,6 @@ interface PeriodSelectorProps {
 
 export function PeriodSelector({
   startDate,
-  endDate,
   onChange,
   showPresets = true,
 }: PeriodSelectorProps) {

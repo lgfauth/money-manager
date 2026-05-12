@@ -146,6 +146,3 @@ export function useReceiptAnalysis() {
   return { status, result, error, analyze, reset };
 }
 
-
-type ReceiptAnalysisStatus = "idle" | "analyzing" | "success" | "error";
-
