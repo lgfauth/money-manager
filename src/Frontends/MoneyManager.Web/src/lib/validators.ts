@@ -96,6 +96,7 @@ export const creditCardTransactionSchema = z.object({
     .min(1, "Mínimo 1 parcela")
     .max(18, "Máximo 18 parcelas"),
   firstInstallmentOnCurrentInvoice: z.boolean(),
+  isRefund: z.boolean().optional(),
 });
 
 export const payCreditCardInvoiceSchema = z.object({

@@ -9,5 +9,6 @@ public class CreateCreditCardTransactionRequestDto
     public decimal TotalAmount { get; set; }
     public int TotalInstallments { get; set; } = 1;
     public bool FirstInstallmentOnCurrentInvoice { get; set; } = true;
+    public bool IsRefund { get; set; } = false;
     public string? ClientRequestId { get; set; }
 }

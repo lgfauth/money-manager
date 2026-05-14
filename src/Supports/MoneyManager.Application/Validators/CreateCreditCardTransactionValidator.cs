@@ -17,7 +17,12 @@ public class CreateCreditCardTransactionValidator : AbstractValidator<CreateCred
             .GreaterThan(0).WithMessage("Valor deve ser maior que zero");
 
         RuleFor(x => x.TotalInstallments)
-            .InclusiveBetween(1, 18).WithMessage("Número de parcelas deve estar entre 1 e 18");
+            .Equal(1).When(x => x.IsRefund)
+            .WithMessage("Estorno deve ter apenas 1 parcela");
+
+        RuleFor(x => x.TotalInstallments)
+            .InclusiveBetween(1, 18).When(x => !x.IsRefund)
+            .WithMessage("Número de parcelas deve estar entre 1 e 18");
 
         RuleFor(x => x.PurchaseDate)
             .NotEmpty().WithMessage("Data da compra é obrigatória");

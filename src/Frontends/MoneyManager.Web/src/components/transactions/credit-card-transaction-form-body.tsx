@@ -29,6 +29,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { MoneyInput } from "@/components/shared/money-input";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
+import { cn } from "@/lib/utils";
 
 interface CreditCardTransactionFormBodyProps {
   open: boolean;
@@ -64,6 +65,7 @@ export function CreditCardTransactionFormBody({
       totalAmount: 0,
       totalInstallments: 1,
       firstInstallmentOnCurrentInvoice: true,
+      isRefund: false,
     },
   });
 
@@ -72,7 +74,20 @@ export function CreditCardTransactionFormBody({
   const totalAmount = watch("totalAmount");
   const installments = watch("totalInstallments");
   const firstOnCurrent = watch("firstInstallmentOnCurrentInvoice");
+  const isRefund = watch("isRefund");
   const selectedCard = cards?.find((c) => c.id === cardId);
+
+  // Ao marcar como estorno, força 1 parcela
+  useEffect(() => {
+    if (isRefund) {
+      setValue("totalInstallments", 1);
+      setValue("firstInstallmentOnCurrentInvoice", true);
+    }
+  }, [isRefund, setValue]);
+
+  const visibleCategories = isRefund
+    ? categories
+    : expenseCategories;
 
   const saveAndAddRef = useRef(false);
 
@@ -90,6 +105,7 @@ export function CreditCardTransactionFormBody({
       totalAmount: 0,
       totalInstallments: 1,
       firstInstallmentOnCurrentInvoice: true,
+      isRefund: false,
     });
   }, [open, defaultCardId, reset]);
 
@@ -100,6 +116,7 @@ export function CreditCardTransactionFormBody({
     const payload = {
       ...data,
       categoryId: data.categoryId || undefined,
+      totalInstallments: data.isRefund ? 1 : data.totalInstallments,
       clientRequestId: crypto.randomUUID(),
     };
     createTx.mutate(payload, {
@@ -114,6 +131,7 @@ export function CreditCardTransactionFormBody({
             totalAmount: 0,
             totalInstallments: 1,
             firstInstallmentOnCurrentInvoice: data.firstInstallmentOnCurrentInvoice,
+            isRefund: data.isRefund,
           });
         } else {
           onClose();
@@ -132,6 +150,34 @@ export function CreditCardTransactionFormBody({
         submitCount={submitCount}
         apiError={createTx.error}
       />
+
+      {/* Tipo de lançamento */}
+      <div className="flex rounded-lg border p-1 gap-1">
+        <button
+          type="button"
+          onClick={() => setValue("isRefund", false)}
+          className={cn(
+            "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            !isRefund
+              ? "bg-primary text-primary-foreground"
+              : "hover:bg-muted"
+          )}
+        >
+          Compra
+        </button>
+        <button
+          type="button"
+          onClick={() => setValue("isRefund", true)}
+          className={cn(
+            "flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            isRefund
+              ? "bg-income text-white"
+              : "hover:bg-muted"
+          )}
+        >
+          Estorno
+        </button>
+      </div>
 
       <div className="space-y-2">
         <Label>Cartão</Label>
@@ -188,7 +234,7 @@ export function CreditCardTransactionFormBody({
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Selecione (opcional)">
               {(value: string) => {
-                const cat = expenseCategories?.find((c) => c.id === value);
+                const cat = visibleCategories?.find((c) => c.id === value);
                 if (!cat) return null;
                 return (
                   <span className="flex items-center gap-2">
@@ -203,7 +249,7 @@ export function CreditCardTransactionFormBody({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {expenseCategories?.map((cat) => (
+            {visibleCategories?.map((cat) => (
               <SelectItem key={cat.id} value={cat.id}>
                 <span className="flex items-center gap-2">
                   <span
@@ -242,52 +288,56 @@ export function CreditCardTransactionFormBody({
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="totalInstallments">Parcelas</Label>
-        <Input
-          id="totalInstallments"
-          type="number"
-          min={1}
-          max={18}
-          {...register("totalInstallments", { valueAsNumber: true })}
-        />
-        {errors.totalInstallments && (
-          <p className="text-xs text-destructive">
-            {errors.totalInstallments.message}
-          </p>
-        )}
-        {installments > 1 && totalAmount > 0 && (
-          <p className="text-[11px] text-muted-foreground">
-            {installments}x de aproximadamente{" "}
-            {new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: selectedCard?.currency ?? "BRL",
-            }).format(installmentValue)}
-          </p>
-        )}
-      </div>
-
-      {installments > 1 && (
-        <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
-          <div className="space-y-1">
-            <Label
-              htmlFor="firstInstallmentOnCurrentInvoice"
-              className="cursor-pointer text-sm"
-            >
-              Primeira parcela na fatura corrente
-            </Label>
-            <p className="text-[11px] text-muted-foreground">
-              Desmarque para começar pela próxima fatura.
-            </p>
+      {!isRefund && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="totalInstallments">Parcelas</Label>
+            <Input
+              id="totalInstallments"
+              type="number"
+              min={1}
+              max={18}
+              {...register("totalInstallments", { valueAsNumber: true })}
+            />
+            {errors.totalInstallments && (
+              <p className="text-xs text-destructive">
+                {errors.totalInstallments.message}
+              </p>
+            )}
+            {installments > 1 && totalAmount > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                {installments}x de aproximadamente{" "}
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: selectedCard?.currency ?? "BRL",
+                }).format(installmentValue)}
+              </p>
+            )}
           </div>
-          <Switch
-            id="firstInstallmentOnCurrentInvoice"
-            checked={firstOnCurrent}
-            onCheckedChange={(v) =>
-              setValue("firstInstallmentOnCurrentInvoice", v)
-            }
-          />
-        </div>
+
+          {installments > 1 && (
+            <div className="flex items-start justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+              <div className="space-y-1">
+                <Label
+                  htmlFor="firstInstallmentOnCurrentInvoice"
+                  className="cursor-pointer text-sm"
+                >
+                  Primeira parcela na fatura corrente
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Desmarque para começar pela próxima fatura.
+                </p>
+              </div>
+              <Switch
+                id="firstInstallmentOnCurrentInvoice"
+                checked={firstOnCurrent}
+                onCheckedChange={(v) =>
+                  setValue("firstInstallmentOnCurrentInvoice", v)
+                }
+              />
+            </div>
+          )}
+        </>
       )}
 
       <DialogFooter>
@@ -311,7 +361,7 @@ export function CreditCardTransactionFormBody({
             saveAndAddRef.current = false;
           }}
         >
-          {createTx.isPending ? "Salvando..." : "Registrar compra"}
+          {createTx.isPending ? "Salvando..." : isRefund ? "Registrar estorno" : "Registrar compra"}
         </Button>
       </DialogFooter>
     </form>

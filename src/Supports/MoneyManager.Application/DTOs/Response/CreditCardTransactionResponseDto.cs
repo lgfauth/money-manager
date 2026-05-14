@@ -16,6 +16,7 @@ public class CreditCardTransactionResponseDto
     public int TotalInstallments { get; set; }
     public string? ParentTransactionId { get; set; }
     public string Currency { get; set; } = "BRL";
+    public string Type { get; set; } = "Purchase";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

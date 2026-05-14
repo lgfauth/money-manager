@@ -65,7 +65,7 @@ public class CreditCardTransactionService : ICreditCardTransactionService
 
         await _invoiceService.EnsureCurrentOpenInvoiceAsync(userId, card);
 
-        var totalInstallments = Math.Max(1, request.TotalInstallments);
+        var totalInstallments = request.IsRefund ? 1 : Math.Max(1, request.TotalInstallments);
         var installmentAmount = Math.Round(request.TotalAmount / totalInstallments, 2, MidpointRounding.AwayFromZero);
 
         var roundingDiff = request.TotalAmount - (installmentAmount * totalInstallments);
@@ -94,6 +94,12 @@ public class CreditCardTransactionService : ICreditCardTransactionService
                 amountForInstallment += roundingDiff;
             }
 
+            // Estorno: o valor é negativo para liberar o limite da fatura
+            if (request.IsRefund)
+            {
+                amountForInstallment = -Math.Abs(amountForInstallment);
+            }
+
             var transaction = new CreditCardTransaction
             {
                 UserId = userId,
@@ -106,7 +112,10 @@ public class CreditCardTransactionService : ICreditCardTransactionService
                 InstallmentAmount = amountForInstallment,
                 InstallmentNumber = i,
                 TotalInstallments = totalInstallments,
-                ParentTransactionId = parentId
+                ParentTransactionId = parentId,
+                Type = request.IsRefund
+                    ? MoneyManager.Domain.Enums.CreditCardTransactionType.Refund
+                    : MoneyManager.Domain.Enums.CreditCardTransactionType.Purchase
             };
 
             await _unitOfWork.CreditCardTransactions.AddAsync(transaction);
@@ -381,6 +390,7 @@ public class CreditCardTransactionService : ICreditCardTransactionService
             TotalInstallments = transaction.TotalInstallments,
             ParentTransactionId = transaction.ParentTransactionId,
             Currency = card?.Currency ?? "BRL",
+            Type = transaction.Type.ToString(),
             CreatedAt = transaction.CreatedAt,
             UpdatedAt = transaction.UpdatedAt
         };

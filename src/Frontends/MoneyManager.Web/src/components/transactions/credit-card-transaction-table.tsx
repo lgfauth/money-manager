@@ -113,8 +113,11 @@ export function CreditCardTransactionTable({
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                     {tx.installmentNumber}/{tx.totalInstallments}
                   </TableCell>
-                  <TableCell className="text-right font-semibold font-heading text-expense">
-                    -{fmt(tx.installmentAmount, tx.currency)}
+                  <TableCell className={cn(
+                    "text-right font-semibold font-heading",
+                    tx.type === "Refund" ? "text-income" : "text-expense"
+                  )}>
+                    {tx.type === "Refund" ? "+" : "-"}{fmt(Math.abs(tx.installmentAmount), tx.currency)}
                   </TableCell>
                   <TableCell>
                     <button
@@ -145,7 +148,8 @@ export function CreditCardTransactionTable({
               <CardContent className="flex items-center gap-3 p-3">
                 <div
                   className={cn(
-                    "rounded-full p-2 bg-muted text-expense"
+                    "rounded-full p-2 bg-muted",
+                    tx.type === "Refund" ? "text-income" : "text-expense"
                   )}
                 >
                   <CreditCardIcon className="h-4 w-4" />
@@ -166,8 +170,11 @@ export function CreditCardTransactionTable({
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold font-heading text-expense">
-                    -{fmt(tx.installmentAmount, tx.currency)}
+                  <p className={cn(
+                    "text-sm font-semibold font-heading",
+                    tx.type === "Refund" ? "text-income" : "text-expense"
+                  )}>
+                    {tx.type === "Refund" ? "+" : "-"}{fmt(Math.abs(tx.installmentAmount), tx.currency)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
                     {tx.installmentNumber}/{tx.totalInstallments}

@@ -57,6 +57,7 @@ export interface CreditCardTransactionResponseDto {
   totalInstallments: number;
   parentTransactionId: string | null;
   currency: string;
+  type: "Purchase" | "Refund";
   createdAt: string;
   updatedAt: string;
 }
@@ -84,6 +85,7 @@ export interface CreateCreditCardTransactionRequest {
   totalAmount: number;
   totalInstallments: number;
   firstInstallmentOnCurrentInvoice: boolean;
+  isRefund?: boolean;
   clientRequestId?: string;
 }
 

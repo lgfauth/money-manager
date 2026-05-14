@@ -176,7 +176,7 @@ export function useCreateCreditCardTransaction() {
       qc.invalidateQueries({ queryKey: queryKeys.creditCardInvoices(variables.creditCardId) });
       qc.invalidateQueries({ queryKey: ["credit-card-transactions"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Compra registrada no cartão");
+      toast.success(variables.isRefund ? "Estorno registrado no cartão" : "Compra registrada no cartão");
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Erro ao registrar compra")),
