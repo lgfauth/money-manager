@@ -43,7 +43,7 @@ export function ReceiptFab({ onResult }: ReceiptFabProps) {
         onClick={() => status !== "analyzing" && inputRef.current?.click()}
         style={{ backgroundColor: "#00C896" }}
         className="
-          fixed bottom-40 right-4 z-50
+          fixed bottom-20 right-20 z-50
           h-14 w-14 rounded-full shadow-lg
           flex items-center justify-center
           text-white
