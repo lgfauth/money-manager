@@ -1,3 +1,30 @@
+# Versão 1.0.2-beta
+
+*Lançamento: 14 de maio de 2026*
+
+---
+
+## ✨ Novidades
+
+### Estorno em transações de cartão de crédito
+Agora é possível registrar estornos diretamente no formulário de lançamento de cartão de crédito. Um seletor **Compra / Estorno** foi adicionado ao topo do formulário. Ao selecionar Estorno:
+- O campo de parcelas e a opção de fatura corrente são ocultados (estorno é sempre em parcela única).
+- Todas as categorias ficam disponíveis para seleção, não apenas as de despesa.
+- O valor é registrado como negativo na fatura, reduzindo automaticamente o total a pagar e liberando o limite do cartão.
+- Na listagem de transações, estornos aparecem em **verde** com o prefixo `+`, diferenciando visualmente das compras comuns.
+
+---
+
+## 🐛 Correções
+
+### Modal de comprovante — botões não fechavam o formulário
+Os botões **X** (fechar) e **Cancelar** do modal de confirmação de comprovante não estavam encerrando o modal. O mesmo problema ocorria após um cadastro bem-sucedido, fazendo com que o modal permanecesse aberto na tela. A causa era uma referência instável à função de callback que reabre o modal involuntariamente a cada re-render. Corrigido estabilizando a referência com `useCallback` no layout.
+
+### FAB de câmera sobreposto ao botão de nova transação
+O botão flutuante de câmera estava posicionado diretamente acima do botão **+** de nova transação, ocultando-o parcialmente. Os dois botões agora ficam lado a lado na mesma altura, garantindo visibilidade e acesso simultâneo a ambas as ações.
+
+---
+
 # Versão 1.0.1-beta
 
 *Lançamento: 11 de maio de 2026*
