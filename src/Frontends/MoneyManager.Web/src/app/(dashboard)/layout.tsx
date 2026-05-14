@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAcceptTerms, useProfile, useRefreshProfile } from "@/hooks/use-profile";
@@ -30,6 +30,10 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [receiptResult, setReceiptResult] = useState<ReceiptAnalysisResult | null>(null);
+
+  const handleReceiptResult = useCallback((r: ReceiptAnalysisResult) => {
+    setReceiptResult(r);
+  }, []);
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated && !token) {
@@ -68,7 +72,7 @@ export default function DashboardLayout({
         </main>
       </div>
       <MobileNav />
-      <ReceiptFab onResult={(r) => setReceiptResult(r)} />
+      <ReceiptFab onResult={handleReceiptResult} />
       <ReceiptConfirmationModal
         open={receiptResult !== null}
         result={receiptResult}
