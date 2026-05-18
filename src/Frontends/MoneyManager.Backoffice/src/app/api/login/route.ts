@@ -37,9 +37,9 @@ export async function POST(request: Request) {
     redirect.cookies.set("mm_admin_token", data.accessToken, {
       path: "/",
       maxAge: 60 * 60,
-      sameSite: "lax",
+      sameSite: "strict",
       secure: true,
-      httpOnly: false,
+      httpOnly: true,
     });
 
     return redirect;

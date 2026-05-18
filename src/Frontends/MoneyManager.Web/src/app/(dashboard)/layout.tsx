@@ -23,8 +23,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, token, isHydrated } = useAuthStore();
-  const profile = useProfile({ enabled: isHydrated && (isAuthenticated || !!token) });
+  const { isAuthenticated, isHydrated } = useAuthStore();
+  const profile = useProfile({ enabled: isHydrated && isAuthenticated });
   const refreshUser = useRefreshProfile();
   const acceptTerms = useAcceptTerms();
   const router = useRouter();
@@ -36,10 +36,10 @@ export default function DashboardLayout({
   }, []);
 
   useEffect(() => {
-    if (isHydrated && !isAuthenticated && !token) {
+    if (isHydrated && !isAuthenticated) {
       router.replace(`/login?returnUrl=${encodeURIComponent(pathname)}`);
     }
-  }, [isHydrated, isAuthenticated, token, router, pathname]);
+  }, [isHydrated, isAuthenticated, router, pathname]);
 
   const requiresTermsAcceptance =
     !!profile.data && !profile.data.termsAccepted;
@@ -54,7 +54,7 @@ export default function DashboardLayout({
     }
   };
 
-  if (!isHydrated || (!isAuthenticated && !token) || profile.isLoading) {
+  if (!isHydrated || !isAuthenticated || profile.isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />

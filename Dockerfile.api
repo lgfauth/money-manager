@@ -26,4 +26,9 @@ EXPOSE 8080
 EXPOSE 8081
 
 COPY --from=publish /app/publish .
+
+# Executa como usuário não-root por segurança
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+USER appuser
+
 ENTRYPOINT ["dotnet", "MoneyManager.Api.Operational.dll"]

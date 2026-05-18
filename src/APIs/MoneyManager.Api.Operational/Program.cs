@@ -1,6 +1,8 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using MoneyManager.Application.Services;
 using MoneyManager.Application.Validators;
@@ -20,6 +22,11 @@ builder.Host.UseNLog();
 
 // Configure MongoDB
 var mongoSettings = builder.Configuration.GetSection("MongoDB").Get<MongoSettings>() ?? new MongoSettings();
+
+// Valida que a connection string não é o placeholder de exemplo
+if (mongoSettings.ConnectionString.Contains("mongo_connection_string"))
+    throw new InvalidOperationException("MongoDB ConnectionString não configurada. Defina a variável de ambiente MongoDB__ConnectionString.");
+
 builder.Services.AddSingleton(mongoSettings);
 builder.Services.AddSingleton<MongoContext>();
 
@@ -27,6 +34,8 @@ builder.Services.AddSingleton<MongoContext>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Register application services
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -59,9 +68,22 @@ builder.Services.AddProcessLogger();
 // Register validators
 builder.Services.AddValidatorsFromAssembly(typeof(RegisterRequestValidator).Assembly);
 
+// Rate limiting para endpoints de autenticação (proteção contra brute-force)
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", config =>
+    {
+        config.PermitLimit = 10;
+        config.Window = TimeSpan.FromMinutes(1);
+        config.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 // Configure JWT authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSettings["SecretKey"] ?? "your-super-secret-key-that-is-long-enough-for-256-bits";
+var secretKey = jwtSettings["SecretKey"]
+    ?? throw new InvalidOperationException("JWT SecretKey não configurada. Defina a variável de ambiente Jwt__SecretKey.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -76,6 +98,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = jwtSettings["Audience"],
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
+        };
+
+        // Lê o JWT do cookie httpOnly quando não há Authorization header
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                if (string.IsNullOrEmpty(ctx.Token))
+                    ctx.Token = ctx.Request.Cookies["mm_access_token"];
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = ctx =>
+            {
+                var blacklist = ctx.HttpContext.RequestServices.GetRequiredService<ITokenBlacklistService>();
+                var jti = ctx.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                if (jti != null && blacklist.IsRevoked(jti))
+                    ctx.Fail("Token revogado");
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -152,26 +193,18 @@ if (allowedOrigins.Length == 0)
     Console.WriteLine("[MoneyManager API] WARNING: No CORS origins configured. Set AllowedOrigins in appsettings or ALLOWED_ORIGIN env var.");
 }
 
+if (allowedOrigins.Length == 0)
+    throw new InvalidOperationException(
+        "CORS AllowedOrigins não configurado. Defina ALLOWED_ORIGIN ou AllowedOrigins no appsettings.");
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        if (allowedOrigins.Length > 0)
-        {
-            policy.WithOrigins(allowedOrigins)
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        }
-        else
-        {
-            // Fallback: permite qualquer origem (apenas se nenhuma origem foi configurada)
-            // Nota: AllowAnyOrigin não é compatível com AllowCredentials
-            policy.SetIsOriginAllowed(_ => true)
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        }
+        policy.WithOrigins(allowedOrigins)
+              .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+              .WithHeaders("Content-Type", "Authorization")
+              .AllowCredentials();
     });
 });
 
@@ -211,28 +244,31 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Enable Swagger in all environments for Railway
-app.UseSwagger(c =>
+// Enable Swagger apenas em desenvolvimento
+if (app.Environment.IsDevelopment())
 {
-    c.PreSerializeFilters.Add((swagger, httpReq) =>
+    app.UseSwagger(c =>
     {
-        if (httpReq.Headers.ContainsKey("X-Forwarded-Proto"))
+        c.PreSerializeFilters.Add((swagger, httpReq) =>
         {
-            swagger.Servers = new List<Microsoft.OpenApi.Models.OpenApiServer>
+            if (httpReq.Headers.ContainsKey("X-Forwarded-Proto"))
             {
-                new Microsoft.OpenApi.Models.OpenApiServer { Url = $"https://{httpReq.Host.Value}" }
-            };
-        }
+                swagger.Servers = new List<Microsoft.OpenApi.Models.OpenApiServer>
+                {
+                    new Microsoft.OpenApi.Models.OpenApiServer { Url = $"https://{httpReq.Host.Value}" }
+                };
+            }
+        });
     });
-});
 
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MoneyManager API v1");
-    c.RoutePrefix = string.Empty;
-    c.DisplayRequestDuration();
-    c.EnableDeepLinking();
-});
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MoneyManager API v1");
+        c.RoutePrefix = string.Empty;
+        c.DisplayRequestDuration();
+        c.EnableDeepLinking();
+    });
+}
 
 // RequestLoggingMiddleware envolve toda a pipeline — gera JSON estruturado por request
 app.UseMiddleware<RequestLoggingMiddleware>();
@@ -240,11 +276,28 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 // ExceptionHandlingMiddleware DEPOIS do CORS
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
+// Security headers em todas as respostas
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    if (!app.Environment.IsDevelopment())
+        context.Response.Headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload";
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+else
+{
+    app.UseHsts();
+}
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -257,6 +310,6 @@ app.MapGet("/health", () => Results.Ok(new
     environment = app.Environment.EnvironmentName
 }));
 
-app.MapGet("/", () => Results.Redirect("/swagger"));
+app.MapGet("/", () => Results.Ok(new { status = "healthy" }));
 
 app.Run();

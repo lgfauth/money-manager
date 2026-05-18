@@ -7,11 +7,13 @@ public class ExceptionHandlingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+    private readonly IHostEnvironment _environment;
 
-    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+    public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger, IHostEnvironment environment)
     {
         _next = next;
         _logger = logger;
+        _environment = environment;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -48,11 +50,17 @@ public class ExceptionHandlingMiddleware
     {
         context.Response.ContentType = "application/json";
         var statusCode = DetermineStatusCode(exception);
+
+        // Detalhes da InnerException apenas em desenvolvimento para não vazar info interna em produção
+        var details = _environment.IsDevelopment()
+            ? exception.InnerException?.Message
+            : null;
+
         var response = ApiErrorResponseFactory.Create(
             context,
             statusCode,
             exception.Message,
-            details: exception.InnerException?.Message);
+            details: details);
 
         context.Response.StatusCode = statusCode;
 

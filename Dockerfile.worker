@@ -22,4 +22,8 @@ FROM mcr.microsoft.com/dotnet/runtime:9.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
+# Executa como usuário não-root por segurança
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+USER appuser
+
 ENTRYPOINT ["dotnet", "MoneyManager.Worker.Operational.dll"]

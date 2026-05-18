@@ -64,4 +64,16 @@ public class Repository<T> : IRepository<T> where T : class
         var filter = Builders<T>.Filter.Eq("_id", MongoDB.Bson.ObjectId.Parse(id));
         await Collection.DeleteOneAsync(filter);
     }
+
+    public virtual async Task<IEnumerable<T>> GetByUserIdAsync(string userId)
+    {
+        var filter = Builders<T>.Filter.Eq("userId", userId);
+        return await Collection.Find(filter).ToListAsync();
+    }
+
+    public virtual async Task DeleteManyByUserIdAsync(string userId)
+    {
+        var filter = Builders<T>.Filter.Eq("userId", userId);
+        await Collection.DeleteManyAsync(filter);
+    }
 }

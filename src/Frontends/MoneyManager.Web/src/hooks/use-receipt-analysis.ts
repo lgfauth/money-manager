@@ -93,13 +93,9 @@ export function useReceiptAnalysis() {
       const formData = new FormData();
       formData.append("file", compressed);
 
-      const token = useAuthStore.getState().token;
-
       const response = await fetch(`${API_URL}/api/receipts/analyze`, {
         method: "POST",
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
+        credentials: "include",
         body: formData,
         signal: abortController.signal,
       });

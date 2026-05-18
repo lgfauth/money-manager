@@ -9,7 +9,9 @@ export interface LoginRequestDto {
 }
 
 export interface LoginResponseDto {
-  token: string;
+  id: string;
+  name: string;
+  email: string;
 }
 
 export interface RegisterRequestDto {

@@ -51,4 +51,12 @@ public class User
 
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
+
+    [BsonElement("refreshToken")]
+    [BsonIgnoreIfNull]
+    public string? RefreshToken { get; set; }
+
+    [BsonElement("refreshTokenExpiry")]
+    [BsonIgnoreIfNull]
+    public DateTime? RefreshTokenExpiry { get; set; }
 }

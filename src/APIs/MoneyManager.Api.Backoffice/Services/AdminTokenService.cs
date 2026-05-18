@@ -85,10 +85,9 @@ public sealed class AdminTokenService
             ?? AdminRoles.Admin;
 
         _logger.LogInformation(
-            "Using single-user credentials source. ConfigUsernameSet={ConfigUsernameSet}, EnvUsernameSet={EnvUsernameSet}, EffectiveUsername={EffectiveUsername}, ConfigPasswordSet={ConfigPasswordSet}, EnvPasswordSet={EnvPasswordSet}, EffectivePasswordLength={EffectivePasswordLength}, ConfigRoleSet={ConfigRoleSet}, EnvRoleSet={EnvRoleSet}, EffectiveRole={EffectiveRole}",
+            "Using single-user credentials source. ConfigUsernameSet={ConfigUsernameSet}, EnvUsernameSet={EnvUsernameSet}, ConfigPasswordSet={ConfigPasswordSet}, EnvPasswordSet={EnvPasswordSet}, EffectivePasswordLength={EffectivePasswordLength}, ConfigRoleSet={ConfigRoleSet}, EnvRoleSet={EnvRoleSet}, EffectiveRole={EffectiveRole}",
             !string.IsNullOrWhiteSpace(configUsername),
             !string.IsNullOrWhiteSpace(envUsername),
-            expectedUsername,
             !string.IsNullOrWhiteSpace(configPassword),
             !string.IsNullOrWhiteSpace(envPassword),
             expectedPassword.Length,
@@ -129,7 +128,7 @@ public sealed class AdminTokenService
         var audience = _configuration["AdminAuth:Audience"] ?? "MoneyManager.Admin.Users";
         var secret = Environment.GetEnvironmentVariable("ADMIN_AUTH_SECRET")
             ?? _configuration["AdminAuth:SecretKey"]
-            ?? "change-this-admin-secret-key-with-at-least-32-characters";
+            ?? throw new InvalidOperationException("AdminAuth SecretKey não configurada. Defina a variável de ambiente ADMIN_AUTH_SECRET.");
 
         var expirationMinutesRaw = _configuration["AdminAuth:TokenExpirationMinutes"];
         var expirationMinutes = int.TryParse(expirationMinutesRaw, out var parsed)

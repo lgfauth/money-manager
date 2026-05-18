@@ -36,13 +36,11 @@ async function fetchWithAuth<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = useAuthStore.getState().token;
-
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
   });
@@ -80,12 +78,9 @@ export const apiClient = {
     }),
 
   postForm: <T>(path: string, formData: FormData) => {
-    const token = useAuthStore.getState().token;
     return fetch(`${API_URL}${path}`, {
       method: "POST",
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
+      credentials: "include",
       body: formData,
     }).then(async (res) => {
       if (res.status === 401) {

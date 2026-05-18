@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 type RouteParams = {
@@ -21,13 +22,15 @@ async function forward(request: Request, params: RouteParams["params"]) {
   const targetUrl = `${adminApiBaseUrl}/api/${upstreamPath}${incomingUrl.search}`;
 
   const headers = new Headers();
-  const authorization = request.headers.get("authorization");
-  const contentType = request.headers.get("content-type");
 
-  if (authorization) {
-    headers.set("authorization", authorization);
+  // Lê o token do cookie httpOnly server-side e injeta como Authorization header
+  const cookieStore = await cookies();
+  const adminToken = cookieStore.get("mm_admin_token")?.value;
+  if (adminToken) {
+    headers.set("authorization", `Bearer ${adminToken}`);
   }
 
+  const contentType = request.headers.get("content-type");
   if (contentType) {
     headers.set("content-type", contentType);
   }
@@ -54,6 +57,27 @@ async function forward(request: Request, params: RouteParams["params"]) {
     headers: responseHeaders,
   });
 }
+
+export async function GET(request: Request, context: RouteParams) {
+  return forward(request, context.params);
+}
+
+export async function POST(request: Request, context: RouteParams) {
+  return forward(request, context.params);
+}
+
+export async function PUT(request: Request, context: RouteParams) {
+  return forward(request, context.params);
+}
+
+export async function PATCH(request: Request, context: RouteParams) {
+  return forward(request, context.params);
+}
+
+export async function DELETE(request: Request, context: RouteParams) {
+  return forward(request, context.params);
+}
+
 
 export async function GET(request: Request, context: RouteParams) {
   return forward(request, context.params);

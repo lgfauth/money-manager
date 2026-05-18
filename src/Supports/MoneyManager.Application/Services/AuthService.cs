@@ -10,6 +10,7 @@ public interface IAuthService
 {
     Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request);
     Task<AuthResponseDto> LoginAsync(LoginRequestDto request);
+    Task<AuthResponseDto> RefreshTokenAsync(string refreshToken);
 }
 
 public class AuthService : IAuthService
@@ -80,6 +81,11 @@ public class AuthService : IAuthService
         }
 
         var token = _tokenService.GenerateToken(user.Id, user.Email, user.Name);
+        var refreshToken = _tokenService.GenerateRefreshToken();
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+        await _unitOfWork.Users.UpdateAsync(user);
 
         _processLogger.AddStep("User logged in successfully", new Dictionary<string, object?>
         {
@@ -91,7 +97,36 @@ public class AuthService : IAuthService
             Id = user.Id,
             Name = user.Name,
             Email = user.Email,
-            Token = token
+            Token = token,
+            RefreshToken = refreshToken
+        };
+    }
+
+    public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
+    {
+        var users = await _unitOfWork.Users.GetAllAsync();
+        var user = users.FirstOrDefault(u =>
+            u.RefreshToken == refreshToken &&
+            u.RefreshTokenExpiry > DateTime.UtcNow &&
+            !u.IsDeleted);
+
+        if (user == null)
+            throw new UnauthorizedAccessException("Refresh token inválido ou expirado");
+
+        var newAccessToken = _tokenService.GenerateToken(user.Id, user.Email, user.Name);
+        var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+        user.RefreshToken = newRefreshToken;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+        await _unitOfWork.Users.UpdateAsync(user);
+
+        return new AuthResponseDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Token = newAccessToken,
+            RefreshToken = newRefreshToken
         };
     }
 }

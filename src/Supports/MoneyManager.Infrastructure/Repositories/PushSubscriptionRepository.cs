@@ -9,7 +9,7 @@ public class PushSubscriptionRepository : Repository<PushSubscription>, IPushSub
 {
     public PushSubscriptionRepository(MongoContext context) : base(context, "push_subscriptions") { }
 
-    public async Task<IEnumerable<PushSubscription>> GetByUserIdAsync(string userId)
+    public override async Task<IEnumerable<PushSubscription>> GetByUserIdAsync(string userId)
     {
         var filter = Builders<PushSubscription>.Filter.And(
             Builders<PushSubscription>.Filter.Eq(s => s.UserId, userId),

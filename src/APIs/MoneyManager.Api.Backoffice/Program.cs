@@ -40,7 +40,7 @@ var adminIssuer = builder.Configuration["AdminAuth:Issuer"] ?? "MoneyManager.Adm
 var adminAudience = builder.Configuration["AdminAuth:Audience"] ?? "MoneyManager.Admin.Users";
 var adminSecret = Environment.GetEnvironmentVariable("ADMIN_AUTH_SECRET")
     ?? builder.Configuration["AdminAuth:SecretKey"]
-    ?? "change-this-admin-secret-key-with-at-least-32-characters";
+    ?? throw new InvalidOperationException("AdminAuth SecretKey não configurada. Defina a variável de ambiente ADMIN_AUTH_SECRET.");
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -83,21 +83,17 @@ if (!string.IsNullOrWhiteSpace(envOriginsRaw))
     allowedOrigins = allowedOrigins.Concat(envOrigins).Distinct().ToArray();
 }
 
+if (allowedOrigins.Length == 0)
+    throw new InvalidOperationException(
+        "AdminCors AllowedOrigins não configurado. Defina ADMIN_PORTAL_ALLOWED_ORIGINS ou AdminCors:AllowedOrigins.");
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AdminPortal", policy =>
     {
-        if (allowedOrigins.Length > 0)
-        {
-            policy.WithOrigins(allowedOrigins)
-                .AllowAnyHeader()
-                .AllowAnyMethod();
-            return;
-        }
-
-        policy.AllowAnyOrigin()
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        policy.WithOrigins(allowedOrigins)
+            .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            .WithHeaders("Content-Type", "Authorization");
     });
 });
 
@@ -148,24 +144,27 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 
-app.UseSwagger(c =>
+if (app.Environment.IsDevelopment())
 {
-    c.PreSerializeFilters.Add((swagger, httpReq) =>
+    app.UseSwagger(c =>
     {
-        if (httpReq.Headers.ContainsKey("X-Forwarded-Proto"))
+        c.PreSerializeFilters.Add((swagger, httpReq) =>
         {
-            swagger.Servers =
-            [
-                new Microsoft.OpenApi.Models.OpenApiServer { Url = $"https://{httpReq.Host.Value}" }
-            ];
-        }
+            if (httpReq.Headers.ContainsKey("X-Forwarded-Proto"))
+            {
+                swagger.Servers =
+                [
+                    new Microsoft.OpenApi.Models.OpenApiServer { Url = $"https://{httpReq.Host.Value}" }
+                ];
+            }
+        });
     });
-});
 
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MoneyManager Admin API v1");
-});
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "MoneyManager Admin API v1");
+    });
+}
 
 app.UseCors("AdminPortal");
 app.UseAuthentication();
@@ -181,7 +180,7 @@ app.MapGet("/health", () => Results.Ok(new
 
 app.MapControllers();
 
-app.MapGet("/", () => Results.Redirect("/swagger"));
+app.MapGet("/", () => Results.Ok(new { status = "healthy" }));
 
 // Seed legal documents on startup
 var documentSeeder = app.Services.GetRequiredService<MoneyManager.Api.Administration.Services.DocumentSeeder>();

@@ -135,8 +135,6 @@ export default function ProfilePage() {
       { password: deletePassword, confirmationText: deleteConfirmText },
       {
         onSuccess: () => {
-          localStorage.clear();
-          sessionStorage.clear();
           logout();
           router.push("/account-deleted");
         },

@@ -2,8 +2,6 @@ services:
   mongodb:
     image: mongo:8.0
     container_name: moneymanager-mongo
-    ports:
-      - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: MoneyAgent
     volumes:
@@ -19,8 +17,6 @@ services:
   mongo-express:
     image: mongo-express:1.0
     container_name: moneymanager-mongo-express
-    ports:
-      - "8081:8081"
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017
       ME_CONFIG_MONGODB_DATABASE: MoneyAgent

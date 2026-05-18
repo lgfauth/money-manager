@@ -1,4 +1,5 @@
 using MoneyManager.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace MoneyManager.Application.Services;
 
@@ -11,28 +12,23 @@ public interface IAccountDeletionService
 public class AccountDeletionService : IAccountDeletionService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<AccountDeletionService> _logger;
 
-    public AccountDeletionService(IUnitOfWork unitOfWork)
+    public AccountDeletionService(IUnitOfWork unitOfWork, ILogger<AccountDeletionService> logger)
     {
         _unitOfWork = unitOfWork;
+        _logger = logger;
     }
 
     public async Task<int> GetUserDataCountAsync(string userId)
     {
-        var accounts = await _unitOfWork.Accounts.GetAllAsync();
-        var categories = await _unitOfWork.Categories.GetAllAsync();
-        var transactions = await _unitOfWork.Transactions.GetAllAsync();
-        var budgets = await _unitOfWork.Budgets.GetAllAsync();
-        var recurring = await _unitOfWork.RecurringTransactions.GetAllAsync();
+        var accounts = await _unitOfWork.Accounts.GetByUserIdAsync(userId);
+        var categories = await _unitOfWork.Categories.GetByUserIdAsync(userId);
+        var transactions = await _unitOfWork.Transactions.GetByUserIdAsync(userId);
+        var budgets = await _unitOfWork.Budgets.GetByUserIdAsync(userId);
+        var recurring = await _unitOfWork.RecurringTransactions.GetByUserIdAsync(userId);
 
-        var totalCount =
-            accounts.Count(a => a.UserId == userId) +
-            categories.Count(c => c.UserId == userId) +
-            transactions.Count(t => t.UserId == userId) +
-            budgets.Count(b => b.UserId == userId) +
-            recurring.Count(r => r.UserId == userId);
-
-        return totalCount;
+        return accounts.Count() + categories.Count() + transactions.Count() + budgets.Count() + recurring.Count();
     }
 
     public async Task<bool> DeleteUserAccountAsync(string userId, string password)
@@ -50,40 +46,12 @@ public class AccountDeletionService : IAccountDeletionService
 
         try
         {
-            var recurringTransactions = await _unitOfWork.RecurringTransactions.GetAllAsync();
-            var userRecurring = recurringTransactions.Where(r => r.UserId == userId).ToList();
-            foreach (var recurring in userRecurring)
-            {
-                await _unitOfWork.RecurringTransactions.DeleteAsync(recurring.Id);
-            }
-
-            var budgets = await _unitOfWork.Budgets.GetAllAsync();
-            var userBudgets = budgets.Where(b => b.UserId == userId).ToList();
-            foreach (var budget in userBudgets)
-            {
-                await _unitOfWork.Budgets.DeleteAsync(budget.Id);
-            }
-
-            var transactions = await _unitOfWork.Transactions.GetAllAsync();
-            var userTransactions = transactions.Where(t => t.UserId == userId).ToList();
-            foreach (var transaction in userTransactions)
-            {
-                await _unitOfWork.Transactions.DeleteAsync(transaction.Id);
-            }
-
-            var accounts = await _unitOfWork.Accounts.GetAllAsync();
-            var userAccounts = accounts.Where(a => a.UserId == userId).ToList();
-            foreach (var account in userAccounts)
-            {
-                await _unitOfWork.Accounts.DeleteAsync(account.Id);
-            }
-
-            var categories = await _unitOfWork.Categories.GetAllAsync();
-            var userCategories = categories.Where(c => c.UserId == userId).ToList();
-            foreach (var category in userCategories)
-            {
-                await _unitOfWork.Categories.DeleteAsync(category.Id);
-            }
+            // Exclui todos os dados do usuário com queries filtradas por userId (sem carregar tudo em memória)
+            await _unitOfWork.RecurringTransactions.DeleteManyByUserIdAsync(userId);
+            await _unitOfWork.Budgets.DeleteManyByUserIdAsync(userId);
+            await _unitOfWork.Transactions.DeleteManyByUserIdAsync(userId);
+            await _unitOfWork.Accounts.DeleteManyByUserIdAsync(userId);
+            await _unitOfWork.Categories.DeleteManyByUserIdAsync(userId);
 
             await _unitOfWork.Users.DeleteAsync(userId);
             await _unitOfWork.SaveChangesAsync();
@@ -92,7 +60,7 @@ public class AccountDeletionService : IAccountDeletionService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erro ao deletar conta do usuário {userId}: {ex.Message}");
+            _logger.LogError(ex, "Erro ao deletar conta do usuário {UserId}", userId);
             throw new Exception("Erro ao deletar conta. Por favor, tente novamente.", ex);
         }
     }

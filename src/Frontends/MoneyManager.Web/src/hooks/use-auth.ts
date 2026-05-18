@@ -17,7 +17,7 @@ export function useLogin() {
     mutationFn: (data: LoginRequestDto) =>
       apiClient.post<LoginResponseDto>("/api/auth/login", data),
     onSuccess: (response) => {
-      login(response.token);
+      login({ id: response.id, name: response.name, email: response.email });
       router.push("/");
     },
     onError: (error) => {
@@ -34,7 +34,7 @@ export function useRegister() {
     mutationFn: (data: RegisterRequestDto) =>
       apiClient.post<LoginResponseDto>("/api/auth/register", data),
     onSuccess: (response) => {
-      login(response.token);
+      login({ id: response.id, name: response.name, email: response.email });
       router.push("/onboarding");
     },
     onError: (error) => {
@@ -47,7 +47,11 @@ export function useLogout() {
   const { logout } = useAuthStore();
   const router = useRouter();
 
-  return () => {
+  return async () => {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
     logout();
     queryClient.clear();
     router.push("/login");

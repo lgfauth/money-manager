@@ -4,9 +4,6 @@ namespace MoneyManager.Domain.Interfaces;
 
 public interface IPushSubscriptionRepository : IRepository<PushSubscription>
 {
-    /// <summary>Returns all active (non-deleted) subscriptions for a user.</summary>
-    Task<IEnumerable<PushSubscription>> GetByUserIdAsync(string userId);
-
     /// <summary>Returns the subscription that matches the given endpoint URL, or null.</summary>
     Task<PushSubscription?> GetByEndpointAsync(string endpoint);
 
