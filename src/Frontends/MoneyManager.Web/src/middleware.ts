@@ -24,6 +24,25 @@ export function middleware(request: NextRequest) {
   }
 
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+
+  // Se a API estiver em outro domínio, o cookie HttpOnly de auth pode não
+  // existir no domínio do frontend. Nesse cenário, o middleware não consegue
+  // decidir autenticação com confiabilidade e deve delegar para o guard client-side.
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  let canTrustCookieInMiddleware = true;
+  if (apiUrl) {
+    try {
+      const apiOrigin = new URL(apiUrl, request.url).origin;
+      canTrustCookieInMiddleware = apiOrigin === request.nextUrl.origin;
+    } catch {
+      canTrustCookieInMiddleware = true;
+    }
+  }
+
+  if (!canTrustCookieInMiddleware) {
+    return NextResponse.next();
+  }
+
   const hasToken = !!request.cookies.get("mm_access_token")?.value;
 
   // Redireciona para login se não autenticado em rota protegida
