@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import type { AccountResponseDto } from "@/types/account";
 
 const accountTypeLabels: Record<string, string> = {
@@ -25,10 +26,8 @@ interface AccountCardProps {
 }
 
 export function AccountCard({ account, onEdit, onDelete }: AccountCardProps) {
-  const formattedBalance = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: account.currency,
-  }).format(account.balance);
+  const { formatMonetaryValue } = useMoneyPrivacy();
+  const formattedBalance = formatMonetaryValue(account.balance, account.currency);
 
   return (
     <Card className="rounded-xl hover:shadow-md transition-shadow">

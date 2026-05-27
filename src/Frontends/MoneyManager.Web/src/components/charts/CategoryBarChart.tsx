@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface CategoryBarChartProps {
   data: {
@@ -10,10 +11,8 @@ interface CategoryBarChartProps {
   }[];
 }
 
-const formatCurrency = (value: number) =>
-  `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
-
 export function CategoryBarChart({ data }: CategoryBarChartProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const [animated, setAnimated] = useState(false);
   const max = Math.max(...data.map((item) => item.value), 0);
 
@@ -101,7 +100,7 @@ export function CategoryBarChart({ data }: CategoryBarChartProps) {
                 fontWeight: 600,
               }}
             >
-              {formatCurrency(item.value)}
+              {formatMonetaryValue(item.value)}
             </span>
           </div>
         );

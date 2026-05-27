@@ -15,8 +15,10 @@ import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { BudgetCard } from "@/components/budgets/budget-card";
 import { BudgetWizard } from "@/components/budgets/budget-wizard";
 import { CopyBudgetDialog } from "@/components/budgets/copy-budget-dialog";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 export default function BudgetsPage() {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const [currentDate, setCurrentDate] = useState(new Date());
   const month = format(currentDate, "yyyy-MM");
   const monthLabel = format(currentDate, "MMMM yyyy", { locale: ptBR });
@@ -47,12 +49,6 @@ export default function BudgetsPage() {
     ).length;
     return { totalLimit, totalSpent, overBudget };
   }, [budget]);
-
-  const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(v);
 
   const percent =
     stats.totalLimit > 0
@@ -113,12 +109,12 @@ export default function BudgetsPage() {
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
             title="Orcamento Total"
-            value={fmt(stats.totalLimit)}
+            value={formatMonetaryValue(stats.totalLimit)}
             icon={PiggyBank}
           />
           <StatCard
             title="Gasto no Mes"
-            value={fmt(stats.totalSpent)}
+            value={formatMonetaryValue(stats.totalSpent)}
             icon={PiggyBank}
             variant={
               Number(percent) >= 90

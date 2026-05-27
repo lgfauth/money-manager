@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DonutChart } from "@/components/charts/pie-chart";
 import { COLOR_PRESETS } from "@/config/constants";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface CategoryData {
   id: string;
@@ -15,13 +16,8 @@ interface BudgetUsageChartProps {
   data: CategoryData[];
 }
 
-const fmt = (v: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(v);
-
 export function BudgetUsageChart({ data }: BudgetUsageChartProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const total = data.reduce((s, d) => s + d.amount, 0);
   const chartData = data.map((d, i) => ({
     name: d.name,
@@ -45,9 +41,9 @@ export function BudgetUsageChart({ data }: BudgetUsageChartProps) {
           <DonutChart
             data={chartData}
             centerLabel="Total"
-            centerValue={fmt(total)}
+            centerValue={formatMonetaryValue(total)}
             height={250}
-            formatter={fmt}
+            formatter={(value) => formatMonetaryValue(value)}
           />
         )}
       </CardContent>

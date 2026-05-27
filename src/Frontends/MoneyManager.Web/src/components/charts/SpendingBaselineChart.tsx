@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { BaselineSeries } from 'lightweight-charts';
 import { useChart } from '@/hooks/use-chart';
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface Props {
   data: { time: string; value: number }[];
@@ -10,20 +11,18 @@ interface Props {
   height?: number;
 }
 
-const formatBRL = (value: number) =>
-  `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-
 export function SpendingBaselineChart({ data, budget, height = 180 }: Props) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const containerRef = useRef<HTMLDivElement>(null);
   const chart = useChart({
     containerRef,
     options: useMemo(
       () => ({
         localization: {
-          priceFormatter: formatBRL,
+          priceFormatter: formatMonetaryValue,
         },
       }),
-      []
+      [formatMonetaryValue]
     ),
   });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import {
   ColorType,
   createChart,
@@ -20,10 +21,8 @@ interface RevenueExpenseLineChartProps {
   height?: number;
 }
 
-const formatCurrency = (value: number) =>
-  `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
-
 export function RevenueExpenseLineChart({ data, height = 220 }: RevenueExpenseLineChartProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export function RevenueExpenseLineChart({ data, height = 220 }: RevenueExpenseLi
       pointMarkersRadius: 4,
       priceFormat: {
         type: 'custom',
-        formatter: formatCurrency,
+        formatter: formatMonetaryValue,
       },
     });
 
@@ -69,7 +68,7 @@ export function RevenueExpenseLineChart({ data, height = 220 }: RevenueExpenseLi
       pointMarkersRadius: 4,
       priceFormat: {
         type: 'custom',
-        formatter: formatCurrency,
+        formatter: formatMonetaryValue,
       },
     });
 
@@ -97,7 +96,7 @@ export function RevenueExpenseLineChart({ data, height = 220 }: RevenueExpenseLi
       resizeObserver.disconnect();
       chart.remove();
     };
-  }, [data, height]);
+  }, [data, height, formatMonetaryValue]);
 
   const lastIncome = data.at(-1)?.income ?? 0;
   const lastExpense = data.at(-1)?.expense ?? 0;
@@ -119,13 +118,13 @@ export function RevenueExpenseLineChart({ data, height = 220 }: RevenueExpenseLi
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 20, height: 3, background: '#16a34a', borderRadius: 2, flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: '#8892a4' }}>Receitas</span>
-          <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600 }}>{formatCurrency(lastIncome)}</span>
+          <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600 }}>{formatMonetaryValue(lastIncome)}</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 20, height: 3, background: '#dc2626', borderRadius: 2, flexShrink: 0 }} />
           <span style={{ fontSize: 12, color: '#8892a4' }}>Despesas</span>
-          <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600 }}>{formatCurrency(lastExpense)}</span>
+          <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600 }}>{formatMonetaryValue(lastExpense)}</span>
         </div>
       </div>
     </div>

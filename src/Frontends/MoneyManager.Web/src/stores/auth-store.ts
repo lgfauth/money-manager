@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useMoneyPrivacyStore } from "@/stores/money-privacy-store";
 
 interface DecodedUser {
   id: string;
@@ -23,10 +24,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   isHydrated: false,
 
   login: (user: DecodedUser) => {
+    useMoneyPrivacyStore.getState().setHideMoneyValues(true);
     set({ user, isAuthenticated: true });
   },
 
   logout: () => {
+    useMoneyPrivacyStore.getState().setHideMoneyValues(true);
     set({ user: null, isAuthenticated: false });
   },
 
@@ -37,11 +40,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       if (res.ok) {
         const user: DecodedUser = await res.json();
+        useMoneyPrivacyStore.getState().setHideMoneyValues(true);
         set({ user, isAuthenticated: true, isHydrated: true });
       } else {
+        useMoneyPrivacyStore.getState().setHideMoneyValues(true);
         set({ user: null, isAuthenticated: false, isHydrated: true });
       }
     } catch {
+      useMoneyPrivacyStore.getState().setHideMoneyValues(true);
       set({ user: null, isAuthenticated: false, isHydrated: true });
     }
   },

@@ -18,12 +18,7 @@ import {
 } from "@/hooks/use-credit-cards";
 import type { CreditCardTransactionResponseDto } from "@/types/credit-card";
 import { useBreadcrumbLabel } from "@/stores/breadcrumb-store";
-
-const fmt = (value: number, currency: string) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-  }).format(value);
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 const fmtDate = (iso: string) => {
   const d = new Date(iso);
@@ -45,6 +40,7 @@ const fmtRefMonth = (ref: string) => {
 };
 
 export default function InvoiceDetailPage() {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const params = useParams<{ cardId: string; invoiceId: string }>();
   const router = useRouter();
   const cardId = params?.cardId;
@@ -121,7 +117,7 @@ export default function InvoiceDetailPage() {
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Total</p>
           <p className="text-lg font-semibold">
-            {fmt(invoice.totalAmount, invoice.currency)}
+            {formatMonetaryValue(invoice.totalAmount, invoice.currency)}
           </p>
         </div>
         <div className="rounded-xl border bg-card p-4">
@@ -138,7 +134,7 @@ export default function InvoiceDetailPage() {
         <div className="rounded-lg border border-income/30 bg-income/10 p-3 text-sm text-income">
           Fatura paga em {fmtDate(invoice.paidAt)}
           {invoice.paidAmount !== null &&
-            ` — ${fmt(invoice.paidAmount, invoice.currency)}`}
+            ` — ${formatMonetaryValue(invoice.paidAmount, invoice.currency)}`}
           .
         </div>
       )}
@@ -179,7 +175,7 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold">
-                    {fmt(tx.installmentAmount, tx.currency)}
+                    {formatMonetaryValue(tx.installmentAmount, tx.currency)}
                   </p>
                   {canRemoveTx && (
                     <>

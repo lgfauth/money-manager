@@ -3,18 +3,15 @@
 import { useMemo } from "react";
 import { BarChartComponent } from "@/components/charts/bar-chart";
 import type { AccountResponseDto } from "@/types/account";
-
-const fmt = (v: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(v);
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface AccountsChartProps {
   accounts: AccountResponseDto[];
 }
 
 export function AccountsChart({ accounts }: AccountsChartProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
+
   const chartData = accounts.map((a) => ({
     name: a.name,
     value: a.balance,
@@ -41,7 +38,7 @@ export function AccountsChart({ accounts }: AccountsChartProps) {
               data={chartData}
               layout="horizontal"
               height={220}
-              formatter={fmt}
+              formatter={(value) => formatMonetaryValue(value)}
             />
           </div>
 
@@ -50,7 +47,7 @@ export function AccountsChart({ accounts }: AccountsChartProps) {
 
             <div className="saldos-total-block">
               <p className="saldos-total-label">Saldo total</p>
-              <p className="saldos-total-val">{fmt(totalBalance)}</p>
+              <p className="saldos-total-val">{formatMonetaryValue(totalBalance)}</p>
             </div>
           </div>
         </div>

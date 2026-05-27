@@ -1,7 +1,15 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, LogOut, User, Settings, MessageSquarePlus } from "lucide-react";
+import {
+  Menu,
+  LogOut,
+  User,
+  Settings,
+  MessageSquarePlus,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -20,6 +28,7 @@ import {
   getUserInitials,
 } from "@/lib/user-display";
 import { useAuthStore } from "@/stores/auth-store";
+import { useMoneyPrivacyStore } from "@/stores/money-privacy-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useLogout } from "@/hooks/use-auth";
 import { Breadcrumb } from "./breadcrumb";
@@ -28,6 +37,7 @@ export function Header() {
   const { user } = useAuthStore();
   const { data: profile } = useProfile();
   const { toggleSidebar } = useUIStore();
+  const { hideMoneyValues, toggleMoneyVisibility } = useMoneyPrivacyStore();
   const handleLogout = useLogout();
   const pathname = usePathname();
   const router = useRouter();
@@ -57,6 +67,23 @@ export function Header() {
       <div className="flex-1">
         <Breadcrumb pathname={pathname} />
       </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleMoneyVisibility}
+        aria-label={hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
+        title={hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
+      >
+        {hideMoneyValues ? (
+          <EyeOff className="h-5 w-5" />
+        ) : (
+          <Eye className="h-5 w-5" />
+        )}
+        <span className="sr-only">
+          {hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
+        </span>
+      </Button>
 
       {/* User menu */}
       <DropdownMenu>

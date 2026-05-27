@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface OverviewCardsProps {
   netBalance: number;
@@ -15,36 +16,32 @@ interface OverviewCardsProps {
   monthlyExpense: number;
 }
 
-const fmt = (v: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(v);
-
 export function OverviewCards({
   netBalance,
   totalAssets,
   monthlyIncome,
   monthlyExpense,
 }: OverviewCardsProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard title="Saldo Liquido" value={fmt(netBalance)} icon={Wallet} />
+      <StatCard title="Saldo Liquido" value={formatMonetaryValue(netBalance)} icon={Wallet} />
       <StatCard
         title="Total em Ativos"
-        value={fmt(totalAssets)}
+        value={formatMonetaryValue(totalAssets)}
         icon={TrendingUp}
         variant="default"
       />
       <StatCard
         title="Receitas do Mes"
-        value={fmt(monthlyIncome)}
+        value={formatMonetaryValue(monthlyIncome)}
         icon={ArrowDownLeft}
         variant="income"
       />
       <StatCard
         title="Despesas do Mes"
-        value={fmt(monthlyExpense)}
+        value={formatMonetaryValue(monthlyExpense)}
         icon={ArrowUpRight}
         variant="expense"
       />

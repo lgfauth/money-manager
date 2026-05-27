@@ -23,14 +23,10 @@ import {
 } from "@/config/constants";
 import { cn } from "@/lib/utils";
 import { useBreadcrumbLabel } from "@/stores/breadcrumb-store";
-
-const fmt = (value: number, currency: string) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-  }).format(value);
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 export default function CreditCardDetailPage() {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const params = useParams<{ cardId: string }>();
   const router = useRouter();
   const cardId = params?.cardId;
@@ -103,12 +99,12 @@ export default function CreditCardDetailPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Limite total</p>
-          <p className="text-lg font-semibold">{fmt(card.limit, card.currency)}</p>
+          <p className="text-lg font-semibold">{formatMonetaryValue(card.limit, card.currency)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Utilizado</p>
           <p className="text-lg font-semibold text-expense">
-            {fmt(used, card.currency)}
+            {formatMonetaryValue(used, card.currency)}
           </p>
           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div
@@ -120,7 +116,7 @@ export default function CreditCardDetailPage() {
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Disponível</p>
           <p className="text-lg font-semibold text-income">
-            {fmt(card.availableLimit, card.currency)}
+            {formatMonetaryValue(card.availableLimit, card.currency)}
           </p>
         </div>
       </div>

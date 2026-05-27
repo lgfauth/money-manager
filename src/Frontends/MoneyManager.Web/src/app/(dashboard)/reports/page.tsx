@@ -21,14 +21,12 @@ import { CategoryBarChart, RevenueExpenseLineChart } from "@/components/charts";
 import { useReports, getPresetPeriod, getDefaultPeriod } from "@/hooks/use-reports";
 import { useTransactions } from "@/hooks/use-transactions";
 import { PeriodSelector } from "@/components/shared/period-selector";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 type Preset = "current" | "previous" | "3m" | "6m" | "year" | "custom";
 
-function formatCurrency(value: number): string {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-
 export default function ReportsPage() {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const [preset, setPreset] = useState<Preset>("current");
   const [period, setPeriod] = useState(getDefaultPeriod);
   const [selectedMonth, setSelectedMonth] = useState<string>(
@@ -232,19 +230,19 @@ export default function ReportsPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Total Receitas"
-              value={formatCurrency(report.totalIncome)}
+              value={formatMonetaryValue(report.totalIncome)}
               icon={TrendingUp}
               variant="income"
             />
             <StatCard
               title="Total Despesas"
-              value={formatCurrency(report.totalExpense)}
+              value={formatMonetaryValue(report.totalExpense)}
               icon={TrendingDown}
               variant="expense"
             />
             <StatCard
               title="Saldo Líquido"
-              value={formatCurrency(report.netBalance)}
+              value={formatMonetaryValue(report.netBalance)}
               icon={DollarSign}
               variant={report.netBalance >= 0 ? "income" : "expense"}
             />
@@ -299,10 +297,10 @@ export default function ReportsPage() {
                   {donutData.length > 0 ? (
                     <DonutChart
                       data={donutData}
-                      centerValue={formatCurrency(report.totalExpense)}
+                      centerValue={formatMonetaryValue(report.totalExpense)}
                       centerLabel="Total"
                       height={300}
-                      formatter={formatCurrency}
+                      formatter={(value) => formatMonetaryValue(value)}
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-10">
@@ -322,7 +320,7 @@ export default function ReportsPage() {
                   {accountDonutData.length > 0 ? (
                     <DonutChart
                       data={accountDonutData}
-                      centerValue={formatCurrency(
+                      centerValue={formatMonetaryValue(
                         report.movementByAccount.reduce(
                           (sum, account) => sum + account.total,
                           0
@@ -330,7 +328,7 @@ export default function ReportsPage() {
                       )}
                       centerLabel="Movimento"
                       height={300}
-                      formatter={formatCurrency}
+                      formatter={(value) => formatMonetaryValue(value)}
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground text-center py-10">
@@ -351,11 +349,11 @@ export default function ReportsPage() {
               <div className="mb-4 grid gap-2 sm:grid-cols-2">
                 <div>
                   <p className="text-xs text-muted-foreground">Receita média do período</p>
-                  <p className="text-sm font-semibold text-green-600">{formatCurrency(averageIncome)}</p>
+                  <p className="text-sm font-semibold text-green-600">{formatMonetaryValue(averageIncome)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Despesa média do período</p>
-                  <p className="text-sm font-semibold text-red-600">{formatCurrency(averageExpense)}</p>
+                  <p className="text-sm font-semibold text-red-600">{formatMonetaryValue(averageExpense)}</p>
                 </div>
               </div>
 
@@ -412,7 +410,7 @@ export default function ReportsPage() {
                             </div>
                           </td>
                           <td className="py-3 text-right font-medium">
-                            {formatCurrency(cat.total)}
+                            {formatMonetaryValue(cat.total)}
                           </td>
                           <td className="py-3 text-right text-muted-foreground">
                             {cat.percentage.toFixed(1)}%

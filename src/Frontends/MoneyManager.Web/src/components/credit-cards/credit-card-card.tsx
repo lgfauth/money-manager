@@ -22,18 +22,13 @@ import {
   CREDIT_LIMIT_THRESHOLD_DANGER,
   CREDIT_LIMIT_THRESHOLD_WARNING,
 } from "@/config/constants";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface CreditCardCardProps {
   card: CreditCardResponseDto;
   onEdit: () => void;
   onDelete: () => void;
 }
-
-const fmt = (value: number, currency: string) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-  }).format(value);
 
 const fmtDate = (iso: string) => {
   const d = new Date(iso);
@@ -45,6 +40,7 @@ const fmtDate = (iso: string) => {
 };
 
 export function CreditCardCard({ card, onEdit, onDelete }: CreditCardCardProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const used = card.currentBalance;
   const limit = card.limit;
   const usedPercent = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
@@ -111,9 +107,9 @@ export function CreditCardCard({ card, onEdit, onDelete }: CreditCardCardProps) 
           </div>
           <div className="flex items-baseline justify-between text-xs">
             <span className="text-muted-foreground">
-              {fmt(used, card.currency)}
+              {formatMonetaryValue(used, card.currency)}
             </span>
-            <span className="font-medium">{fmt(limit, card.currency)}</span>
+            <span className="font-medium">{formatMonetaryValue(limit, card.currency)}</span>
           </div>
         </div>
 
@@ -121,7 +117,7 @@ export function CreditCardCard({ card, onEdit, onDelete }: CreditCardCardProps) 
           <div>
             <p className="text-muted-foreground">Disponível</p>
             <p className="font-semibold text-income">
-              {fmt(card.availableLimit, card.currency)}
+              {formatMonetaryValue(card.availableLimit, card.currency)}
             </p>
           </div>
           {card.currentInvoice ? (

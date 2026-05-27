@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { InvoiceStatusBadge } from "@/components/credit-cards/invoice-status-badge";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import type { CreditCardInvoiceResponseDto } from "@/types/credit-card";
 
 interface InvoiceListItemProps {
@@ -10,12 +11,6 @@ interface InvoiceListItemProps {
   cardId: string;
   highlight?: boolean;
 }
-
-const fmt = (value: number, currency: string) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-  }).format(value);
 
 const fmtDate = (iso: string) => {
   const d = new Date(iso);
@@ -41,6 +36,7 @@ export function InvoiceListItem({
   cardId,
   highlight = false,
 }: InvoiceListItemProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const isPending = invoice.status === "pending";
   const className = `flex items-center justify-between rounded-lg border bg-card px-4 py-3 transition-colors ${
     isPending ? "cursor-default opacity-80" : "hover:bg-muted/40"
@@ -63,7 +59,7 @@ export function InvoiceListItem({
       <div className="flex items-center gap-3">
         <div className="text-right">
           <p className="text-sm font-semibold">
-            {fmt(invoice.totalAmount, invoice.currency)}
+            {formatMonetaryValue(invoice.totalAmount, invoice.currency)}
           </p>
           {invoice.status === "paid" && invoice.paidAt && (
             <p className="text-[11px] text-muted-foreground">

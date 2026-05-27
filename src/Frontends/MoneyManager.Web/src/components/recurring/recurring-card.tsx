@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 const frequencyLabels: Record<string, string> = {
   Daily: "Diária",
@@ -51,6 +52,8 @@ export function RecurringCard({
   onDelete,
   onToggle,
 }: RecurringCardProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
+
   return (
     <Card
       className={cn(
@@ -102,10 +105,7 @@ export function RecurringCard({
       <CardContent className="space-y-2">
         <p className={cn("text-lg font-bold", typeColors[recurring.type])}>
           {recurring.type === "Income" ? "+" : "-"}
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(recurring.amount)}
+          {formatMonetaryValue(recurring.amount)}
         </p>
         <div className="text-xs text-muted-foreground space-y-1">
           <p>

@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { BUDGET_THRESHOLD_WARNING, BUDGET_THRESHOLD_DANGER } from "@/config/constants";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface BudgetProgressProps {
   spent: number;
@@ -10,6 +11,7 @@ interface BudgetProgressProps {
 }
 
 export function BudgetProgress({ spent, limit, className }: BudgetProgressProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const percent = limit > 0 ? (spent / limit) * 100 : 0;
   const clamped = Math.min(percent, 100);
 
@@ -29,19 +31,9 @@ export function BudgetProgress({ spent, limit, className }: BudgetProgressProps)
         />
       </div>
       <div className="flex justify-between text-[10px] text-muted-foreground">
-        <span>
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(spent)}
-        </span>
+        <span>{formatMonetaryValue(spent)}</span>
         <span>{percent.toFixed(0)}%</span>
-        <span>
-          {new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-          }).format(limit)}
-        </span>
+        <span>{formatMonetaryValue(limit)}</span>
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { MoneyInput } from "@/components/shared/money-input";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import { cn } from "@/lib/utils";
 
 interface CreditCardTransactionFormBodyProps {
@@ -42,6 +43,7 @@ export function CreditCardTransactionFormBody({
   defaultCardId,
   onClose,
 }: CreditCardTransactionFormBodyProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const createTx = useCreateCreditCardTransaction();
   const { data: cards } = useCreditCards();
   const { data: categories } = useCategories();
@@ -307,10 +309,7 @@ export function CreditCardTransactionFormBody({
             {installments > 1 && totalAmount > 0 && (
               <p className="text-[11px] text-muted-foreground">
                 {installments}x de aproximadamente{" "}
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: selectedCard?.currency ?? "BRL",
-                }).format(installmentValue)}
+                {formatMonetaryValue(installmentValue, selectedCard?.currency ?? "BRL")}
               </p>
             )}
           </div>

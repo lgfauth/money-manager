@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCategories } from "@/hooks/use-categories";
 import { useCreateBudget, useUpdateBudget } from "@/hooks/use-budgets";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import type { BudgetResponseDto, BudgetItemDto } from "@/types/budget";
 import { DEFAULT_BUDGET_AMOUNT } from "@/config/constants";
 
@@ -32,6 +33,7 @@ export function BudgetWizard({
   month,
   existingBudget,
 }: BudgetWizardProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const { data: categories } = useCategories();
   const createBudget = useCreateBudget();
   const updateBudget = useUpdateBudget();
@@ -255,10 +257,7 @@ export function BudgetWizard({
                       Orcamento total
                     </span>
                     <span className="font-bold">
-                      {new Intl.NumberFormat("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      }).format(totalBudget)}
+                      {formatMonetaryValue(totalBudget)}
                     </span>
                   </div>
                 </div>
@@ -280,10 +279,7 @@ export function BudgetWizard({
                           {cat.name}
                         </span>
                         <span>
-                          {new Intl.NumberFormat("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          }).format(amounts[catId] ?? 0)}
+                          {formatMonetaryValue(amounts[catId] ?? 0)}
                         </span>
                       </div>
                     );

@@ -17,18 +17,12 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import type { CreditCardTransactionResponseDto } from "@/types/credit-card";
 import type { CreditCardResponseDto } from "@/types/credit-card";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface CreditCardTransactionTableProps {
   transactions: CreditCardTransactionResponseDto[];
   cards: CreditCardResponseDto[] | undefined;
   onDelete: (tx: CreditCardTransactionResponseDto) => void;
-}
-
-function fmt(value: number, currency: string) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency,
-  }).format(value);
 }
 
 function CategoryBadge({ name, color }: { name: string; color: string }) {
@@ -65,6 +59,7 @@ export function CreditCardTransactionTable({
   cards,
   onDelete,
 }: CreditCardTransactionTableProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const cardById = new Map((cards ?? []).map((c) => [c.id, c]));
 
   return (
@@ -117,7 +112,7 @@ export function CreditCardTransactionTable({
                     "text-right font-semibold font-heading",
                     tx.type === "Refund" ? "text-income" : "text-expense"
                   )}>
-                    {tx.type === "Refund" ? "+" : "-"}{fmt(Math.abs(tx.installmentAmount), tx.currency)}
+                    {tx.type === "Refund" ? "+" : "-"}{formatMonetaryValue(Math.abs(tx.installmentAmount), tx.currency)}
                   </TableCell>
                   <TableCell>
                     <button
@@ -174,7 +169,7 @@ export function CreditCardTransactionTable({
                     "text-sm font-semibold font-heading",
                     tx.type === "Refund" ? "text-income" : "text-expense"
                   )}>
-                    {tx.type === "Refund" ? "+" : "-"}{fmt(Math.abs(tx.installmentAmount), tx.currency)}
+                    {tx.type === "Refund" ? "+" : "-"}{formatMonetaryValue(Math.abs(tx.installmentAmount), tx.currency)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
                     {tx.installmentNumber}/{tx.totalInstallments}

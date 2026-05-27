@@ -17,8 +17,10 @@ import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { RecurringCard } from "@/components/recurring/recurring-card";
 import { RecurringForm } from "@/components/recurring/recurring-form";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 export default function RecurringPage() {
+  const { formatMonetaryValue } = useMoneyPrivacy();
   const { data: recurring, isLoading } = useRecurring();
   const deleteRecurring = useDeleteRecurring();
   const updateRecurring = useUpdateRecurring();
@@ -82,12 +84,6 @@ export default function RecurringPage() {
     });
   };
 
-  const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(v);
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -114,13 +110,13 @@ export default function RecurringPage() {
         />
         <StatCard
           title="Receita Mensal"
-          value={fmt(stats.monthlyIncome)}
+          value={formatMonetaryValue(stats.monthlyIncome)}
           icon={Play}
           variant="income"
         />
         <StatCard
           title="Despesa Mensal"
-          value={fmt(stats.monthlyExpense)}
+          value={formatMonetaryValue(stats.monthlyExpense)}
           icon={Pause}
           variant="expense"
         />

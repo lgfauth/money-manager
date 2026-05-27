@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { TransactionType, type TransactionResponseDto } from "@/types/transaction";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 function ColorDot({ color }: { color: string }) {
   return (
@@ -21,6 +22,8 @@ interface RecentTransactionsProps {
 }
 
 export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
+
   return (
     <Card className="col-span-full">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -65,10 +68,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                   )}
                 >
                   {tx.type === TransactionType.Income ? "+" : "-"}
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL",
-                  }).format(tx.amount)}
+                  {formatMonetaryValue(tx.amount)}
                 </span>
               </div>
             ))}

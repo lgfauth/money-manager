@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 const typeConfig: Record<
   string,
@@ -73,10 +74,12 @@ function MobileCard({
   transaction,
   onEdit,
   onDelete,
+  formatMonetaryValue,
 }: {
   transaction: TransactionResponseDto;
   onEdit: () => void;
   onDelete: () => void;
+  formatMonetaryValue: (value: number, currency?: string, locale?: string) => string;
 }) {
   const config = typeConfig[transaction.type] ?? typeConfig[TransactionType.Expense];
   const Icon = config.icon;
@@ -105,10 +108,7 @@ function MobileCard({
         <div className="text-right">
           <p className={cn("text-sm font-semibold font-heading", config.className)}>
             {transaction.type === TransactionType.Income ? "+" : "-"}
-            {new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: transaction.currency || "BRL",
-            }).format(transaction.amount)}
+            {formatMonetaryValue(transaction.amount, transaction.currency || "BRL")}
           </p>
           <p className="text-[10px] text-muted-foreground">
             {format(new Date(transaction.date), "dd/MM", { locale: ptBR })}
@@ -139,6 +139,8 @@ export function TransactionTable({
   onEdit,
   onDelete,
 }: TransactionTableProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
+
   return (
     <>
       {/* Desktop table */}
@@ -188,10 +190,7 @@ export function TransactionTable({
                     className={cn("text-right font-semibold font-heading", config.className)}
                   >
                     {tx.type === TransactionType.Income ? "+" : "-"}
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: tx.currency || "BRL",
-                    }).format(tx.amount)}
+                    {formatMonetaryValue(tx.amount, tx.currency || "BRL")}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -228,6 +227,7 @@ export function TransactionTable({
             transaction={tx}
             onEdit={() => onEdit(tx)}
             onDelete={() => onDelete(tx)}
+            formatMonetaryValue={formatMonetaryValue}
           />
         ))}
       </div>
