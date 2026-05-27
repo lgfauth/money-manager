@@ -9,15 +9,38 @@ import { queryClient } from "@/lib/query-client";
 import type { LoginRequestDto, LoginResponseDto, RegisterRequestDto } from "@/types/api";
 import { toast } from "sonner";
 
+function isLoginResponseDto(value: unknown): value is LoginResponseDto {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<LoginResponseDto>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.name === "string" &&
+    typeof candidate.email === "string"
+  );
+}
+
 export function useLogin() {
-  const { login } = useAuthStore();
+  const { login, hydrate } = useAuthStore();
   const router = useRouter();
 
   return useMutation({
     mutationFn: (data: LoginRequestDto) =>
-      apiClient.post<LoginResponseDto>("/api/auth/login", data),
-    onSuccess: (response) => {
-      login({ id: response.id, name: response.name, email: response.email });
+      apiClient.post<LoginResponseDto | undefined>("/api/auth/login", data),
+    onSuccess: async (response) => {
+      if (isLoginResponseDto(response)) {
+        login({ id: response.id, name: response.name, email: response.email });
+      } else {
+        // Fallback para backend que autentica por cookie sem retornar o usuário no body.
+        await hydrate();
+      }
+
+      if (!useAuthStore.getState().isAuthenticated) {
+        throw new Error("Sessão não foi estabelecida após o login");
+      }
+
       router.push("/");
     },
     onError: (error) => {

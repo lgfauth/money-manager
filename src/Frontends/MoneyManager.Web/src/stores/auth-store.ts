@@ -25,7 +25,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: (user: DecodedUser) => {
     useMoneyPrivacyStore.getState().setHideMoneyValues(true);
-    set({ user, isAuthenticated: true });
+    set({ user, isAuthenticated: true, isHydrated: true });
   },
 
   logout: () => {
@@ -44,11 +44,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user, isAuthenticated: true, isHydrated: true });
       } else {
         useMoneyPrivacyStore.getState().setHideMoneyValues(true);
-        set({ user: null, isAuthenticated: false, isHydrated: true });
+        set((state) =>
+          state.isAuthenticated
+            ? { isHydrated: true }
+            : { user: null, isAuthenticated: false, isHydrated: true }
+        );
       }
     } catch {
       useMoneyPrivacyStore.getState().setHideMoneyValues(true);
-      set({ user: null, isAuthenticated: false, isHydrated: true });
+      set((state) =>
+        state.isAuthenticated
+          ? { isHydrated: true }
+          : { user: null, isAuthenticated: false, isHydrated: true }
+      );
     }
   },
 }));
