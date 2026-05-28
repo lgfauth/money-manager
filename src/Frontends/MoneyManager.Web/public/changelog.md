@@ -9,11 +9,19 @@
 ### Privacidade visual de valores monetários
 Foi adicionada uma nova funcionalidade para proteger valores financeiros exibidos na tela em ambientes compartilhados. Agora, ao entrar no sistema, os valores monetários são exibidos com os números ofuscados por padrão. Um botão com ícone de olho no topo da interface permite alternar rapidamente entre ocultar e revelar os valores durante a navegação.
 
+Junto desta entrega, os gráficos financeiros do Dashboard e da página de Relatórios foram ajustados para manter o funcionamento correto após a ofuscação de valores e remover os gráficos baseados em TradingView.
+
 A ofuscação foi aplicada nos principais pontos de visualização financeira, incluindo:
 - Saldos de contas e cartões.
 - Valores de transações e recorrências.
 - Totais e indicadores em relatórios, orçamentos e dashboards.
 - Valores monetários em listagens e gráficos.
+
+Também foram aplicados os seguintes ajustes de gráficos:
+- Dashboard: mantido o gráfico Receita vs Despesas com nova base (soma dos saldos de contas vs despesas acumuladas do mês).
+- Dashboard: removidos os gráficos Saldo acumulado e Receitas e Despesas (6 meses).
+- Dashboard: adicionado o gráfico Limite vs Despesas (despesas de cartões de crédito vs limite disponível).
+- Relatórios: mantido Receita vs Despesas, ajustado para a mesma base de dados do Dashboard e exibido em gráfico de linha.
 
 ---
 
