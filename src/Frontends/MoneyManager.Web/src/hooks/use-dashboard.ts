@@ -5,6 +5,7 @@ import { apiClient } from "@/lib/api-client";
 import { queryKeys } from "@/lib/query-client";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useBudget } from "@/hooks/use-budgets";
+import { useCreditCards } from "@/hooks/use-credit-cards";
 import type { TransactionResponseDto, PaginatedResponse } from "@/types/transaction";
 import type { AccountResponseDto } from "@/types/account";
 import { format } from "date-fns";
@@ -26,6 +27,7 @@ export function useDashboard() {
 
   const accounts = useAccounts();
   const budget = useBudget(month);
+  const creditCards = useCreditCards();
 
   const transactions = useQuery({
     queryKey: queryKeys.transactions({
@@ -53,9 +55,11 @@ export function useDashboard() {
     accounts.isLoading ||
     transactions.isLoading ||
     allMonthTx.isLoading ||
-    budget.isLoading;
+    budget.isLoading ||
+    creditCards.isLoading;
 
   const accountList = accounts.data ?? [];
+  const creditCardList = creditCards.data ?? [];
   const monthTx = allMonthTx.data?.items ?? [];
 
   const monthlyIncome = monthTx
@@ -72,6 +76,16 @@ export function useDashboard() {
   const totalAssets = accountList
     .reduce((s, a) => s + a.balance, 0);
 
+  const totalAvailableLimit = creditCardList.reduce(
+    (sum, card) => sum + card.availableLimit,
+    0
+  );
+
+  const totalCreditCardExpense = creditCardList.reduce(
+    (sum, card) => sum + card.currentBalance,
+    0
+  );
+
   // Group expenses by category for donut chart
   const expensesByCategory = monthTx
     .filter((t) => t.type === "Expense")
@@ -87,16 +101,42 @@ export function useDashboard() {
       return acc;
     }, {});
 
-  // Group daily income/expense for area chart
-  const dailyData = monthTx.reduce<
-    Record<string, { date: string; income: number; expense: number }>
-  >((acc, t) => {
-    const day = t.date.split("T")[0];
-    if (!acc[day]) acc[day] = { date: day, income: 0, expense: 0 };
-    if (t.type === "Income") acc[day].income += t.amount;
-    else if (t.type === "Expense") acc[day].expense += t.amount;
-    return acc;
-  }, {});
+  const expenseByDay = monthTx
+    .filter((transaction) => transaction.type === "Expense")
+    .reduce<Record<string, number>>((acc, transaction) => {
+      const day = transaction.date.split("T")[0];
+      acc[day] = (acc[day] ?? 0) + transaction.amount;
+      return acc;
+    }, {});
+
+  const accountExpenseTrend: Array<{
+    date: string;
+    accountTotal: number;
+    accumulatedExpense: number;
+  }> = [];
+
+  const cursor = new Date(now.getFullYear(), now.getMonth(), 1);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let accumulatedExpense = 0;
+
+  while (cursor <= today) {
+    const dayKey = format(cursor, "yyyy-MM-dd");
+    accumulatedExpense += expenseByDay[dayKey] ?? 0;
+
+    accountExpenseTrend.push({
+      date: dayKey,
+      accountTotal: totalAssets,
+      accumulatedExpense,
+    });
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  const creditLimitExpenseData = creditCardList.map((card) => ({
+    cardName: card.name,
+    availableLimit: card.availableLimit,
+    expense: card.currentBalance,
+  }));
 
   return {
     isLoading,
@@ -110,9 +150,10 @@ export function useDashboard() {
     expensesByCategory: Object.entries(expensesByCategory).map(
       ([id, { name, amount, color }]) => ({ id, name, amount, color })
     ),
-    dailyData: Object.values(dailyData).sort((a, b) =>
-      a.date.localeCompare(b.date)
-    ),
+    accountExpenseTrend,
+    creditLimitExpenseData,
+    totalAvailableLimit,
+    totalCreditCardExpense,
     month,
   };
 }

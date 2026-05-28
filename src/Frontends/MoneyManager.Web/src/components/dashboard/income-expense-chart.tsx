@@ -1,12 +1,13 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AreaChartComponent } from "@/components/charts/area-chart";
+import { LineChartComponent } from "@/components/charts/line-chart";
+import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
 interface DailyData {
   date: string;
-  income: number;
-  expense: number;
+  accountTotal: number;
+  accumulatedExpense: number;
 }
 
 interface IncomeExpenseChartProps {
@@ -14,9 +15,12 @@ interface IncomeExpenseChartProps {
 }
 
 export function IncomeExpenseChart({ data }: IncomeExpenseChartProps) {
+  const { formatMonetaryValue } = useMoneyPrivacy();
+
   const chartData = data.map((d) => ({
-    ...d,
     date: d.date.slice(5).replace("-", "/"),
+    accountTotal: d.accountTotal,
+    accumulatedExpense: d.accumulatedExpense,
   }));
 
   return (
@@ -32,18 +36,23 @@ export function IncomeExpenseChart({ data }: IncomeExpenseChartProps) {
             Sem dados para o período.
           </p>
         ) : (
-          <AreaChartComponent
+          <LineChartComponent
             data={chartData}
             xAxisKey="date"
             series={[
-              { dataKey: "income", name: "Receita", color: "oklch(0.72 0.19 142)" },
               {
-                dataKey: "expense",
-                name: "Despesa",
+                dataKey: "accountTotal",
+                name: "Saldo em contas",
+                color: "oklch(0.72 0.19 142)",
+              },
+              {
+                dataKey: "accumulatedExpense",
+                name: "Despesa acumulada",
                 color: "oklch(0.63 0.24 25)",
               },
             ]}
             height={250}
+            formatter={formatMonetaryValue}
           />
         )}
       </CardContent>

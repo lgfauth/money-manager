@@ -17,9 +17,11 @@ import { StatCard } from "@/components/shared/stat-card";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DonutChart } from "@/components/charts/pie-chart";
-import { CategoryBarChart, RevenueExpenseLineChart } from "@/components/charts";
+import { CategoryBarChart } from "@/components/charts";
+import { LineChartComponent } from "@/components/charts/line-chart";
 import { useReports, getPresetPeriod, getDefaultPeriod } from "@/hooks/use-reports";
 import { useTransactions } from "@/hooks/use-transactions";
+import { useAccounts } from "@/hooks/use-accounts";
 import { PeriodSelector } from "@/components/shared/period-selector";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 
@@ -36,6 +38,7 @@ export default function ReportsPage() {
   const sixMonthsEnd = format(new Date(), "yyyy-MM-dd");
 
   const report = useReports(period);
+  const accounts = useAccounts();
   const transactions6m = useTransactions({
     page: 1,
     pageSize: 10000,
@@ -76,32 +79,6 @@ export default function ReportsPage() {
       })),
     [report.movementByAccount]
   );
-
-  const histogramData = useMemo(() => {
-    const items = transactions6m.data?.items ?? [];
-    const monthTotals = new Map<string, { income: number; expense: number }>();
-
-    for (const transaction of items) {
-      const monthKey = `${transaction.date.slice(0, 7)}-01`;
-      const current = monthTotals.get(monthKey) ?? { income: 0, expense: 0 };
-
-      if (transaction.type === "Income") {
-        current.income += transaction.amount;
-      } else if (transaction.type === "Expense") {
-        current.expense += transaction.amount;
-      }
-
-      monthTotals.set(monthKey, current);
-    }
-
-    return Array.from(monthTotals.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([time, values]) => ({
-        time,
-        income: values.income,
-        expense: values.expense,
-      }));
-  }, [transactions6m.data?.items]);
 
   const availableMonths = useMemo(() => {
     const months = new Set<string>();
@@ -149,28 +126,59 @@ export default function ReportsPage() {
       .sort((a, b) => b.value - a.value);
   }, [transactions6m.data?.items, effectiveSelectedMonth]);
 
-  const revenueExpenseLineData = useMemo(
-    () => histogramData.map((point) => ({ time: point.time, income: point.income, expense: point.expense })),
-    [histogramData]
+  const accountTotal = useMemo(
+    () => (accounts.data ?? []).reduce((sum, account) => sum + account.balance, 0),
+    [accounts.data]
   );
 
-  const averageIncome = useMemo(() => {
-    if (histogramData.length === 0) {
-      return 0;
+  const accountExpenseLineData = useMemo(() => {
+    if (!effectiveSelectedMonth) {
+      return [] as Array<{ date: string; accountTotal: number; accumulatedExpense: number }>;
     }
 
-    const totalIncome = histogramData.reduce((sum, point) => sum + point.income, 0);
-    return totalIncome / histogramData.length;
-  }, [histogramData]);
+    const expenseByDay = (transactions6m.data?.items ?? [])
+      .filter(
+        (transaction) =>
+          transaction.type === "Expense" &&
+          transaction.date.slice(0, 7) === effectiveSelectedMonth
+      )
+      .reduce<Record<string, number>>((acc, transaction) => {
+        const day = transaction.date.split("T")[0];
+        acc[day] = (acc[day] ?? 0) + transaction.amount;
+        return acc;
+      }, {});
 
-  const averageExpense = useMemo(() => {
-    if (histogramData.length === 0) {
-      return 0;
+    const [year, month] = effectiveSelectedMonth.split("-").map(Number);
+    if (!year || !month) {
+      return [] as Array<{ date: string; accountTotal: number; accumulatedExpense: number }>;
     }
 
-    const totalExpense = histogramData.reduce((sum, point) => sum + point.expense, 0);
-    return totalExpense / histogramData.length;
-  }, [histogramData]);
+    const startDate = new Date(year, month - 1, 1);
+    const isCurrentMonth =
+      year === new Date().getFullYear() && month === new Date().getMonth() + 1;
+    const endDate = isCurrentMonth
+      ? new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())
+      : new Date(year, month, 0);
+
+    const data: Array<{ date: string; accountTotal: number; accumulatedExpense: number }> = [];
+    let accumulatedExpense = 0;
+    const cursor = new Date(startDate);
+
+    while (cursor <= endDate) {
+      const key = format(cursor, "yyyy-MM-dd");
+      accumulatedExpense += expenseByDay[key] ?? 0;
+
+      data.push({
+        date: format(cursor, "dd/MM"),
+        accountTotal,
+        accumulatedExpense,
+      });
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return data;
+  }, [transactions6m.data?.items, effectiveSelectedMonth, accountTotal]);
 
   if (report.isLoading) {
     return (
@@ -342,23 +350,29 @@ export default function ReportsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Receitas e Despesas</CardTitle>
-              <p className="text-sm text-muted-foreground">Últimos 6 meses</p>
+              <CardTitle className="text-base">Receitas vs Despesas</CardTitle>
+              <p className="text-sm text-muted-foreground">Acumulado do mês selecionado</p>
             </CardHeader>
             <CardContent>
-              <div className="mb-4 grid gap-2 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">Receita média do período</p>
-                  <p className="text-sm font-semibold text-green-600">{formatMonetaryValue(averageIncome)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Despesa média do período</p>
-                  <p className="text-sm font-semibold text-red-600">{formatMonetaryValue(averageExpense)}</p>
-                </div>
-              </div>
-
-              {revenueExpenseLineData.length > 0 ? (
-                <RevenueExpenseLineChart data={revenueExpenseLineData} height={220} />
+              {accountExpenseLineData.length > 0 ? (
+                <LineChartComponent
+                  data={accountExpenseLineData}
+                  xAxisKey="date"
+                  series={[
+                    {
+                      dataKey: "accountTotal",
+                      name: "Saldo em contas",
+                      color: "oklch(0.72 0.19 142)",
+                    },
+                    {
+                      dataKey: "accumulatedExpense",
+                      name: "Despesa acumulada",
+                      color: "oklch(0.63 0.24 25)",
+                    },
+                  ]}
+                  height={220}
+                  formatter={formatMonetaryValue}
+                />
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-10">
                   Sem dados suficientes para o período.

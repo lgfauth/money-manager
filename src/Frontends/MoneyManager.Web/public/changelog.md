@@ -1,3 +1,22 @@
+# Versão 1.0.3-beta
+
+*Lançamento: 27 de maio de 2026*
+
+---
+
+## ✨ Novidades
+
+### Privacidade visual de valores monetários
+Foi adicionada uma nova funcionalidade para proteger valores financeiros exibidos na tela em ambientes compartilhados. Agora, ao entrar no sistema, os valores monetários são exibidos com os números ofuscados por padrão. Um botão com ícone de olho no topo da interface permite alternar rapidamente entre ocultar e revelar os valores durante a navegação.
+
+A ofuscação foi aplicada nos principais pontos de visualização financeira, incluindo:
+- Saldos de contas e cartões.
+- Valores de transações e recorrências.
+- Totais e indicadores em relatórios, orçamentos e dashboards.
+- Valores monetários em listagens e gráficos.
+
+---
+
 # Versão 1.0.2-beta
 
 *Lançamento: 14 de maio de 2026*
