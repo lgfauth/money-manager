@@ -12,27 +12,29 @@ import {
 } from "recharts";
 import { ChartTooltip } from "./chart-tooltip";
 
-interface LineSeries {
-  dataKey: string;
+interface LineSeries<TData extends object> {
+  dataKey: keyof TData & string;
   name: string;
   color: string;
 }
 
-interface LineChartProps {
-  data: Record<string, unknown>[];
-  series: LineSeries[];
-  xAxisKey?: string;
+interface LineChartProps<TData extends object> {
+  data: TData[];
+  series: LineSeries<TData>[];
+  xAxisKey?: keyof TData & string;
   height?: number;
   formatter?: (value: number) => string;
 }
 
-export function LineChartComponent({
+export function LineChartComponent<TData extends object>({
   data,
   series,
-  xAxisKey = "name",
+  xAxisKey,
   height = 280,
   formatter,
-}: LineChartProps) {
+}: LineChartProps<TData>) {
+  const resolvedXAxisKey = (xAxisKey ?? series[0]?.dataKey ?? "name") as string;
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsLineChart
@@ -41,7 +43,7 @@ export function LineChartComponent({
       >
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis
-          dataKey={xAxisKey}
+          dataKey={resolvedXAxisKey}
           tick={{ fontSize: 12 }}
           className="text-muted-foreground"
         />
