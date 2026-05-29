@@ -31,7 +31,7 @@ export function useLogin() {
       apiClient.post<LoginResponseDto | undefined>("/api/auth/login", data),
     onSuccess: async (response) => {
       if (isLoginResponseDto(response)) {
-        login({ id: response.id, name: response.name, email: response.email });
+        login({ id: response.id, name: response.name, email: response.email }, response.token);
       } else {
         // Fallback para backend que autentica por cookie sem retornar o usuário no body.
         await hydrate();
@@ -57,7 +57,7 @@ export function useRegister() {
     mutationFn: (data: RegisterRequestDto) =>
       apiClient.post<LoginResponseDto>("/api/auth/register", data),
     onSuccess: (response) => {
-      login({ id: response.id, name: response.name, email: response.email });
+      login({ id: response.id, name: response.name, email: response.email }, response.token);
       router.push("/onboarding");
     },
     onError: (error) => {

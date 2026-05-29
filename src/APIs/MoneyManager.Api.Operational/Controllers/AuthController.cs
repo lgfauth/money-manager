@@ -46,7 +46,8 @@ public class AuthController : ControllerBase
 
             SetAuthCookies(loggedIn.Token!, loggedIn.RefreshToken!);
 
-            return Created(string.Empty, new { registered.Id, registered.Name, registered.Email });
+            // Token também retornado no body para suporte a browsers que bloqueiam cookies cross-origin (ex: Safari ITP)
+            return Created(string.Empty, new { registered.Id, registered.Name, registered.Email, Token = loggedIn.Token });
         }
         catch (Exception ex)
         {
@@ -68,7 +69,8 @@ public class AuthController : ControllerBase
 
             SetAuthCookies(result.Token!, result.RefreshToken!);
 
-            return Ok(new { result.Id, result.Name, result.Email });
+            // Token também retornado no body para suporte a browsers que bloqueiam cookies cross-origin (ex: Safari ITP)
+            return Ok(new { result.Id, result.Name, result.Email, Token = result.Token });
         }
         catch (Exception ex)
         {

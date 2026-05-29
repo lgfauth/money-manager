@@ -36,11 +36,19 @@ async function fetchWithAuth<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Inclui Bearer token quando disponível — necessário para browsers que bloqueiam
+  // cookies cross-origin (ex: Safari iOS com ITP ativado)
+  const token = useAuthStore.getState().token;
+  const authHeaders: Record<string, string> = token
+    ? { Authorization: `Bearer ${token}` }
+    : {};
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders,
       ...options.headers,
     },
   });
