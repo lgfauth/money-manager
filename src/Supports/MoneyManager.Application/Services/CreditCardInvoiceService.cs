@@ -247,37 +247,46 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             throw new KeyNotFoundException("Credit card not found");
 
         var today = DateTime.UtcNow.Date;
-        var referenceMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(today, card.ClosingDay);
-
         var invoices = (await _unitOfWork.CreditCardInvoices.GetByCardAsync(userId, creditCardId)).ToList();
 
-        // Se já existe fatura aberta para o período corrente, retornar sem alteração
-        var existingOpen = invoices.FirstOrDefault(i =>
-            i.Status == InvoiceStatus.Open && i.ReferenceMonth == referenceMonth);
-        if (existingOpen != null)
-            return MapToDto(existingOpen, card);
+        // Se já existe uma fatura aberta em qualquer período, não há nada a fazer
+        var anyOpen = invoices.FirstOrDefault(i => i.Status == InvoiceStatus.Open);
+        if (anyOpen != null)
+            return MapToDto(anyOpen, card);
 
-        // Se há fatura pendente para o período corrente, promover para corrente
-        var pendingForPeriod = invoices.FirstOrDefault(i =>
-            i.Status == InvoiceStatus.Pending && i.ReferenceMonth == referenceMonth);
-        if (pendingForPeriod != null)
+        // Determinar o período inicial de busca: o referenceMonth calculado a partir de hoje
+        var referenceMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(today, card.ClosingDay);
+
+        // Avançar período a período até encontrar um que possa ser aberto:
+        // - se existe como Pending → promover para Open
+        // - se não existe → criar como Open
+        // - se existe com status terminal (Closed, Paid, Overdue) → avançar para o próximo mês
+        const int maxLookAhead = 3;
+        for (var i = 0; i < maxLookAhead; i++)
         {
-            pendingForPeriod.Status = InvoiceStatus.Open;
-            pendingForPeriod.UpdatedAt = DateTime.UtcNow;
-            await _unitOfWork.CreditCardInvoices.UpdateAsync(pendingForPeriod);
-            await _unitOfWork.SaveChangesAsync();
-            return MapToDto(pendingForPeriod, card);
+            var existing = invoices.FirstOrDefault(inv =>
+                inv.ReferenceMonth == referenceMonth && !inv.IsDeleted);
+
+            if (existing == null)
+            {
+                var newInvoice = await GetOrCreateInvoiceAsync(userId, card, referenceMonth, InvoiceStatus.Open);
+                return MapToDto(newInvoice, card);
+            }
+
+            if (existing.Status == InvoiceStatus.Pending)
+            {
+                existing.Status = InvoiceStatus.Open;
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.CreditCardInvoices.UpdateAsync(existing);
+                await _unitOfWork.SaveChangesAsync();
+                return MapToDto(existing, card);
+            }
+
+            // Status terminal (Closed, Paid, Overdue): avançar para o próximo período
+            referenceMonth = CreditCardDateUtils.AddMonths(referenceMonth, 1);
         }
 
-        // Se já existe fatura em outro status para o período, não criar duplicata
-        var existingForPeriod = invoices.FirstOrDefault(i =>
-            i.ReferenceMonth == referenceMonth && !i.IsDeleted);
-        if (existingForPeriod != null)
-            throw new InvalidOperationException($"Já existe uma fatura para o período {referenceMonth} com status {existingForPeriod.Status}.");
-
-        // Criar nova fatura corrente
-        var newInvoice = await GetOrCreateInvoiceAsync(userId, card, referenceMonth, InvoiceStatus.Open);
-        return MapToDto(newInvoice, card);
+        throw new InvalidOperationException("Não foi possível encontrar um período disponível para abertura de fatura.");
     }
 
     public async Task RecalculateTotalAsync(string userId, string invoiceId)
