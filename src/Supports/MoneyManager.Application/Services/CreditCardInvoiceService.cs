@@ -316,7 +316,6 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
             }
         }
 
-        var justClosed = new List<CreditCardInvoice>();
         var openInvoices = await _unitOfWork.CreditCardInvoices.GetByStatusAsync(InvoiceStatus.Open);
         foreach (var invoice in openInvoices)
         {
@@ -325,34 +324,48 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
                 invoice.Status = InvoiceStatus.Closed;
                 invoice.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
-                justClosed.Add(invoice);
                 closed++;
             }
         }
 
-        // Garantir fatura corrente após fechamento: promover pendente ou criar nova
-        foreach (var closedInvoice in justClosed)
+        // Garantir abertura da fatura seguinte após fechamento.
+        // Processa todas as faturas Closed e Overdue para cobrir casos em que a abertura
+        // falhou em execuções anteriores (falha parcial, restart do worker, timeout, etc.).
+        var closedInvoices = await _unitOfWork.CreditCardInvoices.GetByStatusAsync(InvoiceStatus.Closed);
+        var overdueInvoices = await _unitOfWork.CreditCardInvoices.GetByStatusAsync(InvoiceStatus.Overdue);
+
+        foreach (var closedInvoice in closedInvoices.Concat(overdueInvoices))
         {
             var nextRefMonth = CreditCardDateUtils.AddMonths(closedInvoice.ReferenceMonth, 1);
             var existingNext = await _unitOfWork.CreditCardInvoices.GetByCardAndReferenceAsync(
                 closedInvoice.UserId, closedInvoice.CreditCardId, nextRefMonth);
 
-            if (existingNext != null && existingNext.Status == InvoiceStatus.Pending)
+            // Fatura seguinte já existe e está em estado que não requer intervenção
+            if (existingNext != null && existingNext.Status != InvoiceStatus.Pending)
+                continue;
+
+            var card = await _unitOfWork.CreditCards.GetByIdAsync(closedInvoice.CreditCardId);
+            if (card == null || card.IsDeleted) continue;
+
+            // Processar somente se o próximo período não ultrapassa o ciclo de cobrança atual.
+            // Usa today + 1 dia para tratar corretamente o caso em que hoje é o dia de fechamento,
+            // onde ReferenceMonthForPurchaseDate(today) ainda retorna o mês corrente (que está fechando).
+            var currentRefMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(today.AddDays(1), card.ClosingDay);
+            if (string.Compare(nextRefMonth, currentRefMonth, StringComparison.Ordinal) > 0) continue;
+
+            if (existingNext != null)
             {
                 existingNext.Status = InvoiceStatus.Open;
                 existingNext.UpdatedAt = DateTime.UtcNow;
                 await _unitOfWork.CreditCardInvoices.UpdateAsync(existingNext);
                 promoted++;
             }
-            else if (existingNext == null)
+            else
             {
-                var card = await _unitOfWork.CreditCards.GetByIdAsync(closedInvoice.CreditCardId);
-                if (card != null && !card.IsDeleted)
-                    await GetOrCreateInvoiceAsync(closedInvoice.UserId, card, nextRefMonth, InvoiceStatus.Open);
+                await GetOrCreateInvoiceAsync(closedInvoice.UserId, card, nextRefMonth, InvoiceStatus.Open);
             }
         }
 
-        var closedInvoices = await _unitOfWork.CreditCardInvoices.GetByStatusAsync(InvoiceStatus.Closed);
         foreach (var invoice in closedInvoices)
         {
             if (invoice.DueDate.Date < today)
