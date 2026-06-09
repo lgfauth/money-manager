@@ -55,6 +55,16 @@ export default function CreditCardDetailPage() {
     [sortedInvoices, currentInvoice]
   );
 
+  // Próxima fatura a ser aberta: a pendente com menor referenceMonth (mais próxima).
+  // Só é relevante quando não há fatura aberta.
+  const nextPendingInvoice = useMemo(() => {
+    if (currentInvoice) return null;
+    return [...otherInvoices]
+      .filter((inv) => inv.status === "pending")
+      .sort((a, b) => a.referenceMonth.localeCompare(b.referenceMonth))
+      .at(0) ?? null;
+  }, [currentInvoice, otherInvoices]);
+
   if (cardLoading) {
     return (
       <div className="space-y-6">
@@ -167,7 +177,16 @@ export default function CreditCardDetailPage() {
           <ul className="space-y-2">
             {otherInvoices.map((invoice) => (
               <li key={invoice.id}>
-                <InvoiceListItem invoice={invoice} cardId={card.id} />
+                <InvoiceListItem
+                  invoice={invoice}
+                  cardId={card.id}
+                  onOpenInvoice={
+                    nextPendingInvoice?.id === invoice.id
+                      ? () => openInvoiceMutation.mutate(card.id)
+                      : undefined
+                  }
+                  isOpeningInvoice={openInvoiceMutation.isPending}
+                />
               </li>
             ))}
           </ul>

@@ -83,6 +83,16 @@ public class CreditCardTransactionService : ICreditCardTransactionService
             var initialStatus = ResolveInitialStatusForInstallment(referenceMonth);
             var invoice = await _invoiceService.GetOrCreateInvoiceAsync(userId, card, referenceMonth, initialStatus);
 
+            // Compra realizada exatamente no dia de fechamento após o worker ter fechado a fatura:
+            // o worker já abriu a fatura do período seguinte — redirecionar a parcela para ela.
+            if ((invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.Overdue)
+                && targetDate.Date == invoice.ClosingDate.Date)
+            {
+                referenceMonth = CreditCardDateUtils.AddMonths(referenceMonth, 1);
+                var nextStatus = ResolveInitialStatusForInstallment(referenceMonth);
+                invoice = await _invoiceService.GetOrCreateInvoiceAsync(userId, card, referenceMonth, nextStatus);
+            }
+
             if (invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.Paid || invoice.Status == InvoiceStatus.Overdue)
             {
                 throw new InvalidOperationException($"Invoice for {referenceMonth} is not accepting new transactions");

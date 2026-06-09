@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { InvoiceStatusBadge } from "@/components/credit-cards/invoice-status-badge";
+import { Button } from "@/components/ui/button";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import type { CreditCardInvoiceResponseDto } from "@/types/credit-card";
 
@@ -10,6 +11,8 @@ interface InvoiceListItemProps {
   invoice: CreditCardInvoiceResponseDto;
   cardId: string;
   highlight?: boolean;
+  onOpenInvoice?: () => void;
+  isOpeningInvoice?: boolean;
 }
 
 const fmtDate = (iso: string) => {
@@ -35,6 +38,8 @@ export function InvoiceListItem({
   invoice,
   cardId,
   highlight = false,
+  onOpenInvoice,
+  isOpeningInvoice = false,
 }: InvoiceListItemProps) {
   const { formatMonetaryValue } = useMoneyPrivacy();
   const isPending = invoice.status === "pending";
@@ -67,7 +72,22 @@ export function InvoiceListItem({
             </p>
           )}
         </div>
-        {!isPending && (
+        {onOpenInvoice && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={isOpeningInvoice}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onOpenInvoice();
+            }}
+          >
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Abrir fatura
+          </Button>
+        )}
+        {!isPending && !onOpenInvoice && (
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         )}
       </div>
