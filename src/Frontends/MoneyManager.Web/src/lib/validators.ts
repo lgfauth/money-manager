@@ -35,10 +35,31 @@ export const accountSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 
+function localDateString(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function todayString(): string {
+  return localDateString(new Date());
+}
+
+function minAllowedDateString(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return localDateString(d);
+}
+
 export const transactionSchema = z.object({
   description: z.string().min(1, "Descrição obrigatória"),
   amount: z.number().positive("Valor deve ser positivo"),
-  date: z.string().min(1, "Data obrigatória"),
+  date: z
+    .string()
+    .min(1, "Data obrigatória")
+    .refine((val) => val <= todayString(), "A data não pode ser futura")
+    .refine(
+      (val) => val >= minAllowedDateString(),
+      "A data não pode ser anterior a 30 dias"
+    ),
   type: z.nativeEnum(TransactionType),
   accountId: z.string().min(1, "Conta obrigatória"),
   categoryId: z.string().min(1, "Categoria obrigatória"),
@@ -88,7 +109,14 @@ export const creditCardTransactionSchema = z.object({
   creditCardId: z.string().min(1, "Cartão obrigatório"),
   description: z.string().min(1, "Descrição obrigatória"),
   categoryId: z.string().optional(),
-  purchaseDate: z.string().min(1, "Data obrigatória"),
+  purchaseDate: z
+    .string()
+    .min(1, "Data obrigatória")
+    .refine((val) => val <= todayString(), "A data não pode ser futura")
+    .refine(
+      (val) => val >= minAllowedDateString(),
+      "A data não pode ser anterior a 30 dias"
+    ),
   totalAmount: z.number().positive("Valor deve ser maior que zero"),
   totalInstallments: z
     .number()
@@ -108,7 +136,14 @@ export const payCreditCardInvoiceSchema = z.object({
 export const updateCreditCardTransactionSchema = z.object({
   description: z.string().min(1, "Descrição obrigatória"),
   categoryId: z.string().optional(),
-  purchaseDate: z.string().min(1, "Data obrigatória"),
+  purchaseDate: z
+    .string()
+    .min(1, "Data obrigatória")
+    .refine((val) => val <= todayString(), "A data não pode ser futura")
+    .refine(
+      (val) => val >= minAllowedDateString(),
+      "A data não pode ser anterior a 30 dias"
+    ),
   totalAmount: z.number().positive("Valor deve ser maior que zero"),
 });
 

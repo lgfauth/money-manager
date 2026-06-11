@@ -17,6 +17,10 @@ public class CreateTransactionValidator : AbstractValidator<CreateTransactionReq
             .IsInEnum().WithMessage("Invalid transaction type");
 
         RuleFor(x => x.Date)
-            .NotEmpty().WithMessage("Date is required");
+            .NotEmpty().WithMessage("Date is required")
+            .Must(d => d.Date <= DateTime.UtcNow.Date)
+            .WithMessage("A data não pode ser futura")
+            .Must(d => d.Date >= DateTime.UtcNow.Date.AddDays(-30))
+            .WithMessage("A data não pode ser anterior a 30 dias");
     }
 }

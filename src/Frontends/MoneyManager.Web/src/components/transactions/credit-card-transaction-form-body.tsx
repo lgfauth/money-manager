@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 import {
   creditCardTransactionSchema,
@@ -268,7 +268,13 @@ export function CreditCardTransactionFormBody({
 
       <div className="space-y-2">
         <Label htmlFor="purchaseDate">Data da compra</Label>
-        <Input id="purchaseDate" type="date" {...register("purchaseDate")} />
+        <Input
+          id="purchaseDate"
+          type="date"
+          min={format(subDays(new Date(), 30), "yyyy-MM-dd")}
+          max={format(new Date(), "yyyy-MM-dd")}
+          {...register("purchaseDate")}
+        />
         {errors.purchaseDate && (
           <p className="text-xs text-destructive">
             {errors.purchaseDate.message}

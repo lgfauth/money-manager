@@ -14,6 +14,10 @@ public class UpdateCreditCardTransactionValidator : AbstractValidator<UpdateCred
             .GreaterThan(0).WithMessage("Valor deve ser maior que zero");
 
         RuleFor(x => x.PurchaseDate)
-            .NotEmpty().WithMessage("Data da compra é obrigatória");
+            .NotEmpty().WithMessage("Data da compra é obrigatória")
+            .Must(d => d.Date <= DateTime.UtcNow.Date)
+            .WithMessage("A data da compra não pode ser futura")
+            .Must(d => d.Date >= DateTime.UtcNow.Date.AddDays(-30))
+            .WithMessage("A data da compra não pode ser anterior a 30 dias");
     }
 }
