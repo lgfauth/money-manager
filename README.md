@@ -1,125 +1,401 @@
-# MoneyManager - Sistema de Controle de Gastos
+# MoneyManager
 
-Sistema completo de gerenciamento financeiro desenvolvido em **.NET 9 + MongoDB**, seguindo os princípios de **Clean Architecture**.
+Sistema de gerenciamento financeiro pessoal desenvolvido com **.NET 9** e **Next.js 15**, seguindo os princípios de **Clean Architecture**.
 
-> **✨ Novidade:** Agora com exclusão completa de conta (LGPD compliance) e sistema de onboarding!
-
-## 📋 Sumário
-
-- [Tecnologias](#tecnologias)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Como Executar](#como-executar)
-- [Endpoints](#endpoints)
-- [Variáveis de Ambiente](#variáveis-de-ambiente)
-- [Decisões de Arquitetura](#decisões-de-arquitetura)
+O repositório é composto por múltiplas aplicações independentes: uma API operacional para os usuários finais, uma API administrativa para operações internas, um worker de background para tarefas agendadas, um frontend web para o usuário e um portal de administração.
 
 ---
 
-## 🛠️ Tecnologias
+## Sumário
 
-- **.NET 9** - Framework
-- **MongoDB** - Banco de dados NoSQL
-- **ASP.NET Core Web API** - Framework para APIs REST
-- **JWT** - Autenticação
-- **FluentValidation** - Validação de dados
-- **NLog** - Logging
-- **Docker** - Containerização
-- **xUnit** - Testes unitários
-- **NSubstitute** - Mock testing
-- **Swagger/OpenAPI** - Documentação da API
+- [Arquitetura geral](#arquitetura-geral)
+- [Aplicações](#aplicações)
+  - [API Operacional](#api-operacional)
+  - [API de Backoffice](#api-de-backoffice)
+  - [Frontend Web](#frontend-web)
+  - [Portal de Administração](#portal-de-administração)
+  - [Worker Operacional](#worker-operacional)
+- [Bibliotecas de suporte](#bibliotecas-de-suporte)
+- [Testes](#testes)
+- [Estrutura de pastas](#estrutura-de-pastas)
+- [Como executar](#como-executar)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
 
 ---
 
-## 📁 Estrutura do Projeto
+## Arquitetura geral
+
+O projeto segue **Clean Architecture** dividida em quatro camadas:
+
+| Camada | Projeto | Responsabilidade |
+|---|---|---|
+| Domain | `MoneyManager.Domain` | Entidades, enums e interfaces — zero dependências externas |
+| Application | `MoneyManager.Application` | Serviços, DTOs e validadores (FluentValidation) |
+| Infrastructure | `MoneyManager.Infrastructure` | MongoDB, repositórios, JWT, IA e fila de controle de workers |
+| Presentation | `MoneyManager.Api.Operational` / `MoneyManager.Api.Backoffice` | Controllers REST, middlewares e composição do DI |
+
+Todas as APIs compartilham as mesmas camadas de suporte (Domain, Application, Infrastructure). O Worker opera diretamente sobre Application e Infrastructure, sem passar pelo HTTP.
 
 ```
-MoneyManager/
+src/
+├── APIs/
+│   ├── MoneyManager.Api.Operational/   ← API principal (usuários)
+│   └── MoneyManager.Api.Backoffice/    ← API administrativa
+├── Frontends/
+│   ├── MoneyManager.Web/               ← Frontend do usuário (Next.js 15)
+│   └── MoneyManager.Backoffice/        ← Portal admin (Next.js 16)
+├── Supports/
+│   ├── MoneyManager.Domain/
+│   ├── MoneyManager.Application/
+│   ├── MoneyManager.Infrastructure/
+│   └── MoneyManager.Observability/
+└── Workers/
+    └── MoneyManager.Worker.Operational/
+```
+
+---
+
+## Aplicações
+
+### API Operacional
+
+**Projeto:** `src/APIs/MoneyManager.Api.Operational`  
+**Runtime:** .NET 9 / ASP.NET Core Web API  
+**Porta padrão:** 5000
+
+API REST consumida pelo frontend web. Oferece todas as funcionalidades financeiras para o usuário autenticado.
+
+#### Funcionalidades
+
+| Módulo | Endpoints | Descrição |
+|---|---|---|
+| Autenticação | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout` | Registro, login com JWT em cookie httpOnly, logout com revogação de token |
+| Categorias | `GET/POST /api/categories`, `PUT/DELETE /api/categories/{id}` | Categorias de receita e despesa por usuário |
+| Contas | `GET/POST /api/accounts`, `GET/PUT/DELETE /api/accounts/{id}` | Contas bancárias com tipos: Checking, Savings, Cash, CreditCard, Investment |
+| Transações | `GET/POST /api/transactions`, `PUT/DELETE /api/transactions/{id}` | Receitas, despesas e transferências com impacto automático no saldo |
+| Orçamentos | `GET/POST /api/budgets`, `GET/PUT /api/budgets/{month}` | Limites por categoria para cada mês |
+| Cartões de crédito | `GET/POST /api/credit-cards`, `GET/PUT/DELETE /api/credit-cards/{id}` | Cartões com controle de limite e fechamento de fatura |
+| Transações de cartão | `GET/POST /api/credit-card-transactions` | Compras no crédito com suporte a parcelamento |
+| Recorrências | `GET/POST /api/recurring-transactions`, `PUT/DELETE /api/recurring-transactions/{id}` | Transações recorrentes (diário, semanal, mensal, anual) |
+| Relatórios | `GET /api/reports/summary`, `GET /api/reports/by-category`, `GET /api/reports/cashflow` | Resumo do mês, despesas por categoria e fluxo de caixa |
+| Onboarding | `GET /api/onboarding/status`, `POST /api/onboarding/complete` | Guia de configuração inicial para novos usuários |
+| Perfil | `GET/PUT /api/profile` | Dados pessoais e foto de perfil do usuário |
+| Configurações | `GET/PUT /api/settings` | Preferências do usuário (moeda, locale, tema) |
+| Exclusão de conta | `POST /api/account-deletion` | Remoção completa de todos os dados (conformidade LGPD) |
+| Análise de comprovantes | `POST /api/receipts/analyze` | Extração de dados de imagens de comprovantes via IA (Claude) |
+| Push notifications | `POST /api/push/subscribe`, `DELETE /api/push/unsubscribe` | Notificações via Web Push (VAPID) |
+| Relatórios de usuário | `GET/POST /api/user-reports` | Envio de feedback e relatos de problemas |
+| Documentos legais | `GET /api/documents` | Termos de uso e política de privacidade |
+
+#### Destaques técnicos
+
+- **JWT Bearer** com suporte a cookie `httpOnly` — token não exposto ao JavaScript
+- **Token blacklist** em memória para revogação imediata no logout
+- **Rate limiting** (10 req/min) nos endpoints de autenticação — proteção contra brute-force
+- **FluentValidation** em pipeline, nunca dentro dos services
+- **Soft Delete** — exclusões usam `IsDeleted = true`
+- **User Isolation** — todas as queries incluem filtro por `UserId`
+- **NLog** para logging estruturado com configuração via `nlog.config`
+- **IA generativa** integrada via Anthropic Claude para análise de comprovantes fiscais
+- **CORS** configurável por variável de ambiente
+
+---
+
+### API de Backoffice
+
+**Projeto:** `src/APIs/MoneyManager.Api.Backoffice`  
+**Runtime:** .NET 9 / ASP.NET Core Web API  
+**Porta padrão:** 5091
+
+API exclusiva para operadores e administradores do sistema. Não é acessível pelo frontend do usuário final.
+
+#### Funcionalidades
+
+| Módulo | Endpoints | Descrição |
+|---|---|---|
+| Autenticação admin | `POST /api/admin/auth/login` | Login com credenciais de administrador |
+| Status do sistema | `GET /api/admin/system-status` | Saúde da API, MongoDB e Worker |
+| Histórico de jobs | `GET /api/admin/jobs/history` | Últimas execuções dos workers com status e duração |
+| Controle de jobs | `POST /api/admin/jobs/{jobName}/run-now` | Execução manual de workers com auditoria |
+| Observabilidade | `GET /api/admin/process-logs` | Logs estruturados de execução dos processos |
+| Documentos legais | `GET/PUT /api/admin/documents` | Edição de termos de uso e política de privacidade |
+| Auditoria | Registro automático | Todas as ações de operadores são registradas em audit log |
+
+#### Destaques técnicos
+
+- **RBAC** com três níveis de acesso: `Viewer`, `Operator` e `Admin`
+- JWT com secret separado do JWT operacional (`ADMIN_AUTH_SECRET`)
+- **Fila de comandos de worker** (`WorkerCommandQueueService`) — permite enfileirar `run-now` para os workers via MongoDB
+- **Audit log** para todas as ações sensíveis
+- CORS restrito às origens explicitamente configuradas via `ADMIN_PORTAL_ALLOWED_ORIGINS`
+
+---
+
+### Frontend Web
+
+**Projeto:** `src/Frontends/MoneyManager.Web`  
+**Stack:** Next.js 15, React 19, TypeScript  
+**Porta padrão:** 8000
+
+Interface principal para o usuário final. Consome a API Operacional.
+
+#### Tecnologias
+
+| Biblioteca | Uso |
+|---|---|
+| Next.js 15 + App Router | Roteamento, SSR e CSR |
+| React 19 | UI |
+| Tailwind CSS v4 | Estilização |
+| shadcn/ui + Radix UI | Componentes de interface |
+| TanStack Query v5 | Data fetching, cache e sincronização de estado servidor |
+| Zustand | Estado global do cliente |
+| React Hook Form + Zod | Formulários e validação |
+| next-intl | Internacionalização (i18n) |
+| Recharts | Gráficos financeiros (donut, linha, barras) |
+| Framer Motion | Animações |
+| date-fns | Manipulação de datas |
+| Sonner | Toasts e notificações |
+
+#### Páginas e funcionalidades
+
+| Página | Rota | Descrição |
+|---|---|---|
+| Dashboard | `/` | Resumo financeiro do mês atual |
+| Contas | `/accounts` | Listagem e gestão de contas |
+| Transações | `/transactions` | Histórico e lançamento de transações |
+| Cartões | `/credit-cards` | Cartões de crédito e faturas |
+| Recorrências | `/recurring` | Transações recorrentes (agendamentos) |
+| Orçamentos | `/budgets` | Orçamentos mensais por categoria |
+| Categorias | `/categories` | Gestão de categorias |
+| Relatórios | `/reports` | Relatórios com gráficos e análises |
+| Perfil | `/profile` | Dados pessoais e exclusão de conta |
+| Configurações | `/settings` | Preferências do usuário |
+| Onboarding | `/onboarding` | Configuração guiada para novos usuários |
+| Termos/Privacidade | `/termos-de-uso`, `/politica-de-privacidade` | Documentos legais públicos |
+
+#### Destaques
+
+- **Modo privacidade** — oculta valores monetários com um clique (`money-privacy-store`)
+- **Tema claro/escuro** via `next-themes`
+- Middleware de autenticação que protege todas as rotas do dashboard
+- Layout responsivo com navegação lateral colapsável
+
+---
+
+### Portal de Administração
+
+**Projeto:** `src/Frontends/MoneyManager.Backoffice`  
+**Stack:** Next.js 16, React 19, TypeScript  
+**Porta padrão:** 3010
+
+Portal web leve para operadores e administradores. Consome exclusivamente a API de Backoffice.
+
+#### Páginas
+
+| Página | Rota | Descrição |
+|---|---|---|
+| Overview | `/` | Saúde do sistema (API, MongoDB, Worker) |
+| Jobs | `/jobs` | Status e disparo manual de workers |
+| Auditoria | `/audit` | Histórico de ações dos operadores |
+| Documentos | `/documents` | Edição de termos e políticas legais |
+| Erros e latência | `/errors-latency` | Monitoramento de erros e performance |
+| Manutenção financeira | `/financial-maintenance` | Operações administrativas sobre dados |
+
+#### Destaques
+
+- Interface minimalista sem dependências de componentes externos
+- Autenticação com JWT de sessão curta (15 minutos por padrão)
+- Editor Markdown integrado (`@uiw/react-md-editor`) para edição de documentos legais
+
+---
+
+### Worker Operacional
+
+**Projeto:** `src/Workers/MoneyManager.Worker.Operational`  
+**Runtime:** .NET 9 Worker Service (`IHostedService`)
+
+Serviço de background responsável por processar tarefas agendadas. Não expõe HTTP — opera diretamente sobre as camadas Application e Infrastructure.
+
+#### Workers
+
+| Worker | Processo | Descrição |
+|---|---|---|
+| `ScheduledTransactionWorker` | `RecurringTransactions` | Verifica e lança transações recorrentes com data de vencimento atingida |
+| `DailyReminderWorker` | `DailyReminder` | Envia push notifications diárias de lembrete para usuários com assinatura ativa |
+| `CreditCardInvoiceWorker` | `CreditCardInvoiceStatus` | Fecha faturas de cartão e atualiza o status das invoices |
+
+#### Destaques
+
+- Cada worker tem seu próprio `IHostedService` com schedule configurável via `appsettings.json`
+- **Fila de comandos** — o backoffice pode enfileirar `run-now` para execução imediata fora do horário agendado
+- Todas as execuções são registradas via `IProcessLogger` e persistidas no MongoDB como `worker_process_logs`
+- Suporte a `ITimeProvider` para testes sem depender de `DateTime.Now`
+
+---
+
+## Bibliotecas de suporte
+
+### MoneyManager.Domain
+
+Camada de domínio sem dependências externas.
+
+**Entidades:**
+
+| Entidade | Descrição |
+|---|---|
+| `User` | Usuário do sistema com hash de senha |
+| `Account` | Conta financeira (corrente, poupança, dinheiro, cartão, investimento) |
+| `Category` | Categoria de receita ou despesa |
+| `Transaction` | Lançamento financeiro (receita, despesa, transferência) |
+| `Budget` | Orçamento mensal por categoria |
+| `CreditCard` | Cartão de crédito com limite e data de fechamento |
+| `CreditCardInvoice` | Fatura mensal de cartão com status (Open, Closed, Paid) |
+| `CreditCardTransaction` | Compra no crédito com suporte a parcelamento |
+| `RecurringTransaction` | Agendamento de transação recorrente com frequência configurável |
+| `PushSubscription` | Assinatura Web Push do usuário |
+| `UserReport` | Relato / feedback enviado pelo usuário |
+| `UserSettings` | Preferências do usuário (moeda, locale) |
+
+### MoneyManager.Application
+
+Orquestra o domínio. Contém serviços, DTOs e validadores.
+
+- **Services:** `AuthService`, `AccountService`, `CategoryService`, `TransactionService`, `BudgetService`, `ReportService`, `CreditCardService`, `CreditCardInvoiceService`, `CreditCardTransactionService`, `RecurringTransactionService`, `OnboardingService`, `UserProfileService`, `UserSettingsService`, `AccountDeletionService`, `PushService`, `UserReportService`, `TokenBlacklistService`
+- **Validators:** FluentValidation — registrados no pipeline da API, nunca chamados diretamente nos services
+- **DTOs:** objetos `*Request` e `*Response` separados por feature
+
+### MoneyManager.Infrastructure
+
+Implementações técnicas. Nunca referenciada diretamente por Domain ou Application.
+
+- **MongoDB** — driver oficial, sem EF Core; `MongoContext` gerencia coleções e índices
+- **Repositories** — `UserRepository`, `TransactionRepository`, `CreditCardRepository`, `CreditCardInvoiceRepository`, `CreditCardTransactionRepository`, `PushSubscriptionRepository`, `Repository<T>` genérico
+- **UnitOfWork** — coordena múltiplas coleções na mesma operação
+- **TokenService** — geração e validação de JWT
+- **AnthropicReceiptAnalysisService** — integração com Claude para análise de imagens de comprovantes
+- **MongoProcessLogStore** — persiste logs de execução dos workers no MongoDB
+- **WorkerCommandQueueService** — fila de comandos para controle dos workers pelo backoffice
+
+### MoneyManager.Observability
+
+Biblioteca de observabilidade reutilizada pela API, Worker e Backoffice.
+
+- `IProcessLogger` — abstração para logging estruturado por processo (`Start` → `AddStep` → `AddWarning` → `AddError` → `Finish`)
+- `ProcessLogger` — implementação que acumula os steps e persiste o documento completo ao finalizar
+- `IProcessLogStore` — persiste o `ProcessLogDocument` no MongoDB
+- `IProcessLogHistoryReader` — leitura do histórico de execuções para o backoffice
+
+---
+
+## Testes
+
+**Projeto:** `tests/MoneyManager.Tests`  
+**Frameworks:** xUnit + NSubstitute
+
+| Arquivo de teste | Cobertura |
+|---|---|
+| `AuthServiceTests` | Registro, login, senhas inválidas |
+| `AccountServiceTests` | CRUD de contas, saldo inicial |
+| `CategoryServiceTests` | CRUD de categorias, isolamento por usuário |
+| `TransactionServiceTests` | Lançamentos, impacto no saldo, transferências |
+| `BudgetServiceTests` | Criação e atualização de orçamentos |
+| `ReportServiceTests` | Resumo, categorias, fluxo de caixa |
+| `RecurringTransactionServiceTests` | Criação, processamento de recorrências |
+| `UserProfileServiceTests` | Atualização de perfil |
+| `UserSettingsServiceTests` | Preferências do usuário |
+| `UsersControllerTests` | Camada de apresentação — controller de usuários |
+| `Domain/Entities/` | Testes de comportamento das entidades de domínio |
+
+Padrão: **Arrange / Act / Assert** com comentários de seção. Mocks via `Substitute.For<IInterface>()`.
+
+---
+
+## Estrutura de pastas
+
+```
+money-manager/
 ├── src/
-│   ├── MoneyManager.Domain/              # Entidades e interfaces (camada de domínio)
-│   │   ├── Entities/                     # User, Category, Account, Budget, Transaction
-│   │   ├── Enums/                        # UserStatus, CategoryType, AccountType, etc
-│   │   └── Interfaces/                   # IRepository, IUnitOfWork
-│   │
-│   ├── MoneyManager.Application/         # Serviços, DTOs e validações
-│   │   ├── Services/                     # AuthService, CategoryService, etc
-│   │   ├── DTOs/                         # Request/Response objects
-│   │   └── Validators/                   # FluentValidation rules
-│   │
-│   ├── MoneyManager.Infrastructure/      # MongoDB, repositórios e auth
-│   │   ├── Data/                         # MongoContext, MongoSettings
-│   │   └── Repositories/                 # UserRepository, CategoryRepository, etc
-│   │
-│   └── MoneyManager.Presentation/        # API REST, controllers, middlewares
-│       ├── Controllers/                  # AuthController, CategoriesController, etc
-│       ├── Middlewares/                  # ExceptionHandlingMiddleware
-│       ├── Extensions/                   # HttpContextExtensions
-│       ├── Program.cs                    # Configuração da aplicação
-│       ├── appsettings.json              # Configurações
-│       └── nlog.config                   # Configuração de logging
-│
+│   ├── APIs/
+│   │   ├── MoneyManager.Api.Operational/   ← API do usuário (.NET 9)
+│   │   └── MoneyManager.Api.Backoffice/    ← API administrativa (.NET 9)
+│   ├── Frontends/
+│   │   ├── MoneyManager.Web/               ← Frontend do usuário (Next.js 15)
+│   │   └── MoneyManager.Backoffice/        ← Portal admin (Next.js 16)
+│   ├── Supports/
+│   │   ├── MoneyManager.Domain/            ← Entidades e interfaces
+│   │   ├── MoneyManager.Application/       ← Serviços, DTOs, validadores
+│   │   ├── MoneyManager.Infrastructure/    ← MongoDB, JWT, IA, repositórios
+│   │   └── MoneyManager.Observability/     ← Biblioteca de logging estruturado
+│   └── Workers/
+│       └── MoneyManager.Worker.Operational/ ← Worker de background (.NET 9)
 ├── tests/
-│   └── MoneyManager.Tests/               # Testes unitários
-│       └── Application/Services/         # TransactionServiceTests, CategoryServiceTests, etc
-│
-├── docker-compose.yml                    # Orquestração de containers
-└── README.md                             # Este arquivo
+│   └── MoneyManager.Tests/                 ← Testes unitários (xUnit)
+├── docker-compose.yml
+└── MoneyManager.sln
 ```
 
 ---
 
-## 🚀 Como Executar
+## Como executar
 
 ### Pré-requisitos
 
-- **.NET 9 SDK** instalado
-- **Docker** e **Docker Compose** (para executar com containers)
-- **MongoDB** (local ou via Docker)
+- .NET 9 SDK
+- Node.js 20+
+- Docker e Docker Compose (opcional)
+- MongoDB (local ou via Docker)
 
-### Opção 1: Executar Localmente
+### Com Docker Compose
 
-1. **Clonar o repositório:**
-   ```bash
-   git clone https://github.com/seuusuario/moneymanager.git
-   cd moneymanager
-   ```
+```bash
+docker-compose up -d
+```
 
-2. **Restaurar dependências:**
-   ```bash
-   dotnet restore
-   ```
+Serviços disponíveis após inicialização:
 
-3. **Configurar MongoDB:**
-   - Ter MongoDB rodando em `localhost:27017` ou ajustar `appsettings.json`
+| Serviço | URL |
+|---|---|
+| API Operacional | http://localhost:5000 |
+| API de Backoffice | http://localhost:5091 |
+| Frontend Web | http://localhost:8000 |
+| Portal Admin | http://localhost:3010 |
+| Mongo Express | http://localhost:8081 |
 
-4. **Executar a API:**
-   ```bash
-   cd src/MoneyManager.Presentation
-   dotnet run
-   ```
+### Executando individualmente
 
-5. **Acessar Swagger:**
-   - http://localhost:5000/swagger
+**API Operacional:**
+```bash
+cd src/APIs/MoneyManager.Api.Operational
+dotnet run
+```
 
-### Opção 2: Executar com Docker Compose
+**API de Backoffice:**
+```bash
+cd src/APIs/MoneyManager.Api.Backoffice
+dotnet run
+```
 
-1. **Na raiz do projeto:**
-   ```bash
-   docker-compose up -d
-   ```
+**Worker Operacional:**
+```bash
+cd src/Workers/MoneyManager.Worker.Operational
+dotnet run
+```
 
-2. **Aguardar os containers iniciarem**
+**Frontend Web:**
+```bash
+cd src/Frontends/MoneyManager.Web
+npm ci
+npm run dev
+```
 
-3. **Acessar os serviços:**
-   - API: http://localhost:5000
-   - Swagger: http://localhost:5000/swagger
-   - Mongo Express: http://localhost:8081
+**Portal Admin:**
+```bash
+cd src/Frontends/MoneyManager.Backoffice
+npm ci
+npm run dev   # porta 3010
+```
 
-4. **Parar os containers:**
-   ```bash
-   docker-compose down
-   ```
-
-### Executar Testes
+### Testes
 
 ```bash
 dotnet test tests/MoneyManager.Tests/MoneyManager.Tests.csproj
@@ -127,393 +403,40 @@ dotnet test tests/MoneyManager.Tests/MoneyManager.Tests.csproj
 
 ---
 
-## 🔑 Variáveis de Ambiente
-
-Configurar no `appsettings.json` ou via variáveis de ambiente:
-
-```json
-{
-  "MongoDB": {
-    "ConnectionString": "mongodb://localhost:27017",
-    "DatabaseName": "moneymanager"
-  },
-  "Jwt": {
-    "SecretKey": "your-super-secret-key-that-is-long-enough-for-256-bits",
-    "Issuer": "MoneyManager",
-    "Audience": "MoneyManagerUsers",
-    "ExpirationHours": 24
-  }
-}
-```
-
-> **⚠️ IMPORTANTE:** Alterar a `SecretKey` em produção para uma chave segura!
-
----
-
-## 📡 Endpoints
-
-### Autenticação
-
-#### Registrar
-```bash
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "João Silva",
-    "email": "joao@example.com",
-    "password": "Senha@123"
-  }'
-```
-
-**Resposta (201):**
-```json
-{
-  "id": "507f1f77bcf86cd799439011",
-  "name": "João Silva",
-  "email": "joao@example.com"
-}
-```
-
-#### Login
-```bash
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "joao@example.com",
-    "password": "Senha@123"
-  }'
-```
-
-**Resposta (200):**
-```json
-{
-  "id": "507f1f77bcf86cd799439011",
-  "name": "João Silva",
-  "email": "joao@example.com",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-> **Salvar o `token` para usar nos próximos endpoints** 
-
----
-
-### Categorias
-
-#### Criar Categoria
-```bash
-curl -X POST http://localhost:5000/api/categories \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Alimentação",
-    "type": 1,
-    "color": "#FF5733"
-  }'
-```
-
-**Tipos:** 
-- `0` = Income (Receita)
-- `1` = Expense (Despesa)
-
-#### Listar Categorias
-```bash
-curl -X GET "http://localhost:5000/api/categories?type=1" \
-  -H "Authorization: Bearer {token}"
-```
-
-#### Atualizar Categoria
-```bash
-curl -X PUT http://localhost:5000/api/categories/{id} \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Supermercado",
-    "type": 1,
-    "color": "#FF5733"
-  }'
-```
-
-#### Deletar Categoria
-```bash
-curl -X DELETE http://localhost:5000/api/categories/{id} \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-### Contas
-
-#### Criar Conta
-```bash
-curl -X POST http://localhost:5000/api/accounts \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Conta Corrente",
-    "type": 0,
-    "initialBalance": 5000.00
-  }'
-```
-
-**Tipos:**
-- `0` = Checking (Conta Corrente)
-- `1` = Savings (Poupança)
-- `2` = Cash (Dinheiro)
-- `3` = CreditCard (Cartão de Crédito)
-- `4` = Investment (Investimento)
-
-#### Listar Contas
-```bash
-curl -X GET http://localhost:5000/api/accounts \
-  -H "Authorization: Bearer {token}"
-```
-
-#### Obter Conta
-```bash
-curl -X GET http://localhost:5000/api/accounts/{id} \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-### Transações
-
-#### Criar Transação (Receita/Despesa)
-```bash
-curl -X POST http://localhost:5000/api/transactions \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "accountId": "{accountId}",
-    "categoryId": "{categoryId}",
-    "type": 0,
-    "amount": 100.50,
-    "date": "2024-01-15T10:30:00Z",
-    "description": "Salário",
-    "tags": ["salário", "renda"],
-    "status": 0
-  }'
-```
-
-**Tipos:**
-- `0` = Income (Receita)
-- `1` = Expense (Despesa)
-- `2` = Transfer (Transferência)
-
-#### Criar Transação (Transferência)
-```bash
-curl -X POST http://localhost:5000/api/transactions \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "accountId": "{fromAccountId}",
-    "type": 2,
-    "amount": 500.00,
-    "date": "2024-01-15T10:30:00Z",
-    "toAccountId": "{toAccountId}",
-    "description": "Transferência entre contas",
-    "status": 0
-  }'
-```
-
-#### Listar Transações
-```bash
-curl -X GET http://localhost:5000/api/transactions \
-  -H "Authorization: Bearer {token}"
-```
-
-#### Atualizar Transação
-```bash
-curl -X PUT http://localhost:5000/api/transactions/{id} \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "accountId": "{accountId}",
-    "categoryId": "{categoryId}",
-    "type": 0,
-    "amount": 150.00,
-    "date": "2024-01-15T10:30:00Z",
-    "description": "Salário (atualizado)",
-    "tags": ["salário"],
-    "status": 0
-  }'
-```
-
-#### Deletar Transação
-```bash
-curl -X DELETE http://localhost:5000/api/transactions/{id} \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-### Orçamentos
-
-#### Criar Orçamento
-```bash
-curl -X POST http://localhost:5000/api/budgets \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "month": "2024-01",
-    "items": [
-      {
-        "categoryId": "{categoryId1}",
-        "limitAmount": 500.00
-      },
-      {
-        "categoryId": "{categoryId2}",
-        "limitAmount": 300.00
-      }
-    ]
-  }'
-```
-
-#### Obter Orçamento do Mês
-```bash
-curl -X GET http://localhost:5000/api/budgets/2024-01 \
-  -H "Authorization: Bearer {token}"
-```
-
-#### Listar Todos os Orçamentos
-```bash
-curl -X GET http://localhost:5000/api/budgets \
-  -H "Authorization: Bearer {token}"
-```
-
-#### Atualizar Orçamento
-```bash
-curl -X PUT http://localhost:5000/api/budgets/2024-01 \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "categoryId": "{categoryId1}",
-        "limitAmount": 600.00
-      }
-    ]
-  }'
-```
-
----
-
-### Relatórios
-
-#### Resumo do Mês
-```bash
-curl -X GET "http://localhost:5000/api/reports/summary?month=2024-01" \
-  -H "Authorization: Bearer {token}"
-```
-
-**Resposta:**
-```json
-{
-  "totalIncome": 5000.00,
-  "totalExpense": 1200.50,
-  "balance": 3799.50
-}
-```
-
-#### Despesas por Categoria
-```bash
-curl -X GET "http://localhost:5000/api/reports/by-category?month=2024-01&type=1" \
-  -H "Authorization: Bearer {token}"
-```
-
-#### Fluxo de Caixa
-```bash
-curl -X GET "http://localhost:5000/api/reports/cashflow?from=2024-01-01&to=2024-01-31" \
-  -H "Authorization: Bearer {token}"
-```
-
----
-
-## 🏗️ Decisões de Arquitetura
-
-### Clean Architecture
-- **Domain**: Entidades puras sem dependências
-- **Application**: Serviços, DTOs e regras de negócio
-- **Infrastructure**: Implementação técnica (MongoDB, autenticação)
-- **Presentation**: API REST e middlewares
-
-### Padrões Utilizados
-
-1. **Repository Pattern**: Abstração de acesso a dados
-2. **Unit of Work**: Gerenciamento de transações
-3. **Dependency Injection**: Injeção de dependências via .NET DI
-4. **DTO Pattern**: Separação entre entidades e respostas
-5. **Validation Pattern**: FluentValidation para regras de negócio
-6. **JWT Authentication**: Token-based authentication
-7. **Soft Delete**: Exclusões lógicas com flag IsDeleted
-8. **User Isolation**: Todas as operações filtradas por UserId
-
-### Boas Práticas Implementadas
-
-✅ **Async/Await em toda a aplicação**  
-✅ **Middleware global de exceção**  
-✅ **ProblemDetails para erros padronizados**  
-✅ **Logging estruturado com NLog**  
-✅ **Swagger/OpenAPI para documentação**  
-✅ **Health Checks em `/health`**  
-✅ **Validação fluente com FluentValidation**  
-✅ **Isolamento de dados por usuário**  
-✅ **Índices de performance no MongoDB**  
-✅ **Testes unitários com xUnit e NSubstitute**  
-
-### Segurança
-
-- ✅ JWT Bearer Token
-- ✅ Password hashing com BCrypt
-- ✅ User isolation em todas as queries
-- ✅ Validação de entrada com FluentValidation
-- ✅ HTTPS em produção
-- ✅ CORS configurável
-
----
-
-## 🔄 Fluxos Importantes
-
-### Criar Transação com Impacto no Saldo
-1. Valida conta existe
-2. Aplica impacto no saldo (Income: +, Expense: -)
-3. Para transferências: debita origem e credita destino
-4. Persiste transação
-5. Atualiza conta com novo saldo
-
-### Atualizar Transação
-1. Obtém transação original
-2. Reverte impacto anterior
-3. Aplica novo impacto
-4. Persiste mudanças
-
-### Deletar Transação
-1. Marca como IsDeleted = true (Soft Delete)
-2. Reverte impacto no saldo
-3. Atualiza conta
-
-### Orçamento
-1. Agrupa transações por categoria
-2. Compara com limite definido
-3. Retorna análise de gastos vs. limites
-
----
-
-## 📝 Notas Importantes
-
-> **Performance**: MongoDB com índices em userId + date para queries rápidas  
-> **Escalabilidade**: Pronto para sharding horizontal  
-> **Manutenção**: Código limpo e bem estruturado para fácil manutenção  
-> **Testes**: 100% cobertura em serviços críticos (transações, orçamento)  
-
----
-
-## 📞 Suporte
-
-Para dúvidas ou problemas, consulte a documentação do Swagger em `/swagger` quando a API estiver rodando.
-
----
-
-**Desenvolvido com ❤️ usando .NET 9 + MongoDB**
-
+## Variáveis de ambiente
+
+### API Operacional
+
+| Variável | Descrição | Obrigatória |
+|---|---|---|
+| `MongoDB__ConnectionString` | String de conexão com o MongoDB | Sim |
+| `MongoDB__DatabaseName` | Nome do banco de dados | Sim |
+| `Jwt__SecretKey` | Chave secreta para assinatura do JWT (mín. 32 chars) | Sim |
+| `Jwt__Issuer` | Issuer do token JWT | Não (padrão: `MoneyManager`) |
+| `Jwt__Audience` | Audience do token JWT | Não (padrão: `MoneyManagerUsers`) |
+| `Jwt__ExpirationHours` | Tempo de expiração do token em horas | Não (padrão: `1`) |
+| `Anthropic__ApiKey` | Chave de API da Anthropic para análise de comprovantes | Não |
+| `Anthropic__Model` | Modelo Claude a utilizar | Não (padrão: `claude-haiku-4-5`) |
+| `Vapid__PublicKey` | Chave pública VAPID para Web Push | Não |
+| `Vapid__PrivateKey` | Chave privada VAPID para Web Push | Não |
+| `AllowedOrigins__0` | Origem do frontend autorizada para CORS | Sim |
+
+### API de Backoffice
+
+| Variável | Descrição | Obrigatória |
+|---|---|---|
+| `MongoDB__ConnectionString` | String de conexão com o MongoDB | Sim |
+| `MongoDB__DatabaseName` | Nome do banco de dados | Sim |
+| `ADMIN_AUTH_SECRET` | Chave secreta JWT para o admin (mín. 32 chars) | Sim |
+| `ADMIN_PORTAL_ALLOWED_ORIGINS` | Origens permitidas para CORS (separadas por vírgula) | Sim |
+
+### Worker Operacional
+
+| Variável | Descrição |
+|---|---|
+| `MongoDB__ConnectionString` | String de conexão com o MongoDB |
+| `MongoDB__DatabaseName` | Nome do banco de dados |
+| `WorkerOptions__*` | Configurações de comportamento do worker |
+| `ScheduleOptions__*` | Horários de execução do `ScheduledTransactionWorker` |
+| `DailyReminderScheduleOptions__*` | Horários do `DailyReminderWorker` |
+| `CreditCardInvoiceScheduleOptions__*` | Horários do `CreditCardInvoiceWorker` |
