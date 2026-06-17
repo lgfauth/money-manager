@@ -82,6 +82,7 @@ API REST consumida pelo frontend web. Oferece todas as funcionalidades financeir
 | Perfil | `GET/PUT /api/profile` | Dados pessoais e foto de perfil do usuário |
 | Configurações | `GET/PUT /api/settings` | Preferências do usuário (moeda, locale, tema) |
 | Exclusão de conta | `POST /api/account-deletion` | Remoção completa de todos os dados (conformidade LGPD) |
+| Saúde Financeira | `GET/PUT /api/financial-health/settings`, `GET/POST /api/financial-health/buckets`, `GET /api/financial-health/snapshots/current`, `GET /api/financial-health/snapshots`, `PATCH /api/financial-health/snapshots/{year}/{month}/confirm`, `PATCH /api/financial-health/snapshots/{year}/{month}/dismiss`, `GET /api/financial-health/score` | Configuração de metas (regra 50-30-20 e FIRE), rastreamento de patrimônio por baldes e score mensal de saúde financeira |
 | Análise de comprovantes | `POST /api/receipts/analyze` | Extração de dados de imagens de comprovantes via IA (Claude) |
 | Push notifications | `POST /api/push/subscribe`, `DELETE /api/push/unsubscribe` | Notificações via Web Push (VAPID) |
 | Relatórios de usuário | `GET/POST /api/user-reports` | Envio de feedback e relatos de problemas |
@@ -168,6 +169,8 @@ Interface principal para o usuário final. Consome a API Operacional.
 | Orçamentos | `/budgets` | Orçamentos mensais por categoria |
 | Categorias | `/categories` | Gestão de categorias |
 | Relatórios | `/reports` | Relatórios com gráficos e análises |
+| Saúde Financeira | `/financial-health` | Score mensal, métricas FIRE e histórico de snapshots |
+| Setup — Saúde Financeira | `/financial-health/setup` | Configuração inicial de perfil, metas e baldes de investimento |
 | Perfil | `/profile` | Dados pessoais e exclusão de conta |
 | Configurações | `/settings` | Preferências do usuário |
 | Onboarding | `/onboarding` | Configuração guiada para novos usuários |
@@ -223,6 +226,7 @@ Serviço de background responsável por processar tarefas agendadas. Não expõe
 | `ScheduledTransactionWorker` | `RecurringTransactions` | Verifica e lança transações recorrentes com data de vencimento atingida |
 | `DailyReminderWorker` | `DailyReminder` | Envia push notifications diárias de lembrete para usuários com assinatura ativa |
 | `CreditCardInvoiceWorker` | `CreditCardInvoiceStatus` | Fecha faturas de cartão e atualiza o status das invoices |
+| `FinancialHealthSnapshotWorker` | `FinancialHealthSnapshot` | Gera snapshots mensais dos baldes de patrimônio (reserva de emergência e FIRE) no primeiro dia de cada mês |
 
 #### Destaques
 
@@ -255,12 +259,15 @@ Camada de domínio sem dependências externas.
 | `PushSubscription` | Assinatura Web Push do usuário |
 | `UserReport` | Relato / feedback enviado pelo usuário |
 | `UserSettings` | Preferências do usuário (moeda, locale) |
+| `FinancialHealthSettings` | Configuração de metas do usuário (perfil de agressividade, percentuais de aporte, reserva e FIRE) |
+| `PatrimonyBucket` | Balde de patrimônio rastreado — reserva de emergência ou investimento FIRE — com saldo inicial, taxa de rendimento e categorias mapeadas |
+| `MonthlySnapshot` | Resumo mensal gerado automaticamente por balde, com saldo estimado, contribuições rastreadas e possibilidade de confirmação via check-in |
 
 ### MoneyManager.Application
 
 Orquestra o domínio. Contém serviços, DTOs e validadores.
 
-- **Services:** `AuthService`, `AccountService`, `CategoryService`, `TransactionService`, `BudgetService`, `ReportService`, `CreditCardService`, `CreditCardInvoiceService`, `CreditCardTransactionService`, `RecurringTransactionService`, `OnboardingService`, `UserProfileService`, `UserSettingsService`, `AccountDeletionService`, `PushService`, `UserReportService`, `TokenBlacklistService`
+- **Services:** `AuthService`, `AccountService`, `CategoryService`, `TransactionService`, `BudgetService`, `ReportService`, `CreditCardService`, `CreditCardInvoiceService`, `CreditCardTransactionService`, `RecurringTransactionService`, `OnboardingService`, `UserProfileService`, `UserSettingsService`, `AccountDeletionService`, `PushService`, `UserReportService`, `TokenBlacklistService`, `FinancialHealthService`
 - **Validators:** FluentValidation — registrados no pipeline da API, nunca chamados diretamente nos services
 - **DTOs:** objetos `*Request` e `*Response` separados por feature
 
@@ -269,7 +276,7 @@ Orquestra o domínio. Contém serviços, DTOs e validadores.
 Implementações técnicas. Nunca referenciada diretamente por Domain ou Application.
 
 - **MongoDB** — driver oficial, sem EF Core; `MongoContext` gerencia coleções e índices
-- **Repositories** — `UserRepository`, `TransactionRepository`, `CreditCardRepository`, `CreditCardInvoiceRepository`, `CreditCardTransactionRepository`, `PushSubscriptionRepository`, `Repository<T>` genérico
+- **Repositories** — `UserRepository`, `TransactionRepository`, `CreditCardRepository`, `CreditCardInvoiceRepository`, `CreditCardTransactionRepository`, `PushSubscriptionRepository`, `FinancialHealthSettingsRepository`, `PatrimonyBucketRepository`, `MonthlySnapshotRepository`, `Repository<T>` genérico
 - **UnitOfWork** — coordena múltiplas coleções na mesma operação
 - **TokenService** — geração e validação de JWT
 - **AnthropicReceiptAnalysisService** — integração com Claude para análise de imagens de comprovantes
@@ -296,15 +303,21 @@ Biblioteca de observabilidade reutilizada pela API, Worker e Backoffice.
 |---|---|
 | `AuthServiceTests` | Registro, login, senhas inválidas |
 | `AccountServiceTests` | CRUD de contas, saldo inicial |
+| `AccountDeletionServiceTests` | Exclusão completa de dados do usuário (conformidade LGPD) |
 | `CategoryServiceTests` | CRUD de categorias, isolamento por usuário |
 | `TransactionServiceTests` | Lançamentos, impacto no saldo, transferências |
 | `BudgetServiceTests` | Criação e atualização de orçamentos |
 | `ReportServiceTests` | Resumo, categorias, fluxo de caixa |
+| `CreditCardServiceTests` | CRUD de cartões, limites e fechamento de fatura |
 | `RecurringTransactionServiceTests` | Criação, processamento de recorrências |
+| `OnboardingServiceTests` | Fluxo de configuração inicial do usuário |
 | `UserProfileServiceTests` | Atualização de perfil |
 | `UserSettingsServiceTests` | Preferências do usuário |
+| `FinancialHealthServiceTests` | Settings, buckets, snapshots, score e projeções FIRE |
 | `UsersControllerTests` | Camada de apresentação — controller de usuários |
-| `Domain/Entities/` | Testes de comportamento das entidades de domínio |
+| `FinancialHealthControllerTests` | Camada de apresentação — endpoints de saúde financeira |
+| `Domain/Entities/RecurringTransactionBsonTests` | Serialização BSON de transações recorrentes |
+| `Domain/Entities/FinancialHealthEntityTests` | Comportamento das entidades de saúde financeira |
 
 Padrão: **Arrange / Act / Assert** com comentários de seção. Mocks via `Substitute.For<IInterface>()`.
 

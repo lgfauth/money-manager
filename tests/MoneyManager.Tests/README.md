@@ -1,38 +1,49 @@
-# ?? MoneyManager.Tests
+# MoneyManager.Tests
 
-Projeto de testes unit�rios para a API MoneyManager.
+Projeto de testes unitários da API MoneyManager.
 
-## ?? Vis�o Geral
+## Visão Geral
 
-Este projeto cont�m todos os testes unit�rios da camada de aplica��o (Application Layer) do MoneyManager, garantindo a qualidade e confiabilidade do c�digo.
+Este projeto contém todos os testes unitários das camadas de Aplicação, Domínio e Apresentação do MoneyManager, garantindo a qualidade e confiabilidade do código.
 
-## ?? Estat�sticas
+## Estatísticas
 
-- **Total de Testes:** 49
+- **Total de Testes:** 133
 - **Taxa de Sucesso:** 100%
-- **Cobertura Estimada:** ~93%
 - **Framework:** xUnit 2.7.1
 - **Target Framework:** .NET 9.0
 
-## ??? Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 tests/MoneyManager.Tests/
-??? Application/
-?   ??? Services/
-?       ??? AccountServiceTests.cs          # 7 testes
-?       ??? AuthServiceTests.cs             # Existente
-?       ??? BudgetServiceTests.cs           # 7 testes
-?       ??? CategoryServiceTests.cs         # 7 testes
-?       ??? RecurringTransactionServiceTests.cs  # 9 testes
-?       ??? ReportServiceTests.cs           # 5 testes
-?       ??? TransactionServiceTests.cs      # 9 testes
-?       ??? UserProfileServiceTests.cs      # 8 testes
-?       ??? UserSettingsServiceTests.cs     # 6 testes
-??? MoneyManager.Tests.csproj
+├── Application/
+│   └── Services/
+│       ├── AccountServiceTests.cs              # 13 testes
+│       ├── AccountDeletionServiceTests.cs      # 5 testes
+│       ├── AuthServiceTests.cs                 # 3 testes
+│       ├── BudgetServiceTests.cs               # 18 testes
+│       ├── CategoryServiceTests.cs             # 2 testes
+│       ├── CreditCardServiceTests.cs           # 8 testes
+│       ├── FinancialHealthServiceTests.cs      # 16 testes
+│       ├── OnboardingServiceTests.cs           # 7 testes
+│       ├── RecurringTransactionServiceTests.cs # 11 testes
+│       ├── ReportServiceTests.cs               # 5 testes
+│       ├── TransactionServiceTests.cs          # 13 testes
+│       ├── UserProfileServiceTests.cs          # 9 testes
+│       └── UserSettingsServiceTests.cs         # 6 testes
+├── Domain/
+│   └── Entities/
+│       ├── FinancialHealthEntityTests.cs       # 7 testes
+│       └── RecurringTransactionBsonTests.cs    # 1 teste
+├── Presentation/
+│   └── Controllers/
+│       ├── FinancialHealthControllerTests.cs   # 8 testes
+│       └── UsersControllerTests.cs             # 1 teste
+└── MoneyManager.Tests.csproj
 ```
 
-## ?? Depend�ncias
+## Dependências
 
 ```xml
 <PackageReference Include="xunit" Version="2.7.1" />
@@ -42,7 +53,7 @@ tests/MoneyManager.Tests/
 <PackageReference Include="coverlet.collector" Version="6.0.2" />
 ```
 
-## ?? Executando os Testes
+## Executando os Testes
 
 ### Todos os testes
 ```bash
@@ -54,43 +65,52 @@ dotnet test
 dotnet test --logger "console;verbosity=detailed"
 ```
 
-### Testes espec�ficos de um servi�o
+### Testes específicos de um serviço
 ```bash
 # Apenas AccountService
 dotnet test --filter "FullyQualifiedName~AccountServiceTests"
 
-# Apenas TransactionService
-dotnet test --filter "FullyQualifiedName~TransactionServiceTests"
+# Apenas FinancialHealthService
+dotnet test --filter "FullyQualifiedName~FinancialHealthServiceTests"
 ```
 
-### Com cobertura de c�digo
+### Com cobertura de código
 ```bash
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-### Executar teste espec�fico
+### Executar teste específico
 ```bash
 dotnet test --filter "MethodName=CreateAsync_WithValidRequest_ShouldCreateAccount"
 ```
 
-## ?? Cobertura por Servi�o
+## Cobertura por Serviço
 
-| Servi�o | Testes | Cobertura | Status |
-|---------|--------|-----------|--------|
-| AccountService | 7 | ~95% | ? |
-| TransactionService | 9 | ~95% | ? |
-| CategoryService | 7 | ~92% | ? |
-| BudgetService | 7 | ~95% | ? |
-| RecurringTransactionService | 9 | ~93% | ? |
-| ReportService | 5 | ~90% | ? |
-| UserProfileService | 8 | ~95% | ? |
-| UserSettingsService | 6 | ~92% | ? |
-| AuthService | 3 | ~90% | ? |
+| Serviço / Componente | Testes |
+|---|---|
+| `BudgetService` | 18 |
+| `FinancialHealthService` | 16 |
+| `AccountService` | 13 |
+| `TransactionService` | 13 |
+| `RecurringTransactionService` | 11 |
+| `UserProfileService` | 9 |
+| `FinancialHealthControllerTests` | 8 |
+| `CreditCardService` | 8 |
+| `OnboardingService` | 7 |
+| `FinancialHealthEntityTests` | 7 |
+| `UserSettingsService` | 6 |
+| `ReportService` | 5 |
+| `AccountDeletionService` | 5 |
+| `AuthService` | 3 |
+| `CategoryService` | 2 |
+| `UsersController` | 1 |
+| `RecurringTransactionBsonTests` | 1 |
 
-## ?? Padr�es de Teste
+## Padrões de Teste
 
 ### Nomenclatura
-Seguimos o padr�o: `MethodName_Scenario_ExpectedResult`
+
+Seguimos o padrão: `MethodName_Scenario_ExpectedResult`
 
 ```csharp
 [Fact]
@@ -103,84 +123,72 @@ public async Task CreateAsync_WithValidRequest_ShouldCreateAccount()
 [Fact]
 public async Task ExampleTest()
 {
-    // Arrange - Prepara��o
+    // Arrange
     var userId = "user123";
     var request = new SomeRequestDto { ... };
-    
-    // Act - Execu��o
+
+    // Act
     var result = await _service.SomeMethodAsync(userId, request);
-    
-    // Assert - Verifica��o
+
+    // Assert
     Assert.NotNull(result);
     Assert.Equal(expected, result.Property);
 }
 ```
 
-## ?? Uso de Mocks
+## Uso de Mocks
 
-Utilizamos **NSubstitute** para criar mocks das depend�ncias:
+Utilizamos **NSubstitute** para criar mocks das dependências:
 
 ```csharp
 private readonly IUnitOfWork _unitOfWorkMock;
-private readonly IAccountService _accountServiceMock;
 
 public TransactionServiceTests()
 {
     _unitOfWorkMock = Substitute.For<IUnitOfWork>();
-    _accountServiceMock = Substitute.For<IAccountService>();
-    _transactionService = new TransactionService(_unitOfWorkMock, _accountServiceMock);
+    _transactionService = new TransactionService(_unitOfWorkMock, ...);
 }
 ```
 
-## ? Cen�rios Testados
+## Cenários Testados
 
 ### Casos de Sucesso
-- Cria��o de entidades v�lidas
-- Atualiza��o de dados
+- Criação de entidades válidas
+- Atualização de dados
 - Listagem e filtros
-- C�lculos e agrega��es
+- Cálculos e agregações
 
 ### Tratamento de Erros
-- Entidades n�o encontradas
-- Valida��o de permiss�es
-- Dados inv�lidos
-- Regras de neg�cio
+- Entidades não encontradas
+- Validação de permissões
+- Dados inválidos
+- Regras de negócio
 
 ### Casos Especiais
-- Soft deletes (exclus�o l�gica)
-- Isolamento entre usu�rios
-- Transa��es com impacto em saldo
-- Recorr�ncias autom�ticas
+- Soft deletes (exclusão lógica)
+- Isolamento entre usuários
+- Transações com impacto em saldo
+- Recorrências automáticas
+- Score de saúde financeira e projeções FIRE
+- Serialização BSON de entidades
 
-## ?? M�tricas de Qualidade
+## Ferramentas Úteis
 
-### Velocidade
-- **Tempo m�dio por teste:** ~35ms
-- **Tempo total de execu��o:** ~1.7s
-- **Testes mais lentos:** AuthService (hash de senha)
-
-### Confiabilidade
-- **Taxa de sucesso:** 100%
-- **Testes flaky:** 0
-- **Depend�ncias externas:** 0 (todos mocados)
-
-## ?? Ferramentas �teis
-
-### Watch Mode (Execu��o Cont�nua)
+### Watch Mode (Execução Contínua)
 ```bash
 dotnet watch test
 ```
 
-### Filtros Avan�ados
+### Filtros Avançados
 ```bash
-# Apenas testes que cont�m "Create"
+# Apenas testes que contêm "Create"
 dotnet test --filter "DisplayName~Create"
 
 # Apenas testes de erro
 dotnet test --filter "DisplayName~Exception"
 ```
 
-### Relat�rio HTML de Cobertura
+### Relatório HTML de Cobertura
 ```bash
 # Instalar ferramenta
 dotnet tool install -g dotnet-reportgenerator-globaltool
@@ -188,31 +196,24 @@ dotnet tool install -g dotnet-reportgenerator-globaltool
 # Gerar cobertura
 dotnet test --collect:"XPlat Code Coverage"
 
-# Gerar relat�rio
+# Gerar relatório
 reportgenerator -reports:"**/coverage.cobertura.xml" -targetdir:"coveragereport" -reporttypes:Html
 ```
 
-## ?? Debugging
-
-### Visual Studio
-1. Abra o Test Explorer (Test > Test Explorer)
-2. Clique com bot�o direito no teste
-3. Selecione "Debug"
+## Debugging
 
 ### VS Code
-1. Instale a extens�o ".NET Core Test Explorer"
-2. Clique no �cone de debug ao lado do teste
+1. Instale a extensão ".NET Core Test Explorer"
+2. Clique no ícone de debug ao lado do teste
 
 ### Linha de Comando
 ```bash
-# Adicione breakpoint no c�digo
-# Execute com debugger attached
 dotnet test --logger "console;verbosity=detailed"
 ```
 
-## ?? Adicionando Novos Testes
+## Adicionando Novos Testes
 
-### Template B�sico
+### Template Básico
 
 ```csharp
 using NSubstitute;
@@ -237,39 +238,31 @@ public class NewServiceTests
     public async Task MethodName_Scenario_ExpectedResult()
     {
         // Arrange
-        
+
         // Act
-        
+
         // Assert
     }
 }
 ```
 
-## ?? Contribuindo
+## Contribuindo
 
 Ao adicionar novos testes:
 
-1. ? Siga o padr�o de nomenclatura
-2. ? Use a estrutura AAA
-3. ? Teste casos de sucesso e erro
-4. ? Isole os testes (sem depend�ncias externas)
-5. ? Mantenha os testes r�pidos
-6. ? Documente cen�rios complexos
+1. Siga o padrão de nomenclatura `MethodName_Scenario_ExpectedResult`
+2. Use a estrutura AAA (Arrange-Act-Assert)
+3. Teste casos de sucesso e erro
+4. Isole os testes (sem dependências externas)
+5. Mantenha os testes rápidos
+6. Documente cenários complexos
 
-## ?? Recursos
+## Recursos
 
 - [xUnit Documentation](https://xunit.net/)
 - [NSubstitute Documentation](https://nsubstitute.github.io/)
 - [.NET Testing Best Practices](https://docs.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices)
 
-## ?? Suporte
-
-Em caso de d�vidas sobre os testes:
-1. Consulte o relat�rio de cobertura: `docs/TestCoverageReport.md`
-2. Verifique exemplos existentes
-3. Entre em contato com a equipe
-
 ---
 
-**�ltima Atualiza��o:** ${new Date().toLocaleDateString('pt-BR')}  
-**Mantido por:** Equipe MoneyManager
+**Última Atualização:** 17 de junho de 2026
