@@ -77,24 +77,3 @@ export async function PATCH(request: Request, context: RouteParams) {
 export async function DELETE(request: Request, context: RouteParams) {
   return forward(request, context.params);
 }
-
-
-export async function GET(request: Request, context: RouteParams) {
-  return forward(request, context.params);
-}
-
-export async function POST(request: Request, context: RouteParams) {
-  return forward(request, context.params);
-}
-
-export async function PUT(request: Request, context: RouteParams) {
-  return forward(request, context.params);
-}
-
-export async function PATCH(request: Request, context: RouteParams) {
-  return forward(request, context.params);
-}
-
-export async function DELETE(request: Request, context: RouteParams) {
-  return forward(request, context.params);
-}
