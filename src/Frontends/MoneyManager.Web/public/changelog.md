@@ -1,3 +1,64 @@
+# Versão 1.0.4-beta
+
+*Lançamento: 17 de junho de 2026*
+
+---
+
+## ✨ Novidades
+
+### Saúde Financeira
+Uma nova seção foi adicionada ao sistema para acompanhar sua evolução financeira de forma estruturada, com base em dois frameworks consagrados: a **Regra 50-30-20** (Elizabeth Warren) e o movimento **FIRE** (Financial Independence, Retire Early — Independência Financeira, Aposentadoria Antecipada).
+
+A funcionalidade é dividida em três áreas:
+
+**Configuração de metas**
+Escolha entre quatro perfis de agressividade — Conservador 🐢, Moderado 🦊, Agressivo FIRE 🐇 ou Personalizado ⚙ — e ajuste os parâmetros conforme sua realidade. Cada perfil define as porcentagens de aporte, controle de gastos, reserva de emergência e prazo para independência financeira.
+
+**Patrimônio (baldes)**
+Declare os dois baldes de investimento que o sistema irá rastrear:
+- **Reserva de emergência** — montante reservado para cobrir imprevistos (meta: meses de gastos × multiplicador configurado).
+- **Investimentos FIRE** — patrimônio acumulado para independência financeira (meta: renda mensal × multiplicador configurado).
+
+Cada balde recebe um saldo inicial de referência, uma taxa de rendimento anual esperada e as categorias de transação que correspondem a aportes naquele destino (por exemplo, "XP Investimentos" → FIRE).
+
+**Score mensal**
+Um painel com quatro métricas calculadas sobre o mês atual:
+1. **Aporte mensal** — quanto você está investindo em relação à meta de poupança.
+2. **Reserva de emergência** — progresso do saldo acumulado em relação ao colchão ideal.
+3. **Meta FIRE** — distância do patrimônio necessário para a independência financeira.
+4. **Controle de gastos** — se suas despesas totais estão dentro do limite configurado.
+
+Cada métrica exibe um indicador de situação (no caminho certo / em risco / fora da meta) e um score geral de 0 a 100 pontos é calculado com base nos quatro indicadores ponderados.
+
+O painel também exibe uma **projeção**: com base no aporte mensal atual, o sistema estima em quantos meses você atingirá sua meta FIRE.
+
+---
+
+### Check-in mensal e banner de notificação
+
+No primeiro dia de cada mês, o sistema gera automaticamente um resumo do mês anterior para cada balde configurado, com saldo estimado, contribuições rastreadas e rendimento estimado. O sistema usa a soma das transações nas categorias mapeadas para calcular os aportes, sem precisar de nenhuma ação do usuário.
+
+Um **banner de notificação** é exibido no dashboard ao entrar no sistema quando há um resumo pendente de confirmação. A partir dele você pode:
+- **Fazer check-in** — informar os saldos reais nas corretoras para aumentar a precisão das projeções.
+- **Ignorar este mês** — dispensar a notificação sem fazer check-in; o sistema continuará usando a estimativa.
+- **Fechar** — ocultar o banner apenas até o próximo login.
+
+O check-in é **opcional**: se não for realizado, as projeções seguem funcionando com base nos valores estimados.
+
+---
+
+## Como começar a usar
+
+1. Acesse a seção **Saúde Financeira** no menu lateral.
+2. Escolha seu perfil de agressividade ou configure os parâmetros manualmente.
+3. Declare o saldo atual da sua reserva de emergência e dos seus investimentos FIRE.
+4. Mapeie suas categorias de investimento existentes para cada balde.
+5. Pronto — o score e as projeções já estarão disponíveis. A partir do mês seguinte, o sistema rastreará os aportes automaticamente.
+
+_P.S.: As categorias que serão mapeadas precisam ser categorias de despesas._
+
+---
+
 # Versão 1.0.3-beta
 
 *Lançamento: 27 de maio de 2026*
