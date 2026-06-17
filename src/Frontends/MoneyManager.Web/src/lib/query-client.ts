@@ -36,4 +36,10 @@ export const queryKeys = {
   profile: ["profile"] as const,
   settings: ["settings"] as const,
   dataCount: ["accountdeletion", "data-count"] as const,
+  financialHealthSettings: ["financial-health", "settings"] as const,
+  financialHealthBuckets: ["financial-health", "buckets"] as const,
+  financialHealthSnapshotStatus: ["financial-health", "snapshots", "current"] as const,
+  financialHealthSnapshotHistory: (year: number) =>
+    ["financial-health", "snapshots", year] as const,
+  financialHealthScore: ["financial-health", "score"] as const,
 };

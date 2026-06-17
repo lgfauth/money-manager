@@ -16,5 +16,8 @@ public interface IUnitOfWork : IDisposable
     ICreditCardRepository CreditCards { get; }
     ICreditCardInvoiceRepository CreditCardInvoices { get; }
     ICreditCardTransactionRepository CreditCardTransactions { get; }
+    IFinancialHealthSettingsRepository FinancialHealthSettings { get; }
+    IPatrimonyBucketRepository PatrimonyBuckets { get; }
+    IMonthlySnapshotRepository MonthlySnapshots { get; }
     Task<int> SaveChangesAsync();
 }

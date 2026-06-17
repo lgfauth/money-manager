@@ -40,10 +40,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();
         services.AddScoped<DailyReminderProcessor>();
         services.AddScoped<CreditCardInvoiceProcessor>();
+        services.AddScoped<FinancialHealthSnapshotProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
         services.AddHostedService<DailyReminderWorker>();
         services.AddHostedService<CreditCardInvoiceWorker>();
+        services.AddHostedService<FinancialHealthSnapshotWorker>();
 
         return services;
     }

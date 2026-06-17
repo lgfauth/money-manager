@@ -20,6 +20,9 @@ public class UnitOfWork : IUnitOfWork
     private ICreditCardRepository? _creditCardRepository;
     private ICreditCardInvoiceRepository? _creditCardInvoiceRepository;
     private ICreditCardTransactionRepository? _creditCardTransactionRepository;
+    private IFinancialHealthSettingsRepository? _financialHealthSettings;
+    private IPatrimonyBucketRepository? _patrimonyBuckets;
+    private IMonthlySnapshotRepository? _monthlySnapshots;
 
     public UnitOfWork(MongoContext context)
     {
@@ -38,6 +41,9 @@ public class UnitOfWork : IUnitOfWork
     public ICreditCardRepository CreditCards => _creditCardRepository ??= new CreditCardRepository(_context);
     public ICreditCardInvoiceRepository CreditCardInvoices => _creditCardInvoiceRepository ??= new CreditCardInvoiceRepository(_context);
     public ICreditCardTransactionRepository CreditCardTransactions => _creditCardTransactionRepository ??= new CreditCardTransactionRepository(_context);
+    public IFinancialHealthSettingsRepository FinancialHealthSettings => _financialHealthSettings ??= new FinancialHealthSettingsRepository(_context);
+    public IPatrimonyBucketRepository PatrimonyBuckets => _patrimonyBuckets ??= new PatrimonyBucketRepository(_context);
+    public IMonthlySnapshotRepository MonthlySnapshots => _monthlySnapshots ??= new MonthlySnapshotRepository(_context);
 
     public async Task<int> SaveChangesAsync()
     {

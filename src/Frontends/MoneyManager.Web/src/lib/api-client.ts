@@ -7,7 +7,7 @@ async function parseResponseBody(response: Response): Promise<unknown> {
   const text = await response.text();
 
   if (!text) {
-    return undefined;
+    return null;
   }
 
   const contentType = response.headers.get("content-type") ?? "";
@@ -18,7 +18,7 @@ async function parseResponseBody(response: Response): Promise<unknown> {
     text.trimStart().startsWith("<!") ||
     text.trimStart().startsWith("<html")
   ) {
-    return undefined;
+    return null;
   }
 
   if (contentType.includes("application/json")) {
@@ -110,6 +110,12 @@ export const apiClient = {
   put: <T>(path: string, body?: unknown) =>
     fetchWithAuth<T>(path, {
       method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
+    }),
+
+  patch: <T>(path: string, body?: unknown) =>
+    fetchWithAuth<T>(path, {
+      method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
     }),
 

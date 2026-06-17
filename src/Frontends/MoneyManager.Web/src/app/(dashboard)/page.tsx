@@ -1,6 +1,7 @@
 "use client";
 
 import { useDashboard } from "@/hooks/use-dashboard";
+import { useSnapshotStatus } from "@/hooks/use-financial-health";
 import { DashboardSkeleton } from "@/components/shared/loading-skeleton";
 import { OverviewCards } from "@/components/dashboard/overview-cards";
 import { IncomeExpenseChart } from "@/components/dashboard/income-expense-chart";
@@ -8,6 +9,7 @@ import { BudgetUsageChart } from "@/components/dashboard/budget-usage-chart";
 import { CreditLimitExpenseChart } from "@/components/dashboard/credit-limit-expense-chart";
 import { AccountsChart } from "@/components/dashboard/accounts-chart";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
+import { CheckinBanner } from "@/components/financial-health/checkin-banner";
 
 export default function DashboardPage() {
   const {
@@ -25,10 +27,13 @@ export default function DashboardPage() {
     totalCreditCardExpense,
   } = useDashboard();
 
+  const { data: snapshotStatus } = useSnapshotStatus();
+
   if (isLoading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-6">
+      {snapshotStatus?.showBanner && <CheckinBanner status={snapshotStatus} />}
       <OverviewCards
         netBalance={netBalance}
         totalAssets={totalAssets}
