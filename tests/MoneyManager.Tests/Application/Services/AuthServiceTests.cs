@@ -13,6 +13,7 @@ public class AuthServiceTests
 {
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly ITokenService _tokenServiceMock;
+    private readonly ISubscriptionService _subscriptionServiceMock;
     private readonly IProcessLogger _processLoggerMock;
     private readonly AuthService _authService;
 
@@ -20,8 +21,9 @@ public class AuthServiceTests
     {
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _tokenServiceMock = Substitute.For<ITokenService>();
+        _subscriptionServiceMock = Substitute.For<ISubscriptionService>();
         _processLoggerMock = Substitute.For<IProcessLogger>();
-        _authService = new AuthService(_unitOfWorkMock, _tokenServiceMock, _processLoggerMock);
+        _authService = new AuthService(_unitOfWorkMock, _tokenServiceMock, _subscriptionServiceMock, _processLoggerMock);
     }
 
     [Fact]
@@ -40,6 +42,9 @@ public class AuthServiceTests
         userRepository.AddAsync(Arg.Any<User>()).Returns(x => x.Arg<User>());
 
         _unitOfWorkMock.Users.Returns(userRepository);
+
+        _subscriptionServiceMock.ActivateTrialAsync(Arg.Any<string>())
+            .Returns(new SubscriptionResponseDto());
 
         // Act
         var result = await _authService.RegisterAsync(request);
@@ -91,11 +96,15 @@ public class AuthServiceTests
             PasswordHash = passwordHash
         };
 
+        var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
+        subscriptionRepository.GetByUserIdAsync(user.Id).Returns((Subscription?)null);
+
         var userRepository = Substitute.For<IUserRepository>();
         userRepository.GetByEmailAsync(request.Email).Returns(user);
 
         _unitOfWorkMock.Users.Returns(userRepository);
-        _tokenServiceMock.GenerateToken(user.Id, user.Email, user.Name).Returns("token");
+        _unitOfWorkMock.Subscriptions.Returns(subscriptionRepository);
+        _tokenServiceMock.GenerateToken(user.Id, user.Email, user.Name, Arg.Any<IEnumerable<System.Security.Claims.Claim>>()).Returns("token");
 
         // Act
         var result = await _authService.LoginAsync(request);

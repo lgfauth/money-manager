@@ -186,6 +186,21 @@ public class MongoContext
                 .Ascending(t => t.UserId)
                 .Ascending(t => t.ParentTransactionId)
         ));
+
+        // Create subscriptions collection
+        if (!collectionNames.Contains("subscriptions"))
+        {
+            await _database.CreateCollectionAsync("subscriptions");
+        }
+        var subscriptionsCollection = _database.GetCollection<MoneyManager.Domain.Entities.Subscription>("subscriptions");
+        await subscriptionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Subscription>(
+            Builders<MoneyManager.Domain.Entities.Subscription>.IndexKeys.Ascending(s => s.UserId),
+            new CreateIndexOptions { Unique = true, Sparse = true }
+        ));
+        await subscriptionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Subscription>(
+            Builders<MoneyManager.Domain.Entities.Subscription>.IndexKeys.Ascending(s => s.ExternalSubscriptionId),
+            new CreateIndexOptions { Sparse = true }
+        ));
     }
 
     public async Task TestConnectionAsync()

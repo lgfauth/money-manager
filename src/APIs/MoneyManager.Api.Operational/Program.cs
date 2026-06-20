@@ -1,3 +1,5 @@
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.RateLimiting;
 using FluentValidation;
@@ -10,6 +12,7 @@ using MoneyManager.Domain.Interfaces;
 using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Repositories;
 using MoneyManager.Infrastructure.Security;
+using MoneyManager.Infrastructure.Services;
 using MoneyManager.Infrastructure.Services.AI;
 using MoneyManager.Observability;
 using MoneyManager.Presentation.Middlewares;
@@ -57,6 +60,39 @@ builder.Services.AddScoped<IFinancialHealthService, FinancialHealthService>();
 // Register receipt analysis service
 builder.Services.AddHttpClient("anthropic");
 builder.Services.AddScoped<IReceiptAnalysisService, AnthropicReceiptAnalysisService>();
+
+// Registro de serviços de assinatura — HttpClient com suporte a certificado mTLS (exigido pelo Banco Central)
+builder.Services.AddHttpClient("efiBank")
+    .ConfigurePrimaryHttpMessageHandler(sp =>
+    {
+        var config = sp.GetRequiredService<IConfiguration>();
+        var certPath = config["Efi:CertificatePath"] ?? string.Empty;
+        var certPassword = config["Efi:CertificatePassword"] ?? string.Empty;
+
+        var handler = new HttpClientHandler();
+
+        // Carrega o certificado .p12 apenas se o caminho estiver configurado e o arquivo existir
+        var isPlaceholder = certPath.Contains("strong_text_for_secret_here");
+        if (!string.IsNullOrEmpty(certPath) && !isPlaceholder && File.Exists(certPath))
+        {
+            try
+            {
+                var cert = string.IsNullOrEmpty(certPassword)
+                    ? new X509Certificate2(certPath)
+                    : new X509Certificate2(certPath, certPassword);
+                handler.ClientCertificates.Add(cert);
+            }
+            catch (Exception ex)
+            {
+                var log = sp.GetRequiredService<ILoggerFactory>().CreateLogger("EfiBankHandler");
+                log.LogWarning(ex, "Certificado mTLS Efí Bank não pôde ser carregado de {Path}", certPath);
+            }
+        }
+
+        return handler;
+    });
+builder.Services.AddScoped<IPaymentGateway, EfiBankPaymentGateway>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
 // Register VAPID settings and push service
 builder.Services.Configure<VapidSettings>(
