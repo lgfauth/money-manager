@@ -105,4 +105,27 @@ public class Subscription
         (Status == SubscriptionStatus.Trial && TrialEndsAt > DateTime.UtcNow) ||
         (Status == SubscriptionStatus.PastDue && GraceEndsAt > DateTime.UtcNow) ||
         (Status == SubscriptionStatus.Cancelled && CurrentPeriodEnd > DateTime.UtcNow);
+
+    // Concessão manual pelo admin — sem gateway de pagamento.
+    public void ActivateManually(DateTime periodEnd, string activatedByAdminId)
+    {
+        Plan = PlanType.Premium;
+        Status = SubscriptionStatus.Active;
+        PaymentProvider = "manual";
+        CurrentPeriodStart = DateTime.UtcNow;
+        CurrentPeriodEnd = periodEnd;
+        PaymentMetadata ??= new Dictionary<string, object>();
+        PaymentMetadata["activatedByAdminId"] = activatedByAdminId;
+        PaymentMetadata["activatedAt"] = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    // Revogação imediata — diferente de Cancel(), que mantém acesso até o fim do período pago.
+    public void RevokeManually()
+    {
+        Plan = PlanType.Free;
+        Status = SubscriptionStatus.Expired;
+        CurrentPeriodEnd = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

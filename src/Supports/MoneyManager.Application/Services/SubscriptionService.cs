@@ -19,6 +19,11 @@ public interface ISubscriptionService
 
     // Reutilizado por outros services premium — único ponto de verdade para "o usuário tem acesso premium?".
     Task EnsurePremiumAccessAsync(string userId);
+
+    // Admin — controle manual de premium sem gateway de pagamento.
+    Task<IReadOnlyList<AdminUserSubscriptionResponseDto>> GetAllForAdminAsync(int page, int pageSize);
+    Task<AdminUserSubscriptionResponseDto> ActivatePremiumManuallyAsync(string userId, int durationDays, string adminUserId);
+    Task<AdminUserSubscriptionResponseDto> RevokePremiumManuallyAsync(string userId);
 }
 
 public class SubscriptionService : ISubscriptionService
@@ -170,6 +175,69 @@ public class SubscriptionService : ISubscriptionService
             throw new PremiumRequiredException();
     }
 
+    public async Task<IReadOnlyList<AdminUserSubscriptionResponseDto>> GetAllForAdminAsync(int page, int pageSize)
+    {
+        var skip = (page - 1) * pageSize;
+        var subscriptions = await _unitOfWork.Subscriptions.GetAllAsync(skip, pageSize);
+
+        var result = new List<AdminUserSubscriptionResponseDto>();
+        foreach (var subscription in subscriptions)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(subscription.UserId);
+            if (user is null || user.IsDeleted)
+                continue;
+
+            result.Add(MapToAdminDto(subscription, user));
+        }
+
+        return result;
+    }
+
+    public async Task<AdminUserSubscriptionResponseDto> ActivatePremiumManuallyAsync(string userId, int durationDays, string adminUserId)
+    {
+        var subscription = await _unitOfWork.Subscriptions.GetByUserIdAsync(userId);
+
+        if (subscription is null)
+        {
+            subscription = new Subscription { UserId = userId };
+            subscription.ActivateManually(DateTime.UtcNow.AddDays(durationDays), adminUserId);
+            await _unitOfWork.Subscriptions.AddAsync(subscription);
+        }
+        else
+        {
+            subscription.ActivateManually(DateTime.UtcNow.AddDays(durationDays), adminUserId);
+            await _unitOfWork.Subscriptions.UpdateAsync(subscription);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Premium ativado manualmente para usuário {UserId} por {AdminUserId}, duração {DurationDays} dias",
+            userId, adminUserId, durationDays);
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Usuário não encontrado");
+
+        return MapToAdminDto(subscription, user);
+    }
+
+    public async Task<AdminUserSubscriptionResponseDto> RevokePremiumManuallyAsync(string userId)
+    {
+        var subscription = await _unitOfWork.Subscriptions.GetByUserIdAsync(userId)
+            ?? throw new KeyNotFoundException("Assinatura não encontrada para o usuário");
+
+        subscription.RevokeManually();
+        await _unitOfWork.Subscriptions.UpdateAsync(subscription);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation("Premium revogado manualmente para usuário {UserId}", userId);
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Usuário não encontrado");
+
+        return MapToAdminDto(subscription, user);
+    }
+
     private static SubscriptionResponseDto MapToDto(Subscription s) => new()
     {
         Id = s.Id,
@@ -178,5 +246,19 @@ public class SubscriptionService : ISubscriptionService
         TrialEndsAt = s.TrialEndsAt,
         CurrentPeriodEnd = s.CurrentPeriodEnd,
         IsPremiumActive = s.IsPremiumActive()
+    };
+
+    private static AdminUserSubscriptionResponseDto MapToAdminDto(Subscription s, User u) => new()
+    {
+        UserId = u.Id,
+        Name = u.Name,
+        Email = u.Email,
+        Plan = s.Plan.ToString(),
+        Status = s.Status.ToString(),
+        IsPremiumActive = s.IsPremiumActive(),
+        TrialEndsAt = s.TrialEndsAt,
+        CurrentPeriodEnd = s.CurrentPeriodEnd,
+        PaymentProvider = s.PaymentProvider,
+        UserCreatedAt = u.CreatedAt
     };
 }

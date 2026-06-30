@@ -1,9 +1,12 @@
 using System.Text;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MoneyManager.Api.Administration.Models;
 using MoneyManager.Api.Administration.Services;
+using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
+using MoneyManager.Application.Validators;
 using MoneyManager.Domain.Interfaces;
 using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Observability;
@@ -35,6 +38,13 @@ builder.Services.AddSingleton<MoneyManager.Api.Administration.Services.LegalDocu
 builder.Services.AddSingleton<MoneyManager.Api.Administration.Services.DocumentSeeder>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddProcessLogger();
+
+// Registro de serviços de assinatura — IPaymentGateway satisfeito com stub (Backoffice só usa fluxos admin, sem gateway).
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IPaymentGateway, NullPaymentGateway>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IValidator<ActivatePremiumRequestDto>, ActivatePremiumValidator>();
 
 var adminIssuer = builder.Configuration["AdminAuth:Issuer"] ?? "MoneyManager.Admin";
 var adminAudience = builder.Configuration["AdminAuth:Audience"] ?? "MoneyManager.Admin.Users";
@@ -187,3 +197,13 @@ var documentSeeder = app.Services.GetRequiredService<MoneyManager.Api.Administra
 await documentSeeder.SeedAsync();
 
 app.Run();
+
+// Stub de IPaymentGateway para o contexto admin — o Backoffice nunca invoca métodos de pagamento.
+// Satisfaz o DI sem exigir credenciais Efí Bank no servidor administrativo.
+file sealed class NullPaymentGateway : MoneyManager.Application.Services.IPaymentGateway
+{
+    public string ProviderName => "none";
+    public Task<MoneyManager.Application.Services.CreateSubscriptionGatewayResult> CreateSubscriptionAsync(MoneyManager.Application.Services.CreateSubscriptionGatewayRequest request) => throw new NotSupportedException();
+    public Task CancelSubscriptionAsync(string externalSubscriptionId) => throw new NotSupportedException();
+    public Task<MoneyManager.Application.Services.WebhookValidationResult> ValidateAndParseWebhookAsync(string rawPayload, IDictionary<string, string> headers) => throw new NotSupportedException();
+}

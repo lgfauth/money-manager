@@ -40,4 +40,21 @@ public class SubscriptionRepository : Repository<Subscription>, ISubscriptionRep
 
         return await Collection.Find(filter).ToListAsync();
     }
+
+    public async Task<IEnumerable<Subscription>> GetAllAsync(int skip, int take)
+    {
+        var filter = Builders<Subscription>.Filter.Eq(s => s.IsDeleted, false);
+
+        return await Collection.Find(filter)
+            .SortByDescending(s => s.CreatedAt)
+            .Skip(skip)
+            .Limit(take)
+            .ToListAsync();
+    }
+
+    public async Task<long> CountAsync()
+    {
+        var filter = Builders<Subscription>.Filter.Eq(s => s.IsDeleted, false);
+        return await Collection.CountDocumentsAsync(filter);
+    }
 }

@@ -9,4 +9,6 @@ public interface ISubscriptionRepository : IRepository<Subscription>
     new Task<Subscription?> GetByUserIdAsync(string userId);
     Task<Subscription?> GetByExternalSubscriptionIdAsync(string externalSubscriptionId);
     Task<IEnumerable<Subscription>> GetExpiringAsync(SubscriptionStatus status, DateTime before);
+    Task<IEnumerable<Subscription>> GetAllAsync(int skip, int take);
+    Task<long> CountAsync();
 }
