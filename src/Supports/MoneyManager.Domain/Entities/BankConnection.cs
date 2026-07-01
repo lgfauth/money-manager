@@ -14,14 +14,17 @@ public class BankConnection
     [BsonElement("userId")]
     public string UserId { get; set; } = string.Empty;
 
+    // item_id retornado pelo Banco MCP — identifica a conexão no workspace.
     [BsonElement("externalConnectionId")]
     public string ExternalConnectionId { get; set; } = string.Empty;
 
+    // connector_id numérico (ex: "612" para Nubank).
+    [BsonElement("connectorId")]
+    public string ConnectorId { get; set; } = string.Empty;
+
+    // Campo "bank" do Banco MCP — nome de exibição (não o campo "name" que é razão social).
     [BsonElement("institutionName")]
     public string InstitutionName { get; set; } = string.Empty;
-
-    [BsonElement("institutionLogo")]
-    public string? InstitutionLogo { get; set; }
 
     [BsonElement("status")]
     public BankConnectionStatus Status { get; set; } = BankConnectionStatus.Connected;
@@ -50,6 +53,12 @@ public class BankConnection
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
+    public void MarkError()
+    {
+        Status = BankConnectionStatus.Error;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void Disconnect()
     {
         Status = BankConnectionStatus.Disconnected;
@@ -61,15 +70,27 @@ public class BankConnection
 // Documento embutido — não é uma entidade separada.
 public class SelectedBankAccount
 {
+    // account_id do Banco MCP.
     [BsonElement("externalAccountId")]
     public string ExternalAccountId { get; set; } = string.Empty;
 
-    [BsonElement("name")]
-    public string Name { get; set; } = string.Empty;
+    // Campo "bank" do Banco MCP (nome de exibição).
+    [BsonElement("bankName")]
+    public string BankName { get; set; } = string.Empty;
 
+    // "CHECKING_ACCOUNT" | "CREDIT_CARD"
+    [BsonElement("subtype")]
+    public string Subtype { get; set; } = string.Empty;
+
+    // "BANK" | "CREDIT"
     [BsonElement("type")]
     public string Type { get; set; } = string.Empty;
 
+    // Número da conta/cartão (ex: "41581457-6" ou "4841").
+    [BsonElement("number")]
+    public string Number { get; set; } = string.Empty;
+
+    // ID da Account existente no MoneyManager mapeada pelo usuário.
     [BsonElement("moneyManagerAccountId")]
     public string? MoneyManagerAccountId { get; set; }
 

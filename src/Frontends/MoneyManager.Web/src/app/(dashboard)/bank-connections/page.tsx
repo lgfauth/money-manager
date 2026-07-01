@@ -84,17 +84,9 @@ export default function BankConnectionsPage() {
               className="rounded-xl border p-4 flex items-center justify-between gap-4"
             >
               <div className="flex items-center gap-3">
-                {connection.institutionLogo ? (
-                  <img
-                    src={connection.institutionLogo}
-                    alt={connection.institutionName}
-                    className="h-10 w-10 rounded-lg object-contain"
-                  />
-                ) : (
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                )}
+                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                </div>
                 <div>
                   <p className="font-medium text-sm">
                     {connection.institutionName}

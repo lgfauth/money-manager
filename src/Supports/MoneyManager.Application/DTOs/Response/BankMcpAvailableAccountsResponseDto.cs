@@ -8,8 +8,10 @@ public class BankMcpAvailableAccountsResponseDto
 
 public class BankMcpAccountDto
 {
-    public string ExternalAccountId { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
+    public string AccountId { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
+    public string Subtype { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Number { get; set; } = string.Empty;
     public decimal Balance { get; set; }
 }

@@ -2,9 +2,9 @@ namespace MoneyManager.Application.DTOs.Response;
 
 public class BankMcpConnectionDto
 {
-    public string ExternalConnectionId { get; set; } = string.Empty;
-    public string InstitutionName { get; set; } = string.Empty;
-    public string? InstitutionLogo { get; set; }
+    public string ItemId { get; set; } = string.Empty;
+    public string ConnectorId { get; set; } = string.Empty;
+    public string ConnectorName { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public bool AlreadyRegistered { get; set; }
 }

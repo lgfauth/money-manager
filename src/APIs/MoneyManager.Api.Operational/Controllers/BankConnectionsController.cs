@@ -27,14 +27,39 @@ public class BankConnectionsController : ControllerBase
         _logger = logger;
     }
 
-    // POST /api/bank-connections/api-key — usuário salva sua key do Banco MCP.
-    [HttpPost("api-key")]
-    public async Task<IActionResult> SaveApiKey([FromBody] SaveBankMcpApiKeyRequestDto request, CancellationToken ct)
+    // GET /api/bank-connections — lista conexões do usuário.
+    [HttpGet]
+    public async Task<IActionResult> GetAll(CancellationToken ct)
+    {
+        var userId = HttpContext.GetUserId();
+        var result = await _bankConnectionService.GetUserConnectionsAsync(userId, ct);
+        return Ok(result);
+    }
+
+    // GET /api/bank-connections/invite — URL para o usuário conectar bancos no Banco MCP.
+    [HttpGet("invite")]
+    public async Task<IActionResult> GetInviteUrl(CancellationToken ct)
     {
         var userId = HttpContext.GetUserId();
         try
         {
-            var result = await _bankConnectionService.SaveBankMcpApiKeyAsync(userId, request.ApiKey, ct);
+            var result = await _bankConnectionService.GetUserInviteUrlAsync(userId, ct);
+            return Ok(result);
+        }
+        catch (PremiumRequiredException)
+        {
+            return Forbid();
+        }
+    }
+
+    // GET /api/bank-connections/available — lista conexões disponíveis no workspace para o usuário registrar.
+    [HttpGet("available")]
+    public async Task<IActionResult> GetAvailableConnections(CancellationToken ct)
+    {
+        var userId = HttpContext.GetUserId();
+        try
+        {
+            var result = await _bankConnectionService.GetAvailableConnectionsAsync(userId, ct);
             return Ok(result);
         }
         catch (PremiumRequiredException)
@@ -47,25 +72,9 @@ public class BankConnectionsController : ControllerBase
         }
     }
 
-    // GET /api/bank-connections/available — lista conexões disponíveis na conta Banco MCP do usuário.
-    [HttpGet("available")]
-    public async Task<IActionResult> GetAvailableConnections(CancellationToken ct)
-    {
-        var userId = HttpContext.GetUserId();
-        try
-        {
-            var result = await _bankConnectionService.GetAvailableConnectionsAsync(userId, ct);
-            return Ok(result);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return this.ApiBadRequest(ex.Message);
-        }
-    }
-
-    // POST /api/bank-connections/register — usuário registra uma conexão disponível.
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterConnectionRequestDto request, CancellationToken ct)
+    // POST /api/bank-connections — registra uma conexão (item_id) para o usuário.
+    [HttpPost]
+    public async Task<IActionResult> Register([FromBody] RegisterBankConnectionRequestDto request, CancellationToken ct)
     {
         var userId = HttpContext.GetUserId();
         try
@@ -83,23 +92,14 @@ public class BankConnectionsController : ControllerBase
         }
     }
 
-    // GET /api/bank-connections — lista conexões do usuário.
-    [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken ct)
-    {
-        var userId = HttpContext.GetUserId();
-        var result = await _bankConnectionService.GetUserConnectionsAsync(userId, ct);
-        return Ok(result);
-    }
-
-    // GET /api/bank-connections/{id}/accounts — accounts disponíveis para mapeamento.
+    // GET /api/bank-connections/{id}/accounts — contas disponíveis para mapeamento.
     [HttpGet("{id}/accounts")]
-    public async Task<IActionResult> GetAvailableAccounts(string id, CancellationToken ct)
+    public async Task<IActionResult> GetAccounts(string id, CancellationToken ct)
     {
         var userId = HttpContext.GetUserId();
         try
         {
-            var result = await _bankConnectionService.GetAvailableAccountsAsync(userId, id, ct);
+            var result = await _bankConnectionService.GetConnectionAccountsAsync(userId, id, ct);
             return Ok(result);
         }
         catch (KeyNotFoundException)
@@ -112,7 +112,7 @@ public class BankConnectionsController : ControllerBase
         }
     }
 
-    // POST /api/bank-connections/{id}/onboarding — salva mapeamento + estratégia + dispara sync.
+    // POST /api/bank-connections/{id}/onboarding — salva mapeamento + estratégia + primeiro sync.
     [HttpPost("{id}/onboarding")]
     public async Task<IActionResult> CompleteOnboarding(
         string id, [FromBody] CompleteOnboardingRequestDto request, CancellationToken ct)
@@ -138,7 +138,7 @@ public class BankConnectionsController : ControllerBase
         }
     }
 
-    // POST /api/bank-connections/{id}/sync — sync manual do usuário.
+    // POST /api/bank-connections/{id}/sync — sync manual.
     [HttpPost("{id}/sync")]
     public async Task<IActionResult> SyncNow(string id, CancellationToken ct)
     {

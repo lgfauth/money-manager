@@ -37,9 +37,11 @@ internal static class ApplicationServicesExtensions
         services.AddScoped<IPushService, PushService>();
 
         // Conexão bancária
+        services.Configure<BancoMcpOptions>(configuration.GetSection(BancoMcpOptions.SectionName));
         services.AddHttpClient("bancoMcp");
+        services.AddHttpClient("bancoMcpManagement");
         services.AddScoped<IBankMcpClient, BankMcpClient>();
-        services.AddScoped<IEncryptionService, AesEncryptionService>();
+        services.AddScoped<IBankMcpManagementClient, BankMcpManagementClient>();
         services.AddScoped<IBankConnectionService, BankConnectionService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
 

@@ -100,9 +100,12 @@ builder.Services.Configure<VapidSettings>(
 builder.Services.AddScoped<IPushService, PushService>();
 
 // Registro de serviços de conexão bancária via Banco MCP
+builder.Services.Configure<BancoMcpOptions>(
+    builder.Configuration.GetSection(BancoMcpOptions.SectionName));
 builder.Services.AddHttpClient("bancoMcp");
+builder.Services.AddHttpClient("bancoMcpManagement");
 builder.Services.AddScoped<IBankMcpClient, BankMcpClient>();
-builder.Services.AddScoped<IEncryptionService, AesEncryptionService>();
+builder.Services.AddScoped<IBankMcpManagementClient, BankMcpManagementClient>();
 builder.Services.AddScoped<IBankConnectionService, BankConnectionService>();
 
 // Register structured process logger

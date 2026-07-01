@@ -16,6 +16,8 @@ public class CompleteOnboardingValidator : AbstractValidator<CompleteOnboardingR
                 .NotEmpty().WithMessage("ID externo da conta é obrigatório");
             mapping.RuleFor(m => m.MoneyManagerAccountId)
                 .NotEmpty().WithMessage("Conta do MoneyManager é obrigatória para cada mapeamento");
+            mapping.RuleFor(m => m.BankName)
+                .NotEmpty().WithMessage("Nome do banco é obrigatório");
         });
 
         RuleFor(x => x.Strategy)

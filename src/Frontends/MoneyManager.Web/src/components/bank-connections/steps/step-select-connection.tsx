@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Building2, CheckCircle2, AlertCircle, ExternalLink } from "lucide-react";
 import type { BankMcpConnectionDto } from "@/types/bank-connection";
 
 interface StepSelectConnectionProps {
@@ -23,12 +23,7 @@ export function StepSelectConnection({
   onBack,
   onSuccess,
 }: StepSelectConnectionProps) {
-  const {
-    data: available = [],
-    isLoading,
-    error,
-    refetch,
-  } = useAvailableConnections();
+  const { data, isLoading, error, refetch } = useAvailableConnections();
   const registerConnection = useRegisterConnection();
 
   useEffect(() => {
@@ -39,7 +34,7 @@ export function StepSelectConnection({
     if (connection.alreadyRegistered || connection.status === "LOGIN_ERROR")
       return;
 
-    registerConnection.mutate(connection.externalConnectionId, {
+    registerConnection.mutate(connection.itemId, {
       onSuccess: (registered) => onSuccess(connection, registered.id),
     });
   }
@@ -59,12 +54,11 @@ export function StepSelectConnection({
       <div className="text-center space-y-3 py-8">
         <AlertCircle className="h-8 w-8 text-destructive mx-auto" />
         <p className="text-sm text-muted-foreground">
-          Não foi possível carregar os bancos. Verifique se sua API key está
-          correta.
+          Não foi possível carregar os bancos conectados.
         </p>
         <div className="flex gap-2 justify-center">
           <Button variant="outline" size="sm" onClick={onBack}>
-            Alterar API key
+            Voltar
           </Button>
           <Button size="sm" onClick={() => refetch()}>
             Tentar novamente
@@ -74,7 +68,8 @@ export function StepSelectConnection({
     );
   }
 
-  const unregistered = available.filter((c) => !c.alreadyRegistered);
+  const connections = data?.connections ?? [];
+  const unregistered = connections.filter((c) => !c.alreadyRegistered);
 
   if (unregistered.length === 0) {
     return (
@@ -83,9 +78,21 @@ export function StepSelectConnection({
         <p className="text-sm text-muted-foreground">
           Todos os seus bancos já estão conectados ao MoneyManager.
         </p>
-        <Button variant="outline" size="sm" onClick={onBack}>
-          Voltar
-        </Button>
+        {data?.addConnectionUrl && (
+          <a
+            href={data.addConnectionUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+          >
+            Adicionar outro banco <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+        <div>
+          <Button variant="outline" size="sm" onClick={onBack}>
+            Voltar
+          </Button>
+        </div>
       </div>
     );
   }
@@ -94,7 +101,7 @@ export function StepSelectConnection({
     <div className="space-y-3">
       {unregistered.map((connection) => (
         <button
-          key={connection.externalConnectionId}
+          key={connection.itemId}
           onClick={() => handleSelect(connection)}
           disabled={
             registerConnection.isPending ||
@@ -104,19 +111,11 @@ export function StepSelectConnection({
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              {connection.institutionLogo ? (
-                <img
-                  src={connection.institutionLogo}
-                  alt={connection.institutionName}
-                  className="h-8 w-8 rounded-md object-contain"
-                />
-              ) : (
-                <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                </div>
-              )}
+              <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </div>
               <span className="font-medium text-sm">
-                {connection.institutionName}
+                {connection.connectorName}
               </span>
             </div>
             {connection.status === "LOGIN_ERROR" ? (

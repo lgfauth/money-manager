@@ -42,12 +42,14 @@ export function StepMapAccounts({
 
   function handleContinue() {
     const result: AccountMappingDto[] = mcpAccounts
-      .filter((a) => mappings[a.externalAccountId])
+      .filter((a) => mappings[a.accountId])
       .map((a) => ({
-        externalAccountId: a.externalAccountId,
-        externalAccountName: a.name,
+        externalAccountId: a.accountId,
         externalAccountType: a.type,
-        moneyManagerAccountId: mappings[a.externalAccountId],
+        externalAccountSubtype: a.subtype,
+        externalAccountNumber: a.number,
+        bankName: a.displayName,
+        moneyManagerAccountId: mappings[a.accountId],
       }));
 
     if (result.length === 0) return;
@@ -78,12 +80,12 @@ export function StepMapAccounts({
       <div className="space-y-3">
         {mcpAccounts.map((account) => (
           <div
-            key={account.externalAccountId}
+            key={account.accountId}
             className="rounded-lg border p-3 space-y-2"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">{account.name}</p>
+                <p className="text-sm font-medium">{account.displayName}</p>
                 <p className="text-xs text-muted-foreground">
                   {account.type === "CREDIT"
                     ? "Cartão de crédito"
@@ -100,9 +102,9 @@ export function StepMapAccounts({
               </Badge>
             </div>
             <Select
-              value={mappings[account.externalAccountId] ?? ""}
+              value={mappings[account.accountId] ?? ""}
               onValueChange={(value) =>
-                handleMappingChange(account.externalAccountId, value)
+                handleMappingChange(account.accountId, value ?? "")
               }
             >
               <SelectTrigger className="h-8 text-xs">

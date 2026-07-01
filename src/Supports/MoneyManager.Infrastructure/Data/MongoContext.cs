@@ -82,6 +82,12 @@ public class MongoContext
                 .Ascending(t => t.ClientRequestId),
             new CreateIndexOptions { Unique = true, Sparse = true }
         ));
+        await transactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Transaction>(
+            Builders<MoneyManager.Domain.Entities.Transaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.ExternalId),
+            new CreateIndexOptions { Unique = true, Sparse = true }
+        ));
 
         // Create accounts collection
         if (!collectionNames.Contains("accounts"))
@@ -104,6 +110,27 @@ public class MongoContext
             Builders<MoneyManager.Domain.Entities.Budget>.IndexKeys
                 .Ascending(b => b.UserId)
                 .Ascending(b => b.Month)
+        ));
+
+        // Create bank_connections collection
+        if (!collectionNames.Contains("bank_connections"))
+        {
+            await _database.CreateCollectionAsync("bank_connections");
+        }
+        var bankConnectionsCollection = _database.GetCollection<MoneyManager.Domain.Entities.BankConnection>("bank_connections");
+        await bankConnectionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.BankConnection>(
+            Builders<MoneyManager.Domain.Entities.BankConnection>.IndexKeys
+                .Ascending(c => c.UserId)
+                .Ascending(c => c.IsDeleted)
+        ));
+        await bankConnectionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.BankConnection>(
+            Builders<MoneyManager.Domain.Entities.BankConnection>.IndexKeys
+                .Ascending(c => c.ExternalConnectionId)
+        ));
+        await bankConnectionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.BankConnection>(
+            Builders<MoneyManager.Domain.Entities.BankConnection>.IndexKeys
+                .Ascending(c => c.Status)
+                .Ascending(c => c.IsDeleted)
         ));
 
         // Create push_subscriptions collection

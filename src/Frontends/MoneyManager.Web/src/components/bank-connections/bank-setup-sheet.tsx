@@ -8,7 +8,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { StepApiKey } from "./steps/step-api-key";
+import { StepInvite } from "./steps/step-invite";
 import { StepSelectConnection } from "./steps/step-select-connection";
 import { StepMapAccounts } from "./steps/step-map-accounts";
 import { StepStrategy } from "./steps/step-strategy";
@@ -22,26 +22,25 @@ interface BankSetupSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type SetupStep = "api-key" | "select-connection" | "map-accounts" | "strategy";
+type SetupStep = "invite" | "select-connection" | "map-accounts" | "strategy";
 
 interface SetupState {
   step: SetupStep;
-  availableConnections: number;
   selectedConnection: BankMcpConnectionDto | null;
   registeredConnectionId: string | null;
   accountMappings: AccountMappingDto[];
 }
 
 const STEP_TITLES: Record<SetupStep, string> = {
-  "api-key": "Conecte sua conta Banco MCP",
+  invite: "Conecte seu banco",
   "select-connection": "Selecione o banco",
   "map-accounts": "Associe suas contas",
   strategy: "Dados históricos",
 };
 
 const STEP_DESCRIPTIONS: Record<SetupStep, string> = {
-  "api-key":
-    "Insira sua API key do Banco MCP para importar transações automaticamente",
+  invite:
+    "Conecte seu banco no Banco MCP para importar transações automaticamente",
   "select-connection":
     "Escolha qual banco deseja sincronizar com o MoneyManager",
   "map-accounts":
@@ -50,15 +49,14 @@ const STEP_DESCRIPTIONS: Record<SetupStep, string> = {
 };
 
 const STEPS: SetupStep[] = [
-  "api-key",
+  "invite",
   "select-connection",
   "map-accounts",
   "strategy",
 ];
 
 const initialState: SetupState = {
-  step: "api-key",
-  availableConnections: 0,
+  step: "invite",
   selectedConnection: null,
   registeredConnectionId: null,
   accountMappings: [],
@@ -90,21 +88,17 @@ export function BankSetupSheet({ open, onOpenChange }: BankSetupSheetProps) {
           <SheetDescription>{STEP_DESCRIPTIONS[state.step]}</SheetDescription>
         </SheetHeader>
 
-        {state.step === "api-key" && (
-          <StepApiKey
-            onSuccess={(availableConnections) =>
-              setState((s) => ({
-                ...s,
-                step: "select-connection",
-                availableConnections,
-              }))
+        {state.step === "invite" && (
+          <StepInvite
+            onSuccess={() =>
+              setState((s) => ({ ...s, step: "select-connection" }))
             }
           />
         )}
 
         {state.step === "select-connection" && (
           <StepSelectConnection
-            onBack={() => setState((s) => ({ ...s, step: "api-key" }))}
+            onBack={() => setState((s) => ({ ...s, step: "invite" }))}
             onSuccess={(connection, registeredConnectionId) =>
               setState((s) => ({
                 ...s,
@@ -120,7 +114,7 @@ export function BankSetupSheet({ open, onOpenChange }: BankSetupSheetProps) {
           <StepMapAccounts
             connectionId={state.registeredConnectionId}
             institutionName={
-              state.selectedConnection?.institutionName ?? "Banco"
+              state.selectedConnection?.connectorName ?? "Banco"
             }
             onBack={() =>
               setState((s) => ({ ...s, step: "select-connection" }))

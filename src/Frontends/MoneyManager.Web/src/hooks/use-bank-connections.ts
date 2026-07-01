@@ -7,9 +7,9 @@ import { getApiErrorMessage } from "@/lib/api-errors";
 import { toast } from "sonner";
 import type {
   BankConnectionDto,
-  BankMcpConnectionDto,
+  BankMcpAvailableConnectionsResponseDto,
   BankMcpAccountDto,
-  SaveApiKeyResultDto,
+  BankMcpUserInviteResponseDto,
   CompleteOnboardingRequestDto,
 } from "@/types/bank-connection";
 
@@ -20,11 +20,23 @@ export function useBankConnections() {
   });
 }
 
+export function useBankMcpInviteUrl() {
+  return useQuery({
+    queryKey: queryKeys.bankConnectionInvite,
+    queryFn: () =>
+      apiClient.get<BankMcpUserInviteResponseDto>("/api/bank-connections/invite"),
+    enabled: false,
+    retry: false,
+  });
+}
+
 export function useAvailableConnections() {
   return useQuery({
     queryKey: queryKeys.bankConnectionsAvailable,
     queryFn: () =>
-      apiClient.get<BankMcpConnectionDto[]>("/api/bank-connections/available"),
+      apiClient.get<BankMcpAvailableConnectionsResponseDto>(
+        "/api/bank-connections/available"
+      ),
     enabled: false,
     retry: false,
   });
@@ -42,22 +54,11 @@ export function useConnectionAccounts(connectionId: string, enabled: boolean) {
   });
 }
 
-export function useSaveApiKey() {
-  return useMutation({
-    mutationFn: (apiKey: string) =>
-      apiClient.post<SaveApiKeyResultDto>("/api/bank-connections/api-key", {
-        apiKey,
-      }),
-    onError: (error) =>
-      toast.error(getApiErrorMessage(error, "API key inválida ou sem permissão")),
-  });
-}
-
 export function useRegisterConnection() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (externalConnectionId: string) =>
-      apiClient.post<BankConnectionDto>("/api/bank-connections/register", {
+      apiClient.post<BankConnectionDto>("/api/bank-connections", {
         externalConnectionId,
       }),
     onSuccess: () => {
