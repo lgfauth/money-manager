@@ -10,6 +10,7 @@ import { CreditLimitExpenseChart } from "@/components/dashboard/credit-limit-exp
 import { AccountsChart } from "@/components/dashboard/accounts-chart";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { CheckinBanner } from "@/components/financial-health/checkin-banner";
+import { BankConnectionBanner } from "@/components/bank-connections/bank-connection-banner";
 
 export default function DashboardPage() {
   const {
@@ -33,6 +34,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <BankConnectionBanner />
       {snapshotStatus?.showBanner && <CheckinBanner status={snapshotStatus} />}
       <OverviewCards
         netBalance={netBalance}

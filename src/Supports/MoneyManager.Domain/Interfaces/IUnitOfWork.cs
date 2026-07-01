@@ -20,5 +20,6 @@ public interface IUnitOfWork : IDisposable
     IPatrimonyBucketRepository PatrimonyBuckets { get; }
     IMonthlySnapshotRepository MonthlySnapshots { get; }
     ISubscriptionRepository Subscriptions { get; }
+    IBankConnectionRepository BankConnections { get; }
     Task<int> SaveChangesAsync();
 }

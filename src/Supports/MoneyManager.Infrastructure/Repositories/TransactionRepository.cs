@@ -88,4 +88,45 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 
         return (items, (int)totalCount);
     }
+
+    // Busca transação pelo ExternalId para deduplicação no upsert.
+    public async Task<Transaction?> GetByExternalIdAsync(string userId, string externalId)
+    {
+        var filter = Builders<Transaction>.Filter.And(
+            Builders<Transaction>.Filter.Eq(t => t.UserId, userId),
+            Builders<Transaction>.Filter.Eq(t => t.ExternalId, externalId),
+            Builders<Transaction>.Filter.Eq(t => t.IsDeleted, false));
+
+        return await Collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    // Retorna transações com Source = "manual" (ou sem Source) — para CleanSlate.
+    public async Task<IEnumerable<Transaction>> GetManualByUserIdAsync(string userId)
+    {
+        var filter = Builders<Transaction>.Filter.And(
+            Builders<Transaction>.Filter.Eq(t => t.UserId, userId),
+            Builders<Transaction>.Filter.Eq(t => t.IsDeleted, false),
+            Builders<Transaction>.Filter.Or(
+                Builders<Transaction>.Filter.Eq(t => t.Source, "manual"),
+                Builders<Transaction>.Filter.Exists(t => t.Source, false)));
+
+        return await Collection.Find(filter).ToListAsync();
+    }
+
+    // Retorna data do último lançamento manual — para cálculo do CutoffDate.
+    public async Task<DateTime?> GetLastManualDateAsync(string userId)
+    {
+        var filter = Builders<Transaction>.Filter.And(
+            Builders<Transaction>.Filter.Eq(t => t.UserId, userId),
+            Builders<Transaction>.Filter.Eq(t => t.IsDeleted, false),
+            Builders<Transaction>.Filter.Or(
+                Builders<Transaction>.Filter.Eq(t => t.Source, "manual"),
+                Builders<Transaction>.Filter.Exists(t => t.Source, false)));
+
+        var last = await Collection.Find(filter)
+            .SortByDescending(t => t.Date)
+            .FirstOrDefaultAsync();
+
+        return last?.Date;
+    }
 }

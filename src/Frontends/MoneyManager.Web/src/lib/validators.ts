@@ -172,3 +172,12 @@ export type CreditCardFormData = z.infer<typeof creditCardSchema>;
 export type CreditCardTransactionFormData = z.infer<typeof creditCardTransactionSchema>;
 export type PayCreditCardInvoiceFormData = z.infer<typeof payCreditCardInvoiceSchema>;
 export type UpdateCreditCardTransactionFormData = z.infer<typeof updateCreditCardTransactionSchema>;
+
+export const bankMcpApiKeySchema = z.object({
+  apiKey: z
+    .string()
+    .min(1, "API key obrigatória")
+    .startsWith("sk_", "API key inválida — deve começar com sk_"),
+});
+
+export type BankMcpApiKeyFormData = z.infer<typeof bankMcpApiKeySchema>;

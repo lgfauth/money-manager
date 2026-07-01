@@ -16,4 +16,8 @@ public interface ITransactionRepository : IRepository<Transaction>
         TransactionType? type = null,
         string? accountId = null,
         string sortBy = "date_desc");
+
+    Task<Transaction?> GetByExternalIdAsync(string userId, string externalId);
+    Task<IEnumerable<Transaction>> GetManualByUserIdAsync(string userId);
+    Task<DateTime?> GetLastManualDateAsync(string userId);
 }

@@ -10,7 +10,9 @@ public class WebhooksController : ControllerBase
     private readonly ISubscriptionService _subscriptionService;
     private readonly ILogger<WebhooksController> _logger;
 
-    public WebhooksController(ISubscriptionService subscriptionService, ILogger<WebhooksController> logger)
+    public WebhooksController(
+        ISubscriptionService subscriptionService,
+        ILogger<WebhooksController> logger)
     {
         _subscriptionService = subscriptionService;
         _logger = logger;

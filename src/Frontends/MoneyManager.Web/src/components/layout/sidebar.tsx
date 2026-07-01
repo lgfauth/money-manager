@@ -7,6 +7,7 @@ import { ChevronLeft, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navigationItems } from "@/config/navigation";
 import { useUIStore } from "@/stores/ui-store";
+import { useIsPremium } from "@/hooks/use-subscription";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -19,8 +20,11 @@ import { Separator } from "@/components/ui/separator";
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleCollapsed, setWhatsNewOpen } = useUIStore();
+  const isPremium = useIsPremium();
 
-  const mainItems = navigationItems.filter((item) => item.group === "main");
+  const mainItems = navigationItems.filter(
+    (item) => item.group === "main" && (!item.premiumOnly || isPremium)
+  );
   const userItems = navigationItems.filter((item) => item.group === "user");
 
   return (

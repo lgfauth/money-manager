@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { navigationItems } from "@/config/navigation";
 import { useUIStore } from "@/stores/ui-store";
+import { useIsPremium } from "@/hooks/use-subscription";
 
 const bottomNavItems = [
   { href: "/", icon: LayoutDashboard, label: "Home" },
@@ -26,6 +27,11 @@ const bottomNavItems = [
 export function MobileNav() {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen, setWhatsNewOpen } = useUIStore();
+  const isPremium = useIsPremium();
+
+  const visibleNavItems = navigationItems.filter(
+    (item) => !item.premiumOnly || isPremium
+  );
 
   return (
     <>
@@ -73,7 +79,7 @@ export function MobileNav() {
             </div>
             <nav className="p-2">
               <ul className="space-y-1">
-                {navigationItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const isActive =
                     item.href === "/"
                       ? pathname === "/"

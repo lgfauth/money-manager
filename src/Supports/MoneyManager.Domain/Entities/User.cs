@@ -49,6 +49,10 @@ public class User
     [BsonIgnoreIfNull]
     public string? TermsVersion { get; set; }
 
+    [BsonElement("bankMcpApiKey")]
+    [BsonIgnoreIfNull]
+    public string? BankMcpApiKey { get; set; }
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 

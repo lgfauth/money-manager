@@ -10,6 +10,7 @@ import {
   User,
   Settings,
   HeartPulse,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   group: "main" | "user";
+  premiumOnly?: boolean;
 }
 
 export const navigationItems: NavItem[] = [
@@ -30,6 +32,7 @@ export const navigationItems: NavItem[] = [
   { title: "Saúde Financeira", href: "/financial-health", icon: HeartPulse, group: "main" },
   { title: "Recorrentes", href: "/recurring", icon: Repeat, group: "main" },
   { title: "Relatórios", href: "/reports", icon: BarChart3, group: "main" },
+  { title: "Bancos", href: "/bank-connections", icon: Building2, group: "main", premiumOnly: true },
   { title: "Perfil", href: "/profile", icon: User, group: "user" },
   { title: "Configurações", href: "/settings", icon: Settings, group: "user" },
 ];

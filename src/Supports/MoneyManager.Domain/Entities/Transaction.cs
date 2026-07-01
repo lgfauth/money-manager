@@ -59,6 +59,12 @@ public class Transaction
     [BsonElement("clientRequestId")]
     public string? ClientRequestId { get; set; }
 
+    [BsonElement("source")]
+    public string Source { get; set; } = "manual"; // "manual" | "bank_sync"
+
+    [BsonElement("externalId")]
+    public string? ExternalId { get; set; } // ID da transação no Banco MCP — usado para upsert/deduplicação
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 }

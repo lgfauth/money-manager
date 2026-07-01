@@ -41,6 +41,9 @@ public class Account
     [BsonElement("version")]
     public int Version { get; set; } = 1;
 
+    [BsonElement("externalAccountId")]
+    public string? ExternalAccountId { get; set; }
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 }
