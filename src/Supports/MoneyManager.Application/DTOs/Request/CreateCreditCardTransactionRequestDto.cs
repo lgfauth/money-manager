@@ -11,4 +11,6 @@ public class CreateCreditCardTransactionRequestDto
     public bool FirstInstallmentOnCurrentInvoice { get; set; } = true;
     public bool IsRefund { get; set; } = false;
     public string? ClientRequestId { get; set; }
+    public string Source { get; set; } = "manual";
+    public string? ExternalId { get; set; }
 }

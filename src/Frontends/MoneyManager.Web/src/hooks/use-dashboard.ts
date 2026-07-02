@@ -77,7 +77,7 @@ export function useDashboard() {
     .reduce((s, a) => s + a.balance, 0);
 
   const totalAvailableLimit = creditCardList.reduce(
-    (sum, card) => sum + card.availableLimit,
+    (sum, card) => sum + (card.availableLimit ?? 0),
     0
   );
 
@@ -134,7 +134,7 @@ export function useDashboard() {
 
   const creditLimitExpenseData = creditCardList.map((card) => ({
     cardName: card.name,
-    availableLimit: card.availableLimit,
+    availableLimit: card.availableLimit ?? 0,
     expense: card.currentBalance,
   }));
 

@@ -5,7 +5,7 @@ import { Building2, ArrowRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsPremium } from "@/hooks/use-subscription";
 import { useBankConnections } from "@/hooks/use-bank-connections";
-import { BankSetupSheet } from "./bank-setup-sheet";
+import { BankSetupModal } from "./bank-setup-modal";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -70,7 +70,7 @@ export function BankConnectionBanner() {
         </Button>
       </div>
 
-      <BankSetupSheet open={setupOpen} onOpenChange={setSetupOpen} />
+      <BankSetupModal open={setupOpen} onOpenChange={setSetupOpen} />
     </>
   );
 }

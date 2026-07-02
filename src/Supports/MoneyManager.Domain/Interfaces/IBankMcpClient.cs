@@ -2,13 +2,14 @@ namespace MoneyManager.Domain.Interfaces;
 
 public interface IBankMcpClient
 {
-    Task<BankMcpListConnectionsResult> ListConnectionsAsync(CancellationToken ct);
-    Task<BankMcpConnectionStatus> GetConnectionStatusAsync(string item, CancellationToken ct);
-    Task SyncConnectionsAsync(IEnumerable<string> items, CancellationToken ct);
-    Task DisconnectAsync(string item, CancellationToken ct);
-    Task<IReadOnlyList<BankMcpAccount>> ListAccountsAsync(string item, CancellationToken ct);
+    Task<BankMcpListConnectionsResult> ListConnectionsAsync(string apiKey, CancellationToken ct);
+    Task<BankMcpConnectionStatus> GetConnectionStatusAsync(string apiKey, string item, CancellationToken ct);
+    Task SyncConnectionsAsync(string apiKey, IEnumerable<string> items, CancellationToken ct);
+    Task DisconnectAsync(string apiKey, string item, CancellationToken ct);
+    Task<IReadOnlyList<BankMcpAccount>> ListAccountsAsync(string apiKey, string item, CancellationToken ct);
+    Task<BankMcpOpenBillResult?> GetOpenBillAsync(string apiKey, string accountId, CancellationToken ct);
     Task<BankMcpTransactionPage> ListTransactionsAsync(
-        string accountId, DateTime from, DateTime to,
+        string apiKey, string accountId, DateTime from, DateTime to,
         int page, int pageSize, CancellationToken ct);
 }
 
@@ -37,7 +38,22 @@ public record BankMcpAccount(
     string Number,              // número da conta ou final do cartão
     decimal Balance,            // parseado de string
     string ItemId,              // item_id da conexão pai
-    string ConnectorId);        // connector_id da conexão pai
+    string ConnectorId,         // connector_id da conexão pai
+    decimal? CreditLimit,       // creditData.creditLimit
+    decimal? AvailableCreditLimit,
+    decimal? MinimumPayment,
+    string? Brand,
+    string? CardLevel,
+    DateTime? BalanceDueDate,
+    DateTime? BalanceCloseDate);
+
+public record BankMcpOpenBillResult(
+    bool Available,
+    decimal TotalAmount,
+    DateTime? CloseDate,
+    DateTime? DueDate,
+    int TransactionCount,
+    decimal TotalPendingDebt);
 
 public record BankMcpTransactionPage(
     int Total,

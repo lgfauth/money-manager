@@ -4,6 +4,7 @@ public class CreditCardResponseDto
 {
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? Brand { get; set; }
     public decimal Limit { get; set; }
     public decimal CurrentBalance { get; set; }
     public decimal AvailableLimit { get; set; }

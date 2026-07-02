@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import {
   useAvailableConnections,
+  useBankConnections,
   useRegisterConnection,
 } from "@/hooks/use-bank-connections";
 import { Button } from "@/components/ui/button";
@@ -17,13 +18,16 @@ interface StepSelectConnectionProps {
     connection: BankMcpConnectionDto,
     registeredConnectionId: string
   ) => void;
+  onResume: (connectionId: string, connection: BankMcpConnectionDto) => void;
 }
 
 export function StepSelectConnection({
   onBack,
   onSuccess,
+  onResume,
 }: StepSelectConnectionProps) {
   const { data, isLoading, error, refetch } = useAvailableConnections();
+  const { data: registeredConnections = [] } = useBankConnections();
   const registerConnection = useRegisterConnection();
 
   useEffect(() => {
@@ -31,6 +35,11 @@ export function StepSelectConnection({
   }, [refetch]);
 
   function handleSelect(connection: BankMcpConnectionDto) {
+    if (connection.pendingSetup && connection.pendingConnectionId) {
+      onResume(connection.pendingConnectionId, connection);
+      return;
+    }
+
     if (connection.alreadyRegistered || connection.status === "LOGIN_ERROR")
       return;
 
@@ -69,9 +78,12 @@ export function StepSelectConnection({
   }
 
   const connections = data?.connections ?? [];
-  const unregistered = connections.filter((c) => !c.alreadyRegistered);
+  const availableToConfigure = connections.filter((c) => !c.alreadyRegistered);
+  const existingConnections = registeredConnections.filter(
+    (connection) => connection.status !== "Disconnected"
+  );
 
-  if (unregistered.length === 0) {
+  if (availableToConfigure.length === 0 && existingConnections.length === 0) {
     return (
       <div className="text-center space-y-3 py-8">
         <CheckCircle2 className="h-8 w-8 text-primary mx-auto" />
@@ -98,43 +110,111 @@ export function StepSelectConnection({
   }
 
   return (
-    <div className="space-y-3">
-      {unregistered.map((connection) => (
-        <button
-          key={connection.itemId}
-          onClick={() => handleSelect(connection)}
-          disabled={
-            registerConnection.isPending ||
-            connection.status === "LOGIN_ERROR"
-          }
-          className="w-full rounded-lg border p-4 text-left transition-colors hover:border-primary hover:bg-primary/5 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+    <div className="space-y-4">
+      {availableToConfigure.length > 0 && (
+        <div className="space-y-3">
+          {availableToConfigure.map((connection) => (
+            <button
+              key={connection.itemId}
+              onClick={() => handleSelect(connection)}
+              disabled={
+                registerConnection.isPending ||
+                (!connection.pendingSetup && connection.status === "LOGIN_ERROR")
+              }
+              className={`w-full rounded-lg border p-4 text-left transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                connection.pendingSetup
+                  ? "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60"
+                  : "hover:border-primary hover:bg-primary/5"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="font-medium text-sm">
+                    {connection.connectorName}
+                  </span>
+                </div>
+                {connection.pendingSetup ? (
+                  <Badge variant="outline" className="text-amber-500 border-amber-500/50 text-xs">
+                    Configuração pendente
+                  </Badge>
+                ) : connection.status === "LOGIN_ERROR" ? (
+                  <Badge variant="destructive" className="text-xs">
+                    Erro de login
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">
+                    Disponível
+                  </Badge>
+                )}
               </div>
-              <span className="font-medium text-sm">
-                {connection.connectorName}
-              </span>
+              {!connection.pendingSetup && connection.status === "LOGIN_ERROR" && (
+                <p className="text-xs text-destructive mt-2">
+                  Reconecte este banco no Banco MCP antes de continuar.
+                </p>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {existingConnections.length > 0 && (
+        <div className="space-y-2">
+          {availableToConfigure.length === 0 && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <p className="text-xs text-muted-foreground">
+                Todos os seus bancos já estão conectados. Você ainda pode entrar e revisar os vínculos de contas.
+              </p>
             </div>
-            {connection.status === "LOGIN_ERROR" ? (
-              <Badge variant="destructive" className="text-xs">
-                Erro de login
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="text-xs">
-                Disponível
-              </Badge>
-            )}
-          </div>
-          {connection.status === "LOGIN_ERROR" && (
-            <p className="text-xs text-destructive mt-2">
-              Reconecte este banco no Banco MCP antes de continuar.
-            </p>
           )}
-        </button>
-      ))}
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Bancos já conectados
+          </p>
+          {existingConnections.map((connection) => (
+            <button
+              key={connection.id}
+              onClick={() =>
+                onResume(connection.id, {
+                  itemId: connection.id,
+                  connectorId: connection.id,
+                  connectorName: connection.institutionName,
+                  status: "UPDATED",
+                  alreadyRegistered: true,
+                  pendingSetup: false,
+                  pendingConnectionId: connection.id,
+                })
+              }
+              className="w-full rounded-lg border p-4 text-left transition-colors hover:border-primary hover:bg-primary/5"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <span className="font-medium text-sm">{connection.institutionName}</span>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  Reconfigurar vínculo
+                </Badge>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {data?.addConnectionUrl && (
+        <a
+          href={data.addConnectionUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+        >
+          Adicionar outro banco <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
+
       <Button variant="outline" className="w-full" onClick={onBack}>
         Voltar
       </Button>

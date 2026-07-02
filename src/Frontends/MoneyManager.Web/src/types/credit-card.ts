@@ -12,9 +12,10 @@ export interface CreditCardInvoiceSummaryDto {
 export interface CreditCardResponseDto {
   id: string;
   name: string;
+  brand?: string | null;
   limit: number;
   currentBalance: number;
-  availableLimit: number;
+  availableLimit?: number | null;
   closingDay: number;
   billingDueDay: number;
   bestPurchaseDay: number;

@@ -13,6 +13,7 @@ public interface ICreditCardService
     Task<IEnumerable<CreditCardResponseDto>> GetAllAsync(string userId);
     Task<CreditCardResponseDto> GetByIdAsync(string userId, string id);
     Task<CreditCardResponseDto> UpdateAsync(string userId, string id, CreateCreditCardRequestDto request);
+    Task<CreditCardResponseDto> UpdateFromBankSyncAsync(string userId, string id, UpdateCreditCardFromSyncDto request, CancellationToken ct);
     Task DeleteAsync(string userId, string id);
 }
 
@@ -113,6 +114,41 @@ public class CreditCardService : ICreditCardService
         return await MapToDtoAsync(userId, card);
     }
 
+    public async Task<CreditCardResponseDto> UpdateFromBankSyncAsync(
+        string userId,
+        string id,
+        UpdateCreditCardFromSyncDto request,
+        CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var card = await _unitOfWork.CreditCards.GetByIdAsync(id);
+        if (card == null || card.UserId != userId || card.IsDeleted)
+            throw new KeyNotFoundException("Credit card not found");
+
+        if (request.Limit.HasValue)
+            card.Limit = request.Limit.Value;
+
+        card.AvailableLimit = request.AvailableLimit;
+        card.Brand = request.Brand;
+
+        if (request.DueDay.HasValue)
+            card.BillingDueDay = Math.Clamp(request.DueDay.Value, 1, 31);
+
+        if (request.ClosingDay.HasValue)
+        {
+            card.ClosingDay = Math.Clamp(request.ClosingDay.Value, 1, 31);
+            card.BestPurchaseDay = card.ClosingDay;
+        }
+
+        card.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.CreditCards.UpdateAsync(card);
+        await _unitOfWork.SaveChangesAsync();
+
+        return await MapToDtoAsync(userId, card);
+    }
+
     public async Task DeleteAsync(string userId, string id)
     {
         var card = await _unitOfWork.CreditCards.GetByIdAsync(id);
@@ -162,9 +198,10 @@ public class CreditCardService : ICreditCardService
         {
             Id = card.Id,
             Name = card.Name,
+            Brand = card.Brand,
             Limit = card.Limit,
             CurrentBalance = outstanding,
-            AvailableLimit = card.Limit - outstanding,
+            AvailableLimit = card.AvailableLimit ?? (card.Limit - outstanding),
             ClosingDay = card.ClosingDay,
             BillingDueDay = card.BillingDueDay,
             BestPurchaseDay = card.BestPurchaseDay,

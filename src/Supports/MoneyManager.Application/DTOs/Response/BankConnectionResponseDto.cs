@@ -18,5 +18,6 @@ public class SelectedBankAccountDto
     public string Subtype { get; set; } = string.Empty;
     public string Number { get; set; } = string.Empty;
     public string? MoneyManagerAccountId { get; set; }
+    public string MoneyManagerEntityType { get; set; } = "Account";
     public DateTime? LastSyncAt { get; set; }
 }

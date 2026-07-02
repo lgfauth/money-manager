@@ -126,7 +126,7 @@ export default function CreditCardDetailPage() {
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Disponível</p>
           <p className="text-lg font-semibold text-income">
-            {formatMonetaryValue(card.availableLimit, card.currency)}
+            {formatMonetaryValue(card.availableLimit ?? 0, card.currency)}
           </p>
         </div>
       </div>

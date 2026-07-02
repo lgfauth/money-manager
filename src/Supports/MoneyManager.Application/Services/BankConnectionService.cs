@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
+using MoneyManager.Domain.Exceptions;
 using MoneyManager.Domain.Interfaces;
 using MoneyManager.Observability;
 
@@ -11,8 +11,8 @@ namespace MoneyManager.Application.Services;
 
 public interface IBankConnectionService
 {
-    // Gera URL de convite para o usuário conectar seus bancos no Banco MCP.
-    Task<BankMcpUserInviteResponseDto> GetUserInviteUrlAsync(string userId, CancellationToken ct);
+    // Salva (criptografada) e valida a API key do Banco MCP do usuário.
+    Task<SaveApiKeyResultDto> SaveBankMcpApiKeyAsync(string userId, string apiKey, CancellationToken ct);
 
     // Lista as conexões disponíveis no workspace do Banco MCP para o usuário registrar.
     Task<BankMcpAvailableConnectionsResponseDto> GetAvailableConnectionsAsync(string userId, CancellationToken ct);
@@ -43,62 +43,135 @@ public class BankConnectionService : IBankConnectionService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBankMcpClient _bankMcpClient;
-    private readonly IBankMcpManagementClient _bankMcpManagementClient;
     private readonly ISubscriptionService _subscriptionService;
+    private readonly IAccountService _accountService;
+    private readonly ICreditCardService _creditCardService;
+    private readonly ICreditCardInvoiceService _creditCardInvoiceService;
+    private readonly ITransactionService _transactionService;
+    private readonly ICreditCardTransactionService _creditCardTransactionService;
+    private readonly IRecurringTransactionService _recurringTransactionService;
+    private readonly IEncryptionService _encryptionService;
     private readonly IProcessLogger _processLogger;
     private readonly ILogger<BankConnectionService> _logger;
-    private readonly string _toolkitId;
 
     public BankConnectionService(
         IUnitOfWork unitOfWork,
         IBankMcpClient bankMcpClient,
-        IBankMcpManagementClient bankMcpManagementClient,
         ISubscriptionService subscriptionService,
+        IAccountService accountService,
+        ICreditCardService creditCardService,
+        ICreditCardInvoiceService creditCardInvoiceService,
+        ITransactionService transactionService,
+        ICreditCardTransactionService creditCardTransactionService,
+        IRecurringTransactionService recurringTransactionService,
+        IEncryptionService encryptionService,
         IProcessLogger processLogger,
-        ILogger<BankConnectionService> logger,
-        IOptions<BancoMcpOptions> bancoMcpOptions)
+        ILogger<BankConnectionService> logger)
     {
         _unitOfWork = unitOfWork;
         _bankMcpClient = bankMcpClient;
-        _bankMcpManagementClient = bankMcpManagementClient;
         _subscriptionService = subscriptionService;
+        _accountService = accountService;
+        _creditCardService = creditCardService;
+        _creditCardInvoiceService = creditCardInvoiceService;
+        _transactionService = transactionService;
+        _creditCardTransactionService = creditCardTransactionService;
+        _recurringTransactionService = recurringTransactionService;
+        _encryptionService = encryptionService;
         _processLogger = processLogger;
         _logger = logger;
-        _toolkitId = bancoMcpOptions.Value.ToolkitId;
     }
 
-    public async Task<BankMcpUserInviteResponseDto> GetUserInviteUrlAsync(string userId, CancellationToken ct)
+    public async Task<SaveApiKeyResultDto> SaveBankMcpApiKeyAsync(string userId, string apiKey, CancellationToken ct)
     {
         await _subscriptionService.EnsurePremiumAccessAsync(userId);
 
-        // Label identifica o usuário MoneyManager no workspace do Banco MCP.
-        var invite = await _bankMcpManagementClient.CreateUserInviteAsync(_toolkitId, $"mm_{userId}", ct);
+        BankMcpListConnectionsResult connections;
+        try
+        {
+            connections = await _bankMcpClient.ListConnectionsAsync(apiKey, ct);
+        }
+        catch
+        {
+            throw new InvalidOperationException(
+                "API key do Banco MCP inválida ou sem permissão. Verifique e tente novamente.");
+        }
 
-        _logger.LogInformation("Convite Banco MCP gerado para usuário {UserId}", userId);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Usuário não encontrado");
 
-        return new BankMcpUserInviteResponseDto { ConnectUrl = invite.ConnectUrl };
+        user.BankMcpApiKey = _encryptionService.Encrypt(apiKey);
+        user.BankMcpKeyExpiredAt = null;
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "API key do Banco MCP salva para usuário {UserId} - {Count} conexão(ões) disponível(is)",
+            userId, connections.Count);
+
+        return new SaveApiKeyResultDto
+        {
+            IsValid = true,
+            AvailableConnections = connections.Count
+        };
     }
 
     public async Task<BankMcpAvailableConnectionsResponseDto> GetAvailableConnectionsAsync(string userId, CancellationToken ct)
     {
         await _subscriptionService.EnsurePremiumAccessAsync(userId);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Usuário não encontrado");
 
-        var result = await _bankMcpClient.ListConnectionsAsync(ct);
+        if (user.BankMcpKeyExpiredAt.HasValue)
+        {
+            return new BankMcpAvailableConnectionsResponseDto
+            {
+                HasApiKey = true,
+                ApiKeyExpired = true,
+                Connections = [],
+                AddConnectionUrl = string.Empty
+            };
+        }
 
-        // Marca quais já estão registradas para este usuário.
-        var existing = await _unitOfWork.BankConnections.GetByUserIdAsync(userId);
-        var existingIds = existing.Select(c => c.ExternalConnectionId).ToHashSet();
+        if (string.IsNullOrEmpty(user.BankMcpApiKey))
+        {
+            return new BankMcpAvailableConnectionsResponseDto
+            {
+                HasApiKey = false,
+                ApiKeyExpired = false,
+                Connections = [],
+                AddConnectionUrl = string.Empty
+            };
+        }
+
+        var apiKey = _encryptionService.Decrypt(user.BankMcpApiKey);
+
+        var result = await _bankMcpClient.ListConnectionsAsync(apiKey, ct);
+
+        var existingConnections = await _unitOfWork.BankConnections.GetByUserIdAsync(userId);
+        var existingDict = existingConnections.ToDictionary(c => c.ExternalConnectionId);
 
         return new BankMcpAvailableConnectionsResponseDto
         {
+            HasApiKey = true,
+            ApiKeyExpired = false,
             AddConnectionUrl = result.AddConnectionUrl,
-            Connections = result.Connections.Select(c => new BankMcpConnectionDto
+            Connections = result.Connections.Select(c =>
             {
-                ItemId = c.ItemId,
-                ConnectorId = c.ConnectorId,
-                ConnectorName = c.ConnectorName,
-                Status = c.Status,
-                AlreadyRegistered = existingIds.Contains(c.ItemId)
+                existingDict.TryGetValue(c.ItemId, out var existingConn);
+                var isPendingSetup = existingConn is not null
+                    && !existingConn.SelectedAccounts.Any(s => s.MoneyManagerAccountId is not null);
+
+                return new BankMcpConnectionDto
+                {
+                    ItemId = c.ItemId,
+                    ConnectorId = c.ConnectorId,
+                    ConnectorName = c.ConnectorName,
+                    Status = c.Status,
+                    AlreadyRegistered = existingConn is not null && !isPendingSetup,
+                    PendingSetup = isPendingSetup,
+                    PendingConnectionId = isPendingSetup ? existingConn!.Id : null
+                };
             }).ToList()
         };
     }
@@ -106,19 +179,20 @@ public class BankConnectionService : IBankConnectionService
     public async Task<BankConnectionResponseDto> RegisterConnectionAsync(string userId, string externalConnectionId, CancellationToken ct)
     {
         await _subscriptionService.EnsurePremiumAccessAsync(userId);
+        var apiKey = await GetDecryptedApiKeyAsync(userId, ct);
 
         var existing = await _unitOfWork.BankConnections.GetByExternalConnectionIdAsync(userId, externalConnectionId);
         if (existing is not null)
             throw new InvalidOperationException("Esta conexão bancária já está registrada");
 
         // Valida status no Banco MCP antes de registrar.
-        var status = await _bankMcpClient.GetConnectionStatusAsync(externalConnectionId, ct);
+        var status = await _bankMcpClient.GetConnectionStatusAsync(apiKey, externalConnectionId, ct);
         if (status.Status is "LOGIN_ERROR" or "WAITING_USER_INPUT")
             throw new InvalidOperationException(
                 $"Conexão com status inválido no Banco MCP: {status.Status}. Reconecte o banco antes de continuar.");
 
         // Busca nome do banco via accounts (campo "bank", não "name").
-        var accounts = await _bankMcpClient.ListAccountsAsync(externalConnectionId, ct);
+        var accounts = await _bankMcpClient.ListAccountsAsync(apiKey, externalConnectionId, ct);
         var institutionName = accounts.FirstOrDefault()?.DisplayName ?? "Banco";
         var connectorId = accounts.FirstOrDefault()?.ConnectorId ?? string.Empty;
 
@@ -144,13 +218,15 @@ public class BankConnectionService : IBankConnectionService
 
     public async Task<BankMcpAvailableAccountsResponseDto> GetConnectionAccountsAsync(string userId, string connectionId, CancellationToken ct)
     {
+        var apiKey = await GetDecryptedApiKeyAsync(userId, ct);
+
         var connection = await _unitOfWork.BankConnections.GetByUserIdAndIdAsync(userId, connectionId)
             ?? throw new KeyNotFoundException("Conexão não encontrada");
 
         if (connection.Status == BankConnectionStatus.Error)
             throw new InvalidOperationException("Conexão com erro — reconecte o banco");
 
-        var accounts = await _bankMcpClient.ListAccountsAsync(connection.ExternalConnectionId, ct);
+        var accounts = await _bankMcpClient.ListAccountsAsync(apiKey, connection.ExternalConnectionId, ct);
 
         return new BankMcpAvailableAccountsResponseDto
         {
@@ -170,6 +246,8 @@ public class BankConnectionService : IBankConnectionService
     public async Task<BankConnectionResponseDto> CompleteOnboardingAsync(
         string userId, string connectionId, CompleteOnboardingRequestDto request, CancellationToken ct)
     {
+        var apiKey = await GetDecryptedApiKeyAsync(userId, ct);
+
         _processLogger.AddStep("Iniciando onboarding de conexão bancária", new Dictionary<string, object?>
         {
             ["userId"] = userId,
@@ -188,7 +266,8 @@ public class BankConnectionService : IBankConnectionService
             Subtype = m.ExternalAccountSubtype,
             Number = m.ExternalAccountNumber,
             BankName = m.BankName,
-            MoneyManagerAccountId = m.MoneyManagerAccountId
+            MoneyManagerAccountId = m.MoneyManagerAccountId,
+            MoneyManagerEntityType = m.MoneyManagerEntityType
         }).ToList();
 
         connection.OnboardingStrategy = request.Strategy;
@@ -196,11 +275,22 @@ public class BankConnectionService : IBankConnectionService
         // Atualiza ExternalAccountId nas Accounts do MoneyManager mapeadas.
         foreach (var mapping in request.AccountMappings)
         {
+            if (!string.Equals(mapping.MoneyManagerEntityType, "Account", StringComparison.Ordinal))
+                continue;
+
             var account = await _unitOfWork.Accounts.GetByIdAsync(mapping.MoneyManagerAccountId);
             if (account is null || account.UserId != userId) continue;
 
             account.ExternalAccountId = mapping.ExternalAccountId;
             await _unitOfWork.Accounts.UpdateAsync(account);
+
+            var disabledCount = await _recurringTransactionService
+                .DeactivateActiveByAccountAsync(userId, account.Id);
+
+            _logger.LogInformation(
+                "Onboarding bancário: {Count} recorrente(s) desativada(s) para a conta {AccountId}",
+                disabledCount,
+                account.Id);
         }
 
         // Aplica estratégia de dados históricos.
@@ -219,7 +309,7 @@ public class BankConnectionService : IBankConnectionService
         await _unitOfWork.SaveChangesAsync();
 
         // Primeiro sync imediato.
-        await SyncConnectionAsync(connection, ct);
+        await SyncConnectionAsync(connection, apiKey, ct);
 
         _processLogger.AddStep("Onboarding concluído", new Dictionary<string, object?>
         {
@@ -238,6 +328,8 @@ public class BankConnectionService : IBankConnectionService
 
     public async Task DisconnectAsync(string userId, string connectionId, CancellationToken ct)
     {
+        var apiKey = await GetDecryptedApiKeyAsync(userId, ct);
+
         var connection = await _unitOfWork.BankConnections.GetByUserIdAndIdAsync(userId, connectionId)
             ?? throw new KeyNotFoundException("Conexão não encontrada");
 
@@ -254,7 +346,7 @@ public class BankConnectionService : IBankConnectionService
         // Revoga no Banco MCP.
         try
         {
-            await _bankMcpClient.DisconnectAsync(connection.ExternalConnectionId, ct);
+            await _bankMcpClient.DisconnectAsync(apiKey, connection.ExternalConnectionId, ct);
         }
         catch (Exception ex)
         {
@@ -278,7 +370,8 @@ public class BankConnectionService : IBankConnectionService
         if (connection.Status != BankConnectionStatus.Connected)
             throw new InvalidOperationException("Conexão não está ativa");
 
-        await SyncConnectionAsync(connection, ct);
+        var apiKey = await GetDecryptedApiKeyAsync(userId, ct);
+        await SyncConnectionAsync(connection, apiKey, ct);
     }
 
     public async Task SyncAllActiveConnectionsAsync(CancellationToken ct)
@@ -292,7 +385,43 @@ public class BankConnectionService : IBankConnectionService
         {
             try
             {
-                await SyncConnectionAsync(connection, ct);
+                string apiKey;
+                try
+                {
+                    apiKey = await GetDecryptedApiKeyAsync(connection.UserId, ct);
+                }
+                catch (InvalidOperationException)
+                {
+                    _logger.LogWarning(
+                        "Usuário {UserId} sem API key configurada - pulando conexão {ConnectionId}",
+                        connection.UserId, connection.Id);
+                    continue;
+                }
+
+                await SyncConnectionAsync(connection, apiKey, ct);
+            }
+            catch (BankMcpKeyExpiredException)
+            {
+                _logger.LogWarning(
+                    "API key do Banco MCP expirada para usuário {UserId} - marcando e notificando",
+                    connection.UserId);
+
+                var user = await _unitOfWork.Users.GetByIdAsync(connection.UserId);
+                if (user is not null)
+                {
+                    user.BankMcpKeyExpiredAt = DateTime.UtcNow;
+                    await _unitOfWork.Users.UpdateAsync(user);
+                }
+
+                var userConnections = await _unitOfWork.BankConnections.GetByUserIdAsync(connection.UserId);
+                foreach (var userConnection in userConnections)
+                {
+                    userConnection.MarkError();
+                    await _unitOfWork.BankConnections.UpdateAsync(userConnection);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                continue;
             }
             catch (Exception ex)
             {
@@ -308,8 +437,11 @@ public class BankConnectionService : IBankConnectionService
 
     // ── Métodos privados ───────────────────────────────────────────────────
 
-    private async Task SyncConnectionAsync(BankConnection connection, CancellationToken ct)
+    private async Task SyncConnectionAsync(BankConnection connection, string apiKey, CancellationToken ct)
     {
+        var bankAccounts = await _bankMcpClient.ListAccountsAsync(apiKey, connection.ExternalConnectionId, ct);
+        var bankAccountsByExternalId = bankAccounts.ToDictionary(a => a.AccountId);
+
         var mappedAccounts = connection.SelectedAccounts
             .Where(s => s.MoneyManagerAccountId is not null)
             .ToList();
@@ -326,6 +458,7 @@ public class BankConnectionService : IBankConnectionService
                 while (true)
                 {
                     var result = await _bankMcpClient.ListTransactionsAsync(
+                        apiKey,
                         selected.ExternalAccountId,
                         since,
                         DateTime.UtcNow,
@@ -335,13 +468,23 @@ public class BankConnectionService : IBankConnectionService
 
                     foreach (var tx in result.Results.Where(t => t.Status == "POSTED"))
                     {
-                        await UpsertTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, ct);
+                        if (string.Equals(selected.MoneyManagerEntityType, "CreditCard", StringComparison.Ordinal))
+                            await UpsertCreditCardTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, ct);
+                        else
+                            await UpsertTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, ct);
+
                         imported++;
                     }
 
                     if (page >= result.TotalPages) break;
                     page++;
                 }
+
+                if (string.Equals(selected.Type, "BANK", StringComparison.Ordinal))
+                    await UpdateBankAccountBalanceAsync(connection.UserId, selected, bankAccountsByExternalId);
+
+                if (string.Equals(selected.Type, "CREDIT", StringComparison.Ordinal))
+                    await UpdateCreditCardFromSyncAsync(connection.UserId, apiKey, selected, bankAccountsByExternalId, ct);
 
                 selected.LastSyncAt = DateTime.UtcNow;
 
@@ -361,26 +504,141 @@ public class BankConnectionService : IBankConnectionService
         await _unitOfWork.SaveChangesAsync();
     }
 
+    private async Task UpdateBankAccountBalanceAsync(
+        string userId,
+        SelectedBankAccount selected,
+        IReadOnlyDictionary<string, BankMcpAccount> bankAccountsByExternalId)
+    {
+        if (!bankAccountsByExternalId.TryGetValue(selected.ExternalAccountId, out var bankAccount))
+            return;
+
+        var account = await _unitOfWork.Accounts.GetByIdAsync(selected.MoneyManagerAccountId!);
+        if (account is null || account.UserId != userId || account.IsDeleted)
+            return;
+
+        var delta = bankAccount.Balance - account.Balance;
+        if (delta == 0m)
+            return;
+
+        await _accountService.UpdateBalanceAsync(userId, selected.MoneyManagerAccountId!, delta);
+    }
+
+    private async Task UpdateCreditCardFromSyncAsync(
+        string userId,
+        string apiKey,
+        SelectedBankAccount selected,
+        IReadOnlyDictionary<string, BankMcpAccount> bankAccountsByExternalId,
+        CancellationToken ct)
+    {
+        if (!bankAccountsByExternalId.TryGetValue(selected.ExternalAccountId, out var mcpCard))
+            return;
+
+        var openBill = await _bankMcpClient.GetOpenBillAsync(apiKey, selected.ExternalAccountId, ct);
+
+        var dueDay = openBill?.DueDate?.Day ?? mcpCard.BalanceDueDate?.Day;
+        var closingDay = openBill?.CloseDate?.Day;
+        if (!closingDay.HasValue && dueDay.HasValue)
+            closingDay = Math.Max(dueDay.Value - 7, 1);
+
+        await _creditCardService.UpdateFromBankSyncAsync(
+            userId,
+            selected.MoneyManagerAccountId!,
+            new UpdateCreditCardFromSyncDto
+            {
+                Limit = mcpCard.CreditLimit,
+                AvailableLimit = mcpCard.AvailableCreditLimit,
+                Brand = mcpCard.Brand,
+                DueDay = dueDay,
+                ClosingDay = closingDay
+            },
+            ct);
+
+        if (openBill is null)
+        {
+            _logger.LogInformation(
+                "Banco não expõe fatura aberta para account {ExternalAccountId} no momento",
+                selected.ExternalAccountId);
+            return;
+        }
+
+        if (!openBill.DueDate.HasValue)
+        {
+            _logger.LogInformation(
+                "Fatura aberta sem due_date para account {ExternalAccountId}; atualização da fatura ignorada",
+                selected.ExternalAccountId);
+            return;
+        }
+
+        await _creditCardInvoiceService.UpdateOrCreateOpenInvoiceAsync(
+            userId,
+            selected.MoneyManagerAccountId!,
+            new UpdateOpenInvoiceFromSyncDto
+            {
+                TotalAmount = openBill.TotalAmount,
+                DueDate = openBill.DueDate.Value,
+                CloseDate = openBill.CloseDate
+            },
+            ct);
+    }
+
+    private async Task<string> GetDecryptedApiKeyAsync(string userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Usuário não encontrado");
+
+        if (string.IsNullOrEmpty(user.BankMcpApiKey))
+            throw new InvalidOperationException(
+                "API key do Banco MCP não configurada. Configure nas configurações da conta.");
+
+        return _encryptionService.Decrypt(user.BankMcpApiKey);
+    }
+
     private async Task UpsertTransactionAsync(string userId, string accountId, BankMcpTransaction tx, CancellationToken ct)
     {
-        // Deduplicação por ExternalId — nunca cria duplicata.
         var existing = await _unitOfWork.Transactions.GetByExternalIdAsync(userId, tx.Id);
-        if (existing is not null) return;
+        if (existing is not null)
+            return;
 
-        var transaction = new Transaction
+        await _transactionService.CreateAsync(userId, new CreateTransactionRequestDto
         {
-            UserId = userId,
             AccountId = accountId,
-            Description = tx.Description,
             Amount = Math.Abs(tx.Amount),
+            CategoryId = null,
             Type = tx.Amount < 0 ? TransactionType.Expense : TransactionType.Income,
             Date = tx.Date,
+            Description = tx.Description,
+            Tags = [],
+            Notes = null,
+            ToAccountId = null,
+            Status = TransactionStatus.Completed,
+            ClientRequestId = $"bank-sync:{tx.Id}",
             Source = "bank_sync",
-            ExternalId = tx.Id,
-            IsDeleted = false
-        };
+            ExternalId = tx.Id
+        });
+    }
 
-        await _unitOfWork.Transactions.AddAsync(transaction);
+    private async Task UpsertCreditCardTransactionAsync(string userId, string creditCardId, BankMcpTransaction tx, CancellationToken ct)
+    {
+        var existing = await _unitOfWork.CreditCardTransactions.GetByExternalIdAsync(userId, tx.Id);
+        if (existing is not null)
+            return;
+
+        await _creditCardTransactionService.CreateAsync(userId, new CreateCreditCardTransactionRequestDto
+        {
+            CreditCardId = creditCardId,
+            Description = tx.Description,
+            CategoryId = null,
+            PurchaseDate = tx.Date,
+            TotalAmount = Math.Abs(tx.Amount),
+            TotalInstallments = 1,
+            FirstInstallmentOnCurrentInvoice = true,
+            IsRefund = false,
+            ClientRequestId = null,
+            Source = "bank_sync",
+            ExternalId = tx.Id
+        });
     }
 
     private async Task ApplyCleanSlateAsync(string userId, CancellationToken ct)
@@ -422,13 +680,8 @@ public class BankConnectionService : IBankConnectionService
             Subtype = s.Subtype,
             Number = s.Number,
             MoneyManagerAccountId = s.MoneyManagerAccountId,
+            MoneyManagerEntityType = s.MoneyManagerEntityType,
             LastSyncAt = s.LastSyncAt
         }).ToList()
     };
-}
-
-public sealed class BancoMcpOptions
-{
-    public const string SectionName = "BancoMcp";
-    public string ToolkitId { get; set; } = string.Empty;
 }

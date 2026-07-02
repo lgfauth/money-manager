@@ -47,6 +47,12 @@ public class CreditCardTransaction
     [BsonElement("type")]
     public CreditCardTransactionType Type { get; set; } = CreditCardTransactionType.Purchase;
 
+    [BsonElement("source")]
+    public string Source { get; set; } = "manual";
+
+    [BsonElement("externalId")]
+    public string? ExternalId { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -14,6 +14,7 @@ public interface IRecurringTransactionService
     Task<RecurringTransaction> GetByIdAsync(string userId, string id);
     Task<RecurringTransaction> UpdateAsync(string userId, string id, CreateRecurringTransactionRequestDto request);
     Task DeleteAsync(string userId, string id);
+    Task<int> DeactivateActiveByAccountAsync(string userId, string accountId);
     Task<RecurringProcessingSummary> ProcessDueRecurrencesAsync();
     Task<DateTime> CalculateNextOccurrence(DateTime currentDate, RecurrenceFrequency frequency, int? dayOfMonth = null);
 }
@@ -143,6 +144,31 @@ public class RecurringTransactionService : IRecurringTransactionService
 
         await _unitOfWork.RecurringTransactions.UpdateAsync(recurring);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    public async Task<int> DeactivateActiveByAccountAsync(string userId, string accountId)
+    {
+        var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
+
+        var activeRecurrences = recurrences
+            .Where(r => r.UserId == userId
+                        && r.AccountId == accountId
+                        && !r.IsDeleted
+                        && r.IsActive)
+            .ToList();
+
+        if (activeRecurrences.Count == 0)
+            return 0;
+
+        foreach (var recurring in activeRecurrences)
+        {
+            recurring.IsActive = false;
+            recurring.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.RecurringTransactions.UpdateAsync(recurring);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return activeRecurrences.Count;
     }
 
     public async Task<RecurringProcessingSummary> ProcessDueRecurrencesAsync()

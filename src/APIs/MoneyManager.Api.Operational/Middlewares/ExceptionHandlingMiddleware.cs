@@ -41,6 +41,7 @@ public class ExceptionHandlingMiddleware
     {
         KeyNotFoundException => StatusCodes.Status404NotFound,
         InvalidOperationException => StatusCodes.Status400BadRequest,
+        BankMcpKeyExpiredException => StatusCodes.Status401Unauthorized,
         UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
         ConcurrencyException => StatusCodes.Status409Conflict,
         PremiumRequiredException => StatusCodes.Status403Forbidden,

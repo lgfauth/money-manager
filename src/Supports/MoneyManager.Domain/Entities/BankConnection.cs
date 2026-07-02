@@ -94,6 +94,9 @@ public class SelectedBankAccount
     [BsonElement("moneyManagerAccountId")]
     public string? MoneyManagerAccountId { get; set; }
 
+    [BsonElement("moneyManagerEntityType")]
+    public string MoneyManagerEntityType { get; set; } = "Account";
+
     [BsonElement("lastSyncAt")]
     public DateTime? LastSyncAt { get; set; }
 }

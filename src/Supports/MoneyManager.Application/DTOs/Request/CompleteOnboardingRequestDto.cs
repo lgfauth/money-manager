@@ -22,4 +22,5 @@ public class AccountMappingDto
     public string ExternalAccountNumber { get; set; } = string.Empty;
     public string BankName { get; set; } = string.Empty;
     public string MoneyManagerAccountId { get; set; } = string.Empty; // obrigatório — sem mapping, sem sync
+    public string MoneyManagerEntityType { get; set; } = "Account";
 }

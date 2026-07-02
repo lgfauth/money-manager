@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
 using FluentValidation;
+using MoneyManager.Domain.Interfaces;
 using MoneyManager.Presentation.Extensions;
 using System.IdentityModel.Tokens.Jwt;
 
@@ -17,17 +18,20 @@ public class AuthController : ControllerBase
     private readonly IValidator<RegisterRequestDto> _registerValidator;
     private readonly IValidator<LoginRequestDto> _loginValidator;
     private readonly ITokenBlacklistService _blacklist;
+    private readonly IUnitOfWork _unitOfWork;
 
     public AuthController(
         IAuthService authService,
         IValidator<RegisterRequestDto> registerValidator,
         IValidator<LoginRequestDto> loginValidator,
-        ITokenBlacklistService blacklist)
+        ITokenBlacklistService blacklist,
+        IUnitOfWork unitOfWork)
     {
         _authService = authService;
         _registerValidator = registerValidator;
         _loginValidator = loginValidator;
         _blacklist = blacklist;
+        _unitOfWork = unitOfWork;
     }
 
     [HttpPost("register")]
@@ -99,13 +103,20 @@ public class AuthController : ControllerBase
 
     [HttpGet("me")]
     [Authorize]
-    public IActionResult Me()
+    public async Task<IActionResult> Me()
     {
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         var name = User.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
         var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
 
-        return Ok(new { Id = userId, Name = name, Email = email });
+        var bankMcpKeyExpired = false;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            bankMcpKeyExpired = user?.BankMcpKeyExpiredAt.HasValue == true;
+        }
+
+        return Ok(new { Id = userId, Name = name, Email = email, BankMcpKeyExpired = bankMcpKeyExpired });
     }
 
     [HttpPost("logout")]

@@ -15,4 +15,6 @@ public class CreateTransactionRequestDto
     public string? ToAccountId { get; set; }
     public TransactionStatus Status { get; set; }
     public string? ClientRequestId { get; set; }
+    public string Source { get; set; } = "manual";
+    public string? ExternalId { get; set; }
 }

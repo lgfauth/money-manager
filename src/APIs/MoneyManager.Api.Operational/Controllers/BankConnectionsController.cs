@@ -36,19 +36,23 @@ public class BankConnectionsController : ControllerBase
         return Ok(result);
     }
 
-    // GET /api/bank-connections/invite — URL para o usuário conectar bancos no Banco MCP.
-    [HttpGet("invite")]
-    public async Task<IActionResult> GetInviteUrl(CancellationToken ct)
+    // POST /api/bank-connections/api-key — usuário salva sua key do Banco MCP.
+    [HttpPost("api-key")]
+    public async Task<IActionResult> SaveApiKey([FromBody] SaveBankMcpApiKeyRequestDto request, CancellationToken ct)
     {
         var userId = HttpContext.GetUserId();
         try
         {
-            var result = await _bankConnectionService.GetUserInviteUrlAsync(userId, ct);
+            var result = await _bankConnectionService.SaveBankMcpApiKeyAsync(userId, request.ApiKey, ct);
             return Ok(result);
         }
         catch (PremiumRequiredException)
         {
             return Forbid();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
         }
     }
 

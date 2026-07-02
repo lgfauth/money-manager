@@ -1,7 +1,8 @@
 using System.Globalization;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Configuration;
+using MoneyManager.Domain.Exceptions;
 using MoneyManager.Domain.Interfaces;
 
 namespace MoneyManager.Infrastructure.Services;
@@ -12,20 +13,24 @@ public class BankMcpClient : IBankMcpClient
 {
     private readonly HttpClient _httpClient;
 
-    public BankMcpClient(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public BankMcpClient(IHttpClientFactory httpClientFactory)
     {
         _httpClient = httpClientFactory.CreateClient("bancoMcp");
         _httpClient.BaseAddress = new Uri("https://api.mcp.ai/api/openfinance/");
-
-        var apiKey = configuration["BancoMcp:ApiKey"]
-            ?? throw new InvalidOperationException("BancoMcp:ApiKey não configurada.");
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
     }
 
-    public async Task<BankMcpListConnectionsResult> ListConnectionsAsync(CancellationToken ct)
+    private static HttpRequestMessage BuildRequest(HttpMethod method, string path, string apiKey)
     {
-        var response = await PostAsync<object, ListConnectionsRaw>("connections/list", null, ct);
+        var request = new HttpRequestMessage(method, path);
+        request.Headers.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+        return request;
+    }
+
+    public async Task<BankMcpListConnectionsResult> ListConnectionsAsync(string apiKey, CancellationToken ct)
+    {
+        using var request = BuildRequest(HttpMethod.Post, "connections/list", apiKey);
+        var response = await SendAsync<ListConnectionsRaw>(request, ct);
 
         return new BankMcpListConnectionsResult(
             response.Connections.Select(c => new BankMcpConnection(
@@ -34,9 +39,11 @@ public class BankMcpClient : IBankMcpClient
             response.AddConnectionUrl ?? string.Empty);
     }
 
-    public async Task<BankMcpConnectionStatus> GetConnectionStatusAsync(string item, CancellationToken ct)
+    public async Task<BankMcpConnectionStatus> GetConnectionStatusAsync(string apiKey, string item, CancellationToken ct)
     {
-        var response = await PostAsync<object, GetItemStatusRaw>("connections/status", new { item }, ct);
+        using var request = BuildRequest(HttpMethod.Post, "connections/status", apiKey);
+        request.Content = JsonContent.Create(new { item });
+        var response = await SendAsync<GetItemStatusRaw>(request, ct);
 
         return new BankMcpConnectionStatus(
             response.Id,
@@ -45,19 +52,25 @@ public class BankMcpClient : IBankMcpClient
             response.LastUpdatedAt ?? DateTime.UtcNow);
     }
 
-    public async Task SyncConnectionsAsync(IEnumerable<string> items, CancellationToken ct)
+    public async Task SyncConnectionsAsync(string apiKey, IEnumerable<string> items, CancellationToken ct)
     {
-        await PostAsync<object, object>("connections/sync", new { items }, ct);
+        using var request = BuildRequest(HttpMethod.Post, "connections/sync", apiKey);
+        request.Content = JsonContent.Create(new { items });
+        await SendAsync<object>(request, ct);
     }
 
-    public async Task DisconnectAsync(string item, CancellationToken ct)
+    public async Task DisconnectAsync(string apiKey, string item, CancellationToken ct)
     {
-        await PostAsync<object, object>("connections/disconnect", new { item }, ct);
+        using var request = BuildRequest(HttpMethod.Post, "connections/disconnect", apiKey);
+        request.Content = JsonContent.Create(new { item });
+        await SendAsync<object>(request, ct);
     }
 
-    public async Task<IReadOnlyList<BankMcpAccount>> ListAccountsAsync(string item, CancellationToken ct)
+    public async Task<IReadOnlyList<BankMcpAccount>> ListAccountsAsync(string apiKey, string item, CancellationToken ct)
     {
-        var response = await PostAsync<object, ListAccountsRaw>("accounts/list", new { item }, ct);
+        using var request = BuildRequest(HttpMethod.Post, "accounts/list", apiKey);
+        request.Content = JsonContent.Create(new { item });
+        var response = await SendAsync<ListAccountsRaw>(request, ct);
 
         return response.Results.Select(a => new BankMcpAccount(
             a.AccountId ?? a.Id,                           // account_id (= id)
@@ -67,23 +80,70 @@ public class BankMcpClient : IBankMcpClient
             a.Number ?? string.Empty,
             decimal.Parse(a.Balance ?? "0", CultureInfo.InvariantCulture),
             a.ItemId ?? string.Empty,
-            a.ConnectorId ?? string.Empty)).ToList();
+            a.ConnectorId ?? string.Empty,
+            ParseNullableDecimal(a.CreditData?.CreditLimit),
+            ParseNullableDecimal(a.CreditData?.AvailableCreditLimit),
+            ParseNullableDecimal(a.CreditData?.MinimumPayment),
+            a.CreditData?.Brand,
+            a.CreditData?.Level,
+            ParseNullableDate(a.CreditData?.BalanceDueDate),
+            ParseNullableDate(a.CreditData?.BalanceCloseDate))).ToList();
+    }
+
+    public async Task<BankMcpOpenBillResult?> GetOpenBillAsync(string apiKey, string accountId, CancellationToken ct)
+    {
+        using var request = BuildRequest(HttpMethod.Post, "credit-card-bills/list", apiKey);
+        request.Content = JsonContent.Create(new
+        {
+            account_id = accountId,
+            include_open_bill = true,
+            page_size = 1
+        });
+
+        var response = await SendAsync<CreditCardBillsResponse>(request, ct);
+
+        if (response.OpenBill is null || !response.OpenBill.Available)
+            return null;
+
+        return new BankMcpOpenBillResult(
+            response.OpenBill.Available,
+            ParseNullableDecimal(response.OpenBill.TotalAmount) ?? 0m,
+            ParseNullableDate(response.OpenBill.CloseDate),
+            ParseNullableDate(response.OpenBill.DueDate),
+            response.OpenBill.TransactionCount,
+            ParseNullableDecimal(response.TotalPendingDebt) ?? 0m);
     }
 
     public async Task<BankMcpTransactionPage> ListTransactionsAsync(
-        string accountId, DateTime from, DateTime to,
+        string apiKey, string accountId, DateTime from, DateTime to,
         int page, int pageSize, CancellationToken ct)
     {
-        var body = new
-        {
-            account_id = accountId,
-            from = from.ToString("yyyy-MM-dd"),
-            to = to.ToString("yyyy-MM-dd"),
-            page,
-            page_size = pageSize
-        };
+        ListTransactionsRaw response;
+        var maxAttempts = 3;
 
-        var response = await PostAsync<object, ListTransactionsRaw>("transactions/list", body, ct);
+        for (var attempt = 1; ; attempt++)
+        {
+            using var request = BuildRequest(HttpMethod.Post, "transactions/list", apiKey);
+            request.Content = JsonContent.Create(new
+            {
+                account_id = accountId,
+                from = from.ToString("yyyy-MM-dd"),
+                to = to.ToString("yyyy-MM-dd"),
+                page,
+                page_size = pageSize
+            });
+
+            try
+            {
+                response = await SendAsync<ListTransactionsRaw>(request, ct);
+                break;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests && attempt < maxAttempts)
+            {
+                var delayMs = (int)Math.Pow(2, attempt - 1) * 1000;
+                await Task.Delay(delayMs, ct);
+            }
+        }
 
         return new BankMcpTransactionPage(
             response.Total,
@@ -104,23 +164,21 @@ public class BankMcpClient : IBankMcpClient
 
     // ── Helper genérico ────────────────────────────────────────────────────
 
-    private async Task<TResult> PostAsync<TBody, TResult>(string path, TBody? body, CancellationToken ct)
+    private async Task<TResult> SendAsync<TResult>(HttpRequestMessage request, CancellationToken ct)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, path);
-
-        if (body is not null)
-            request.Content = JsonContent.Create(body);
-
         var httpResponse = await _httpClient.SendAsync(request, ct);
+        if (httpResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new BankMcpKeyExpiredException();
+
         httpResponse.EnsureSuccessStatusCode();
 
         // Desembrulha o envelope { "ok": true, "tool": "...", "result": { ... } }
         var envelope = await httpResponse.Content
             .ReadFromJsonAsync<BankMcpEnvelope<TResult>>(cancellationToken: ct)
-            ?? throw new InvalidOperationException($"Resposta vazia de {path}");
+            ?? throw new InvalidOperationException("Resposta vazia do Banco MCP");
 
         if (!envelope.Ok)
-            throw new InvalidOperationException($"Erro na API do Banco MCP: {path}");
+            throw new InvalidOperationException("Erro na API do Banco MCP");
 
         return envelope.Result;
     }
@@ -161,7 +219,28 @@ public class BankMcpClient : IBankMcpClient
         [property: JsonPropertyName("number")] string? Number,
         [property: JsonPropertyName("balance")] string? Balance,   // STRING — parsear
         [property: JsonPropertyName("item_id")] string? ItemId,
-        [property: JsonPropertyName("connector_id")] string? ConnectorId);
+        [property: JsonPropertyName("connector_id")] string? ConnectorId,
+        [property: JsonPropertyName("creditData")] CreditDataRaw? CreditData);
+
+    private record CreditDataRaw(
+        [property: JsonPropertyName("creditLimit")] JsonElement? CreditLimit,
+        [property: JsonPropertyName("availableCreditLimit")] JsonElement? AvailableCreditLimit,
+        [property: JsonPropertyName("minimumPayment")] JsonElement? MinimumPayment,
+        [property: JsonPropertyName("brand")] string? Brand,
+        [property: JsonPropertyName("level")] string? Level,
+        [property: JsonPropertyName("balanceDueDate")] string? BalanceDueDate,
+        [property: JsonPropertyName("balanceCloseDate")] string? BalanceCloseDate);
+
+    private record CreditCardBillsResponse(
+        [property: JsonPropertyName("open_bill")] OpenBillRaw? OpenBill,
+        [property: JsonPropertyName("total_pending_debt")] string? TotalPendingDebt);
+
+    private record OpenBillRaw(
+        [property: JsonPropertyName("available")] bool Available,
+        [property: JsonPropertyName("total_amount")] string? TotalAmount,
+        [property: JsonPropertyName("close_date")] string? CloseDate,
+        [property: JsonPropertyName("due_date")] string? DueDate,
+        [property: JsonPropertyName("transaction_count")] int TransactionCount);
 
     private record ListTransactionsRaw(
         [property: JsonPropertyName("total")] int Total,
@@ -179,4 +258,45 @@ public class BankMcpClient : IBankMcpClient
         [property: JsonPropertyName("category")] string? Category,
         [property: JsonPropertyName("categoryId")] string? CategoryId,
         [property: JsonPropertyName("operationType")] string? OperationType);
+
+    private static decimal? ParseNullableDecimal(JsonElement? value)
+    {
+        if (!value.HasValue)
+            return null;
+
+        if (value.Value.ValueKind == JsonValueKind.Number && value.Value.TryGetDecimal(out var number))
+            return number;
+
+        if (value.Value.ValueKind == JsonValueKind.String)
+        {
+            var raw = value.Value.GetString();
+            if (string.IsNullOrWhiteSpace(raw))
+                return null;
+
+            if (decimal.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
+                return parsed;
+        }
+
+        return null;
+    }
+
+    private static decimal? ParseNullableDecimal(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        return decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static DateTime? ParseNullableDate(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed)
+            ? parsed
+            : null;
+    }
 }
