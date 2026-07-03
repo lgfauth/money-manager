@@ -307,34 +307,43 @@ public class SubscriptionServiceTests
     }
 
     [Fact]
-    public async Task GetAllForAdminAsync_ShouldSkipDeletedOrMissingUsers()
+    public async Task GetAllForAdminAsync_ShouldListAllUsers_EvenWithoutSubscription()
     {
-        var subs = new List<Subscription>
+        var users = new List<User>
         {
-            new() { UserId = "u1", Status = SubscriptionStatus.Active },
-            new() { UserId = "u2", Status = SubscriptionStatus.Trial },
-            new() { UserId = "u3", Status = SubscriptionStatus.Expired }
+            new() { Id = "u1", Name = "Com Assinatura", Email = "a@a.com" },
+            new() { Id = "u2", Name = "Sem Assinatura", Email = "b@b.com" }
         };
-        _subscriptionRepo.GetAllAsync(0, 10).Returns(subs);
-        _userRepo.GetByIdAsync("u1").Returns(new User { Id = "u1", Name = "Ativo", Email = "a@a.com" });
-        _userRepo.GetByIdAsync("u2").Returns(new User { Id = "u2", IsDeleted = true });
-        _userRepo.GetByIdAsync("u3").Returns((User?)null);
+        _userRepo.GetPagedAsync(0, 10).Returns(users);
+        _subscriptionRepo.GetByUserIdAsync("u1")
+            .Returns(new Subscription { UserId = "u1", Plan = PlanType.Premium, Status = SubscriptionStatus.Active });
+        _subscriptionRepo.GetByUserIdAsync("u2").Returns((Subscription?)null);
 
         var result = await _service.GetAllForAdminAsync(1, 10);
 
-        Assert.Single(result);
+        Assert.Equal(2, result.Count);
+
         Assert.Equal("u1", result[0].UserId);
-        Assert.Equal("Ativo", result[0].Name);
+        Assert.Equal("Premium", result[0].Plan);
+        Assert.Equal("Active", result[0].Status);
+        Assert.True(result[0].IsPremiumActive);
+
+        // Usuário sem documento de assinatura (cadastro anterior ao premium) aparece como Free/Expired.
+        Assert.Equal("u2", result[1].UserId);
+        Assert.Equal("Free", result[1].Plan);
+        Assert.Equal("Expired", result[1].Status);
+        Assert.False(result[1].IsPremiumActive);
+        Assert.Null(result[1].PaymentProvider);
     }
 
     [Fact]
     public async Task GetAllForAdminAsync_ShouldApplyPagination()
     {
-        _subscriptionRepo.GetAllAsync(20, 10).Returns(new List<Subscription>());
+        _userRepo.GetPagedAsync(20, 10).Returns(new List<User>());
 
         await _service.GetAllForAdminAsync(3, 10);
 
-        await _subscriptionRepo.Received(1).GetAllAsync(20, 10);
+        await _userRepo.Received(1).GetPagedAsync(20, 10);
     }
 
     [Fact]
