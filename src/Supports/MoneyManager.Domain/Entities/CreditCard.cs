@@ -19,6 +19,12 @@ public class CreditCard
     [BsonElement("limit")]
     public decimal Limit { get; set; }
 
+    [BsonElement("availableLimit")]
+    public decimal? AvailableLimit { get; set; }
+
+    [BsonElement("brand")]
+    public string? Brand { get; set; }
+
     [BsonElement("closingDay")]
     public int ClosingDay { get; set; }
 

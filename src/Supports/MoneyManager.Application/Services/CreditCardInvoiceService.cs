@@ -13,6 +13,11 @@ public interface ICreditCardInvoiceService
     Task<CreditCardInvoiceDetailResponseDto> GetDetailAsync(string userId, string invoiceId);
     Task<CreditCardInvoiceResponseDto> PayAsync(string userId, string invoiceId, PayCreditCardInvoiceRequestDto request);
     Task<CreditCardInvoiceResponseDto> OpenCurrentInvoiceAsync(string userId, string creditCardId);
+    Task<CreditCardInvoiceResponseDto> UpdateOrCreateOpenInvoiceAsync(
+        string userId,
+        string creditCardId,
+        UpdateOpenInvoiceFromSyncDto request,
+        CancellationToken ct);
 
     Task<CreditCardInvoice> EnsureCurrentOpenInvoiceAsync(string userId, CreditCard card);
     Task<CreditCardInvoice> GetOrCreateInvoiceAsync(string userId, CreditCard card, string referenceMonth, InvoiceStatus initialStatus);
@@ -287,6 +292,38 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         }
 
         throw new InvalidOperationException("Não foi possível encontrar um período disponível para abertura de fatura.");
+    }
+
+    public async Task<CreditCardInvoiceResponseDto> UpdateOrCreateOpenInvoiceAsync(
+        string userId,
+        string creditCardId,
+        UpdateOpenInvoiceFromSyncDto request,
+        CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var card = await _unitOfWork.CreditCards.GetByIdAsync(creditCardId);
+        if (card == null || card.UserId != userId || card.IsDeleted)
+            throw new KeyNotFoundException("Credit card not found");
+
+        var openInvoice = (await _unitOfWork.CreditCardInvoices.GetByCardAsync(userId, creditCardId))
+            .Where(i => i.Status == InvoiceStatus.Open)
+            .OrderBy(i => i.ReferenceMonth)
+            .FirstOrDefault()
+            ?? await EnsureCurrentOpenInvoiceAsync(userId, card);
+
+        openInvoice.TotalAmount = request.TotalAmount;
+        openInvoice.DueDate = request.DueDate;
+        if (request.CloseDate.HasValue)
+            openInvoice.ClosingDate = request.CloseDate.Value;
+
+        openInvoice.Status = InvoiceStatus.Open;
+        openInvoice.UpdatedAt = DateTime.UtcNow;
+
+        await _unitOfWork.CreditCardInvoices.UpdateAsync(openInvoice);
+        await _unitOfWork.SaveChangesAsync();
+
+        return MapToDto(openInvoice, card);
     }
 
     public async Task RecalculateTotalAsync(string userId, string invoiceId)

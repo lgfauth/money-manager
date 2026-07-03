@@ -93,7 +93,10 @@ public class CreditCardTransactionService : ICreditCardTransactionService
                 invoice = await _invoiceService.GetOrCreateInvoiceAsync(userId, card, referenceMonth, nextStatus);
             }
 
-            if (invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.Paid || invoice.Status == InvoiceStatus.Overdue)
+            if (request.Source != "bank_sync"
+                && (invoice.Status == InvoiceStatus.Closed
+                    || invoice.Status == InvoiceStatus.Paid
+                    || invoice.Status == InvoiceStatus.Overdue))
             {
                 throw new InvalidOperationException($"Invoice for {referenceMonth} is not accepting new transactions");
             }
@@ -125,7 +128,9 @@ public class CreditCardTransactionService : ICreditCardTransactionService
                 ParentTransactionId = parentId,
                 Type = request.IsRefund
                     ? MoneyManager.Domain.Enums.CreditCardTransactionType.Refund
-                    : MoneyManager.Domain.Enums.CreditCardTransactionType.Purchase
+                    : MoneyManager.Domain.Enums.CreditCardTransactionType.Purchase,
+                Source = request.Source,
+                ExternalId = request.ExternalId
             };
 
             await _unitOfWork.CreditCardTransactions.AddAsync(transaction);

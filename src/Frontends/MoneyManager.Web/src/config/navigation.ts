@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
-  Wallet,
-  CreditCard,
+  Landmark,
   ArrowLeftRight,
   Tags,
   PieChart,
@@ -18,12 +17,12 @@ export interface NavItem {
   href: string;
   icon: LucideIcon;
   group: "main" | "user";
+  premiumOnly?: boolean;
 }
 
 export const navigationItems: NavItem[] = [
   { title: "Dashboard", href: "/", icon: LayoutDashboard, group: "main" },
-  { title: "Contas", href: "/accounts", icon: Wallet, group: "main" },
-  { title: "Cartões", href: "/credit-cards", icon: CreditCard, group: "main" },
+  { title: "Bancos e Contas", href: "/bancos-e-contas", icon: Landmark, group: "main" },
   { title: "Transações", href: "/transactions", icon: ArrowLeftRight, group: "main" },
   { title: "Categorias", href: "/categories", icon: Tags, group: "main" },
   { title: "Orçamentos", href: "/budgets", icon: PieChart, group: "main" },

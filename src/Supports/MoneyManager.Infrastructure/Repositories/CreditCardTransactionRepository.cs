@@ -54,4 +54,15 @@ public class CreditCardTransactionRepository : Repository<CreditCardTransaction>
 
         return await Collection.Find(filter).ToListAsync();
     }
+
+    public async Task<CreditCardTransaction?> GetByExternalIdAsync(string userId, string externalId)
+    {
+        var filter = Builders<CreditCardTransaction>.Filter.And(
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.UserId, userId),
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.ExternalId, externalId),
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.IsDeleted, false)
+        );
+
+        return await Collection.Find(filter).FirstOrDefaultAsync();
+    }
 }

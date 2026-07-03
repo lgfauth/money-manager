@@ -5,6 +5,7 @@ using MoneyManager.Domain.Interfaces;
 using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Observability;
 using MoneyManager.Infrastructure.Repositories;
+using MoneyManager.Infrastructure.Services;
 using MoneyManager.Infrastructure.WorkerControl;
 using MoneyManager.Observability;
 
@@ -34,6 +35,13 @@ internal static class ApplicationServicesExtensions
         // Push notifications
         services.Configure<VapidSettings>(configuration.GetSection(VapidSettings.SectionName));
         services.AddScoped<IPushService, PushService>();
+
+        // Conexão bancária
+        services.AddHttpClient("bancoMcp");
+        services.AddScoped<IBankMcpClient, BankMcpClient>();
+        services.AddScoped<IEncryptionService, AesEncryptionService>();
+        services.AddScoped<IBankConnectionService, BankConnectionService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
 
         return services;
     }

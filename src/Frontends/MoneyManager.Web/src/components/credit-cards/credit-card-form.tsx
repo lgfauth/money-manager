@@ -19,7 +19,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -34,17 +33,15 @@ import { MoneyInput } from "@/components/shared/money-input";
 import { ColorPicker } from "@/components/shared/color-picker";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
 
-interface CreditCardFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface CreditCardFormContentProps {
   editingCard?: CreditCardResponseDto | null;
+  onSuccess?: () => void;
 }
 
-export function CreditCardForm({
-  open,
-  onOpenChange,
+export function CreditCardFormContent({
   editingCard,
-}: CreditCardFormProps) {
+  onSuccess,
+}: CreditCardFormContentProps) {
   const createCard = useCreateCreditCard();
   const updateCard = useUpdateCreditCard();
 
@@ -85,8 +82,6 @@ export function CreditCardForm({
   };
 
   useEffect(() => {
-    if (!open) return;
-
     resetMutationsRef.current();
 
     if (editingCard) {
@@ -110,17 +105,17 @@ export function CreditCardForm({
         currency: DEFAULT_CURRENCY,
       });
     }
-  }, [open, editingCard, reset]);
+  }, [editingCard, reset]);
 
   const onSubmit = (data: CreditCardFormData) => {
     if (isEditing) {
       updateCard.mutate(
         { id: editingCard!.id, data },
-        { onSuccess: () => onOpenChange(false) }
+        { onSuccess: () => onSuccess?.() }
       );
     } else {
       createCard.mutate(data, {
-        onSuccess: () => onOpenChange(false),
+        onSuccess: () => onSuccess?.(),
       });
     }
   };
@@ -128,6 +123,177 @@ export function CreditCardForm({
   const isPending = createCard.isPending || updateCard.isPending;
 
   const dayOptions = Array.from({ length: 28 }, (_, i) => i + 1);
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <FormErrorSummary
+        errors={errors}
+        submitCount={submitCount}
+        apiError={mutationError}
+      />
+
+      <div className="space-y-2">
+        <Label htmlFor="name">Nome</Label>
+        <Input
+          id="name"
+          placeholder="Ex: Nubank Platinum"
+          {...register("name")}
+        />
+        {errors.name && (
+          <p className="text-xs text-destructive">{errors.name.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label>Limite</Label>
+        <MoneyInput
+          value={limitValue}
+          onChange={(v) => setValue("limit", v)}
+          currencyCode={selectedCurrency}
+        />
+        {errors.limit && (
+          <p className="text-xs text-destructive">{errors.limit.message}</p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label>Dia de fechamento</Label>
+          <Select
+            value={String(closingDay)}
+            onValueChange={(v) =>
+              v && setValue("closingDay", Number(v), { shouldValidate: true })
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {dayOptions.map((d) => (
+                <SelectItem key={d} value={String(d)}>
+                  {d}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.closingDay && (
+            <p className="text-xs text-destructive">
+              {errors.closingDay.message}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label>Dia de vencimento</Label>
+          <Select
+            value={String(billingDueDay)}
+            onValueChange={(v) =>
+              v &&
+              setValue("billingDueDay", Number(v), { shouldValidate: true })
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
+            <SelectContent>
+              {dayOptions.map((d) => (
+                <SelectItem key={d} value={String(d)}>
+                  {d}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.billingDueDay && (
+            <p className="text-xs text-destructive">
+              {errors.billingDueDay.message}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Melhor dia de compra (opcional)</Label>
+        <Select
+          value={bestPurchaseDay ? String(bestPurchaseDay) : ""}
+          onValueChange={(v) =>
+            setValue("bestPurchaseDay", v ? Number(v) : undefined, {
+              shouldValidate: true,
+            })
+          }
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue
+              placeholder={`Padrão: dia ${closingDay} (fechamento)`}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {dayOptions.map((d) => (
+              <SelectItem key={d} value={String(d)}>
+                {d}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">
+          Se não informado, usa o dia de fechamento.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="currency">Moeda</Label>
+        <Select
+          value={selectedCurrency}
+          onValueChange={(v) => v && setValue("currency", v)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione">
+              {(value: string) => {
+                const c = currencies.find((x) => x.code === value);
+                return c ? `${c.symbol} — ${c.name}` : null;
+              }}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {currencies.map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                {c.symbol} — {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Cor</Label>
+        <ColorPicker
+          value={selectedColor}
+          onChange={(c) => setValue("color", c)}
+        />
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending
+          ? "Salvando..."
+          : isEditing
+            ? "Salvar Alterações"
+            : "Criar Cartão"}
+      </Button>
+    </form>
+  );
+}
+
+interface CreditCardFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingCard?: CreditCardResponseDto | null;
+}
+
+export function CreditCardForm({
+  open,
+  onOpenChange,
+  editingCard,
+}: CreditCardFormProps) {
+  const isEditing = !!editingCard;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -143,162 +309,12 @@ export function CreditCardForm({
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-4">
-          <FormErrorSummary
-            errors={errors}
-            submitCount={submitCount}
-            apiError={mutationError}
+        <div className="px-4 pb-4">
+          <CreditCardFormContent
+            editingCard={editingCard}
+            onSuccess={() => onOpenChange(false)}
           />
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input
-              id="name"
-              placeholder="Ex: Nubank Platinum"
-              {...register("name")}
-            />
-            {errors.name && (
-              <p className="text-xs text-destructive">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Limite</Label>
-            <MoneyInput
-              value={limitValue}
-              onChange={(v) => setValue("limit", v)}
-              currencyCode={selectedCurrency}
-            />
-            {errors.limit && (
-              <p className="text-xs text-destructive">{errors.limit.message}</p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Dia de fechamento</Label>
-              <Select
-                value={String(closingDay)}
-                onValueChange={(v) =>
-                  v && setValue("closingDay", Number(v), { shouldValidate: true })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dayOptions.map((d) => (
-                    <SelectItem key={d} value={String(d)}>
-                      {d}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.closingDay && (
-                <p className="text-xs text-destructive">
-                  {errors.closingDay.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Dia de vencimento</Label>
-              <Select
-                value={String(billingDueDay)}
-                onValueChange={(v) =>
-                  v &&
-                  setValue("billingDueDay", Number(v), { shouldValidate: true })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dayOptions.map((d) => (
-                    <SelectItem key={d} value={String(d)}>
-                      {d}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.billingDueDay && (
-                <p className="text-xs text-destructive">
-                  {errors.billingDueDay.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Melhor dia de compra (opcional)</Label>
-            <Select
-              value={bestPurchaseDay ? String(bestPurchaseDay) : ""}
-              onValueChange={(v) =>
-                setValue("bestPurchaseDay", v ? Number(v) : undefined, {
-                  shouldValidate: true,
-                })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue
-                  placeholder={`Padrão: dia ${closingDay} (fechamento)`}
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {dayOptions.map((d) => (
-                  <SelectItem key={d} value={String(d)}>
-                    {d}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-[11px] text-muted-foreground">
-              Se não informado, usa o dia de fechamento.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="currency">Moeda</Label>
-            <Select
-              value={selectedCurrency}
-              onValueChange={(v) => v && setValue("currency", v)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione">
-                  {(value: string) => {
-                    const c = currencies.find((x) => x.code === value);
-                    return c ? `${c.symbol} — ${c.name}` : null;
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.symbol} — {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Cor</Label>
-            <ColorPicker
-              value={selectedColor}
-              onChange={(c) => setValue("color", c)}
-            />
-          </div>
-
-          <SheetFooter className="px-0">
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending
-                ? "Salvando..."
-                : isEditing
-                  ? "Salvar Alterações"
-                  : "Criar Cartão"}
-            </Button>
-          </SheetFooter>
-        </form>
+        </div>
       </SheetContent>
     </Sheet>
   );

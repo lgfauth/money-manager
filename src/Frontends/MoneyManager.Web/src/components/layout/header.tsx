@@ -9,6 +9,7 @@ import {
   MessageSquarePlus,
   Eye,
   EyeOff,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,6 +32,13 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useMoneyPrivacyStore } from "@/stores/money-privacy-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useLogout } from "@/hooks/use-auth";
+import { useIsPremium } from "@/hooks/use-subscription";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Breadcrumb } from "./breadcrumb";
 
 export function Header() {
@@ -41,6 +49,7 @@ export function Header() {
   const handleLogout = useLogout();
   const pathname = usePathname();
   const router = useRouter();
+  const isPremium = useIsPremium();
 
   const displayName = getUserDisplayName(
     profile?.fullName || profile?.name || user?.name,
@@ -68,22 +77,41 @@ export function Header() {
         <Breadcrumb pathname={pathname} />
       </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={toggleMoneyVisibility}
-        aria-label={hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
-        title={hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
-      >
-        {hideMoneyValues ? (
-          <EyeOff className="h-5 w-5" />
-        ) : (
-          <Eye className="h-5 w-5" />
-        )}
-        <span className="sr-only">
-          {hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
-        </span>
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleMoneyVisibility}
+          aria-label={hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
+          title={hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
+        >
+          {hideMoneyValues ? (
+            <EyeOff className="h-5 w-5" />
+          ) : (
+            <Eye className="h-5 w-5" />
+          )}
+          <span className="sr-only">
+            {hideMoneyValues ? "Mostrar valores" : "Ocultar valores"}
+          </span>
+        </Button>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger render={<Button variant="ghost" size="icon" aria-label="Status premium" />}>
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-400">
+                <Star
+                  className={`h-3.5 w-3.5 text-amber-400 ${
+                    isPremium ? "fill-slate-300" : "fill-transparent"
+                  }`}
+                />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isPremium ? "Premium ativo" : "Inativo"}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
 
       {/* User menu */}
       <DropdownMenu>

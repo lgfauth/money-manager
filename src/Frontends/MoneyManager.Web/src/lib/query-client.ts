@@ -42,4 +42,10 @@ export const queryKeys = {
   financialHealthSnapshotHistory: (year: number) =>
     ["financial-health", "snapshots", year] as const,
   financialHealthScore: ["financial-health", "score"] as const,
+  subscription: ["subscription"] as const,
+  bankConnections: ["bank-connections"] as const,
+  bankConnectionInvite: ["bank-connections", "invite"] as const,
+  bankConnectionsAvailable: ["bank-connections", "available"] as const,
+  bankConnectionAccounts: (id: string) =>
+    ["bank-connections", id, "accounts"] as const,
 };

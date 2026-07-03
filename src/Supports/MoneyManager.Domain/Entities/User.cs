@@ -59,4 +59,12 @@ public class User
     [BsonElement("refreshTokenExpiry")]
     [BsonIgnoreIfNull]
     public DateTime? RefreshTokenExpiry { get; set; }
+
+    [BsonElement("bankMcpApiKey")]
+    [BsonIgnoreIfNull]
+    public string? BankMcpApiKey { get; set; }
+
+    [BsonElement("bankMcpKeyExpiredAt")]
+    [BsonIgnoreIfNull]
+    public DateTime? BankMcpKeyExpiredAt { get; set; }
 }

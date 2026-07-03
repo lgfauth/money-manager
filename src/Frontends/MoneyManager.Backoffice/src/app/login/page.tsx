@@ -1,8 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { login } from "@/lib/admin-api";
-import { saveAdminToken } from "@/lib/admin-auth";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("admin");
@@ -19,11 +17,24 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const result = await login(username, password);
-      saveAdminToken(result.accessToken);
-      window.location.href = "/";
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const formData = new FormData();
+      formData.set("username", username);
+      formData.set("password", password);
+
+      const response = await fetch("/api/login", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await response.json()) as { ok: boolean; error?: string };
+
+      if (data.ok) {
+        window.location.href = "/";
+      } else {
+        setError(data.error ?? "Credenciais inválidas");
+      }
+    } catch {
+      setError("Erro ao conectar com o servidor");
     } finally {
       setIsSubmitting(false);
     }

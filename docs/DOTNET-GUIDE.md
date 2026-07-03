@@ -6,14 +6,14 @@ The .NET solution (`MoneyManager.sln`) is organized into four project groups und
 
 | Project | Type | Role |
 |---|---|---|
-| `src/APIs/MoneyManager.Api.Operational` | ASP.NET Core Web API (.NET 9) | Main user-facing API; handles auth, transactions, budgets, accounts, credit cards, reports, push notifications, AI receipt analysis |
-| `src/APIs/MoneyManager.Api.Backoffice` | ASP.NET Core Web API (.NET 9) | Internal admin API; serves the observability portal (jobs, audit, financial maintenance, legal documents) |
-| `src/Supports/MoneyManager.Domain` | Class Library (.NET 9) | Entities, enums, domain exceptions, repository and unit-of-work interfaces. Zero external dependencies |
-| `src/Supports/MoneyManager.Application` | Class Library (.NET 9) | Application services, DTOs, FluentValidation validators |
-| `src/Supports/MoneyManager.Infrastructure` | Class Library (.NET 9) | MongoDB repositories, JWT token service, AI service, push notification service, process log store, worker command queue |
-| `src/Supports/MoneyManager.Observability` | Class Library (.NET 9) | Structured process logging (`IProcessLogger`, `ProcessLogger`, `IProcessLogStore`) |
-| `src/Workers/MoneyManager.Worker.Operational` | .NET Generic Host Worker (.NET 9) | Background jobs: recurring transaction processing, daily reminders, credit-card invoice closure |
-| `tests/MoneyManager.Tests` | xUnit Test Project (.NET 9) | Unit tests covering Application services and Presentation controllers |
+| `src/APIs/MoneyManager.Api.Operational` | ASP.NET Core Web API (.NET 10) | Main user-facing API; handles auth, transactions, budgets, accounts, credit cards, reports, push notifications, AI receipt analysis |
+| `src/APIs/MoneyManager.Api.Backoffice` | ASP.NET Core Web API (.NET 10) | Internal admin API; serves the observability portal (jobs, audit, financial maintenance, legal documents) |
+| `src/Supports/MoneyManager.Domain` | Class Library (.NET 10) | Entities, enums, domain exceptions, repository and unit-of-work interfaces. Zero external dependencies |
+| `src/Supports/MoneyManager.Application` | Class Library (.NET 10) | Application services, DTOs, FluentValidation validators |
+| `src/Supports/MoneyManager.Infrastructure` | Class Library (.NET 10) | MongoDB repositories, JWT token service, AI service, push notification service, process log store, worker command queue |
+| `src/Supports/MoneyManager.Observability` | Class Library (.NET 10) | Structured process logging (`IProcessLogger`, `ProcessLogger`, `IProcessLogStore`) |
+| `src/Workers/MoneyManager.Worker.Operational` | .NET Generic Host Worker (.NET 10) | Background jobs: recurring transaction processing, daily reminders, credit-card invoice closure |
+| `tests/MoneyManager.Tests` | xUnit Test Project (.NET 10) | Unit tests covering Application services and Presentation controllers |
 
 ---
 
@@ -825,7 +825,7 @@ return MapToDto(category);
 
 ## 7. .NET Version Notes
 
-This codebase targets **net9.0** for all projects. The following .NET 9 features are already in use:
+This codebase targets **net10.0** for all projects. The following .NET 10 features are already in use:
 
 - **Primary constructors** — used in Worker services:
   ```csharp

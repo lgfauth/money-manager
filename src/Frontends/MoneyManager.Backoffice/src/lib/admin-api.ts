@@ -1,6 +1,7 @@
 "use client";
 
 import { clearAdminToken, getAdminToken } from "@/lib/admin-auth";
+import type { AdminUserSubscriptionDto } from "@/types/subscription";
 
 const rawApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL?.trim();
 const API_URL = rawApiUrl && !rawApiUrl.includes("__NEXT_PUBLIC_ADMIN_API_URL_PLACEHOLDER__")
@@ -377,6 +378,26 @@ export async function updateLegalDocument(slug: string, body: UpdateLegalDocumen
 
 export async function previewLegalDocument(content: string): Promise<PreviewLegalDocumentResponse> {
   return postJson<PreviewLegalDocumentResponse, PreviewLegalDocumentRequest>("/api/admin/documents/preview", { content });
+}
+
+// ── Assinaturas (Premium) ──────────────────────────────────────────────────────
+
+export async function getSubscriptions(page = 1, pageSize = 20): Promise<AdminUserSubscriptionDto[]> {
+  return request<AdminUserSubscriptionDto[]>(`/api/admin/subscriptions?page=${page}&pageSize=${pageSize}`);
+}
+
+export async function activatePremium(userId: string, durationDays: number): Promise<AdminUserSubscriptionDto> {
+  return postJson<AdminUserSubscriptionDto, { durationDays: number }>(
+    `/api/admin/subscriptions/${encodeURIComponent(userId)}/activate`,
+    { durationDays },
+  );
+}
+
+export async function revokePremium(userId: string): Promise<AdminUserSubscriptionDto> {
+  return postJson<AdminUserSubscriptionDto, Record<string, never>>(
+    `/api/admin/subscriptions/${encodeURIComponent(userId)}/revoke`,
+    {},
+  );
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────

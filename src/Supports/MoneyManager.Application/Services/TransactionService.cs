@@ -129,7 +129,9 @@ public class TransactionService : ITransactionService
             Notes = request.Notes,
             ToAccountId = request.ToAccountId,
             Status = request.Status,
-            ClientRequestId = request.ClientRequestId
+            ClientRequestId = request.ClientRequestId,
+            Source = request.Source,
+            ExternalId = request.ExternalId
         };
 
         await _unitOfWork.Transactions.AddAsync(transaction);

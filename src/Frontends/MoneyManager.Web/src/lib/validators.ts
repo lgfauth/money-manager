@@ -160,6 +160,13 @@ export const recurringSchema = z.object({
   notes: z.string().optional(),
 });
 
+export const bankMcpApiKeySchema = z.object({
+  apiKey: z
+    .string()
+    .min(1, "API key obrigatória")
+    .regex(/^sk_live_/, "A API key deve começar com sk_live_"),
+});
+
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type CategoryFormData = z.infer<typeof categorySchema>;
@@ -172,3 +179,4 @@ export type CreditCardFormData = z.infer<typeof creditCardSchema>;
 export type CreditCardTransactionFormData = z.infer<typeof creditCardTransactionSchema>;
 export type PayCreditCardInvoiceFormData = z.infer<typeof payCreditCardInvoiceSchema>;
 export type UpdateCreditCardTransactionFormData = z.infer<typeof updateCreditCardTransactionSchema>;
+export type BankMcpApiKeyFormData = z.infer<typeof bankMcpApiKeySchema>;

@@ -25,18 +25,21 @@ public class TokenService : ITokenService
         _expirationHours = int.Parse(jwtSettings["ExpirationHours"] ?? "24");
     }
 
-    public string GenerateToken(string userId, string email, string name)
+    public string GenerateToken(string userId, string email, string name, IEnumerable<Claim>? extraClaims = null)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(ClaimTypes.NameIdentifier, userId),
             new Claim(ClaimTypes.Email, email),
             new Claim(ClaimTypes.Name, name)
         };
+
+        if (extraClaims is not null)
+            claims.AddRange(extraClaims);
 
         var token = new JwtSecurityToken(
             issuer: _issuer,

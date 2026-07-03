@@ -47,7 +47,32 @@ MoneyManager/
 - **Docker** e **Docker Compose** (para executar com containers)
 - **MongoDB** (local ou via Docker)
 
-### Opção 1: Executar Localmente
+### Opção 1: Script único (`dev.sh`) — recomendado
+
+Na raiz do repositório, `./dev.sh` sobe os cenários de desenvolvimento com um único comando, cuidando de API(s) .NET e frontend(s) Next.js juntos:
+
+```bash
+./dev.sh admin         # Ambiente administrativo: API Backoffice + Frontend Backoffice
+./dev.sh operational   # Ambiente operativo: API Operacional + Frontend Web
+./dev.sh all           # As 4 aplicações acima
+```
+
+Pré-requisitos:
+- **dotnet SDK** e **node/npm** instalados
+- **MongoDB** acessível em `mongodb://localhost:27017` (ex.: `docker compose up -d mongodb`)
+- `npm ci` já executado em `src/Frontends/MoneyManager.Web` e `src/Frontends/MoneyManager.Backoffice` (o script roda automaticamente se `node_modules` estiver ausente)
+
+O script inicia cada processo em background, exibe os logs no mesmo terminal e encerra todos juntos com `Ctrl+C`. Se `Permission denied`, rode `chmod +x dev.sh` uma vez.
+
+URLs por cenário:
+
+| Cenário | API | Frontend |
+|---|---|---|
+| `admin` | http://localhost:5243 | http://localhost:3010 |
+| `operational` | http://localhost:5000 | http://localhost:3000 |
+| `all` | ambas acima | ambos acima |
+
+### Opção 2: Executar Localmente (por processo)
 
 1. **Restaurar dependências:**
    ```bash

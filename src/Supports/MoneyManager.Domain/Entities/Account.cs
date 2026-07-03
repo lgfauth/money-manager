@@ -41,6 +41,11 @@ public class Account
     [BsonElement("version")]
     public int Version { get; set; } = 1;
 
+    // Campo write-only para exibição/auditoria. NÃO usar para decidir vínculo
+    // ou sincronização — fonte de verdade é BankConnection.SelectedAccounts.
+    [BsonElement("externalAccountId")]
+    public string? ExternalAccountId { get; set; }
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 }

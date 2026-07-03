@@ -76,11 +76,48 @@ public class MongoContext
                 .Ascending(t => t.UserId)
                 .Ascending(t => t.IsDeleted)
         ));
+
+        // Replace legacy sparse indexes with partial indexes that ignore nulls safely.
+        await DropIndexIfExistsAsync(transactionsCollection, "userId_1_clientRequestId_1");
         await transactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Transaction>(
             Builders<MoneyManager.Domain.Entities.Transaction>.IndexKeys
                 .Ascending(t => t.UserId)
                 .Ascending(t => t.ClientRequestId),
-            new CreateIndexOptions { Unique = true, Sparse = true }
+            new CreateIndexOptions<MoneyManager.Domain.Entities.Transaction>
+            {
+                Unique = true,
+                PartialFilterExpression = new BsonDocument
+                {
+                    {
+                        "clientRequestId",
+                        new BsonDocument
+                        {
+                            { "$type", "string" }
+                        }
+                    }
+                }
+            }
+        ));
+
+        await DropIndexIfExistsAsync(transactionsCollection, "userId_1_externalId_1");
+        await transactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Transaction>(
+            Builders<MoneyManager.Domain.Entities.Transaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.ExternalId),
+            new CreateIndexOptions<MoneyManager.Domain.Entities.Transaction>
+            {
+                Unique = true,
+                PartialFilterExpression = new BsonDocument
+                {
+                    {
+                        "externalId",
+                        new BsonDocument
+                        {
+                            { "$type", "string" }
+                        }
+                    }
+                }
+            }
         ));
 
         // Create accounts collection
@@ -104,6 +141,27 @@ public class MongoContext
             Builders<MoneyManager.Domain.Entities.Budget>.IndexKeys
                 .Ascending(b => b.UserId)
                 .Ascending(b => b.Month)
+        ));
+
+        // Create bank_connections collection
+        if (!collectionNames.Contains("bank_connections"))
+        {
+            await _database.CreateCollectionAsync("bank_connections");
+        }
+        var bankConnectionsCollection = _database.GetCollection<MoneyManager.Domain.Entities.BankConnection>("bank_connections");
+        await bankConnectionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.BankConnection>(
+            Builders<MoneyManager.Domain.Entities.BankConnection>.IndexKeys
+                .Ascending(c => c.UserId)
+                .Ascending(c => c.IsDeleted)
+        ));
+        await bankConnectionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.BankConnection>(
+            Builders<MoneyManager.Domain.Entities.BankConnection>.IndexKeys
+                .Ascending(c => c.ExternalConnectionId)
+        ));
+        await bankConnectionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.BankConnection>(
+            Builders<MoneyManager.Domain.Entities.BankConnection>.IndexKeys
+                .Ascending(c => c.Status)
+                .Ascending(c => c.IsDeleted)
         ));
 
         // Create push_subscriptions collection
@@ -186,6 +244,27 @@ public class MongoContext
                 .Ascending(t => t.UserId)
                 .Ascending(t => t.ParentTransactionId)
         ));
+        await creditCardTransactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardTransaction>(
+            Builders<MoneyManager.Domain.Entities.CreditCardTransaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.ExternalId),
+            new CreateIndexOptions { Sparse = true }
+        ));
+
+        // Create subscriptions collection
+        if (!collectionNames.Contains("subscriptions"))
+        {
+            await _database.CreateCollectionAsync("subscriptions");
+        }
+        var subscriptionsCollection = _database.GetCollection<MoneyManager.Domain.Entities.Subscription>("subscriptions");
+        await subscriptionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Subscription>(
+            Builders<MoneyManager.Domain.Entities.Subscription>.IndexKeys.Ascending(s => s.UserId),
+            new CreateIndexOptions { Unique = true, Sparse = true }
+        ));
+        await subscriptionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Subscription>(
+            Builders<MoneyManager.Domain.Entities.Subscription>.IndexKeys.Ascending(s => s.ExternalSubscriptionId),
+            new CreateIndexOptions { Sparse = true }
+        ));
     }
 
     public async Task TestConnectionAsync()
@@ -217,5 +296,17 @@ public class MongoContext
     public async Task CreateIndexesAsync()
     {
         await CreateCollectionsAndIndexesAsync();
+    }
+
+    private static async Task DropIndexIfExistsAsync<T>(IMongoCollection<T> collection, string indexName)
+    {
+        try
+        {
+            await collection.Indexes.DropOneAsync(indexName);
+        }
+        catch (MongoCommandException ex) when (ex.CodeName == "IndexNotFound")
+        {
+            // Index doesn't exist yet; nothing to migrate.
+        }
     }
 }

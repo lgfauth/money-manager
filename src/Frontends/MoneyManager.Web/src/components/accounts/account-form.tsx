@@ -16,7 +16,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -31,23 +30,21 @@ import { MoneyInput } from "@/components/shared/money-input";
 import { ColorPicker } from "@/components/shared/color-picker";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
 
-interface AccountFormProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  editingAccount?: AccountResponseDto | null;
-}
-
 const accountTypeLabels: Record<string, string> = {
   Checking: "Conta Corrente",
   Savings: "Poupança",
   Cash: "Dinheiro",
 };
 
-export function AccountForm({
-  open,
-  onOpenChange,
+interface AccountFormContentProps {
+  editingAccount?: AccountResponseDto | null;
+  onSuccess?: () => void;
+}
+
+export function AccountFormContent({
   editingAccount,
-}: AccountFormProps) {
+  onSuccess,
+}: AccountFormContentProps) {
   const createAccount = useCreateAccount();
   const updateAccount = useUpdateAccount();
 
@@ -82,18 +79,7 @@ export function AccountForm({
     updateAccount.reset();
   };
 
-  const parseOptionalNumber = (value: string) => {
-    if (value === "") {
-      return undefined;
-    }
-
-    const parsedValue = Number(value);
-    return Number.isNaN(parsedValue) ? undefined : parsedValue;
-  };
-
   useEffect(() => {
-    if (!open) return;
-
     resetMutationsRef.current();
 
     if (editingAccount) {
@@ -113,22 +99,122 @@ export function AccountForm({
         color: "#00C896",
       });
     }
-  }, [open, editingAccount, reset]);
+  }, [editingAccount, reset]);
 
   const onSubmit = (data: AccountFormData) => {
     if (isEditing) {
       updateAccount.mutate(
         { id: editingAccount!.id, data },
-        { onSuccess: () => onOpenChange(false) }
+        { onSuccess: () => onSuccess?.() }
       );
     } else {
       createAccount.mutate(data, {
-        onSuccess: () => onOpenChange(false),
+        onSuccess: () => onSuccess?.(),
       });
     }
   };
 
   const isPending = createAccount.isPending || updateAccount.isPending;
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <FormErrorSummary
+        errors={errors}
+        submitCount={submitCount}
+        apiError={mutationError}
+      />
+
+      <div className="space-y-2">
+        <Label htmlFor="name">Nome</Label>
+        <Input
+          id="name"
+          placeholder="Ex: Nubank"
+          {...register("name")}
+        />
+        {errors.name && (
+          <p className="text-xs text-destructive">{errors.name.message}</p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="type">Tipo</Label>
+        <Select
+          value={selectedType}
+          onValueChange={(v) => v && setValue("type", v as AccountType)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={accountTypeLabels[selectedType] ?? "Selecione"} />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.values(AccountType).map((t) => (
+              <SelectItem key={t} value={t}>
+                {accountTypeLabels[t]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Saldo Inicial</Label>
+        <MoneyInput
+          value={balanceValue}
+          onChange={(v) => setValue("initialBalance", v)}
+          currencyCode={selectedCurrency}
+          allowNegative
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="currency">Moeda</Label>
+        <Select
+          value={selectedCurrency}
+          onValueChange={(v) => v && setValue("currency", v)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Selecione" />
+          </SelectTrigger>
+          <SelectContent>
+            {currencies.map((c) => (
+              <SelectItem key={c.code} value={c.code}>
+                {c.symbol} — {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Cor</Label>
+        <ColorPicker
+          value={selectedColor}
+          onChange={(c) => setValue("color", c)}
+        />
+      </div>
+
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending
+          ? "Salvando..."
+          : isEditing
+            ? "Salvar Alterações"
+            : "Criar Conta"}
+      </Button>
+    </form>
+  );
+}
+
+interface AccountFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  editingAccount?: AccountResponseDto | null;
+}
+
+export function AccountForm({
+  open,
+  onOpenChange,
+  editingAccount,
+}: AccountFormProps) {
+  const isEditing = !!editingAccount;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -142,91 +228,12 @@ export function AccountForm({
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 px-4">
-          <FormErrorSummary
-            errors={errors}
-            submitCount={submitCount}
-            apiError={mutationError}
+        <div className="px-4 pb-4">
+          <AccountFormContent
+            editingAccount={editingAccount}
+            onSuccess={() => onOpenChange(false)}
           />
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input
-              id="name"
-              placeholder="Ex: Nubank"
-              {...register("name")}
-            />
-            {errors.name && (
-              <p className="text-xs text-destructive">{errors.name.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipo</Label>
-            <Select
-              value={selectedType}
-              onValueChange={(v) => v && setValue("type", v as AccountType)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder={accountTypeLabels[selectedType] ?? "Selecione"} />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(AccountType).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {accountTypeLabels[t]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Saldo Inicial</Label>
-            <MoneyInput
-              value={balanceValue}
-              onChange={(v) => setValue("initialBalance", v)}
-              currencyCode={selectedCurrency}
-              allowNegative
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="currency">Moeda</Label>
-            <Select
-              value={selectedCurrency}
-              onValueChange={(v) => v && setValue("currency", v)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c.code} value={c.code}>
-                    {c.symbol} — {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Cor</Label>
-            <ColorPicker
-              value={selectedColor}
-              onChange={(c) => setValue("color", c)}
-            />
-          </div>
-
-          <SheetFooter className="px-0">
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending
-                ? "Salvando..."
-                : isEditing
-                  ? "Salvar Alterações"
-                  : "Criar Conta"}
-            </Button>
-          </SheetFooter>
-        </form>
+        </div>
       </SheetContent>
     </Sheet>
   );

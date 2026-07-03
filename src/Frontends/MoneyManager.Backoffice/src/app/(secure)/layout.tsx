@@ -13,6 +13,7 @@ export default function SecureLayout({ children }: { children: React.ReactNode }
           <Link href="/financial-maintenance">Manutencao Financeira</Link>
           <Link href="/audit">Auditoria</Link>
           <Link href="/documents">Documentos Legais</Link>
+          <Link href="/subscriptions">Premium</Link>
         </nav>
       </aside>
       <main className="admin-main">

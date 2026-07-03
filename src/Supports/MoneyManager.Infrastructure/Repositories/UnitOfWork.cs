@@ -23,6 +23,8 @@ public class UnitOfWork : IUnitOfWork
     private IFinancialHealthSettingsRepository? _financialHealthSettings;
     private IPatrimonyBucketRepository? _patrimonyBuckets;
     private IMonthlySnapshotRepository? _monthlySnapshots;
+    private ISubscriptionRepository? _subscriptionRepository;
+    private IBankConnectionRepository? _bankConnectionRepository;
 
     public UnitOfWork(MongoContext context)
     {
@@ -44,6 +46,8 @@ public class UnitOfWork : IUnitOfWork
     public IFinancialHealthSettingsRepository FinancialHealthSettings => _financialHealthSettings ??= new FinancialHealthSettingsRepository(_context);
     public IPatrimonyBucketRepository PatrimonyBuckets => _patrimonyBuckets ??= new PatrimonyBucketRepository(_context);
     public IMonthlySnapshotRepository MonthlySnapshots => _monthlySnapshots ??= new MonthlySnapshotRepository(_context);
+    public ISubscriptionRepository Subscriptions => _subscriptionRepository ??= new SubscriptionRepository(_context);
+    public IBankConnectionRepository BankConnections => _bankConnectionRepository ??= new BankConnectionRepository(_context);
 
     public async Task<int> SaveChangesAsync()
     {

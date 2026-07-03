@@ -5,6 +5,7 @@ interface DecodedUser {
   id: string;
   name: string;
   email: string;
+  bankMcpKeyExpired?: boolean;
 }
 
 interface AuthState {

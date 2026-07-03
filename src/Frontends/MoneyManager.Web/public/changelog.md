@@ -1,3 +1,81 @@
+# Versão 1.1.0-beta
+
+*Lançamento: 03 de julho de 2026*
+
+---
+
+## ✨ Novidades
+
+### ⭐ Conta Premium — fase de testes aberta!
+Chegou o **MoneyManager Premium**! Ele estreia em **período de teste**: durante esta fase, o acesso é liberado manualmente pela nossa equipe, sem nenhuma cobrança, para colhermos feedback antes da abertura oficial.
+
+Como funciona nesta fase:
+- O acesso premium é concedido pela equipe por um período determinado — depois é só usar normalmente.
+- Um novo ícone de **estrela** ⭐ no topo da tela mostra se o seu premium está ativo. Passe o mouse (ou toque) para conferir o status.
+- Quando o período termina, sua conta volta ao plano gratuito automaticamente — nada quebra, nenhum dado é perdido.
+
+E o que o premium libera? A grande estrela desta versão. 👇
+
+---
+
+### 🏦 Sincronização automática com seu banco (Open Banking)
+Cansado de digitar transação por transação? Nós também. Agora usuários premium podem **conectar suas contas bancárias e cartões de crédito** ao MoneyManager via **Open Finance Brasil**, usando a API do **Banco MCP**, e deixar que o sistema se atualize sozinho. 🤖
+
+**O que é sincronizado automaticamente:**
+- **Transações** das contas conectadas, importadas direto do banco — sem duplicar nada, mesmo que a mesma transação apareça em várias sincronizações.
+- **Saldo das contas**, ajustado para bater com o valor real do banco.
+- **Compras no cartão de crédito**, lançadas direto na fatura correspondente.
+- **Dados do cartão**: limite total, limite disponível, bandeira, dia de vencimento e de fechamento — tudo atualizado a partir do banco.
+- **Fatura aberta do cartão**: valor total e data de vencimento, direto da fonte.
+
+**Quando sincroniza:**
+- Automaticamente, **4 vezes ao dia** (2h, 9h, 14h e 20h, horário de Brasília).
+- Ou na hora que você quiser, pelo botão **atualizar agora** 🔄 de cada banco conectado.
+
+**Assistente de conexão passo a passo**
+Conectar seu banco é guiado do início ao fim:
+1. **Chave de API** — um guia dentro do próprio assistente explica como criar sua conta no Banco MCP, conectar seus bancos por lá (com autorização pelo app do próprio banco, sem compartilhar senhas) e gerar sua chave. A chave fica **criptografada** em nossos servidores. 🔐
+2. **Escolha do banco** — selecione qual das suas conexões do Banco MCP deseja vincular.
+3. **Mapeamento** — associe cada conta e cartão do banco às contas e cartões que você já tem no MoneyManager.
+4. **Estratégia de dados** — decida o que fazer com seus lançamentos manuais existentes:
+   - **Coexistência** 🤝 — mantém tudo o que você já lançou e importa do banco apenas a partir de uma data de corte (que você escolhe).
+   - **Começar do zero** 🧹 — limpa os lançamentos antigos das contas mapeadas e deixa o banco ser a fonte da verdade.
+5. **Pronto!** A primeira sincronização é disparada na hora.
+
+**Controle total, sempre:**
+- Desvincule uma conta ou cartão específico sem derrubar o resto da conexão.
+- Desconecte um banco inteiro quando quiser — o consentimento é revogado no Open Finance.
+- Se sua chave de API expirar, o sistema avisa e pede uma nova — sem refazer toda a configuração.
+
+_Importante: o Banco MCP é um serviço de terceiros contratado diretamente por você (o plano com acesso à API custa R$ 29,90/mês, pago ao Banco MCP). O MoneyManager Premium dá acesso à integração._
+
+---
+
+### 🗂 Nova página "Bancos e Contas"
+As páginas de **Contas** e **Cartões de Crédito** se uniram em um só lugar: a nova seção **Bancos e Contas** no menu lateral. Nela você:
+- Gerencia contas e cartões lado a lado, como sempre.
+- Vê quais estão **vinculados a um banco** conectado, com o logo da instituição e há quanto tempo foi a última sincronização.
+- Acompanha um **banner no Dashboard** com o resumo das conexões: quantos bancos estão conectados e quando foi a última atualização.
+
+Os links antigos continuam funcionando — eles redirecionam automaticamente para a nova página. 😉
+
+---
+
+## Como começar a usar
+
+1. Com o premium ativo (coroa preenchida no topo ⭐), acesse **Bancos e Contas** no menu lateral.
+2. Clique para conectar seu banco e siga o assistente — ele guia desde a criação da conta no Banco MCP até o mapeamento das suas contas.
+3. Escolha sua estratégia de dados (coexistência ou começar do zero) e confirme.
+4. Pronto! A primeira sincronização acontece na hora, e a partir daí seus saldos, transações e faturas se mantêm atualizados sozinhos. ✨
+
+---
+
+### Feedbacks
+
+Se tiver alguma dúvida, dificuldade, sugestão ou reclamação, não pense duas vezes, nos mande um alou pelo sistema de report ou mande um alou para o desenvolvedor!
+
+---
+
 # Versão 1.0.4-beta
 
 *Lançamento: 17 de junho de 2026*

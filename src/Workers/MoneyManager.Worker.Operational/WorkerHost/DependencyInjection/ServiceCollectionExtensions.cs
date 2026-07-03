@@ -33,6 +33,16 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(CreditCardInvoiceScheduleOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<SubscriptionExpirationScheduleOptions>()
+            .Bind(configuration.GetSection(SubscriptionExpirationScheduleOptions.SectionName))
+            .ValidateOnStart();
+
+        services
+            .AddOptions<BankSyncOptions>()
+            .Bind(configuration.GetSection(BankSyncOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddSingleton<ITimeProvider>(sp => new SystemTimeProvider(TimeProvider.System));
         services.AddProcessLogger();
 
@@ -42,10 +52,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CreditCardInvoiceProcessor>();
         services.AddScoped<FinancialHealthSnapshotProcessor>();
 
+        services.AddScoped<SubscriptionExpirationProcessor>();
+        services.AddScoped<BankSyncProcessor>();
+
         services.AddHostedService<ScheduledTransactionWorker>();
         services.AddHostedService<DailyReminderWorker>();
         services.AddHostedService<CreditCardInvoiceWorker>();
         services.AddHostedService<FinancialHealthSnapshotWorker>();
+        services.AddHostedService<SubscriptionExpirationWorker>();
+        services.AddHostedService<BankSyncWorker>();
 
         return services;
     }
