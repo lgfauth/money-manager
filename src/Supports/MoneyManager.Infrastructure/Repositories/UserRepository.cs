@@ -16,4 +16,15 @@ public class UserRepository : Repository<User>, IUserRepository
         var filter = Builders<User>.Filter.Eq(u => u.Email, email);
         return await Collection.Find(filter).FirstOrDefaultAsync();
     }
+
+    public async Task<IEnumerable<User>> GetPagedAsync(int skip, int take)
+    {
+        var filter = Builders<User>.Filter.Eq(u => u.IsDeleted, false);
+
+        return await Collection.Find(filter)
+            .SortByDescending(u => u.CreatedAt)
+            .Skip(skip)
+            .Limit(take)
+            .ToListAsync();
+    }
 }

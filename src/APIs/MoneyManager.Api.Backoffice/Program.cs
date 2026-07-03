@@ -177,6 +177,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AdminPortal");
+
+// Log estruturado por request — identificação do operador é adicionada no finally,
+// após a autenticação preencher os claims.
+app.UseMiddleware<MoneyManager.Api.Administration.Middlewares.RequestLoggingMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

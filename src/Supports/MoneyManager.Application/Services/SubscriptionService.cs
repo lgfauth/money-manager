@@ -200,18 +200,17 @@ public class SubscriptionService : ISubscriptionService
             throw new PremiumRequiredException();
     }
 
+    // Dirigido pela coleção de usuários (não de assinaturas): usuários criados antes do
+    // lançamento do premium não possuem documento de assinatura e precisam aparecer na lista.
     public async Task<IReadOnlyList<AdminUserSubscriptionResponseDto>> GetAllForAdminAsync(int page, int pageSize)
     {
         var skip = (page - 1) * pageSize;
-        var subscriptions = await _unitOfWork.Subscriptions.GetAllAsync(skip, pageSize);
+        var users = await _unitOfWork.Users.GetPagedAsync(skip, pageSize);
 
         var result = new List<AdminUserSubscriptionResponseDto>();
-        foreach (var subscription in subscriptions)
+        foreach (var user in users)
         {
-            var user = await _unitOfWork.Users.GetByIdAsync(subscription.UserId);
-            if (user is null || user.IsDeleted)
-                continue;
-
+            var subscription = await _unitOfWork.Subscriptions.GetByUserIdAsync(user.Id);
             result.Add(MapToAdminDto(subscription, user));
         }
 
@@ -273,17 +272,19 @@ public class SubscriptionService : ISubscriptionService
         IsPremiumActive = s.IsPremiumActive()
     };
 
-    private static AdminUserSubscriptionResponseDto MapToAdminDto(Subscription s, User u) => new()
+    // Assinatura nula = usuário sem documento de assinatura (cadastro anterior ao premium);
+    // exibido como Free/Expired, mesmo estado gerado por InitializeFreeAsync.
+    private static AdminUserSubscriptionResponseDto MapToAdminDto(Subscription? s, User u) => new()
     {
         UserId = u.Id,
         Name = u.Name,
         Email = u.Email,
-        Plan = s.Plan.ToString(),
-        Status = s.Status.ToString(),
-        IsPremiumActive = s.IsPremiumActive(),
-        TrialEndsAt = s.TrialEndsAt,
-        CurrentPeriodEnd = s.CurrentPeriodEnd,
-        PaymentProvider = s.PaymentProvider,
+        Plan = s?.Plan.ToString() ?? PlanType.Free.ToString(),
+        Status = s?.Status.ToString() ?? SubscriptionStatus.Expired.ToString(),
+        IsPremiumActive = s?.IsPremiumActive() ?? false,
+        TrialEndsAt = s?.TrialEndsAt,
+        CurrentPeriodEnd = s?.CurrentPeriodEnd,
+        PaymentProvider = s?.PaymentProvider,
         UserCreatedAt = u.CreatedAt
     };
 }
