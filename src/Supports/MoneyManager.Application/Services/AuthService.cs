@@ -57,8 +57,8 @@ public class AuthService : IAuthService
         await _unitOfWork.Users.AddAsync(user);
         await _unitOfWork.SaveChangesAsync();
 
-        // Trial de 14 dias ativado automaticamente no registro
-        await _subscriptionService.ActivateTrialAsync(user.Id);
+        // Novo usuário inicia sempre no plano free; premium só por ajuste explícito.
+        await _subscriptionService.InitializeFreeAsync(user.Id);
 
         _processLogger.AddStep("Usuário registrado com sucesso", new Dictionary<string, object?>
         {

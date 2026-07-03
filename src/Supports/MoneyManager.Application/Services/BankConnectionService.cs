@@ -29,8 +29,11 @@ public interface IBankConnectionService
     // Lista conexões ativas do usuário.
     Task<IReadOnlyList<BankConnectionResponseDto>> GetUserConnectionsAsync(string userId, CancellationToken ct);
 
-    // Desconecta um banco (soft delete na BankConnection + limpa ExternalAccountId das Accounts mapeadas).
-    Task DisconnectAsync(string userId, string connectionId, CancellationToken ct);
+    // Desvincula uma conta/cartão específico do banco conectado.
+    Task<UnlinkAccountResponseDto> UnlinkAccountAsync(string userId, string accountId, CancellationToken ct);
+
+    // Desconecta um banco inteiro (item_id), revogando consentimento e removendo vínculo local.
+    Task<DisconnectBankResponseDto> DisconnectBankAsync(string userId, string itemId, CancellationToken ct);
 
     // Sync manual disparado pelo usuário (botão "atualizar agora").
     Task SyncNowAsync(string userId, string connectionId, CancellationToken ct);
@@ -326,40 +329,173 @@ public class BankConnectionService : IBankConnectionService
         return connections.Select(MapToDto).ToList();
     }
 
-    public async Task DisconnectAsync(string userId, string connectionId, CancellationToken ct)
+    public async Task<UnlinkAccountResponseDto> UnlinkAccountAsync(string userId, string accountId, CancellationToken ct)
     {
-        var apiKey = await GetDecryptedApiKeyAsync(userId, ct);
+        return await UnlinkAccountInternalAsync(userId, accountId, ct, triggerAutoDisconnect: true);
+    }
 
-        var connection = await _unitOfWork.BankConnections.GetByUserIdAndIdAsync(userId, connectionId)
-            ?? throw new KeyNotFoundException("Conexão não encontrada");
+    public async Task<DisconnectBankResponseDto> DisconnectBankAsync(string userId, string itemId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
 
-        // Remove ExternalAccountId das Accounts mapeadas.
-        foreach (var selected in connection.SelectedAccounts.Where(s => s.MoneyManagerAccountId is not null))
+        var connection = await _unitOfWork.BankConnections.GetByExternalConnectionIdAsync(userId, itemId);
+        if (connection is null)
         {
-            var account = await _unitOfWork.Accounts.GetByIdAsync(selected.MoneyManagerAccountId!);
-            if (account is null || account.UserId != userId) continue;
-
-            account.ExternalAccountId = null;
-            await _unitOfWork.Accounts.UpdateAsync(account);
+            // Compatibilidade transitória: permite receber o Id local da conexão.
+            connection = await _unitOfWork.BankConnections.GetByUserIdAndIdAsync(userId, itemId);
         }
 
-        // Revoga no Banco MCP.
+        if (connection is null)
+            throw new KeyNotFoundException("Conexão não encontrada");
+
+        var apiKey = await GetDecryptedApiKeyAsync(userId, ct);
+
+        _logger.LogInformation(
+            "Iniciando desconexão total do banco {ItemId} para usuário {UserId}",
+            connection.ExternalConnectionId,
+            userId);
+
         try
         {
             await _bankMcpClient.DisconnectAsync(apiKey, connection.ExternalConnectionId, ct);
+            _logger.LogInformation(
+                "Consentimento revogado no Banco MCP para item {ItemId} do usuário {UserId}",
+                connection.ExternalConnectionId,
+                userId);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex,
-                "Falha ao revogar conexão {ExternalConnectionId} no Banco MCP — prosseguindo com soft delete local",
-                connection.ExternalConnectionId);
+            _logger.LogError(
+                ex,
+                "Falha ao revogar consentimento no Banco MCP para item {ItemId} do usuário {UserId}",
+                connection.ExternalConnectionId,
+                userId);
+
+            throw new InvalidOperationException("Falha ao revogar consentimento no Open Finance. Nenhuma alteração local foi aplicada.");
         }
 
-        connection.Disconnect();
+        var linkedAccountIds = connection.SelectedAccounts
+            .Where(s => !string.IsNullOrWhiteSpace(s.MoneyManagerAccountId))
+            .Select(s => s.MoneyManagerAccountId!)
+            .Distinct()
+            .ToList();
+
+        foreach (var linkedAccountId in linkedAccountIds)
+        {
+            await UnlinkAccountInternalAsync(userId, linkedAccountId, ct, triggerAutoDisconnect: false);
+        }
+
+        await _unitOfWork.BankConnections.DeleteAsync(connection.Id);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Conexão bancária {ItemId} removida fisicamente para usuário {UserId}",
+            connection.ExternalConnectionId,
+            userId);
+
+        return new DisconnectBankResponseDto
+        {
+            ItemId = connection.ExternalConnectionId,
+            Success = true,
+            UnlinkedAccountsCount = linkedAccountIds.Count
+        };
+    }
+
+    private async Task<UnlinkAccountResponseDto> UnlinkAccountInternalAsync(
+        string userId,
+        string accountId,
+        CancellationToken ct,
+        bool triggerAutoDisconnect)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        var connections = (await _unitOfWork.BankConnections.GetByUserIdAsync(userId)).ToList();
+
+        var match = connections
+            .Select(c => new
+            {
+                Connection = c,
+                Selected = c.SelectedAccounts.FirstOrDefault(s =>
+                    string.Equals(s.MoneyManagerAccountId, accountId, StringComparison.Ordinal))
+            })
+            .FirstOrDefault(x => x.Selected is not null)
+            ?? throw new KeyNotFoundException("Conta/cartão não está vinculado a nenhuma conexão bancária");
+
+        var connection = match.Connection;
+        var selected = match.Selected!;
+        var entityType = selected.MoneyManagerEntityType;
+        var hasDeactivatedRecurrences = false;
+
+        if (string.Equals(entityType, "Account", StringComparison.Ordinal))
+        {
+            var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
+            if (account is null || account.UserId != userId || account.IsDeleted)
+                throw new KeyNotFoundException("Conta não encontrada");
+
+            account.ExternalAccountId = null;
+            account.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.Accounts.UpdateAsync(account);
+
+            hasDeactivatedRecurrences = await HasDeactivatedRecurrencesAsync(userId, accountId);
+        }
+        else if (string.Equals(entityType, "CreditCard", StringComparison.Ordinal))
+        {
+            var creditCard = await _unitOfWork.CreditCards.GetByIdAsync(accountId);
+            if (creditCard is null || creditCard.UserId != userId || creditCard.IsDeleted)
+                throw new KeyNotFoundException("Cartão não encontrado");
+
+            creditCard.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCards.UpdateAsync(creditCard);
+        }
+        else
+        {
+            throw new InvalidOperationException($"Tipo de entidade não suportado para desvínculo: {entityType}");
+        }
+
+        connection.SelectedAccounts = connection.SelectedAccounts
+            .Where(s => !string.Equals(s.MoneyManagerAccountId, accountId, StringComparison.Ordinal))
+            .ToList();
+        connection.UpdatedAt = DateTime.UtcNow;
+
         await _unitOfWork.BankConnections.UpdateAsync(connection);
         await _unitOfWork.SaveChangesAsync();
 
-        _logger.LogInformation("Conexão bancária {ConnectionId} desconectada para usuário {UserId}", connectionId, userId);
+        _logger.LogInformation(
+            "Conta/cartão {AccountId} desvinculado do item {ItemId} para usuário {UserId}",
+            accountId,
+            connection.ExternalConnectionId,
+            userId);
+
+        var hasLinkedAccounts = connection.SelectedAccounts.Any(s =>
+            !string.IsNullOrWhiteSpace(s.MoneyManagerAccountId));
+
+        if (triggerAutoDisconnect && !hasLinkedAccounts)
+        {
+            _logger.LogInformation(
+                "Item {ItemId} sem contas/cartões vinculados após unlink; iniciando desconexão total",
+                connection.ExternalConnectionId);
+
+            await DisconnectBankAsync(userId, connection.ExternalConnectionId, ct);
+        }
+
+        return new UnlinkAccountResponseDto
+        {
+            AccountId = accountId,
+            ItemId = connection.ExternalConnectionId,
+            Success = true,
+            HasDeactivatedRecurrences = hasDeactivatedRecurrences
+        };
+    }
+
+    private async Task<bool> HasDeactivatedRecurrencesAsync(string userId, string accountId)
+    {
+        var recurrences = await _unitOfWork.RecurringTransactions.GetAllAsync();
+
+        return recurrences.Any(r =>
+            r.UserId == userId
+            && r.AccountId == accountId
+            && !r.IsDeleted
+            && !r.IsActive);
     }
 
     public async Task SyncNowAsync(string userId, string connectionId, CancellationToken ct)

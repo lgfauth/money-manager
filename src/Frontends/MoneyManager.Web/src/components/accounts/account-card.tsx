@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Unplug } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -27,6 +27,7 @@ interface AccountCardProps {
   syncInfo?: BankSyncInfo;
   onEdit: () => void;
   onDelete: () => void;
+  onUnlink?: () => void;
 }
 
 export function AccountCard({
@@ -34,6 +35,7 @@ export function AccountCard({
   syncInfo,
   onEdit,
   onDelete,
+  onUnlink,
 }: AccountCardProps) {
   const { formatMonetaryValue } = useMoneyPrivacy();
   const formattedBalance = formatMonetaryValue(account.balance, account.currency);
@@ -71,6 +73,12 @@ export function AccountCard({
             <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {syncInfo && onUnlink && (
+              <DropdownMenuItem onClick={onUnlink}>
+                <Unplug className="mr-2 h-4 w-4 text-amber-500" />
+                Desvincular
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={onEdit}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar

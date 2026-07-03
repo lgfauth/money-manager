@@ -37,6 +37,7 @@ export interface SelectedBankAccountDto {
 
 export interface BankConnectionDto {
   id: string;
+  itemId?: string;
   institutionName: string;
   institutionLogo?: string | null; // não fornecido pela API hoje — reservado para logo do banco
 
@@ -49,6 +50,19 @@ export interface BankConnectionDto {
 export interface SaveApiKeyResultDto {
   isValid: boolean;
   availableConnections: number;
+}
+
+export interface UnlinkAccountResponseDto {
+  accountId: string;
+  itemId: string;
+  success: boolean;
+  hasDeactivatedRecurrences: boolean;
+}
+
+export interface DisconnectBankResponseDto {
+  itemId: string;
+  success: boolean;
+  unlinkedAccountsCount: number;
 }
 
 export type OnboardingStrategy = "CleanSlate" | "Coexistence";

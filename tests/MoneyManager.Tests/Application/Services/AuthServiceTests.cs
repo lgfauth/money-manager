@@ -43,7 +43,7 @@ public class AuthServiceTests
 
         _unitOfWorkMock.Users.Returns(userRepository);
 
-        _subscriptionServiceMock.ActivateTrialAsync(Arg.Any<string>())
+        _subscriptionServiceMock.InitializeFreeAsync(Arg.Any<string>())
             .Returns(new SubscriptionResponseDto());
 
         // Act

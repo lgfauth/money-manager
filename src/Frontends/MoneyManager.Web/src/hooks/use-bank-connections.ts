@@ -16,6 +16,8 @@ import type {
   BankMcpAccountDto,
   SaveApiKeyResultDto,
   CompleteOnboardingRequestDto,
+  UnlinkAccountResponseDto,
+  DisconnectBankResponseDto,
 } from "@/types/bank-connection";
 
 export function useBankConnections() {
@@ -133,13 +135,33 @@ export function useSyncingBankConnectionIds() {
 export function useDisconnectBank() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (connectionId: string) =>
-      apiClient.delete<void>(`/api/bank-connections/${connectionId}`),
+    mutationFn: (itemId: string) =>
+      apiClient.delete<DisconnectBankResponseDto>(`/api/bank-connections/${itemId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.bankConnections });
+      qc.invalidateQueries({ queryKey: queryKeys.accounts });
+      qc.invalidateQueries({ queryKey: queryKeys.creditCards });
       toast.success("Banco desconectado");
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Erro ao desconectar banco")),
+  });
+}
+
+export function useUnlinkBankAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (accountId: string) =>
+      apiClient.delete<UnlinkAccountResponseDto>(
+        `/api/bank-connections/accounts/${accountId}`
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.bankConnections });
+      qc.invalidateQueries({ queryKey: queryKeys.accounts });
+      qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      toast.success("Conta/cartão desvinculado com sucesso");
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao desvincular conta/cartão")),
   });
 }

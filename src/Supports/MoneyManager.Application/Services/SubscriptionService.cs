@@ -11,6 +11,7 @@ namespace MoneyManager.Application.Services;
 
 public interface ISubscriptionService
 {
+    Task<SubscriptionResponseDto> InitializeFreeAsync(string userId);
     Task<SubscriptionResponseDto> ActivateTrialAsync(string userId);
     Task<CreateSubscriptionResponseDto> CreateAsync(string userId, CreateSubscriptionRequestDto request);
     Task HandlePaymentWebhookAsync(string rawPayload, IDictionary<string, string> headers);
@@ -43,6 +44,30 @@ public class SubscriptionService : ISubscriptionService
         _paymentGateway = paymentGateway;
         _processLogger = processLogger;
         _logger = logger;
+    }
+
+    public async Task<SubscriptionResponseDto> InitializeFreeAsync(string userId)
+    {
+        var existing = await _unitOfWork.Subscriptions.GetByUserIdAsync(userId);
+        if (existing is not null)
+            throw new InvalidOperationException("Usuário já possui uma assinatura");
+
+        var subscription = new Subscription
+        {
+            UserId = userId,
+            Plan = PlanType.Free,
+            Status = SubscriptionStatus.Expired,
+            TrialEndsAt = null,
+            CurrentPeriodStart = null,
+            CurrentPeriodEnd = null,
+            GraceEndsAt = null
+        };
+
+        await _unitOfWork.Subscriptions.AddAsync(subscription);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation("Plano free inicializado para usuário {UserId}", userId);
+        return MapToDto(subscription);
     }
 
     public async Task<SubscriptionResponseDto> ActivateTrialAsync(string userId)

@@ -162,19 +162,43 @@ public class BankConnectionsController : ControllerBase
         }
     }
 
-    // DELETE /api/bank-connections/{id} — desconecta.
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Disconnect(string id, CancellationToken ct)
+    // DELETE /api/bank-connections/accounts/{accountId} — desvincula conta/cartão específico.
+    [HttpDelete("accounts/{accountId}")]
+    public async Task<IActionResult> UnlinkAccount(string accountId, CancellationToken ct)
     {
         var userId = HttpContext.GetUserId();
         try
         {
-            await _bankConnectionService.DisconnectAsync(userId, id, ct);
-            return NoContent();
+            var result = await _bankConnectionService.UnlinkAccountAsync(userId, accountId, ct);
+            return Ok(result);
         }
         catch (KeyNotFoundException)
         {
             return this.ApiNotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+    }
+
+    // DELETE /api/bank-connections/{itemId} — desconecta banco inteiro por item_id.
+    [HttpDelete("{itemId}")]
+    public async Task<IActionResult> Disconnect(string itemId, CancellationToken ct)
+    {
+        var userId = HttpContext.GetUserId();
+        try
+        {
+            var result = await _bankConnectionService.DisconnectBankAsync(userId, itemId, ct);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException)
+        {
+            return this.ApiNotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
         }
     }
 }

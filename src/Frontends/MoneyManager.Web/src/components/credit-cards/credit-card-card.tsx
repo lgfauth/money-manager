@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Unplug,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -32,6 +33,7 @@ interface CreditCardCardProps {
   syncInfo?: BankSyncInfo;
   onEdit: () => void;
   onDelete: () => void;
+  onUnlink?: () => void;
 }
 
 const fmtDate = (iso: string) => {
@@ -48,6 +50,7 @@ export function CreditCardCard({
   syncInfo,
   onEdit,
   onDelete,
+  onUnlink,
 }: CreditCardCardProps) {
   const { formatMonetaryValue } = useMoneyPrivacy();
   const used = card.limit - (card.availableLimit ?? 0);
@@ -79,6 +82,12 @@ export function CreditCardCard({
             <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {syncInfo && onUnlink && (
+              <DropdownMenuItem onClick={onUnlink}>
+                <Unplug className="mr-2 h-4 w-4 text-amber-500" />
+                Desvincular
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={onEdit}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar
