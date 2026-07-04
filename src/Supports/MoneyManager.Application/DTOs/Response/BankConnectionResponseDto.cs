@@ -8,6 +8,10 @@ public class BankConnectionResponseDto
     public DateTime? ConnectedAt { get; set; }
     public DateTime? LastSyncAt { get; set; }
     public List<SelectedBankAccountDto> SelectedAccounts { get; set; } = [];
+
+    // Sinaliza ao frontend que a migração de categorias Open Banking ocorreu neste link,
+    // para exibir o aviso informativo na tela de sucesso.
+    public bool CategoriesMigrated { get; set; }
 }
 
 public class SelectedBankAccountDto

@@ -53,6 +53,10 @@ public class CreditCardTransaction
     [BsonElement("externalId")]
     public string? ExternalId { get; set; }
 
+    [BsonElement("openBankingCategoryId")]
+    [BsonIgnoreIfNull]
+    public string? OpenBankingCategoryId { get; set; } // categoryId de origem do Pluggy — usado para recategorização
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -44,6 +44,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPaymentGateway, NullPaymentGateway>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IOpenBankingCategoryMigrationService, OpenBankingCategoryMigrationService>();
 builder.Services.AddScoped<IValidator<ActivatePremiumRequestDto>, ActivatePremiumValidator>();
 
 var adminIssuer = builder.Configuration["AdminAuth:Issuer"] ?? "MoneyManager.Admin";

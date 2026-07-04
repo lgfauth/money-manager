@@ -41,6 +41,7 @@ internal static class ApplicationServicesExtensions
         services.AddScoped<IBankMcpClient, BankMcpClient>();
         services.AddScoped<IEncryptionService, AesEncryptionService>();
         services.AddScoped<IBankConnectionService, BankConnectionService>();
+        services.AddScoped<IOpenBankingCategoryMigrationService, OpenBankingCategoryMigrationService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IPaymentGateway, NullPaymentGateway>();
 

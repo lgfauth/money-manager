@@ -104,6 +104,7 @@ builder.Services.AddHttpClient("bancoMcp");
 builder.Services.AddScoped<IBankMcpClient, BankMcpClient>();
 builder.Services.AddScoped<IEncryptionService, AesEncryptionService>();
 builder.Services.AddScoped<IBankConnectionService, BankConnectionService>();
+builder.Services.AddScoped<IOpenBankingCategoryMigrationService, OpenBankingCategoryMigrationService>();
 
 // Register structured process logger
 builder.Services.AddProcessLogger();

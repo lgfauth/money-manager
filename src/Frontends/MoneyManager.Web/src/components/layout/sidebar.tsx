@@ -16,14 +16,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, toggleCollapsed, setWhatsNewOpen } = useUIStore();
   const isPremium = useIsPremium();
+  const { hasAnyManualTarget } = useUnlinkedTargets();
 
   const mainItems = navigationItems.filter(
-    (item) => item.group === "main" && (!item.premiumOnly || isPremium)
+    (item) =>
+      item.group === "main" &&
+      (!item.premiumOnly || isPremium) &&
+      (item.href !== "/recurring" || hasAnyManualTarget)
   );
   const userItems = navigationItems.filter((item) => item.group === "user");
 

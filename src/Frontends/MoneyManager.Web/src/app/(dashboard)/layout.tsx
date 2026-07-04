@@ -12,6 +12,7 @@ import { WhatsNewModal } from "@/components/layout/whats-new-modal";
 import { ReceiptFab } from "@/components/receipts/ReceiptFab";
 import { ReceiptConfirmationModal } from "@/components/receipts/ReceiptConfirmationModal";
 import type { ReceiptAnalysisResult } from "@/types/receipt";
+import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 import {
   LEGAL_PRIVACY_POLICY_URL,
   LEGAL_TERMS_OF_USE_URL,
@@ -30,6 +31,7 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [receiptResult, setReceiptResult] = useState<ReceiptAnalysisResult | null>(null);
+  const { hasAnyManualTarget } = useUnlinkedTargets();
 
   const handleReceiptResult = useCallback((r: ReceiptAnalysisResult) => {
     setReceiptResult(r);
@@ -72,7 +74,7 @@ export default function DashboardLayout({
         </main>
       </div>
       <MobileNav />
-      <ReceiptFab onResult={handleReceiptResult} />
+      {hasAnyManualTarget && <ReceiptFab onResult={handleReceiptResult} />}
       <ReceiptConfirmationModal
         open={receiptResult !== null}
         result={receiptResult}

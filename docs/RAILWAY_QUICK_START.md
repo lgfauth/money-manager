@@ -165,3 +165,21 @@ Algo n�o funcionou?
 ---
 
 **Pronto para deploy?** Siga os passos acima! ??
+
+---
+
+## 🔐 Worker — variáveis de ambiente obrigatórias
+
+O serviço **Money-manager-worker** precisa das mesmas variáveis de infraestrutura da API. Em especial:
+
+```
+MongoDB__ConnectionString=<mesma connection string da API>
+Encryption__Key=<MESMO valor configurado na API>
+ASPNETCORE_ENVIRONMENT=Production
+```
+
+**Importante — `Encryption__Key`:**
+- É usada para descriptografar a API key do Banco MCP dos usuários durante o sync bancário (`BankSyncWorker`).
+- Precisa ser **idêntica** à da API — chaves diferentes tornam impossível descriptografar os dados já salvos.
+- Gere com `openssl rand -base64 48` (somente na primeira vez; depois reutilize o mesmo valor nos dois serviços).
+- Sintoma quando ausente: `System.FormatException: The input is not a valid Base-64 string` no log do worker ao iniciar o sync (o placeholder do `appsettings.Production.json` chega ao `AesEncryptionService`).

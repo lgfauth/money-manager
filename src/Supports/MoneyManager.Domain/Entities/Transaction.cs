@@ -65,6 +65,10 @@ public class Transaction
     [BsonElement("externalId")]
     public string? ExternalId { get; set; } // ID da transação no Banco MCP — usado para upsert/deduplicação
 
+    [BsonElement("openBankingCategoryId")]
+    [BsonIgnoreIfNull]
+    public string? OpenBankingCategoryId { get; set; } // categoryId de origem do Pluggy — usado para recategorização
+
     [BsonElement("isDeleted")]
     public bool IsDeleted { get; set; }
 }

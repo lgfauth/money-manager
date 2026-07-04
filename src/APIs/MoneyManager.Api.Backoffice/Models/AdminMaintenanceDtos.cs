@@ -6,6 +6,20 @@ public sealed class AdminTargetUserRequest
     public string? Reason { get; set; }
 }
 
+public sealed class AdminOpenBankingRecategorizeRequest
+{
+    // Quando vazio, recategoriza todos os usuários elegíveis (migrados e com vínculo bancário).
+    public string? TargetUserId { get; set; }
+    public string? Reason { get; set; }
+}
+
+public sealed class AdminBankFullResyncRequest
+{
+    // Quando vazio, reseta a janela de sync de todas as conexões bancárias ativas.
+    public string? TargetUserId { get; set; }
+    public string? Reason { get; set; }
+}
+
 public sealed class AdminAuditActionItemDto
 {
     public string Id { get; set; } = string.Empty;

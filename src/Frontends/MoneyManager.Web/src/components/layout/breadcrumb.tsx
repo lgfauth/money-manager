@@ -18,6 +18,7 @@ const routeLabels: Record<string, string> = {
   profile: "Perfil",
   settings: "Configurações",
   onboarding: "Onboarding",
+  "bancos-e-contas": "Bancos e Contas",
 };
 
 const nonNavigableBreadcrumbHrefs = new Set<string>([]);

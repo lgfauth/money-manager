@@ -45,6 +45,7 @@ public class BankConnectionServiceTests
             Substitute.For<ITransactionService>(),
             Substitute.For<ICreditCardTransactionService>(),
             Substitute.For<IRecurringTransactionService>(),
+            Substitute.For<IOpenBankingCategoryMigrationService>(),
             _encryptionServiceMock,
             Substitute.For<IProcessLogger>(),
             Substitute.For<ILogger<BankConnectionService>>());

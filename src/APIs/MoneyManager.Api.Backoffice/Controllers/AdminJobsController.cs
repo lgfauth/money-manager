@@ -15,7 +15,8 @@ public sealed class AdminJobsController : ControllerBase
     [
         "ScheduledTransactionWorker",
         "CreditCardInvoiceWorker",
-        "DailyReminderWorker"
+        "DailyReminderWorker",
+        "BankSyncWorker"
     ];
 
     private readonly WorkerCommandQueueService _commandQueueService;

@@ -308,6 +308,62 @@ export async function migrateCreditCardInvoices(
   );
 }
 
+export type OpenBankingCategoriesMigrationResult = {
+  totalCandidates: number;
+  migratedCount: number;
+  skippedCount: number;
+  errors: string[];
+};
+
+// Migração retroativa e global (todos os usuários elegíveis) — idempotente.
+export async function migrateOpenBankingCategories(
+  reason: string,
+): Promise<OpenBankingCategoriesMigrationResult> {
+  return postJson<OpenBankingCategoriesMigrationResult, { reason: string }>(
+    "/api/admin/maintenance/openbanking-categories/migrate",
+    { reason },
+  );
+}
+
+export type OpenBankingRecategorizeResult = {
+  totalCandidates: number;
+  usersProcessed: number;
+  skippedCount: number;
+  recategorizedTransactions: number;
+  errors: string[];
+};
+
+// Recategoriza transações sincronizadas sem categoria; targetUserId vazio = todos os elegíveis.
+export async function recategorizeOpenBankingTransactions(
+  reason: string,
+  targetUserId?: string,
+): Promise<OpenBankingRecategorizeResult> {
+  return postJson<OpenBankingRecategorizeResult, { reason: string; targetUserId?: string }>(
+    "/api/admin/maintenance/openbanking-categories/recategorize",
+    { reason, targetUserId: targetUserId || undefined },
+  );
+}
+
+export type BankFullResyncResult = {
+  totalConnections: number;
+  connectionsReset: number;
+  accountsReset: number;
+  syncCommandQueued: boolean;
+  commandId: string;
+  alreadyQueued: boolean;
+};
+
+// Reseta a janela de sync das conexões bancárias (re-busca desde o CutoffDate) e dispara o BankSyncWorker.
+export async function fullResyncBankConnections(
+  reason: string,
+  targetUserId?: string,
+): Promise<BankFullResyncResult> {
+  return postJson<BankFullResyncResult, { reason: string; targetUserId?: string }>(
+    "/api/admin/maintenance/bank-connections/full-resync",
+    { reason, targetUserId: targetUserId || undefined },
+  );
+}
+
 export async function getAuditActions(
   limit = 50,
   targetUserId?: string,
