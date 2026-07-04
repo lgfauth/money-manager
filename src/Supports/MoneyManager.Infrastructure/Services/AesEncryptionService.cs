@@ -12,9 +12,24 @@ public class AesEncryptionService : IEncryptionService
     public AesEncryptionService(IConfiguration configuration)
     {
         var raw = configuration["Encryption:Key"]
-            ?? throw new InvalidOperationException("Encryption:Key não configurada.");
+            ?? throw new InvalidOperationException(
+                "Encryption:Key não configurada. Defina a variável de ambiente Encryption__Key neste serviço.");
 
-        var bytes = Convert.FromBase64String(raw);
+        // Placeholders dos appsettings ("strong_text_for_secret_here", "${Encryption__Key}") indicam
+        // que a env var Encryption__Key não foi definida no serviço (Railway) — falhar com mensagem clara.
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(raw);
+        }
+        catch (FormatException)
+        {
+            throw new InvalidOperationException(
+                "Encryption:Key inválida ou não configurada (valor atual não é Base64 — provavelmente o placeholder do appsettings). " +
+                "Defina a variável de ambiente Encryption__Key neste serviço com o MESMO valor usado na API " +
+                "(gere com 'openssl rand -base64 48').");
+        }
+
         if (bytes.Length < 48)
             throw new InvalidOperationException("Encryption:Key inválida. Gere com 'openssl rand -base64 48'.");
 
