@@ -16,6 +16,7 @@ import {
 } from "@/hooks/use-transactions";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
+import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ export function BankTransactionFormBody({
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const { data: accounts } = useAccounts();
+  const { unlinkedAccounts } = useUnlinkedTargets();
   const { data: categories } = useCategories();
 
   const isEditing = !!editingTransaction;
@@ -96,6 +98,7 @@ export function BankTransactionFormBody({
     if (selectedType === TransactionType.Income) return cat.type === "Income";
     return cat.type === "Expense";
   });
+  const accountOptions = isEditing ? accounts : unlinkedAccounts;
 
   useEffect(() => {
     if (!open) return;
@@ -238,7 +241,7 @@ export function BankTransactionFormBody({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {accounts?.map((acc) => (
+            {accountOptions?.map((acc) => (
               <SelectItem key={acc.id} value={acc.id}>
                 {acc.name}
               </SelectItem>

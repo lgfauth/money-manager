@@ -17,4 +17,5 @@ public class CreateTransactionRequestDto
     public string? ClientRequestId { get; set; }
     public string Source { get; set; } = "manual";
     public string? ExternalId { get; set; }
+    public string? OpenBankingCategoryId { get; set; } // categoryId de origem do Pluggy (bank_sync)
 }

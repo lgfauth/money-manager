@@ -11,9 +11,9 @@ import {
 } from "@/lib/validators";
 import {
   useCreateCreditCardTransaction,
-  useCreditCards,
 } from "@/hooks/use-credit-cards";
 import { useCategories } from "@/hooks/use-categories";
+import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ export function CreditCardTransactionFormBody({
 }: CreditCardTransactionFormBodyProps) {
   const { formatMonetaryValue } = useMoneyPrivacy();
   const createTx = useCreateCreditCardTransaction();
-  const { data: cards } = useCreditCards();
+  const { unlinkedCards } = useUnlinkedTargets();
   const { data: categories } = useCategories();
 
   const expenseCategories = categories?.filter((c) => c.type === "Expense");
@@ -77,7 +77,7 @@ export function CreditCardTransactionFormBody({
   const installments = watch("totalInstallments");
   const firstOnCurrent = watch("firstInstallmentOnCurrentInvoice");
   const isRefund = watch("isRefund");
-  const selectedCard = cards?.find((c) => c.id === cardId);
+  const selectedCard = unlinkedCards?.find((c) => c.id === cardId);
 
   // Ao marcar como estorno, força 1 parcela
   useEffect(() => {
@@ -189,11 +189,13 @@ export function CreditCardTransactionFormBody({
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Selecione o cartão">
-              {(value: string) => cards?.find((c) => c.id === value)?.name}
+              {(value: string) =>
+                unlinkedCards?.find((c) => c.id === value)?.name
+              }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            {cards?.map((card) => (
+            {unlinkedCards?.map((card) => (
               <SelectItem key={card.id} value={card.id}>
                 <span className="flex items-center gap-2">
                   <span

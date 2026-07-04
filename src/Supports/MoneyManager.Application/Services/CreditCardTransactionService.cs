@@ -130,7 +130,8 @@ public class CreditCardTransactionService : ICreditCardTransactionService
                     ? MoneyManager.Domain.Enums.CreditCardTransactionType.Refund
                     : MoneyManager.Domain.Enums.CreditCardTransactionType.Purchase,
                 Source = request.Source,
-                ExternalId = request.ExternalId
+                ExternalId = request.ExternalId,
+                OpenBankingCategoryId = request.OpenBankingCategoryId
             };
 
             await _unitOfWork.CreditCardTransactions.AddAsync(transaction);

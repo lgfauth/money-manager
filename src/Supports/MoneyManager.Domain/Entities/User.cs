@@ -67,4 +67,7 @@ public class User
     [BsonElement("bankMcpKeyExpiredAt")]
     [BsonIgnoreIfNull]
     public DateTime? BankMcpKeyExpiredAt { get; set; }
+
+    [BsonElement("hasMigratedOpenBankingCategories")]
+    public bool HasMigratedOpenBankingCategories { get; set; }
 }

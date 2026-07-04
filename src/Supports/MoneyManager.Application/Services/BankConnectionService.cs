@@ -53,6 +53,7 @@ public class BankConnectionService : IBankConnectionService
     private readonly ITransactionService _transactionService;
     private readonly ICreditCardTransactionService _creditCardTransactionService;
     private readonly IRecurringTransactionService _recurringTransactionService;
+    private readonly IOpenBankingCategoryMigrationService _categoryMigrationService;
     private readonly IEncryptionService _encryptionService;
     private readonly IProcessLogger _processLogger;
     private readonly ILogger<BankConnectionService> _logger;
@@ -67,6 +68,7 @@ public class BankConnectionService : IBankConnectionService
         ITransactionService transactionService,
         ICreditCardTransactionService creditCardTransactionService,
         IRecurringTransactionService recurringTransactionService,
+        IOpenBankingCategoryMigrationService categoryMigrationService,
         IEncryptionService encryptionService,
         IProcessLogger processLogger,
         ILogger<BankConnectionService> logger)
@@ -80,6 +82,7 @@ public class BankConnectionService : IBankConnectionService
         _transactionService = transactionService;
         _creditCardTransactionService = creditCardTransactionService;
         _recurringTransactionService = recurringTransactionService;
+        _categoryMigrationService = categoryMigrationService;
         _encryptionService = encryptionService;
         _processLogger = processLogger;
         _logger = logger;
@@ -311,16 +314,24 @@ public class BankConnectionService : IBankConnectionService
         await _unitOfWork.BankConnections.UpdateAsync(connection);
         await _unitOfWork.SaveChangesAsync();
 
+        // Migra as categorias do usuário para o padrão Open Banking imediatamente após o
+        // link bem-sucedido — o flag HasMigratedOpenBankingCategories garante idempotência.
+        var categoriesMigrated = await _categoryMigrationService
+            .MigrateUserToOpenBankingCategoriesAsync(userId);
+
         // Primeiro sync imediato.
         await SyncConnectionAsync(connection, apiKey, ct);
 
         _processLogger.AddStep("Onboarding concluído", new Dictionary<string, object?>
         {
             ["connectionId"] = connectionId,
-            ["accountsMapped"] = request.AccountMappings.Count
+            ["accountsMapped"] = request.AccountMappings.Count,
+            ["categoriesMigrated"] = categoriesMigrated
         });
 
-        return MapToDto(connection);
+        var dto = MapToDto(connection);
+        dto.CategoriesMigrated = categoriesMigrated;
+        return dto;
     }
 
     public async Task<IReadOnlyList<BankConnectionResponseDto>> GetUserConnectionsAsync(string userId, CancellationToken ct)
@@ -582,6 +593,12 @@ public class BankConnectionService : IBankConnectionService
             .Where(s => s.MoneyManagerAccountId is not null)
             .ToList();
 
+        // Mapa OpenBankingCategoryId -> CategoryId do usuário, carregado uma única vez por sync.
+        var userCategories = await _unitOfWork.Categories.GetByUserIdAsync(connection.UserId);
+        var categoryMap = userCategories
+            .Where(c => !c.IsDeleted && !string.IsNullOrEmpty(c.OpenBankingCategoryId))
+            .ToDictionary(c => c.OpenBankingCategoryId!, c => c.Id);
+
         foreach (var selected in mappedAccounts)
         {
             try
@@ -605,9 +622,9 @@ public class BankConnectionService : IBankConnectionService
                     foreach (var tx in result.Results.Where(t => t.Status == "POSTED"))
                     {
                         if (string.Equals(selected.MoneyManagerEntityType, "CreditCard", StringComparison.Ordinal))
-                            await UpsertCreditCardTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, ct);
+                            await UpsertCreditCardTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, categoryMap, ct);
                         else
-                            await UpsertTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, ct);
+                            await UpsertTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, categoryMap, ct);
 
                         imported++;
                     }
@@ -731,17 +748,36 @@ public class BankConnectionService : IBankConnectionService
         return _encryptionService.Decrypt(user.BankMcpApiKey);
     }
 
-    private async Task UpsertTransactionAsync(string userId, string accountId, BankMcpTransaction tx, CancellationToken ct)
+    private async Task UpsertTransactionAsync(
+        string userId, string accountId, BankMcpTransaction tx,
+        IDictionary<string, string> categoryMap, CancellationToken ct)
     {
         var existing = await _unitOfWork.Transactions.GetByExternalIdAsync(userId, tx.Id);
         if (existing is not null)
+        {
+            // Backfill: transações importadas antes da resolução de categorias podem estar sem
+            // o categoryId de origem e/ou sem categoria — preenche sem sobrescrever o que existe.
+            if (!string.IsNullOrEmpty(tx.CategoryId)
+                && (string.IsNullOrEmpty(existing.OpenBankingCategoryId) || string.IsNullOrEmpty(existing.CategoryId)))
+            {
+                if (string.IsNullOrEmpty(existing.OpenBankingCategoryId))
+                    existing.OpenBankingCategoryId = tx.CategoryId;
+                if (string.IsNullOrEmpty(existing.CategoryId))
+                    existing.CategoryId = await ResolveCategoryIdAsync(userId, tx.CategoryId, categoryMap);
+
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.Transactions.UpdateAsync(existing);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
             return;
+        }
 
         await _transactionService.CreateAsync(userId, new CreateTransactionRequestDto
         {
             AccountId = accountId,
             Amount = Math.Abs(tx.Amount),
-            CategoryId = null,
+            CategoryId = await ResolveCategoryIdAsync(userId, tx.CategoryId, categoryMap),
             Type = tx.Amount < 0 ? TransactionType.Expense : TransactionType.Income,
             Date = tx.Date,
             Description = tx.Description,
@@ -751,21 +787,40 @@ public class BankConnectionService : IBankConnectionService
             Status = TransactionStatus.Completed,
             ClientRequestId = $"bank-sync:{tx.Id}",
             Source = "bank_sync",
-            ExternalId = tx.Id
+            ExternalId = tx.Id,
+            OpenBankingCategoryId = tx.CategoryId
         });
     }
 
-    private async Task UpsertCreditCardTransactionAsync(string userId, string creditCardId, BankMcpTransaction tx, CancellationToken ct)
+    private async Task UpsertCreditCardTransactionAsync(
+        string userId, string creditCardId, BankMcpTransaction tx,
+        IDictionary<string, string> categoryMap, CancellationToken ct)
     {
         var existing = await _unitOfWork.CreditCardTransactions.GetByExternalIdAsync(userId, tx.Id);
         if (existing is not null)
+        {
+            // Backfill: mesmo tratamento das transações bancárias — só preenche o que está vazio.
+            if (!string.IsNullOrEmpty(tx.CategoryId)
+                && (string.IsNullOrEmpty(existing.OpenBankingCategoryId) || string.IsNullOrEmpty(existing.CategoryId)))
+            {
+                if (string.IsNullOrEmpty(existing.OpenBankingCategoryId))
+                    existing.OpenBankingCategoryId = tx.CategoryId;
+                if (string.IsNullOrEmpty(existing.CategoryId))
+                    existing.CategoryId = await ResolveCategoryIdAsync(userId, tx.CategoryId, categoryMap);
+
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.CreditCardTransactions.UpdateAsync(existing);
+                await _unitOfWork.SaveChangesAsync();
+            }
+
             return;
+        }
 
         await _creditCardTransactionService.CreateAsync(userId, new CreateCreditCardTransactionRequestDto
         {
             CreditCardId = creditCardId,
             Description = tx.Description,
-            CategoryId = null,
+            CategoryId = await ResolveCategoryIdAsync(userId, tx.CategoryId, categoryMap),
             PurchaseDate = tx.Date,
             TotalAmount = Math.Abs(tx.Amount),
             TotalInstallments = 1,
@@ -773,8 +828,26 @@ public class BankConnectionService : IBankConnectionService
             IsRefund = false,
             ClientRequestId = null,
             Source = "bank_sync",
-            ExternalId = tx.Id
+            ExternalId = tx.Id,
+            OpenBankingCategoryId = tx.CategoryId
         });
+    }
+
+    // Resolve a categoria do usuário pelo categoryId do Pluggy. Transações sem categoryId
+    // no payload seguem o fluxo manual/Haiku existente (CategoryId = null).
+    private async Task<string?> ResolveCategoryIdAsync(
+        string userId, string? openBankingCategoryId, IDictionary<string, string> categoryMap)
+    {
+        if (string.IsNullOrEmpty(openBankingCategoryId))
+            return null;
+
+        if (categoryMap.TryGetValue(openBankingCategoryId, out var categoryId))
+            return categoryId;
+
+        // Não encontrado no mapa — o serviço resolve com fallback "Outros" (criando se necessário).
+        categoryId = await _categoryMigrationService.ResolveUserCategoryIdAsync(userId, openBankingCategoryId);
+        categoryMap[openBankingCategoryId] = categoryId;
+        return categoryId;
     }
 
     private async Task ApplyCleanSlateAsync(string userId, CancellationToken ct)

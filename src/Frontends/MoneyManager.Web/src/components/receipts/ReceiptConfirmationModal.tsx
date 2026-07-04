@@ -24,8 +24,7 @@ import { MoneyInput } from "@/components/shared/money-input";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { cn } from "@/lib/utils";
 import { useCategories } from "@/hooks/use-categories";
-import { useAccounts } from "@/hooks/use-accounts";
-import { useCreditCards } from "@/hooks/use-credit-cards";
+import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 import { useCreateTransaction } from "@/hooks/use-transactions";
 import { useCreateCreditCardTransaction } from "@/hooks/use-credit-cards";
 import { TransactionType } from "@/types/transaction";
@@ -75,8 +74,7 @@ export function ReceiptConfirmationModal({
   onClose,
 }: ReceiptConfirmationModalProps) {
   const { data: categories } = useCategories();
-  const { data: accounts } = useAccounts();
-  const { data: creditCards } = useCreditCards();
+  const { unlinkedAccounts, unlinkedCards } = useUnlinkedTargets();
 
   const createTransaction = useCreateTransaction();
   const createCreditCardTransaction = useCreateCreditCardTransaction();
@@ -338,11 +336,13 @@ export function ReceiptConfirmationModal({
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecione a conta">
-                    {(value: string) => accounts?.find((a) => a.id === value)?.name}
+                    {(value: string) =>
+                      unlinkedAccounts?.find((a) => a.id === value)?.name
+                    }
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {accounts?.map((acc) => (
+                  {unlinkedAccounts?.map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       {acc.name}
                     </SelectItem>
@@ -366,11 +366,13 @@ export function ReceiptConfirmationModal({
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione o cartão">
-                      {(value: string) => creditCards?.find((c) => c.id === value)?.name}
+                      {(value: string) =>
+                        unlinkedCards?.find((c) => c.id === value)?.name
+                      }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {creditCards?.map((c) => (
+                    {unlinkedCards?.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name}
                       </SelectItem>

@@ -30,12 +30,14 @@ import {
   type TransactionEntryTab,
 } from "@/components/transactions/transaction-entry-dialog";
 import { CreditCardTransactionTable } from "@/components/transactions/credit-card-transaction-table";
+import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 
 type TabKind = "bank" | "card";
 
 export default function TransactionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { hasAnyManualTarget } = useUnlinkedTargets();
 
   const initialTab: TabKind =
     searchParams.get("tab") === "card" ? "card" : "bank";
@@ -74,13 +76,18 @@ export default function TransactionsPage() {
   );
 
   useEffect(() => {
-    if (searchParams.get("new") === "true") {
+    if (searchParams.get("new") === "true" && hasAnyManualTarget) {
       setEditingTx(null);
       setEntryDefaultTab("bank");
       setEntryOpen(true);
       router.replace("/transactions");
+      return;
     }
-  }, [searchParams, router]);
+
+    if (searchParams.get("new") === "true") {
+      router.replace("/transactions");
+    }
+  }, [searchParams, router, hasAnyManualTarget]);
 
   const [deletingBankTx, setDeletingBankTx] =
     useState<TransactionResponseDto | null>(null);
@@ -141,11 +148,19 @@ export default function TransactionsPage() {
         title="Transações"
         description="Registre e acompanhe todas as suas movimentações."
       >
-        <Button onClick={handleNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Transação
-        </Button>
+        {hasAnyManualTarget && (
+          <Button onClick={handleNew}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Transação
+          </Button>
+        )}
       </PageHeader>
+
+      {!hasAnyManualTarget && (
+        <p className="text-sm text-muted-foreground">
+          A adição manual de transação está desabilitada por quê você está usando o sincronismo de dados com seu(s) banco(s).
+        </p>
+      )}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKind)}>
         <TabsList>
@@ -171,8 +186,8 @@ export default function TransactionsPage() {
               icon={Receipt}
               title="Nenhuma transação encontrada"
               description="Registre sua primeira transação ou ajuste os filtros."
-              actionLabel="Nova Transação"
-              onAction={handleNew}
+              actionLabel={hasAnyManualTarget ? "Nova Transação" : undefined}
+              onAction={hasAnyManualTarget ? handleNew : undefined}
             />
           ) : (
             <>

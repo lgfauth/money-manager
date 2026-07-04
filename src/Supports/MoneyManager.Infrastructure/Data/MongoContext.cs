@@ -50,6 +50,28 @@ public class MongoContext
                 .Ascending(c => c.CreatedAt)
         ));
 
+        // Índice parcial: único apenas quando openBankingCategoryId está preenchido,
+        // sem conflitar com documentos onde o campo é null/ausente.
+        await categoriesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.Category>(
+            Builders<MoneyManager.Domain.Entities.Category>.IndexKeys
+                .Ascending(c => c.UserId)
+                .Ascending(c => c.OpenBankingCategoryId),
+            new CreateIndexOptions<MoneyManager.Domain.Entities.Category>
+            {
+                Unique = true,
+                PartialFilterExpression = new BsonDocument
+                {
+                    {
+                        "openBankingCategoryId",
+                        new BsonDocument
+                        {
+                            { "$type", "string" }
+                        }
+                    }
+                }
+            }
+        ));
+
         // Create transactions collection
         if (!collectionNames.Contains("transactions"))
         {
