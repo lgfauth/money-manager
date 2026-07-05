@@ -131,7 +131,8 @@ public class TransactionService : ITransactionService
             Status = request.Status,
             ClientRequestId = request.ClientRequestId,
             Source = request.Source,
-            ExternalId = request.ExternalId
+            ExternalId = request.ExternalId,
+            OpenBankingCategoryId = request.OpenBankingCategoryId
         };
 
         await _unitOfWork.Transactions.AddAsync(transaction);

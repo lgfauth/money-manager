@@ -1,3 +1,33 @@
+# Versão 1.1.1-beta
+
+*Lançamento: 04 de julho de 2026*
+
+---
+
+## ✨ Novidades
+
+### 🏷 Categorização automática das transações do banco (Open Banking)
+As transações importadas do seu banco agora chegam **já categorizadas**! 🎉 O Open Finance envia junto com cada transação a categoria identificada pelo próprio banco — e o MoneyManager passa a usar essa informação automaticamente, sem você precisar mexer em nada.
+
+**Como funciona:**
+- Ao conectar seu **primeiro banco**, suas categorias são atualizadas para o **padrão Open Banking**: mais de 120 categorias organizadas por grupos (Moradia, Transporte, Saúde, Supermercado, Alimentos e bebidas, Renda, Investimentos e muito mais), cada grupo com sua própria cor. 🎨
+- A partir daí, **toda transação sincronizada** (de conta ou cartão) recebe a categoria correspondente automaticamente.
+- Transações que o banco não conseguir classificar caem na categoria **"Outros"** — e você pode reclassificá-las manualmente quando quiser.
+- Suas transações **antigas** também são beneficiadas: as que estavam sem categoria são ajustadas automaticamente nas próximas sincronizações.
+
+**O que acontece com as minhas categorias atuais?**
+Na primeira conexão de banco, as categorias antigas são substituídas pelo novo padrão — isso é necessário para a categorização automática funcionar. Suas transações já categorizadas **não são alteradas**. E você continua livre para criar novas categorias personalizadas ou excluir as que não quiser usar. ✂️
+
+_Dica: se você excluir uma categoria do padrão Open Banking, as próximas transações daquele tipo passam a entrar em "Outros"._
+
+---
+
+### Feedbacks
+
+Encontrou algo estranho na categorização? Nos mande um alou pelo sistema de report — seu feedback ajuda a melhorar o produto para todo mundo! 💬
+
+---
+
 # Versão 1.1.0-beta
 
 *Lançamento: 03 de julho de 2026*

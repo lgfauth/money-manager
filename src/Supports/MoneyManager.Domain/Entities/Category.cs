@@ -23,6 +23,10 @@ public class Category
     [BsonElement("color")]
     public string Color { get; set; } = "#FF5733";
 
+    [BsonElement("openBankingCategoryId")]
+    [BsonIgnoreIfNull]
+    public string? OpenBankingCategoryId { get; set; } // categoryId do Pluggy (ex: "07020002")
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

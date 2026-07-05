@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { navigationItems } from "@/config/navigation";
 import { useUIStore } from "@/stores/ui-store";
 import { useIsPremium } from "@/hooks/use-subscription";
+import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 
 const bottomNavItems = [
   { href: "/", icon: LayoutDashboard, label: "Home" },
@@ -28,9 +29,12 @@ export function MobileNav() {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen, setWhatsNewOpen } = useUIStore();
   const isPremium = useIsPremium();
+  const { hasAnyManualTarget } = useUnlinkedTargets();
 
   const visibleNavItems = navigationItems.filter(
-    (item) => !item.premiumOnly || isPremium
+    (item) =>
+      (!item.premiumOnly || isPremium) &&
+      (item.href !== "/recurring" || hasAnyManualTarget)
   );
 
   return (
@@ -120,12 +124,14 @@ export function MobileNav() {
       </nav>
 
       {/* FAB for quick add (mobile only) */}
-      <Link
-        href="/transactions?new=true"
-        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
-      >
-        <Plus className="h-6 w-6" />
-      </Link>
+      {hasAnyManualTarget && (
+        <Link
+          href="/transactions?new=true"
+          className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
+        >
+          <Plus className="h-6 w-6" />
+        </Link>
+      )}
     </>
   );
 }
