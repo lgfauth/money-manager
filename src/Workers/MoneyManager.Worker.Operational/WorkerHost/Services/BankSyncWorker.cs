@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MoneyManager.Infrastructure.WorkerControl;
+using MoneyManager.Observability;
 using TransactionSchedulerWorker.WorkerHost.Options;
 
 namespace TransactionSchedulerWorker.WorkerHost.Services;
@@ -46,7 +47,7 @@ internal sealed class BankSyncWorker(
                         else
                         {
                             logger.LogInformation("BankSyncWorker: sync disparado via run-now administrativo");
-                            var (success, errorMessage) = await RunOnceAsync(stoppingToken);
+                            var (success, errorMessage) = await RunOnceAsync(stoppingToken, "run-now");
                             await commandQueue.CompleteAsync(claimedCommand.CommandId, success, errorMessage);
                         }
                     }
@@ -63,7 +64,7 @@ internal sealed class BankSyncWorker(
                 {
                     _lastRunHour = now.Hour;
                     logger.LogInformation("BankSyncWorker: iniciando sync das {Hour}h", now.Hour);
-                    await RunOnceAsync(stoppingToken);
+                    await RunOnceAsync(stoppingToken, "scheduled");
                 }
 
                 // Reset do controle ao virar a hora.
@@ -84,21 +85,35 @@ internal sealed class BankSyncWorker(
         }
     }
 
-    private async Task<(bool Success, string? ErrorMessage)> RunOnceAsync(CancellationToken stoppingToken)
+    private async Task<(bool Success, string? ErrorMessage)> RunOnceAsync(CancellationToken stoppingToken, string triggerType)
     {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var processLogger = scope.ServiceProvider.GetRequiredService<IProcessLogger>();
+        var processor = scope.ServiceProvider.GetRequiredService<BankSyncProcessor>();
+
+        processLogger.Start("BankSync", new Dictionary<string, object?>
+        {
+            ["source"] = "Worker",
+            ["worker"] = nameof(BankSyncWorker),
+            ["triggerType"] = triggerType,
+            ["triggeredAt"] = DateTimeOffset.UtcNow.ToString("O")
+        });
+
         try
         {
-            using var scope = scopeFactory.CreateScope();
-            var processor = scope.ServiceProvider.GetRequiredService<BankSyncProcessor>();
             await processor.ProcessAsync(stoppingToken);
+            processLogger.Finish(success: true);
             return (true, null);
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
+            processLogger.AddWarning("Processo cancelado por desligamento do host");
+            processLogger.Finish(success: false);
             throw;
         }
         catch (Exception ex)
         {
+            processLogger.Finish(success: false, exception: ex);
             logger.LogError(ex, "Erro ao executar sync bancário");
             return (false, ex.Message);
         }
