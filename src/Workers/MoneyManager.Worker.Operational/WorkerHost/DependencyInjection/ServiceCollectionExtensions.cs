@@ -34,6 +34,11 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services
+            .AddOptions<FinancialHealthSnapshotScheduleOptions>()
+            .Bind(configuration.GetSection(FinancialHealthSnapshotScheduleOptions.SectionName))
+            .ValidateOnStart();
+
+        services
             .AddOptions<SubscriptionExpirationScheduleOptions>()
             .Bind(configuration.GetSection(SubscriptionExpirationScheduleOptions.SectionName))
             .ValidateOnStart();

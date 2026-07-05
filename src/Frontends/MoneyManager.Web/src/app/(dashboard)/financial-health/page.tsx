@@ -61,10 +61,22 @@ export default function FinancialHealthPage() {
 
   if (!score) return null;
 
+  const pendingBuckets = snapshotStatus?.pendingBuckets ?? [];
+  const referenceMonth = snapshotStatus?.referenceMonth ?? "";
+
   if (!score.hasData) {
+    // Mês recém-virado ainda sem receitas: o score não é calculável, mas o
+    // check-in do mês anterior precisa continuar acessível.
     return (
       <div className="space-y-6">
-        <PageHeader title="Saúde Financeira" />
+        <PageHeader title="Saúde Financeira">
+          {pendingBuckets.length > 0 && (
+            <Button size="sm" onClick={() => setShowCheckinModal(true)}>
+              <CalendarCheck className="mr-2 h-4 w-4" />
+              Fazer check-in
+            </Button>
+          )}
+        </PageHeader>
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <p className="text-lg font-medium text-muted-foreground">
             Nenhuma movimentação registrada este mês ainda
@@ -72,13 +84,23 @@ export default function FinancialHealthPage() {
           <p className="mt-2 text-sm text-muted-foreground">
             O score será calculado assim que houver receitas lançadas no mês atual.
           </p>
+          {pendingBuckets.length > 0 && (
+            <p className="mt-4 text-sm font-medium text-primary">
+              Você tem um check-in pendente do mês anterior — confirme os saldos para fechar {referenceMonth}.
+            </p>
+          )}
         </div>
+        {showCheckinModal && (
+          <CheckinModal
+            open={showCheckinModal}
+            onClose={() => setShowCheckinModal(false)}
+            referenceMonth={referenceMonth}
+            pendingBuckets={pendingBuckets}
+          />
+        )}
       </div>
     );
   }
-
-  const pendingBuckets = snapshotStatus?.pendingBuckets ?? [];
-  const referenceMonth = snapshotStatus?.referenceMonth ?? "";
 
   return (
     <div className="space-y-6">

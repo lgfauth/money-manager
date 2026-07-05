@@ -10,13 +10,13 @@ namespace TransactionSchedulerWorker.WorkerHost.Services;
 internal sealed class FinancialHealthSnapshotWorker(
     ILogger<FinancialHealthSnapshotWorker> logger,
     IOptions<WorkerOptions> options,
-    IOptions<CreditCardInvoiceScheduleOptions> scheduleOptions,
+    IOptions<FinancialHealthSnapshotScheduleOptions> scheduleOptions,
     ITimeProvider timeProvider,
     WorkerCommandQueueService commandQueue,
     IServiceScopeFactory scopeFactory) : BackgroundService
 {
     private readonly WorkerOptions _options = options.Value;
-    private readonly CreditCardInvoiceScheduleOptions _schedule = scheduleOptions.Value;
+    private readonly FinancialHealthSnapshotScheduleOptions _schedule = scheduleOptions.Value;
     private DateTimeOffset? _lastRunAt;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -74,13 +74,18 @@ internal sealed class FinancialHealthSnapshotWorker(
                 var nowUtc = timeProvider.GetUtcNow();
                 var tz = ResolveTimeZone(effectiveTimeZoneId);
                 var nowLocal = TimeZoneInfo.ConvertTime(nowUtc, tz);
-                var nextRunLocal = GetNextRunLocal(nowLocal, effectiveHour, effectiveMinute);
-                var nextRunUtc = TimeZoneInfo.ConvertTime(nextRunLocal, TimeZoneInfo.Utc);
+                var dueRunLocal = GetLastDueRunLocal(nowLocal, effectiveHour, effectiveMinute);
+                var dueRunUtc = TimeZoneInfo.ConvertTime(dueRunLocal, TimeZoneInfo.Utc);
 
-                if (nowUtc >= nextRunUtc && !AlreadyRanForSlot(nextRunUtc))
+                if (_lastRunAt is null)
+                {
+                    // Baseline na subida: slots que venceram antes do worker iniciar não são reprocessados.
+                    _lastRunAt = dueRunUtc;
+                }
+                else if (_lastRunAt != dueRunUtc)
                 {
                     await RunOnceAsync(nowUtc, stoppingToken, "schedule");
-                    _lastRunAt = nextRunUtc;
+                    _lastRunAt = dueRunUtc;
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -141,23 +146,17 @@ internal sealed class FinancialHealthSnapshotWorker(
         }
     }
 
-    private bool AlreadyRanForSlot(DateTimeOffset slotUtc)
-        => _lastRunAt.HasValue && _lastRunAt.Value == slotUtc;
-
     private static TimeZoneInfo ResolveTimeZone(string? timeZoneId)
         => string.IsNullOrWhiteSpace(timeZoneId) ? TimeZoneInfo.Local : TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 
-    private static DateTimeOffset GetNextRunLocal(DateTimeOffset nowLocal, int hour, int minute)
+    // Slot de execução mais recente que já venceu (hoje se o horário já passou, senão o de ontem).
+    private static DateTimeOffset GetLastDueRunLocal(DateTimeOffset nowLocal, int hour, int minute)
     {
         var today = nowLocal.Date;
         var runToday = new DateTimeOffset(
             today.AddHours(hour).AddMinutes(minute),
             nowLocal.Offset);
 
-        return nowLocal <= runToday
-            ? runToday
-            : new DateTimeOffset(
-                today.AddDays(1).AddHours(hour).AddMinutes(minute),
-                nowLocal.Offset);
+        return nowLocal >= runToday ? runToday : runToday.AddDays(-1);
     }
 }
