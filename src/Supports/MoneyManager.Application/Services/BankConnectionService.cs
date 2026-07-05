@@ -92,13 +92,29 @@ public class BankConnectionService : IBankConnectionService
     {
         await _subscriptionService.EnsurePremiumAccessAsync(userId);
 
+        // Keys coladas costumam vir com espaço/quebra de linha no fim — o header Authorization
+        // rejeitaria o valor e o erro se disfarçaria de "key inválida".
+        apiKey = apiKey?.Trim() ?? string.Empty;
+        if (apiKey.Length == 0)
+            throw new InvalidOperationException("API key do Banco MCP não informada.");
+
         BankMcpListConnectionsResult connections;
         try
         {
             connections = await _bankMcpClient.ListConnectionsAsync(apiKey, ct);
         }
-        catch
+        catch (BankMcpKeyExpiredException ex)
         {
+            _logger.LogWarning(ex,
+                "Banco MCP rejeitou a API key (401) na validação para usuário {UserId}", userId);
+            throw new InvalidOperationException(
+                "API key do Banco MCP inválida ou sem permissão. Verifique e tente novamente.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Falha ao validar API key do Banco MCP para usuário {UserId}: {ErrorType} - {ErrorMessage}",
+                userId, ex.GetType().Name, ex.Message);
             throw new InvalidOperationException(
                 "API key do Banco MCP inválida ou sem permissão. Verifique e tente novamente.");
         }
