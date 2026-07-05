@@ -1,13 +1,13 @@
 namespace MoneyManager.Application.DTOs.Response;
 
 /// <summary>
-/// Resultado do processamento em lote de recorrências.
-/// Carrega o número de transações criadas por userId para que o Worker
+/// Resultado do processamento em lote de recorrÃªncias.
+/// Carrega o nÃºmero de transaÃ§Ãµes criadas por userId para que o Worker
 /// possa enviar push notifications sem precisar re-consultar o banco.
 /// </summary>
 public sealed class RecurringProcessingSummary
 {
-    /// <summary>userId ? quantidade de transações criadas nesta execução.</summary>
+    /// <summary>userId ? quantidade de transaÃ§Ãµes criadas nesta execuÃ§Ã£o.</summary>
     public Dictionary<string, int> ProcessedByUser { get; } = [];
 
     public int TotalProcessed => ProcessedByUser.Values.Sum();

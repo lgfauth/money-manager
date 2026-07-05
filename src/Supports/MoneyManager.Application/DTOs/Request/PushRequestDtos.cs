@@ -15,5 +15,5 @@ public class PushUnsubscribeRequestDto
 
 public class PushSendTestRequestDto
 {
-    // Empty body — the test payload is defined in the service
+    // Empty body â€” the test payload is defined in the service
 }

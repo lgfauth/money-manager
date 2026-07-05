@@ -1,15 +1,15 @@
 # MoneyManager - Deploy no Railway
 
-Este projeto possui duas aplicaÁıes separadas que devem ser deployadas no Railway:
+Este projeto possui duas aplica√ß√µes separadas que devem ser deployadas no Railway:
 
 1. **API** (MoneyManager.Presentation) - Backend .NET 9 
 2. **Web** (MoneyManager.Web) - Frontend Blazor WebAssembly
 
-## ?? PrÈ-requisitos
+## ?? Pr√©-requisitos
 
 - Conta no Railway (https://railway.app)
-- MongoDB Atlas ou inst‚ncia MongoDB (pode usar o plugin do Railway)
-- RepositÛrio Git configurado
+- MongoDB Atlas ou inst√¢ncia MongoDB (pode usar o plugin do Railway)
+- Reposit√≥rio Git configurado
 
 ## ?? Deploy da API
 
@@ -18,13 +18,13 @@ Este projeto possui duas aplicaÁıes separadas que devem ser deployadas no Railwa
 1. Acesse Railway Dashboard
 2. Clique em "New Project"
 3. Selecione "Deploy from GitHub repo"
-4. Escolha seu repositÛrio MoneyManager
+4. Escolha seu reposit√≥rio MoneyManager
 
-### 2. Configurar ServiÁo da API
+### 2. Configurar Servi√ßo da API
 
 1. No projeto, clique em "+ New"
 2. Selecione "GitHub Repo"
-3. Configure as vari·veis de ambiente:
+3. Configure as vari√°veis de ambiente:
 
 ```
 MONGODB_URI=mongodb+srv://seu-usuario:senha@cluster.mongodb.net/
@@ -40,11 +40,11 @@ ASPNETCORE_ENVIRONMENT=Production
    - **Port**: `8080`
    - **Health Check Path**: `/health`
 
-6. Deploy ser· autom·tico apÛs salvar
+6. Deploy ser√° autom√°tico ap√≥s salvar
 
 ### 3. Obter URL da API
 
-ApÛs o deploy, vocÍ ter· uma URL como:
+Ap√≥s o deploy, voc√™ ter√° uma URL como:
 ```
 https://moneymanager-api-production.up.railway.app
 ```
@@ -53,15 +53,15 @@ Copie esta URL para usar no deploy do Web.
 
 ## ?? Deploy do Web (Blazor WASM)
 
-### 1. Criar Segundo ServiÁo no Mesmo Projeto
+### 1. Criar Segundo Servi√ßo no Mesmo Projeto
 
 1. No mesmo projeto Railway, clique em "+ New"
-2. Selecione "GitHub Repo" (mesmo repositÛrio)
+2. Selecione "GitHub Repo" (mesmo reposit√≥rio)
 3. Nomeie como "MoneyManager-Web"
 
-### 2. Configurar ServiÁo Web
+### 2. Configurar Servi√ßo Web
 
-1. Configure as vari·veis de ambiente:
+1. Configure as vari√°veis de ambiente:
 
 ```
 API_URL=https://moneymanager-api-production.up.railway.app
@@ -75,7 +75,7 @@ ASPNETCORE_ENVIRONMENT=Production
 3. Em Settings ? Deploy:
    - **Port**: `8080`
 
-### 3. Atualizar ConfiguraÁ„o do Web
+### 3. Atualizar Configura√ß√£o do Web
 
 Antes do build final, atualize o arquivo `src/MoneyManager.Web/wwwroot/appsettings.Production.json`:
 
@@ -85,46 +85,46 @@ Antes do build final, atualize o arquivo `src/MoneyManager.Web/wwwroot/appsettin
 }
 ```
 
-Ou use uma vari·vel de ambiente e script de build para substituir automaticamente.
+Ou use uma vari√°vel de ambiente e script de build para substituir automaticamente.
 
 ## ??? MongoDB Setup
 
-### OpÁ„o 1: MongoDB Atlas (Recomendado)
+### Op√ß√£o 1: MongoDB Atlas (Recomendado)
 
 1. Crie uma conta em https://www.mongodb.com/cloud/atlas
 2. Crie um cluster gratuito
 3. Configure acesso de rede (IP 0.0.0.0/0 ou IPs do Railway)
-4. Crie um usu·rio de banco de dados
+4. Crie um usu√°rio de banco de dados
 5. Obtenha a connection string
 6. Use como `MONGODB_URI` na API
 
-### OpÁ„o 2: Railway MongoDB Plugin
+### Op√ß√£o 2: Railway MongoDB Plugin
 
 1. No projeto Railway, clique em "+ New"
 2. Selecione "Database" ? "MongoDB"
-3. Railway criar· automaticamente
-4. Use a vari·vel `MONGO_URL` gerada
+3. Railway criar√° automaticamente
+4. Use a vari√°vel `MONGO_URL` gerada
 
-## ?? Vari·veis de Ambiente Necess·rias
+## ?? Vari√°veis de Ambiente Necess√°rias
 
 ### API (MoneyManager.Presentation)
 
-| Vari·vel | DescriÁ„o | Exemplo |
+| Vari√°vel | Descri√ß√£o | Exemplo |
 |----------|-----------|---------|
 | `MONGODB_URI` | Connection string do MongoDB | `mongodb+srv://...` |
-| `JWT_SECRET_KEY` | Chave secreta para JWT (mÌn 32 chars) | `sua-super-chave-secreta-32-caracteres` |
-| `ASPNETCORE_ENVIRONMENT` | Ambiente de execuÁ„o | `Production` |
+| `JWT_SECRET_KEY` | Chave secreta para JWT (m√≠n 32 chars) | `sua-super-chave-secreta-32-caracteres` |
+| `ASPNETCORE_ENVIRONMENT` | Ambiente de execu√ß√£o | `Production` |
 
 ### Web (MoneyManager.Web)
 
-| Vari·vel | DescriÁ„o | Exemplo |
+| Vari√°vel | Descri√ß√£o | Exemplo |
 |----------|-----------|---------|
 | `API_URL` | URL da API deployada | `https://moneymanager-api.up.railway.app` |
-| `ASPNETCORE_ENVIRONMENT` | Ambiente de execuÁ„o | `Production` |
+| `ASPNETCORE_ENVIRONMENT` | Ambiente de execu√ß√£o | `Production` |
 
-## ?? CI/CD Autom·tico
+## ?? CI/CD Autom√°tico
 
-ApÛs configuraÁ„o inicial, o Railway far· deploy autom·tico quando:
+Ap√≥s configura√ß√£o inicial, o Railway far√° deploy autom√°tico quando:
 
 - Push na branch `main`
 - Merge de Pull Request
@@ -143,12 +143,12 @@ Para desabilitar auto-deploy:
 ### Logs
 
 No Railway Dashboard:
-1. Clique no serviÁo
+1. Clique no servi√ßo
 2. Aba "Deployments"
 3. Clique no deployment ativo
 4. Visualize logs em tempo real
 
-### MÈtricas
+### M√©tricas
 
 Railway mostra:
 - CPU Usage
@@ -158,17 +158,17 @@ Railway mostra:
 
 ## ?? Troubleshooting
 
-### API n„o inicia
+### API n√£o inicia
 
 1. Verifique logs no Railway
-2. Confirme `MONGODB_URI` est· correto
+2. Confirme `MONGODB_URI` est√° correto
 3. Teste connection string localmente
-4. Verifique `JWT_SECRET_KEY` tem mÌnimo 32 caracteres
+4. Verifique `JWT_SECRET_KEY` tem m√≠nimo 32 caracteres
 
-### Web n„o conecta na API
+### Web n√£o conecta na API
 
-1. Verifique `API_URL` est· correto
-2. Confirme CORS est· habilitado na API
+1. Verifique `API_URL` est√° correto
+2. Confirme CORS est√° habilitado na API
 3. Teste API no Swagger: `https://sua-api.railway.app`
 4. Verifique logs de erro no console do navegador
 
@@ -176,13 +176,13 @@ Railway mostra:
 
 1. Verifique IP whitelist no MongoDB Atlas
 2. Adicione `0.0.0.0/0` temporariamente para testar
-3. Confirme usu·rio e senha est„o corretos
+3. Confirme usu√°rio e senha est√£o corretos
 4. Teste connection string com MongoDB Compass
 
 ### Build Failures
 
-1. Verifique Dockerfile est· na raiz do repositÛrio
-2. Confirme paths dos projetos est„o corretos
+1. Verifique Dockerfile est√° na raiz do reposit√≥rio
+2. Confirme paths dos projetos est√£o corretos
 3. Limpe build cache no Railway
 4. Reconstrua do zero
 
@@ -206,7 +206,7 @@ MoneyManager/
 
 ## ?? URLs Finais
 
-ApÛs deploy completo:
+Ap√≥s deploy completo:
 
 - **API**: `https://moneymanager-api-production.up.railway.app`
 - **Swagger**: `https://moneymanager-api-production.up.railway.app/swagger`
@@ -216,16 +216,16 @@ ApÛs deploy completo:
 ## ?? Custos
 
 Railway oferece:
-- $5/mÍs de crÈdito gratuito
+- $5/m√™s de cr√©dito gratuito
 - $0.000231/GB-hora para recursos
 - Sem custo para hobby projects (com limites)
 
 Estimativa para este projeto:
-- API: ~$3-5/mÍs
-- Web: ~$2-3/mÍs
+- API: ~$3-5/m√™s
+- Web: ~$2-3/m√™s
 - MongoDB Atlas Free Tier: $0
 
-**Total estimado: $5-8/mÍs** (ou gr·tis dentro dos limites)
+**Total estimado: $5-8/m√™s** (ou gr√°tis dentro dos limites)
 
 ## ?? Suporte
 
@@ -235,12 +235,12 @@ Estimativa para este projeto:
 
 ## ?? Pronto!
 
-Agora vocÍ tem:
+Agora voc√™ tem:
 - ? API deployada e funcionando
 - ? Web app deployada e funcionando  
 - ? MongoDB configurado
-- ? CI/CD autom·tico
+- ? CI/CD autom√°tico
 - ? Monitoramento e logs
 - ? Health checks ativos
 
-Acesse sua aplicaÁ„o e comece a usar! ??
+Acesse sua aplica√ß√£o e comece a usar! ??

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ?? Script de Deploy Railway - MoneyManager
-# Este script automatiza o deploy das duas aplicaÁıes no Railway
+# Este script automatiza o deploy das duas aplica√ß√µes no Railway
 
 set -e
 
@@ -15,7 +15,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# FunÁ„o para printar com cor
+# Fun√ß√£o para printar com cor
 print_success() {
     echo -e "${GREEN}? $1${NC}"
 }
@@ -32,10 +32,10 @@ print_info() {
     echo -e "${YELLOW}? $1${NC}"
 }
 
-# Verificar se Railway CLI est· instalado
+# Verificar se Railway CLI est√° instalado
 echo "Verificando Railway CLI..."
 if ! command -v railway &> /dev/null; then
-    print_error "Railway CLI n„o encontrado!"
+    print_error "Railway CLI n√£o encontrado!"
     echo ""
     echo "Instale com: npm i -g @railway/cli"
     echo "Ou visite: https://docs.railway.app/develop/cli"
@@ -43,10 +43,10 @@ if ! command -v railway &> /dev/null; then
 fi
 print_success "Railway CLI instalado"
 
-# Verificar se est· logado
-echo "Verificando autenticaÁ„o..."
+# Verificar se est√° logado
+echo "Verificando autentica√ß√£o..."
 if ! railway whoami &> /dev/null; then
-    print_warning "N„o est· logado no Railway"
+    print_warning "N√£o est√° logado no Railway"
     echo "Fazendo login..."
     railway login
 fi
@@ -54,11 +54,11 @@ print_success "Autenticado no Railway"
 
 echo ""
 echo "========================================"
-echo "?? ConfiguraÁ„o"
+echo "?? Configura√ß√£o"
 echo "========================================"
 echo ""
 
-# Solicitar informaÁıes
+# Solicitar informa√ß√µes
 read -p "MongoDB Connection String: " MONGODB_CONNECTION
 read -p "JWT Secret Key (min 32 chars): " JWT_SECRET
 read -p "Nome do projeto Railway (ex: moneymanager): " PROJECT_NAME
@@ -69,7 +69,7 @@ echo "?? Iniciando Deploy"
 echo "========================================"
 echo ""
 
-# Criar projeto (se n„o existir)
+# Criar projeto (se n√£o existir)
 echo "1??  Criando/Selecionando projeto..."
 railway link || railway init
 
@@ -78,7 +78,7 @@ echo ""
 echo "2??  Deploying API..."
 echo "-----------------------------------"
 
-# Definir vari·veis de ambiente para API
+# Definir vari√°veis de ambiente para API
 railway variables set MONGODB__CONNECTIONSTRING="$MONGODB_CONNECTION"
 railway variables set MONGODB__DATABASENAME="MoneyAgent"
 railway variables set JWT__SECRETKEY="$JWT_SECRET"
@@ -88,7 +88,7 @@ railway variables set JWT__EXPIRATIONHOURS="24"
 railway variables set ASPNETCORE_ENVIRONMENT="Production"
 railway variables set ASPNETCORE_URLS="http://0.0.0.0:8080"
 
-print_success "Vari·veis de ambiente configuradas"
+print_success "Vari√°veis de ambiente configuradas"
 
 # Fazer deploy
 echo "Fazendo deploy da API..."
@@ -105,12 +105,12 @@ echo ""
 echo "3??  Deploying Frontend..."
 echo "-----------------------------------"
 
-# Definir vari·veis de ambiente para Frontend
+# Definir vari√°veis de ambiente para Frontend
 railway variables set API_URL="https://$API_URL"
 railway variables set ASPNETCORE_ENVIRONMENT="Production"
 railway variables set ASPNETCORE_URLS="http://0.0.0.0:8080"
 
-print_success "Vari·veis de ambiente configuradas"
+print_success "Vari√°veis de ambiente configuradas"
 
 # Fazer deploy
 echo "Fazendo deploy do Frontend..."
@@ -124,16 +124,16 @@ print_success "Frontend URL: $WEB_URL"
 
 echo ""
 echo "========================================"
-echo "? Deploy ConcluÌdo!"
+echo "? Deploy Conclu√≠do!"
 echo "========================================"
 echo ""
-echo "?? URLs da AplicaÁ„o:"
+echo "?? URLs da Aplica√ß√£o:"
 echo "   API:      https://$API_URL"
 echo "   Frontend: https://$WEB_URL"
 echo "   Swagger:  https://$API_URL/swagger"
 echo "   Health:   https://$API_URL/health"
 echo ""
-echo "?? PrÛximos Passos:"
+echo "?? Pr√≥ximos Passos:"
 echo "   1. Acesse https://$WEB_URL para testar"
 echo "   2. Verifique os logs: railway logs"
 echo "   3. Monitore no dashboard: https://railway.app"

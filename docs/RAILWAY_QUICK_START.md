@@ -1,10 +1,10 @@
 # ?? Quick Start - Railway Deploy
 
-## Passo a Passo R·pido
+## Passo a Passo R√°pido
 
 ### 1?? Preparar MongoDB (5 minutos)
 
-**MongoDB Atlas (Gr·tis):**
+**MongoDB Atlas (Gr√°tis):**
 ```
 1. Acesse https://www.mongodb.com/cloud/atlas
 2. Crie conta gratuita
@@ -17,16 +17,16 @@
 ### 2?? Deploy API (10 minutos)
 
 ```bash
-# 1. Push cÛdigo para GitHub
+# 1. Push c√≥digo para GitHub
 git add .
 git commit -m "Preparado para Railway"
 git push origin main
 
 # 2. No Railway:
 # - New Project ? Deploy from GitHub
-# - Selecione repositÛrio
+# - Selecione reposit√≥rio
 
-# 3. Configure vari·veis:
+# 3. Configure vari√°veis:
 MONGODB_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/MoneyManager
 JWT_SECRET_KEY=sua-chave-super-secreta-minimo-32-caracteres
 ASPNETCORE_ENVIRONMENT=Production
@@ -37,7 +37,7 @@ Dockerfile.api
 # 5. Settings ? Deploy ? Port:
 8080
 
-# 6. Deploy autom·tico inicia
+# 6. Deploy autom√°tico inicia
 # 7. Copie a URL gerada (ex: https://xxx.railway.app)
 ```
 
@@ -45,9 +45,9 @@ Dockerfile.api
 
 ```bash
 # 1. Mesmo projeto Railway ? + New ? GitHub Repo
-# 2. Mesmo repositÛrio, renomeie para "Web"
+# 2. Mesmo reposit√≥rio, renomeie para "Web"
 
-# 3. Configure vari·veis:
+# 3. Configure vari√°veis:
 API_URL=https://sua-api-railway.railway.app
 ASPNETCORE_ENVIRONMENT=Production
 
@@ -57,7 +57,7 @@ Dockerfile.web
 # 5. Settings ? Deploy ? Port:
 8080
 
-# 6. Deploy autom·tico inicia
+# 6. Deploy autom√°tico inicia
 ```
 
 ### 4?? Testar (2 minutos)
@@ -73,7 +73,7 @@ https://sua-api.railway.app/swagger
 https://seu-web.railway.app
 ```
 
-## ? Comandos ⁄teis
+## ? Comandos √öteis
 
 ```bash
 # Ver logs API
@@ -85,13 +85,13 @@ railway logs --service web
 # Restart API
 railway restart --service api
 
-# Vari·veis de ambiente
+# Vari√°veis de ambiente
 railway variables
 ```
 
-## ?? Troubleshooting R·pido
+## ?? Troubleshooting R√°pido
 
-**API n„o inicia:**
+**API n√£o inicia:**
 ```bash
 # Verifique MONGODB_URI
 railway variables | grep MONGODB
@@ -100,7 +100,7 @@ railway variables | grep MONGODB
 dotnet run --project src/MoneyManager.Presentation
 ```
 
-**Web n„o conecta:**
+**Web n√£o conecta:**
 ```bash
 # Verifique API_URL
 railway variables | grep API_URL
@@ -117,10 +117,10 @@ MongoDB Atlas ? Network Access ? 0.0.0.0/0
 
 ## ?? Checklist
 
-- [ ] CÛdigo no GitHub
+- [ ] C√≥digo no GitHub
 - [ ] MongoDB Atlas configurado
 - [ ] Railway projeto criado
-- [ ] API deployada (vari·veis OK)
+- [ ] API deployada (vari√°veis OK)
 - [ ] Web deployada (API_URL OK)
 - [ ] Health check API OK
 - [ ] Swagger API abrindo
@@ -129,7 +129,7 @@ MongoDB Atlas ? Network Access ? 0.0.0.0/0
 
 ## ?? URLs Importantes
 
-Substitua `xxx` com seu domÌnio Railway:
+Substitua `xxx` com seu dom√≠nio Railway:
 
 - ?? **API**: `https://xxx-api.railway.app`
 - ?? **Swagger**: `https://xxx-api.railway.app/swagger`
@@ -138,10 +138,10 @@ Substitua `xxx` com seu domÌnio Railway:
 
 ## ?? Dicas
 
-1. **MongoDB**: Use Atlas Free Tier (512MB gr·tis)
-2. **Railway**: $5 crÈdito gr·tis/mÍs
-3. **DomÌnio**: Configure custom domain depois
-4. **HTTPS**: Railway provÍ SSL autom·tico
+1. **MongoDB**: Use Atlas Free Tier (512MB gr√°tis)
+2. **Railway**: $5 cr√©dito gr√°tis/m√™s
+3. **Dom√≠nio**: Configure custom domain depois
+4. **HTTPS**: Railway prov√™ SSL autom√°tico
 5. **Logs**: Monitore primeiro deploy
 
 ## ?? Tempo Total
@@ -154,7 +154,7 @@ Substitua `xxx` com seu domÌnio Railway:
 
 ## ?? Ajuda
 
-Algo n„o funcionou?
+Algo n√£o funcionou?
 
 1. Verifique `RAILWAY.md` para detalhes
 2. Veja logs no Railway Dashboard

@@ -1,16 +1,16 @@
 @echo off
 REM ?? Script de Deploy Railway - MoneyManager (Windows)
-REM Este script automatiza o deploy das duas aplicaÁıes no Railway
+REM Este script automatiza o deploy das duas aplica√ß√µes no Railway
 
 echo.
 echo ?? MoneyManager - Railway Deploy Script
 echo ========================================
 echo.
 
-REM Verificar se Railway CLI est· instalado
+REM Verificar se Railway CLI est√° instalado
 where railway >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo ? Railway CLI n„o encontrado!
+    echo ? Railway CLI n√£o encontrado!
     echo.
     echo Instale com: npm i -g @railway/cli
     echo Ou visite: https://docs.railway.app/develop/cli
@@ -19,10 +19,10 @@ if %ERRORLEVEL% NEQ 0 (
 echo ? Railway CLI instalado
 echo.
 
-REM Verificar se est· logado
+REM Verificar se est√° logado
 railway whoami >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo ? N„o est· logado no Railway
+    echo ? N√£o est√° logado no Railway
     echo Fazendo login...
     railway login
 )
@@ -30,11 +30,11 @@ echo ? Autenticado no Railway
 echo.
 
 echo ========================================
-echo ?? ConfiguraÁ„o
+echo ?? Configura√ß√£o
 echo ========================================
 echo.
 
-REM Solicitar informaÁıes
+REM Solicitar informa√ß√µes
 set /p MONGODB_CONNECTION="MongoDB Connection String: "
 set /p JWT_SECRET="JWT Secret Key (min 32 chars): "
 set /p PROJECT_NAME="Nome do projeto Railway: "
@@ -54,7 +54,7 @@ REM Deploy API
 echo 2??  Deploying API...
 echo -----------------------------------
 
-REM Configurar vari·veis de ambiente para API
+REM Configurar vari√°veis de ambiente para API
 railway variables set MONGODB__CONNECTIONSTRING="%MONGODB_CONNECTION%"
 railway variables set MONGODB__DATABASENAME="MoneyAgent"
 railway variables set JWT__SECRETKEY="%JWT_SECRET%"
@@ -64,7 +64,7 @@ railway variables set JWT__EXPIRATIONHOURS="24"
 railway variables set ASPNETCORE_ENVIRONMENT="Production"
 railway variables set ASPNETCORE_URLS="http://0.0.0.0:8080"
 
-echo ? Vari·veis de ambiente configuradas
+echo ? Vari√°veis de ambiente configuradas
 
 REM Fazer deploy
 echo Fazendo deploy da API...
@@ -81,12 +81,12 @@ REM Deploy Frontend
 echo 3??  Deploying Frontend...
 echo -----------------------------------
 
-REM Configurar vari·veis de ambiente para Frontend
+REM Configurar vari√°veis de ambiente para Frontend
 railway variables set API_URL="https://%API_URL%"
 railway variables set ASPNETCORE_ENVIRONMENT="Production"
 railway variables set ASPNETCORE_URLS="http://0.0.0.0:8080"
 
-echo ? Vari·veis de ambiente configuradas
+echo ? Vari√°veis de ambiente configuradas
 
 REM Fazer deploy
 echo Fazendo deploy do Frontend...
@@ -100,16 +100,16 @@ echo ? Frontend URL: %WEB_URL%
 echo.
 
 echo ========================================
-echo ? Deploy ConcluÌdo!
+echo ? Deploy Conclu√≠do!
 echo ========================================
 echo.
-echo ?? URLs da AplicaÁ„o:
+echo ?? URLs da Aplica√ß√£o:
 echo    API:      https://%API_URL%
 echo    Frontend: https://%WEB_URL%
 echo    Swagger:  https://%API_URL%/swagger
 echo    Health:   https://%API_URL%/health
 echo.
-echo ?? PrÛximos Passos:
+echo ?? Pr√≥ximos Passos:
 echo    1. Acesse https://%WEB_URL% para testar
 echo    2. Verifique os logs: railway logs
 echo    3. Monitore no dashboard: https://railway.app
