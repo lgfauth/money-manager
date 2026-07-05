@@ -163,6 +163,7 @@ export const recurringSchema = z.object({
 export const bankMcpApiKeySchema = z.object({
   apiKey: z
     .string()
+    .trim() // keys coladas costumam vir com espaço/quebra de linha nas pontas
     .min(1, "API key obrigatória")
     .regex(/^sk_live_/, "A API key deve começar com sk_live_"),
 });
