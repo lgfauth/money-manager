@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCompleteOnboarding } from "@/hooks/use-bank-connections";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Trash2, GitMerge } from "lucide-react";
+import { Trash2, GitMerge, Loader2 } from "lucide-react";
 import type { AccountMappingDto, OnboardingStrategy } from "@/types/bank-connection";
 
 interface StepStrategyProps {
@@ -26,6 +26,20 @@ export function StepStrategy({
   const [customDate, setCustomDate] = useState("");
   const completeOnboarding = useCompleteOnboarding(connectionId);
 
+  // Enquanto a configuração roda (migração de categorias + primeiro sync), impede
+  // que o usuário saia da página com F5/fechar aba sem ver um aviso do navegador.
+  useEffect(() => {
+    if (!completeOnboarding.isPending) return;
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [completeOnboarding.isPending]);
+
   function handleFinish() {
     completeOnboarding.mutate(
       {
@@ -40,6 +54,24 @@ export function StepStrategy({
 
   return (
     <div className="space-y-6">
+      {/* Overlay de tela cheia durante a configuração — bloqueia cliques em toda a página
+          (inclusive o X do modal) até o onboarding terminar. */}
+      {completeOnboarding.isPending && (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-background/80 backdrop-blur-sm"
+          role="alert"
+          aria-busy="true"
+        >
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="max-w-xs text-center text-sm font-medium">
+            Configurando conta, isso pode demorar alguns minutos!
+          </p>
+          <p className="max-w-xs text-center text-xs text-muted-foreground">
+            Estamos preparando suas categorias e importando as transações do
+            banco. Não feche nem recarregue a página.
+          </p>
+        </div>
+      )}
       <p className="text-sm text-muted-foreground">
         O que fazer com os lançamentos que você já tem no MoneyManager?
       </p>
