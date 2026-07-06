@@ -77,12 +77,46 @@ export default function FinancialHealthPage() {
             </Button>
           )}
         </PageHeader>
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Reserva de emergência</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <p className="text-xs text-muted-foreground">Saldo atual</p>
+              <p className="text-xl font-bold text-primary">
+                {formatCurrency(score.projection.currentReserveBalance)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Investimentos FIRE</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <p className="text-xs text-muted-foreground">Saldo atual</p>
+              <p className="text-xl font-bold text-primary">
+                {formatCurrency(score.projection.currentFireBalance)}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Gastos do mês</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <p className="text-xs text-muted-foreground">Total até agora</p>
+              <p className="text-xl font-bold text-red-500">{formatCurrency(score.totalExpenses)}</p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="flex flex-col items-center justify-center py-10 text-center">
           <p className="text-lg font-medium text-muted-foreground">
-            Nenhuma movimentação registrada este mês ainda
+            Score ainda não calculado
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            O score será calculado assim que houver receitas lançadas no mês atual.
+            O cálculo será efetuado para este mês assim que tivermos uma entrada de renda confirmada.
+            Antes disso, não é possível calcular o seu Score.
           </p>
           {pendingBuckets.length > 0 && (
             <p className="mt-4 text-sm font-medium text-primary">

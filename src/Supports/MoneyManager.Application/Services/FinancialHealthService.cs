@@ -218,9 +218,6 @@ public class FinancialHealthService(IUnitOfWork unitOfWork, IProcessLogger proce
             .Where(t => t.Type == TransactionType.Income)
             .Sum(t => t.Amount);
 
-        if (totalIncome == 0)
-            return new HealthScoreResponseDto { HasData = false, ReferenceMonth = currentMonth };
-
         var totalInvestments = transactions
             .Where(t => t.CategoryId != null && allTrackedCategoryIds.Contains(t.CategoryId))
             .Sum(t => Math.Abs(t.Amount));
@@ -234,6 +231,25 @@ public class FinancialHealthService(IUnitOfWork unitOfWork, IProcessLogger proce
 
         var currentFireBalance = await GetEffectiveBalanceAsync(fireBucket);
         var currentReserveBalance = await GetEffectiveBalanceAsync(reserveBucket);
+
+        if (totalIncome == 0)
+        {
+            // Sem receita no mês o score não é calculável (a renda é o denominador das metas),
+            // mas os saldos dos buckets já configurados devem aparecer para o usuário.
+            return new HealthScoreResponseDto
+            {
+                HasData = false,
+                ReferenceMonth = currentMonth,
+                TotalExpenses = totalExpenses,
+                TotalInvestments = totalInvestments,
+                Projection = new FireProjectionDto
+                {
+                    ReserveTarget = totalExpenses * settings.ReserveMonths,
+                    CurrentFireBalance = currentFireBalance,
+                    CurrentReserveBalance = currentReserveBalance
+                }
+            };
+        }
 
         var investTarget = totalIncome * (settings.InvestPercent / 100m);
         var investMetric = CalcMetric(totalInvestments, investTarget);

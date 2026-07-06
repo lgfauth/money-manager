@@ -254,8 +254,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure for Railway deployment
-app.Urls.Add("http://0.0.0.0:8080");
+// Configure for Railway deployment (Railway injeta PORT; fallback 8080 mantém o comportamento atual)
+app.Urls.Add($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
 
 // Use forwarded headers FIRST (before any other middleware)
 app.UseForwardedHeaders();
