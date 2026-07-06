@@ -246,7 +246,7 @@ builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy =>
     {
         policy.WithOrigins(allowedOrigins)
-              .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+              .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
               .WithHeaders("Content-Type", "Authorization")
               .AllowCredentials();
     });
