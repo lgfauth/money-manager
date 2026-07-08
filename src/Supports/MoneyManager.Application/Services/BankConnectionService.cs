@@ -44,6 +44,12 @@ public interface IBankConnectionService
 
 public class BankConnectionService : IBankConnectionService
 {
+    // Janela de sobreposição do sync incremental: cada busca retrocede este número de dias
+    // a partir do LastSyncAt. Compensa transações retrodatadas pelo Open Finance — postadas
+    // com data anterior ao momento em que ficam disponíveis para consulta (ex.: PIX que a
+    // instituição só expõe no dia seguinte). O dedup por ExternalId evita reinserção.
+    private const int SyncLookbackDays = 2;
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBankMcpClient _bankMcpClient;
     private readonly ISubscriptionService _subscriptionService;
@@ -619,7 +625,11 @@ public class BankConnectionService : IBankConnectionService
         {
             try
             {
-                var since = selected.LastSyncAt ?? connection.CutoffDate ?? DateTime.UtcNow.AddMonths(-12);
+                // No sync incremental, retrocede a janela para capturar transações retrodatadas;
+                // no primeiro sync (sem LastSyncAt), parte do cutoff da conexão.
+                var since = selected.LastSyncAt is { } lastSyncAt
+                    ? lastSyncAt.AddDays(-SyncLookbackDays)
+                    : connection.CutoffDate ?? DateTime.UtcNow.AddMonths(-12);
                 var page = 1;
                 var imported = 0;
 

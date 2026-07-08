@@ -3,6 +3,7 @@ using NSubstitute;
 using Xunit;
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Entities;
+using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Exceptions;
 using MoneyManager.Domain.Interfaces;
 using MoneyManager.Observability;
@@ -146,5 +147,58 @@ public class BankConnectionServiceTests
 
         await Assert.ThrowsAsync<PremiumRequiredException>(
             () => _service.GetAvailableConnectionsAsync(UserId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WhenAccountAlreadySynced_ShouldQueryFromTwoDaysBeforeLastSync()
+    {
+        // Arrange — conexão já sincronizada anteriormente (LastSyncAt definido na conta).
+        var lastSyncAt = new DateTime(2026, 7, 8, 18, 0, 0, DateTimeKind.Utc);
+        const string externalAccountId = "acc-ext-1";
+        const string connectionId = "conn1";
+
+        var connection = new BankConnection
+        {
+            Id = connectionId,
+            UserId = UserId,
+            ExternalConnectionId = "item-1",
+            Status = BankConnectionStatus.Connected,
+            SelectedAccounts =
+            [
+                new SelectedBankAccount
+                {
+                    ExternalAccountId = externalAccountId,
+                    Type = "BANK",
+                    MoneyManagerAccountId = "mm-acc-1",
+                    MoneyManagerEntityType = "Account",
+                    LastSyncAt = lastSyncAt
+                }
+            ]
+        };
+
+        _bankConnectionRepo.GetByUserIdAndIdAsync(UserId, connectionId).Returns(connection);
+        _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = "enc:key" });
+        _unitOfWorkMock.Categories.Returns(Substitute.For<IRepository<Category>>());
+        _unitOfWorkMock.Accounts.Returns(Substitute.For<IRepository<Account>>());
+
+        _bankMcpClient.ListAccountsAsync("key", connection.ExternalConnectionId, Arg.Any<CancellationToken>())
+            .Returns([]);
+        _bankMcpClient.ListTransactionsAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(),
+                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new BankMcpTransactionPage(0, 1, 1, []));
+
+        // Act
+        await _service.SyncNowAsync(UserId, connectionId, CancellationToken.None);
+
+        // Assert — a busca deve retroceder 2 dias a partir do LastSyncAt.
+        await _bankMcpClient.Received(1).ListTransactionsAsync(
+            "key",
+            externalAccountId,
+            lastSyncAt.AddDays(-2),
+            Arg.Any<DateTime>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<CancellationToken>());
     }
 }
