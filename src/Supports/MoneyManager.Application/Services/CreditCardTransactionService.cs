@@ -85,7 +85,8 @@ public class CreditCardTransactionService : ICreditCardTransactionService
 
             // Compra realizada exatamente no dia de fechamento após o worker ter fechado a fatura:
             // o worker já abriu a fatura do período seguinte — redirecionar a parcela para ela.
-            if ((invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.Overdue)
+            // Inclui "Paid" pois a fatura pode já ter sido fechada e paga no mesmo dia do fechamento.
+            if ((invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.Overdue || invoice.Status == InvoiceStatus.Paid)
                 && targetDate.Date == invoice.ClosingDate.Date)
             {
                 referenceMonth = CreditCardDateUtils.AddMonths(referenceMonth, 1);
