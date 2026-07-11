@@ -105,7 +105,7 @@ export default function FinancialHealthPage() {
               <CardTitle className="text-sm">Gastos do mês</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1">
-              <p className="text-xs text-muted-foreground">Total até agora</p>
+              <p className="text-xs text-muted-foreground">Total do mês</p>
               <p className="text-xl font-bold text-red-500">{formatCurrency(score.totalExpenses)}</p>
             </CardContent>
           </Card>
@@ -115,8 +115,8 @@ export default function FinancialHealthPage() {
             Score ainda não calculado
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            O cálculo será efetuado para este mês assim que tivermos uma entrada de renda confirmada.
-            Antes disso, não é possível calcular o seu Score.
+            O cálculo usa como referência o mês anterior (período fechado) e não houve
+            entrada de renda confirmada nele. Sem isso, não é possível calcular o seu Score.
           </p>
           {pendingBuckets.length > 0 && (
             <p className="mt-4 text-sm font-medium text-primary">
@@ -161,7 +161,7 @@ export default function FinancialHealthPage() {
           </p>
           <ScoreRing score={score.overallScore} size={140} />
           <p className="text-xs text-muted-foreground">
-            {score.referenceMonth} · mês em andamento
+            {score.referenceMonth} · mês fechado
           </p>
         </Card>
 
@@ -267,7 +267,7 @@ export default function FinancialHealthPage() {
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               {score.projection.estimatedMonthsToFire === null
-                ? "Sem aporte ativo este mês"
+                ? "Sem aporte ativo no mês de referência"
                 : "com o aporte atual mantido"}
             </p>
           </CardContent>

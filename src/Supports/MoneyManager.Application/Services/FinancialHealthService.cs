@@ -210,9 +210,12 @@ public class FinancialHealthService(IUnitOfWork unitOfWork, IProcessLogger proce
             .Distinct()
             .ToHashSet();
 
+        // Usa o mês anterior (período fechado) como referência para evitar leituras
+        // parciais do mês corrente, que distorcem a saúde financeira do usuário.
         var now = DateTime.UtcNow;
-        var currentMonth = $"{now.Year:D4}-{now.Month:D2}";
-        var transactions = (await unitOfWork.Transactions.GetByUserAndMonthAsync(userId, now.Year, now.Month)).ToList();
+        var referenceDate = now.AddMonths(-1);
+        var referenceMonth = $"{referenceDate.Year:D4}-{referenceDate.Month:D2}";
+        var transactions = (await unitOfWork.Transactions.GetByUserAndMonthAsync(userId, referenceDate.Year, referenceDate.Month)).ToList();
 
         var totalIncome = transactions
             .Where(t => t.Type == TransactionType.Income)
@@ -239,7 +242,7 @@ public class FinancialHealthService(IUnitOfWork unitOfWork, IProcessLogger proce
             return new HealthScoreResponseDto
             {
                 HasData = false,
-                ReferenceMonth = currentMonth,
+                ReferenceMonth = referenceMonth,
                 TotalExpenses = totalExpenses,
                 TotalInvestments = totalInvestments,
                 Projection = new FireProjectionDto
@@ -284,7 +287,7 @@ public class FinancialHealthService(IUnitOfWork unitOfWork, IProcessLogger proce
         {
             HasData = true,
             OverallScore = overallScore,
-            ReferenceMonth = currentMonth,
+            ReferenceMonth = referenceMonth,
             TotalIncome = totalIncome,
             TotalExpenses = totalExpenses,
             TotalInvestments = totalInvestments,

@@ -402,4 +402,39 @@ public class FinancialHealthServiceTests
         Assert.Equal(3000m, result.TotalExpenses);
         Assert.InRange(result.OverallScore, 0, 100);
     }
+
+    [Fact]
+    public async Task GetHealthScoreAsync_ShouldUsePreviousMonthAsReference()
+    {
+        // Arrange
+        var settings = new FinancialHealthSettings
+        {
+            UserId = UserId,
+            InvestPercent = 20,
+            ReserveMonths = 6,
+            FireMultiplier = 250,
+            FixedExpensePercent = 50,
+            InstallmentPercent = 30
+        };
+
+        var transactions = new List<Transaction>
+        {
+            new() { UserId = UserId, Type = TransactionType.Income, Amount = 10000m }
+        };
+
+        var previousMonthDate = DateTime.UtcNow.AddMonths(-1);
+        var expectedReferenceMonth = $"{previousMonthDate.Year:D4}-{previousMonthDate.Month:D2}";
+
+        _settingsRepo.GetByUserIdAsync(UserId).Returns(settings);
+        _bucketsRepo.GetByUserIdAsync(UserId).Returns([]);
+        _transactionsRepo
+            .GetByUserAndMonthAsync(UserId, previousMonthDate.Year, previousMonthDate.Month)
+            .Returns(transactions);
+
+        // Act
+        var result = await _service.GetHealthScoreAsync(UserId);
+
+        // Assert
+        Assert.Equal(expectedReferenceMonth, result.ReferenceMonth);
+    }
 }
