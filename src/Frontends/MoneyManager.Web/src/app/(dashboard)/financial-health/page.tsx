@@ -10,10 +10,13 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Settings, CalendarCheck } from "lucide-react";
+import { Settings, CalendarCheck, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSnapshotStatus } from "@/hooks/use-financial-health";
 import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from "@/config/constants";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-client";
+import { toast } from "sonner";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat(DEFAULT_LOCALE, {
@@ -34,11 +37,21 @@ function formatMonths(months: number | null): string {
 
 export default function FinancialHealthPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showCheckinModal, setShowCheckinModal] = useState(false);
 
   const { data: settings, isLoading: loadingSettings, isFetching: fetchingSettings } = useFinancialHealthSettings();
-  const { data: score, isLoading: loadingScore } = useHealthScore();
+  const { data: score, isLoading: loadingScore, isFetching: fetchingScore } = useHealthScore();
   const { data: snapshotStatus } = useSnapshotStatus();
+
+  // O score é recalculado a cada leitura do endpoint a partir das transações do
+  // mês de referência. Reajustes de categoria em lançamentos do mês passado só
+  // se refletem aqui após invalidar/refazer a busca — o que este botão dispara.
+  async function handleRecalculate() {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.financialHealthScore });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.financialHealthSnapshotStatus });
+    toast.success("Saúde financeira recalculada");
+  }
 
   useEffect(() => {
     if (!loadingSettings && !fetchingSettings && settings === null) {
@@ -70,12 +83,23 @@ export default function FinancialHealthPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Saúde Financeira">
-          {pendingBuckets.length > 0 && (
-            <Button size="sm" onClick={() => setShowCheckinModal(true)}>
-              <CalendarCheck className="mr-2 h-4 w-4" />
-              Fazer check-in
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRecalculate}
+              disabled={fetchingScore}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${fetchingScore ? "animate-spin" : ""}`} />
+              Recalcular agora
             </Button>
-          )}
+            {pendingBuckets.length > 0 && (
+              <Button size="sm" onClick={() => setShowCheckinModal(true)}>
+                <CalendarCheck className="mr-2 h-4 w-4" />
+                Fazer check-in
+              </Button>
+            )}
+          </div>
         </PageHeader>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Card>
@@ -140,6 +164,15 @@ export default function FinancialHealthPage() {
     <div className="space-y-6">
       <PageHeader title="Saúde Financeira">
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRecalculate}
+            disabled={fetchingScore}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${fetchingScore ? "animate-spin" : ""}`} />
+            Recalcular agora
+          </Button>
           <Button variant="outline" size="sm" onClick={() => router.push("/financial-health/setup")}>
             <Settings className="mr-2 h-4 w-4" />
             Configurações

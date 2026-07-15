@@ -8,7 +8,7 @@ import { useBreadcrumbStore } from "@/stores/breadcrumb-store";
 const routeLabels: Record<string, string> = {
   "": "Dashboard",
   accounts: "Contas",
-  "credit-cards": "Cartões",
+  "credit-cards": "Bancos e Contas",
   invoices: "Faturas",
   transactions: "Transações",
   categories: "Categorias",
@@ -19,6 +19,13 @@ const routeLabels: Record<string, string> = {
   settings: "Configurações",
   onboarding: "Onboarding",
   "bancos-e-contas": "Bancos e Contas",
+  "financial-health": "Saúde Financeira",
+};
+
+// Segmentos cujo link no breadcrumb aponta para uma rota diferente da
+// derivada do path (ex.: "credit-cards" leva à listagem de Bancos e Contas).
+const routeHrefOverrides: Record<string, string> = {
+  "credit-cards": "/bancos-e-contas",
 };
 
 const nonNavigableBreadcrumbHrefs = new Set<string>([]);
@@ -45,7 +52,9 @@ export function Breadcrumb({ pathname }: BreadcrumbProps) {
 
   const visibleSegments = segments
     .map((segment, index) => {
-      const href = "/" + segments.slice(0, index + 1).join("/");
+      const href =
+        routeHrefOverrides[segment] ??
+        "/" + segments.slice(0, index + 1).join("/");
       const staticLabel = routeLabels[segment];
       const dynamicLabel = dynamicLabels[segment];
       const label = dynamicLabel ?? staticLabel;
