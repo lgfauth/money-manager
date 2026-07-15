@@ -1,3 +1,38 @@
+# Versão 1.1.2-beta
+
+*Lançamento: 15 de julho de 2026*
+
+---
+
+## ✨ Novidades
+
+### 🔄 Recalcular a Saúde Financeira na hora
+A página de **Saúde Financeira** agora tem um botão **Recalcular agora**. Ajustou a categoria de algum lançamento do mês passado? É só clicar e o sistema refaz o cálculo do score, das métricas e das projeções na hora — sem esperar a próxima virada de mês. 🎯
+
+---
+
+## 🐛 Correções e melhorias
+
+### 📅 Saúde Financeira usa o mês anterior como referência
+O cálculo do score passou a usar sempre o **mês anterior (período já fechado)** como referência, em vez do mês corrente. Assim as métricas deixam de oscilar com leituras parciais de um mês ainda em andamento e refletem um retrato mais fiel da sua situação. Quando o mês anterior não tem renda confirmada, a página explica que o score ainda não é calculável, mas continua mostrando os saldos dos seus baldes.
+
+### 🧭 Breadcrumbs em português e com os links certos
+- A trilha de navegação da Saúde Financeira agora mostra **"Saúde Financeira"** em vez de "Financial-health".
+- Nas faturas de cartão, a trilha passou a exibir **"Bancos e Contas"** (antes "Cartões"), com o link apontando para a página correta.
+
+### 💳 Compra no cartão em fatura fechada e paga no mesmo dia
+Corrigido o lançamento de compras de cartão quando a fatura já estava fechada e paga no mesmo dia da compra — a transação agora entra na fatura correta sem inconsistências.
+
+### 🏦 Sincronização com o banco mais confiável
+- As buscas no Open Banking passam a ser feitas sempre em **D-2**, evitando atrasos e lacunas nos dados recém-postados pelo banco.
+- Corrigimos a **execução do agendamento** das sincronizações automáticas para os bancos conectados, deixando as atualizações periódicas mais estáveis.
+- Adicionamos um **overlay de carregamento** na etapa de estratégia de dados do assistente de conexão, evitando cliques duplicados enquanto a operação é processada.
+
+### 🔧 Ajustes técnicos
+- Corrigido o CORS em alguns endpoints de atualização (PATCH).
+
+---
+
 # Versão 1.1.1-beta
 
 *Lançamento: 04 de julho de 2026*
