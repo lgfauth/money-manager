@@ -21,6 +21,7 @@ public class BankConnectionServiceTests
     private readonly ISubscriptionService _subscriptionServiceMock;
     private readonly IEncryptionService _encryptionServiceMock;
     private readonly ICreditCardService _creditCardServiceMock;
+    private readonly ICreditCardInvoiceService _creditCardInvoiceServiceMock;
     private readonly BankConnectionService _service;
 
     private const string UserId = "user1";
@@ -35,6 +36,7 @@ public class BankConnectionServiceTests
         _subscriptionServiceMock = Substitute.For<ISubscriptionService>();
         _encryptionServiceMock = Substitute.For<IEncryptionService>();
         _creditCardServiceMock = Substitute.For<ICreditCardService>();
+        _creditCardInvoiceServiceMock = Substitute.For<ICreditCardInvoiceService>();
 
         _unitOfWorkMock.Users.Returns(_userRepo);
         _unitOfWorkMock.BankConnections.Returns(_bankConnectionRepo);
@@ -48,7 +50,7 @@ public class BankConnectionServiceTests
             _subscriptionServiceMock,
             Substitute.For<IAccountService>(),
             _creditCardServiceMock,
-            Substitute.For<ICreditCardInvoiceService>(),
+            _creditCardInvoiceServiceMock,
             Substitute.For<ITransactionService>(),
             Substitute.For<ICreditCardTransactionService>(),
             Substitute.For<IRecurringTransactionService>(),
@@ -272,5 +274,69 @@ public class BankConnectionServiceTests
                 Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(),
                 Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
         });
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_ForCreditCardAccount_ShouldSyncClosedInvoicesPaymentStatus()
+    {
+        // Regressão: faturas antigas pagas via banco ficavam presas como Closed/Overdue porque
+        // o sync só olhava a fatura aberta atual. A partir daqui, toda sincronização de cartão
+        // também busca as faturas fechadas no Banco MCP e propaga o payment_status confirmado.
+        const string connectionId = "conn1";
+        const string externalAccountId = "acc-ext-1";
+        const string cardId = "card1";
+
+        var connection = new BankConnection
+        {
+            Id = connectionId,
+            UserId = UserId,
+            ExternalConnectionId = "item-1",
+            Status = BankConnectionStatus.Connected,
+            SelectedAccounts =
+            [
+                new SelectedBankAccount
+                {
+                    ExternalAccountId = externalAccountId,
+                    Type = "CREDIT",
+                    MoneyManagerAccountId = cardId,
+                    MoneyManagerEntityType = "CreditCard"
+                }
+            ]
+        };
+
+        _bankConnectionRepo.GetByUserIdAndIdAsync(UserId, connectionId).Returns(connection);
+        _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = "enc:key" });
+        _unitOfWorkMock.Categories.Returns(Substitute.For<IRepository<Category>>());
+
+        var card = new CreditCard { Id = cardId, UserId = UserId, ClosingDay = 15, BillingDueDay = 22 };
+        _cardRepo.GetByIdAsync(cardId).Returns(card);
+
+        _bankMcpClient.ListAccountsAsync("key", connection.ExternalConnectionId, Arg.Any<CancellationToken>())
+            .Returns(new List<BankMcpAccount>
+            {
+                new(externalAccountId, "CREDIT", "CREDIT_CARD", "Banco", "1234", 0, "item-1", "612",
+                    5000m, 3000m, null, "Visa", null, DateTime.UtcNow.AddDays(10), DateTime.UtcNow.AddDays(3))
+            });
+
+        _bankMcpClient.GetOpenBillAsync("key", externalAccountId, Arg.Any<CancellationToken>())
+            .Returns((BankMcpOpenBillResult?)null);
+
+        var closedBills = new BankMcpCreditCardBillPage(new List<BankMcpCreditCardBill>
+        {
+            new("bill1", DateTime.UtcNow.AddDays(-20), 120m, DateTime.UtcNow.AddDays(-27), "PAID", [])
+        });
+        _bankMcpClient.ListCreditCardBillsAsync("key", externalAccountId, Arg.Any<CancellationToken>())
+            .Returns(closedBills);
+
+        _bankMcpClient.ListTransactionsAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(),
+                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new BankMcpTransactionPage(0, 1, 1, []));
+
+        await _service.SyncNowAsync(UserId, connectionId, CancellationToken.None);
+
+        await _bankMcpClient.Received(1).ListCreditCardBillsAsync("key", externalAccountId, Arg.Any<CancellationToken>());
+        await _creditCardInvoiceServiceMock.Received(1).SyncPaymentStatusFromBankAsync(
+            UserId, cardId, closedBills.Results, Arg.Any<CancellationToken>());
     }
 }

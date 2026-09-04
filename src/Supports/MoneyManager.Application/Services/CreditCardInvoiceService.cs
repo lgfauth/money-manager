@@ -23,6 +23,11 @@ public interface ICreditCardInvoiceService
     Task<CreditCardInvoice> GetOrCreateInvoiceAsync(string userId, CreditCard card, string referenceMonth, InvoiceStatus initialStatus);
     Task RecalculateTotalAsync(string userId, string invoiceId);
     Task<InvoiceStatusSummary> PromotePendingAndMarkOverdueAsync();
+    Task<int> SyncPaymentStatusFromBankAsync(
+        string userId,
+        string creditCardId,
+        IReadOnlyList<BankMcpCreditCardBill> remoteBills,
+        CancellationToken ct);
 }
 
 public record InvoiceStatusSummary(int PromotedToOpen, int ClosedInvoices, int MarkedOverdue);
@@ -444,6 +449,85 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         });
 
         return new InvoiceStatusSummary(promoted, closed, overdue);
+    }
+
+    public async Task<int> SyncPaymentStatusFromBankAsync(
+        string userId,
+        string creditCardId,
+        IReadOnlyList<BankMcpCreditCardBill> remoteBills,
+        CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        // O Banco MCP deriva "payment_status" cruzando faturas (Open Finance BR não expõe um
+        // campo "paga" nativo). Só "PAID" é uma confirmação confiável de pagamento — os demais
+        // status (OPEN, PAST_DUE_UNCONFIRMED, PAST_DUE_UNPAID) não devem alterar o status local,
+        // que já é mantido por data em EnsureCurrentOpenInvoiceAsync/PromotePendingAndMarkOverdueAsync.
+        var paidRemoteBills = remoteBills
+            .Where(b => b.BillClosingDate.HasValue
+                && string.Equals(b.PaymentStatus, "PAID", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (paidRemoteBills.Count == 0)
+            return 0;
+
+        var localInvoicesByReference = (await _unitOfWork.CreditCardInvoices.GetByCardAsync(userId, creditCardId))
+            .Where(i => i.Status == InvoiceStatus.Closed || i.Status == InvoiceStatus.Overdue)
+            .ToDictionary(i => i.ReferenceMonth);
+
+        if (localInvoicesByReference.Count == 0)
+            return 0;
+
+        var markedPaid = 0;
+
+        foreach (var remoteBill in paidRemoteBills)
+        {
+            var referenceMonth = CreditCardDateUtils.FormatReferenceMonth(remoteBill.BillClosingDate!.Value);
+            if (!localInvoicesByReference.TryGetValue(referenceMonth, out var invoice))
+                continue;
+
+            invoice.Status = InvoiceStatus.Paid;
+            invoice.PaidAt = FindPaymentDate(remoteBill, remoteBills);
+            invoice.PaidAmount = remoteBill.TotalAmount;
+            invoice.UpdatedAt = DateTime.UtcNow;
+
+            await _unitOfWork.CreditCardInvoices.UpdateAsync(invoice);
+            markedPaid++;
+        }
+
+        if (markedPaid > 0)
+        {
+            await _unitOfWork.SaveChangesAsync();
+            _processLogger.AddStep("Faturas marcadas como pagas via sincronização bancária", new Dictionary<string, object?>
+            {
+                ["creditCardId"] = creditCardId,
+                ["markedPaid"] = markedPaid
+            });
+        }
+
+        return markedPaid;
+    }
+
+    // Melhor esforço para exibir uma data de pagamento: procura, entre os pagamentos da própria
+    // fatura (pré-pagamento antes do fechamento) e das faturas mais novas (pagamento feito entre
+    // fechamento e vencimento, ou após), um valor aproximado do total da fatura. Se nada bater,
+    // o status ainda é marcado como Paid (confiando no payment_status do Banco MCP) mas sem data.
+    private static DateTime? FindPaymentDate(BankMcpCreditCardBill bill, IReadOnlyList<BankMcpCreditCardBill> allBills)
+    {
+        const decimal tolerance = 0.5m;
+        bool Matches(BankMcpCreditCardBillPayment payment) => Math.Abs(payment.Amount - bill.TotalAmount) <= tolerance;
+
+        var ownPayment = bill.Payments.FirstOrDefault(Matches);
+        if (ownPayment is not null)
+            return ownPayment.PaymentDate;
+
+        return allBills
+            .Where(b => b.BillClosingDate.HasValue && b.BillClosingDate > bill.BillClosingDate)
+            .SelectMany(b => b.Payments)
+            .Where(Matches)
+            .OrderBy(p => p.PaymentDate)
+            .Select(p => (DateTime?)p.PaymentDate)
+            .FirstOrDefault();
     }
 
     private static CreditCardInvoiceResponseDto MapToDto(CreditCardInvoice invoice, CreditCard card)

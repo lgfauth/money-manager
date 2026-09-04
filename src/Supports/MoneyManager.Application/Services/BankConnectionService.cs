@@ -751,6 +751,30 @@ public class BankConnectionService : IBankConnectionService
             },
             ct);
 
+        // Faturas fechadas/vencidas ficavam presas indefinidamente porque o sync só olhava a
+        // fatura aberta atual (abaixo): nada marcava como Paid quando o banco confirmava o
+        // pagamento de uma fatura antiga. Isolado em try/catch para não interromper a atualização
+        // da fatura aberta caso o Banco MCP falhe nesta chamada adicional.
+        try
+        {
+            var closedBills = await _bankMcpClient.ListCreditCardBillsAsync(apiKey, selected.ExternalAccountId, ct);
+            var markedPaid = await _creditCardInvoiceService.SyncPaymentStatusFromBankAsync(
+                userId, selected.MoneyManagerAccountId!, closedBills.Results, ct);
+
+            if (markedPaid > 0)
+            {
+                _logger.LogInformation(
+                    "{Count} fatura(s) do cartão {AccountId} marcada(s) como paga(s) via sincronização bancária",
+                    markedPaid, selected.ExternalAccountId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Erro ao sincronizar status de pagamento de faturas fechadas para account {ExternalAccountId}",
+                selected.ExternalAccountId);
+        }
+
         if (openBill is null)
         {
             _logger.LogInformation(

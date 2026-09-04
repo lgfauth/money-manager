@@ -83,7 +83,7 @@ export default function FinancialHealthPage() {
     return (
       <div className="space-y-6">
         <PageHeader title="Saúde Financeira">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -163,7 +163,7 @@ export default function FinancialHealthPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Saúde Financeira">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"

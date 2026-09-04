@@ -8,6 +8,7 @@ public interface IBankMcpClient
     Task DisconnectAsync(string apiKey, string item, CancellationToken ct);
     Task<IReadOnlyList<BankMcpAccount>> ListAccountsAsync(string apiKey, string item, CancellationToken ct);
     Task<BankMcpOpenBillResult?> GetOpenBillAsync(string apiKey, string accountId, CancellationToken ct);
+    Task<BankMcpCreditCardBillPage> ListCreditCardBillsAsync(string apiKey, string accountId, CancellationToken ct);
     Task<BankMcpTransactionPage> ListTransactionsAsync(
         string apiKey, string accountId, DateTime from, DateTime to,
         int page, int pageSize, CancellationToken ct);
@@ -54,6 +55,22 @@ public record BankMcpOpenBillResult(
     DateTime? DueDate,
     int TransactionCount,
     decimal TotalPendingDebt);
+
+public record BankMcpCreditCardBillPage(IReadOnlyList<BankMcpCreditCardBill> Results);
+
+// payment_status é derivado pelo Banco MCP por cross-match entre faturas (Open Finance BR não
+// expõe um campo "paga" nativo): "PAID" | "OPEN" | "PAST_DUE_UNCONFIRMED" | "PAST_DUE_UNPAID".
+// Só "PAID" deve ser tratado como confirmação de pagamento — os demais mantêm o status local
+// atual (que já é calculado por data em outro lugar).
+public record BankMcpCreditCardBill(
+    string Id,
+    DateTime DueDate,
+    decimal TotalAmount,
+    DateTime? BillClosingDate,
+    string PaymentStatus,
+    IReadOnlyList<BankMcpCreditCardBillPayment> Payments);
+
+public record BankMcpCreditCardBillPayment(DateTime PaymentDate, decimal Amount);
 
 public record BankMcpTransactionPage(
     int Total,

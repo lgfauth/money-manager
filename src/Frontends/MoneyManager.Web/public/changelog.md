@@ -1,3 +1,27 @@
+# Versão 1.1.3-beta
+
+*Lançamento: 04 de setembro de 2026*
+
+---
+
+## ✨ Novidades
+
+### 🔎 Filtros na fatura do cartão e busca por categoria
+- A aba **Transações de Cartão** ganhou os mesmos filtros já disponíveis nas transações de conta: tipo (compra/estorno), cartão e período (de/até).
+- Em ambas as abas de transações (conta e cartão), agora também é possível filtrar por **categoria**.
+
+---
+
+## 🐛 Correções e melhorias
+
+### 💳 Fatura de cartão sem transações vinculadas
+Corrigido um problema em que a fatura de um cartão (alimentado manualmente ou via Open Finance) podia exibir o valor total e as datas corretas, mas aparecer sem nenhuma transação associada. A causa era uma corrida entre a correção do dia de fechamento do cartão a partir dos dados do banco e a importação das transações do período — agora a correção acontece sempre antes, e as sincronizações seguintes realinham automaticamente transações que ainda estivessem presas na fatura errada.
+
+### 📱 Botão "Fazer check-in" cortado no celular
+Corrigido o vazamento do botão de check-in de saúde financeira no layout mobile, que ficava parcialmente fora da tela. O texto agora fica acima e o botão ocupa toda a largura disponível abaixo dele.
+
+---
+
 # Versão 1.1.2-beta
 
 *Lançamento: 15 de julho de 2026*

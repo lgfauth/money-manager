@@ -114,6 +114,29 @@ public class BankMcpClient : IBankMcpClient
             ParseNullableDecimal(response.TotalPendingDebt) ?? 0m);
     }
 
+    public async Task<BankMcpCreditCardBillPage> ListCreditCardBillsAsync(string apiKey, string accountId, CancellationToken ct)
+    {
+        using var request = BuildRequest(HttpMethod.Post, "credit-card-bills/list", apiKey);
+        request.Content = JsonContent.Create(new
+        {
+            account_id = accountId,
+            page_size = 24 // cobre até 2 anos de faturas fechadas por sync
+        });
+
+        var response = await SendAsync<CreditCardBillsListResponse>(request, ct);
+
+        return new BankMcpCreditCardBillPage(
+            (response.Results ?? []).Select(b => new BankMcpCreditCardBill(
+                b.Id,
+                b.DueDate,
+                ParseNullableDecimal(b.TotalAmount) ?? 0m,
+                b.BillClosingDate,
+                b.PaymentStatus ?? "OPEN",
+                (b.Payments ?? []).Select(p => new BankMcpCreditCardBillPayment(
+                    p.PaymentDate,
+                    ParseNullableDecimal(p.Amount) ?? 0m)).ToList())).ToList());
+    }
+
     public async Task<BankMcpTransactionPage> ListTransactionsAsync(
         string apiKey, string accountId, DateTime from, DateTime to,
         int page, int pageSize, CancellationToken ct)
@@ -241,6 +264,21 @@ public class BankMcpClient : IBankMcpClient
         [property: JsonPropertyName("close_date")] string? CloseDate,
         [property: JsonPropertyName("due_date")] string? DueDate,
         [property: JsonPropertyName("transaction_count")] int TransactionCount);
+
+    private record CreditCardBillsListResponse(
+        [property: JsonPropertyName("results")] List<CreditCardBillRaw>? Results);
+
+    private record CreditCardBillRaw(
+        [property: JsonPropertyName("id")] string Id,
+        [property: JsonPropertyName("dueDate")] DateTime DueDate,
+        [property: JsonPropertyName("totalAmount")] string? TotalAmount,
+        [property: JsonPropertyName("billClosingDate")] DateTime? BillClosingDate,
+        [property: JsonPropertyName("payment_status")] string? PaymentStatus,
+        [property: JsonPropertyName("payments")] List<BillPaymentRaw>? Payments);
+
+    private record BillPaymentRaw(
+        [property: JsonPropertyName("paymentDate")] DateTime PaymentDate,
+        [property: JsonPropertyName("amount")] string? Amount);
 
     private record ListTransactionsRaw(
         [property: JsonPropertyName("total")] int Total,

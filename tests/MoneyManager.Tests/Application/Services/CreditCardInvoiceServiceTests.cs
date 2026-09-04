@@ -483,4 +483,107 @@ public class CreditCardInvoiceServiceTests
         Assert.Equal(InvoiceStatus.Overdue, closedPastDue.Status);
         await _unitOfWorkMock.Received(1).SaveChangesAsync();
     }
+
+    [Fact]
+    public async Task SyncPaymentStatusFromBankAsync_WithPaidRemoteBill_ShouldMarkMatchingLocalInvoiceAsPaid()
+    {
+        // Regressão: o sync bancário só olhava a fatura aberta atual e nunca consultava o
+        // histórico de faturas fechadas, então uma fatura antiga paga no banco ficava presa
+        // como Overdue/Closed no app para sempre.
+        var closeDate = DateTime.UtcNow.AddMonths(-2);
+        var referenceMonth = CreditCardDateUtils.FormatReferenceMonth(closeDate);
+        var overdueInvoice = new CreditCardInvoice
+        {
+            UserId = UserId,
+            CreditCardId = "card1",
+            ReferenceMonth = referenceMonth,
+            Status = InvoiceStatus.Overdue,
+            TotalAmount = 500m
+        };
+        _invoiceRepo.GetByCardAsync(UserId, "card1")
+            .Returns(new List<CreditCardInvoice> { overdueInvoice });
+
+        var paymentDate = closeDate.AddDays(6);
+        var remoteBills = new List<BankMcpCreditCardBill>
+        {
+            new(
+                "bill1",
+                closeDate.AddDays(7),
+                500m,
+                closeDate,
+                "PAID",
+                new List<BankMcpCreditCardBillPayment> { new(paymentDate, 500m) })
+        };
+
+        var markedPaid = await _service.SyncPaymentStatusFromBankAsync(UserId, "card1", remoteBills, CancellationToken.None);
+
+        Assert.Equal(1, markedPaid);
+        Assert.Equal(InvoiceStatus.Paid, overdueInvoice.Status);
+        Assert.Equal(500m, overdueInvoice.PaidAmount);
+        Assert.Equal(paymentDate, overdueInvoice.PaidAt);
+        Assert.Null(overdueInvoice.PaidWithAccountId);
+        await _invoiceRepo.Received(1).UpdateAsync(overdueInvoice);
+        await _unitOfWorkMock.Received(1).SaveChangesAsync();
+    }
+
+    [Theory]
+    [InlineData("OPEN")]
+    [InlineData("PAST_DUE_UNCONFIRMED")]
+    [InlineData("PAST_DUE_UNPAID")]
+    public async Task SyncPaymentStatusFromBankAsync_WithNonPaidStatus_ShouldNotChangeLocalInvoice(string paymentStatus)
+    {
+        // PAST_DUE_UNCONFIRMED em especial nunca deve ser tratado como confirmação (positiva ou
+        // negativa): o Banco MCP não conseguiu cruzar com uma fatura mais nova ainda.
+        var closeDate = DateTime.UtcNow.AddMonths(-1);
+        var referenceMonth = CreditCardDateUtils.FormatReferenceMonth(closeDate);
+        var overdueInvoice = new CreditCardInvoice
+        {
+            UserId = UserId,
+            CreditCardId = "card1",
+            ReferenceMonth = referenceMonth,
+            Status = InvoiceStatus.Overdue,
+            TotalAmount = 300m
+        };
+        _invoiceRepo.GetByCardAsync(UserId, "card1")
+            .Returns(new List<CreditCardInvoice> { overdueInvoice });
+
+        var remoteBills = new List<BankMcpCreditCardBill>
+        {
+            new("bill1", closeDate.AddDays(7), 300m, closeDate, paymentStatus, [])
+        };
+
+        var markedPaid = await _service.SyncPaymentStatusFromBankAsync(UserId, "card1", remoteBills, CancellationToken.None);
+
+        Assert.Equal(0, markedPaid);
+        Assert.Equal(InvoiceStatus.Overdue, overdueInvoice.Status);
+        await _invoiceRepo.DidNotReceive().UpdateAsync(Arg.Any<CreditCardInvoice>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task SyncPaymentStatusFromBankAsync_WithAlreadyPaidLocalInvoice_ShouldNotTouchIt()
+    {
+        var closeDate = DateTime.UtcNow.AddMonths(-1);
+        var referenceMonth = CreditCardDateUtils.FormatReferenceMonth(closeDate);
+        var paidInvoice = new CreditCardInvoice
+        {
+            UserId = UserId,
+            CreditCardId = "card1",
+            ReferenceMonth = referenceMonth,
+            Status = InvoiceStatus.Paid,
+            TotalAmount = 300m
+        };
+        _invoiceRepo.GetByCardAsync(UserId, "card1")
+            .Returns(new List<CreditCardInvoice> { paidInvoice });
+
+        var remoteBills = new List<BankMcpCreditCardBill>
+        {
+            new("bill1", closeDate.AddDays(7), 300m, closeDate, "PAID", [])
+        };
+
+        var markedPaid = await _service.SyncPaymentStatusFromBankAsync(UserId, "card1", remoteBills, CancellationToken.None);
+
+        Assert.Equal(0, markedPaid);
+        await _invoiceRepo.DidNotReceive().UpdateAsync(Arg.Any<CreditCardInvoice>());
+    }
 }
