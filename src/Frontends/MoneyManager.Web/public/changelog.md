@@ -17,8 +17,11 @@
 ### 💳 Fatura de cartão sem transações vinculadas
 Corrigido um problema em que a fatura de um cartão (alimentado manualmente ou via Open Finance) podia exibir o valor total e as datas corretas, mas aparecer sem nenhuma transação associada. A causa era uma corrida entre a correção do dia de fechamento do cartão a partir dos dados do banco e a importação das transações do período — agora a correção acontece sempre antes, e as sincronizações seguintes realinham automaticamente transações que ainda estivessem presas na fatura errada.
 
-### 📱 Botão "Fazer check-in" cortado no celular
-Corrigido o vazamento do botão de check-in de saúde financeira no layout mobile, que ficava parcialmente fora da tela. O texto agora fica acima e o botão ocupa toda a largura disponível abaixo dele.
+### 📱 Botões cortados no celular
+Corrigido o vazamento dos botões de ação no layout mobile (Saúde Financeira e outras telas), que ficavam parcialmente fora da tela e exigiam arrastar para o lado para ver o resto do conteúdo. Os botões agora quebram para a linha de baixo quando não cabem lado a lado.
+
+### 💳 Fatura paga no banco não fechava no app
+A sincronização com o banco só verificava a fatura em aberto — se você pagasse uma fatura antiga diretamente no banco (fora do MoneyManager), ela podia ficar presa como "fechada" ou "vencida" para sempre. Agora, a cada sincronização, o sistema também confere o status de pagamento das faturas fechadas junto ao Open Finance e marca automaticamente como paga quando o banco confirma a quitação.
 
 ---
 
