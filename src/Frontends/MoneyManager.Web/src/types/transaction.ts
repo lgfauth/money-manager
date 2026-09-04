@@ -40,6 +40,7 @@ export interface TransactionFilters {
   endDate?: string;
   type?: string;
   accountId?: string;
+  categoryId?: string;
 }
 
 export interface PaginatedResponse<T> {

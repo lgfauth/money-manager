@@ -19,6 +19,7 @@ public interface ITransactionService
         DateTime? endDate = null,
         TransactionType? type = null,
         string? accountId = null,
+        string? categoryId = null,
         string sortBy = "date_desc");
     Task<TransactionResponseDto> GetByIdAsync(string userId, string id);
     Task<TransactionResponseDto> UpdateAsync(string userId, string id, CreateTransactionRequestDto request);
@@ -159,10 +160,11 @@ public class TransactionService : ITransactionService
         DateTime? endDate = null,
         TransactionType? type = null,
         string? accountId = null,
+        string? categoryId = null,
         string sortBy = "date_desc")
     {
         var (items, totalCount) = await _unitOfWork.Transactions.GetPagedByUserAsync(
-            userId, page, pageSize, startDate, endDate, type, accountId, sortBy);
+            userId, page, pageSize, startDate, endDate, type, accountId, categoryId, sortBy);
 
         var mappedItems = await MapToDtosAsync(userId, items.ToList());
 

@@ -30,6 +30,10 @@ import {
   type TransactionEntryTab,
 } from "@/components/transactions/transaction-entry-dialog";
 import { CreditCardTransactionTable } from "@/components/transactions/credit-card-transaction-table";
+import {
+  CreditCardTransactionFilters,
+  type CreditCardFilterValues,
+} from "@/components/transactions/credit-card-transaction-filters";
 import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 
 type TabKind = "bank" | "card";
@@ -53,6 +57,7 @@ export default function TransactionsPage() {
       endDate: searchParams.get("endDate") ?? undefined,
       type: searchParams.get("type") ?? undefined,
       accountId: searchParams.get("accountId") ?? undefined,
+      categoryId: searchParams.get("categoryId") ?? undefined,
     }),
     [searchParams]
   );
@@ -65,6 +70,7 @@ export default function TransactionsPage() {
     useCreditCardTransactions();
   const { data: cards } = useCreditCards();
   const deleteCardTx = useDeleteCreditCardTransaction();
+  const [cardFilters, setCardFilters] = useState<CreditCardFilterValues>({});
 
   const [entryOpen, setEntryOpen] = useState(
     searchParams.get("new") === "true"
@@ -103,6 +109,7 @@ export default function TransactionsPage() {
     if (merged.endDate) params.set("endDate", merged.endDate);
     if (merged.type) params.set("type", merged.type);
     if (merged.accountId) params.set("accountId", merged.accountId);
+    if (merged.categoryId) params.set("categoryId", merged.categoryId);
     router.replace(`/transactions?${params.toString()}`);
   };
 
@@ -137,10 +144,28 @@ export default function TransactionsPage() {
 
   const sortedCardTxs = useMemo(() => {
     if (!cardTxs) return [];
-    return [...cardTxs].sort((a, b) =>
+    const filtered = cardTxs.filter((tx) => {
+      if (cardFilters.type && tx.type !== cardFilters.type) return false;
+      if (
+        cardFilters.creditCardId &&
+        tx.creditCardId !== cardFilters.creditCardId
+      )
+        return false;
+      if (
+        cardFilters.categoryId &&
+        tx.categoryId !== cardFilters.categoryId
+      )
+        return false;
+      if (cardFilters.startDate && tx.purchaseDate < cardFilters.startDate)
+        return false;
+      if (cardFilters.endDate && tx.purchaseDate > cardFilters.endDate)
+        return false;
+      return true;
+    });
+    return filtered.sort((a, b) =>
       b.purchaseDate.localeCompare(a.purchaseDate)
     );
-  }, [cardTxs]);
+  }, [cardTxs, cardFilters]);
 
   return (
     <div className="space-y-6">
@@ -173,6 +198,7 @@ export default function TransactionsPage() {
             filters={{
               type: filters.type,
               accountId: filters.accountId,
+              categoryId: filters.categoryId,
               startDate: filters.startDate,
               endDate: filters.endDate,
             }}
@@ -230,13 +256,18 @@ export default function TransactionsPage() {
         </TabsContent>
 
         <TabsContent value="card" className="mt-4 space-y-4">
+          <CreditCardTransactionFilters
+            filters={cardFilters}
+            onFiltersChange={setCardFilters}
+          />
+
           {cardTxLoading ? (
             <TableSkeleton />
           ) : sortedCardTxs.length === 0 ? (
             <EmptyState
               icon={CreditCard}
-              title="Nenhuma compra registrada"
-              description="Registre sua primeira compra com cartão de crédito."
+              title="Nenhuma compra encontrada"
+              description="Registre sua primeira compra com cartão de crédito ou ajuste os filtros."
               actionLabel="Nova Compra"
               onAction={handleNew}
             />

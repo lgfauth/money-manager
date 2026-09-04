@@ -1,8 +1,7 @@
 "use client";
 
-import { useAccounts } from "@/hooks/use-accounts";
+import { useCreditCards } from "@/hooks/use-credit-cards";
 import { useCategories } from "@/hooks/use-categories";
-import { TransactionType } from "@/types/transaction";
 import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -15,22 +14,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface FilterValues {
+export interface CreditCardFilterValues {
   type?: string;
-  accountId?: string;
+  creditCardId?: string;
   categoryId?: string;
   startDate?: string;
   endDate?: string;
 }
 
-interface TransactionFiltersProps {
-  filters: FilterValues;
-  onFiltersChange: (filters: FilterValues) => void;
+interface CreditCardTransactionFiltersProps {
+  filters: CreditCardFilterValues;
+  onFiltersChange: (filters: CreditCardFilterValues) => void;
 }
 
 const typeLabels: Record<string, string> = {
-  [TransactionType.Income]: "Receita",
-  [TransactionType.Expense]: "Despesa",
+  Purchase: "Compra",
+  Refund: "Estorno",
 };
 
 const getTypeLabel = (type?: string): string => {
@@ -38,16 +37,16 @@ const getTypeLabel = (type?: string): string => {
   return typeLabels[type] || "Todos";
 };
 
-export function TransactionFilters({
+export function CreditCardTransactionFilters({
   filters,
   onFiltersChange,
-}: TransactionFiltersProps) {
-  const { data: accounts } = useAccounts();
+}: CreditCardTransactionFiltersProps) {
+  const { data: cards } = useCreditCards();
   const { data: categories } = useCategories();
 
   const hasActiveFilters =
     filters.type ||
-    filters.accountId ||
+    filters.creditCardId ||
     filters.categoryId ||
     filters.startDate ||
     filters.endDate;
@@ -55,15 +54,15 @@ export function TransactionFilters({
   const clearFilters = () => {
     onFiltersChange({
       type: undefined,
-      accountId: undefined,
+      creditCardId: undefined,
       categoryId: undefined,
       startDate: undefined,
       endDate: undefined,
     });
   };
 
-  const selectedAccount = filters.accountId
-    ? accounts?.find((a) => a.id === filters.accountId)?.name
+  const selectedCard = filters.creditCardId
+    ? cards?.find((c) => c.id === filters.creditCardId)?.name
     : undefined;
 
   const selectedCategory = filters.categoryId
@@ -87,30 +86,30 @@ export function TransactionFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">Todos</SelectItem>
-            <SelectItem value={TransactionType.Income}>Receita</SelectItem>
-            <SelectItem value={TransactionType.Expense}>Despesa</SelectItem>
+            <SelectItem value="Purchase">Compra</SelectItem>
+            <SelectItem value="Refund">Estorno</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs text-muted-foreground">Conta</label>
+        <label className="text-xs text-muted-foreground">Cartão</label>
         <Select
-          value={filters.accountId ?? ""}
+          value={filters.creditCardId ?? ""}
           onValueChange={(v) =>
-            onFiltersChange({ ...filters, accountId: v || undefined })
+            onFiltersChange({ ...filters, creditCardId: v || undefined })
           }
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Todas">
-              {selectedAccount || "Todas"}
+            <SelectValue placeholder="Todos">
+              {selectedCard || "Todos"}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas</SelectItem>
-            {accounts?.map((acc) => (
-              <SelectItem key={acc.id} value={acc.id}>
-                {acc.name}
+            <SelectItem value="">Todos</SelectItem>
+            {cards?.map((card) => (
+              <SelectItem key={card.id} value={card.id}>
+                {card.name}
               </SelectItem>
             ))}
           </SelectContent>

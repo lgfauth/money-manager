@@ -32,6 +32,7 @@ function buildQueryString(filters: TransactionFilters): string {
   if (filters.endDate) params.set("endDate", filters.endDate);
   if (filters.type) params.set("type", filters.type);
   if (filters.accountId) params.set("accountId", filters.accountId);
+  if (filters.categoryId) params.set("categoryId", filters.categoryId);
   return params.toString();
 }
 

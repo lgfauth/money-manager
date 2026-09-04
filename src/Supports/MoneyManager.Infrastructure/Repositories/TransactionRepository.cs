@@ -47,6 +47,7 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         DateTime? endDate = null,
         TransactionType? type = null,
         string? accountId = null,
+        string? categoryId = null,
         string sortBy = "date_desc")
     {
         var filters = new List<FilterDefinition<Transaction>>
@@ -66,6 +67,9 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
 
         if (!string.IsNullOrEmpty(accountId))
             filters.Add(Builders<Transaction>.Filter.Eq(t => t.AccountId, accountId));
+
+        if (!string.IsNullOrEmpty(categoryId))
+            filters.Add(Builders<Transaction>.Filter.Eq(t => t.CategoryId, categoryId));
 
         var combinedFilter = Builders<Transaction>.Filter.And(filters);
 

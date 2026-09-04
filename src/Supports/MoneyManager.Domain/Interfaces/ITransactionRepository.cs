@@ -15,6 +15,7 @@ public interface ITransactionRepository : IRepository<Transaction>
         DateTime? endDate = null,
         TransactionType? type = null,
         string? accountId = null,
+        string? categoryId = null,
         string sortBy = "date_desc");
 
     Task<Transaction?> GetByExternalIdAsync(string userId, string externalId);
