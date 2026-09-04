@@ -625,6 +625,28 @@ public class BankConnectionService : IBankConnectionService
         {
             try
             {
+                var isCreditCard = string.Equals(selected.MoneyManagerEntityType, "CreditCard", StringComparison.Ordinal);
+                CreditCard? creditCard = null;
+
+                if (isCreditCard)
+                {
+                    // Corrige ClosingDay/BillingDueDay e atualiza a fatura aberta a partir dos dados
+                    // do banco ANTES de importar transações: caso contrário, as transações importadas
+                    // abaixo seriam associadas usando um ClosingDay desatualizado, divergindo da fatura
+                    // que este método mantém como "Aberta" — deixando-a sem transações vinculadas.
+                    if (string.Equals(selected.Type, "CREDIT", StringComparison.Ordinal))
+                        await UpdateCreditCardFromSyncAsync(connection.UserId, apiKey, selected, bankAccountsByExternalId, ct);
+
+                    creditCard = await _unitOfWork.CreditCards.GetByIdAsync(selected.MoneyManagerAccountId!);
+                    if (creditCard == null || creditCard.UserId != connection.UserId || creditCard.IsDeleted)
+                    {
+                        _logger.LogWarning(
+                            "Cartão {AccountId} não encontrado para sincronização de transações",
+                            selected.MoneyManagerAccountId);
+                        continue;
+                    }
+                }
+
                 // No sync incremental, retrocede a janela para capturar transações retrodatadas;
                 // no primeiro sync (sem LastSyncAt), parte do cutoff da conexão.
                 var since = selected.LastSyncAt is { } lastSyncAt
@@ -647,8 +669,8 @@ public class BankConnectionService : IBankConnectionService
 
                     foreach (var tx in result.Results.Where(t => t.Status == "POSTED"))
                     {
-                        if (string.Equals(selected.MoneyManagerEntityType, "CreditCard", StringComparison.Ordinal))
-                            await UpsertCreditCardTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, categoryMap, ct);
+                        if (creditCard is not null)
+                            await UpsertCreditCardTransactionAsync(connection.UserId, creditCard, tx, categoryMap, ct);
                         else
                             await UpsertTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, categoryMap, ct);
 
@@ -661,9 +683,6 @@ public class BankConnectionService : IBankConnectionService
 
                 if (string.Equals(selected.Type, "BANK", StringComparison.Ordinal))
                     await UpdateBankAccountBalanceAsync(connection.UserId, selected, bankAccountsByExternalId);
-
-                if (string.Equals(selected.Type, "CREDIT", StringComparison.Ordinal))
-                    await UpdateCreditCardFromSyncAsync(connection.UserId, apiKey, selected, bankAccountsByExternalId, ct);
 
                 selected.LastSyncAt = DateTime.UtcNow;
 
@@ -819,7 +838,7 @@ public class BankConnectionService : IBankConnectionService
     }
 
     private async Task UpsertCreditCardTransactionAsync(
-        string userId, string creditCardId, BankMcpTransaction tx,
+        string userId, CreditCard card, BankMcpTransaction tx,
         IDictionary<string, string> categoryMap, CancellationToken ct)
     {
         var existing = await _unitOfWork.CreditCardTransactions.GetByExternalIdAsync(userId, tx.Id);
@@ -839,12 +858,13 @@ public class BankConnectionService : IBankConnectionService
                 await _unitOfWork.SaveChangesAsync();
             }
 
+            await RepairInvoiceLinkAsync(userId, card, existing);
             return;
         }
 
         await _creditCardTransactionService.CreateAsync(userId, new CreateCreditCardTransactionRequestDto
         {
-            CreditCardId = creditCardId,
+            CreditCardId = card.Id,
             Description = tx.Description,
             CategoryId = await ResolveCategoryIdAsync(userId, tx.CategoryId, categoryMap),
             PurchaseDate = tx.Date,
@@ -857,6 +877,34 @@ public class BankConnectionService : IBankConnectionService
             ExternalId = tx.Id,
             OpenBankingCategoryId = tx.CategoryId
         });
+    }
+
+    // Realinha o InvoiceId de uma transação de cartão já importada quando ele não corresponde
+    // mais ao período implicado pelo ClosingDay atual do cartão. Isso acontece quando o
+    // ClosingDay era um valor provisório no momento em que a transação foi criada e foi
+    // corrigido por uma sincronização posterior (ver comentário em SyncConnectionAsync) —
+    // sem este reparo a transação ficaria presa a uma fatura diferente daquela que o usuário
+    // vê como "Aberta", que passaria a exibir 0 transações.
+    private async Task RepairInvoiceLinkAsync(string userId, CreditCard card, CreditCardTransaction existing)
+    {
+        var correctReferenceMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(existing.PurchaseDate, card.ClosingDay);
+        var currentInvoice = await _unitOfWork.CreditCardInvoices.GetByIdAsync(existing.InvoiceId);
+        if (currentInvoice != null && currentInvoice.ReferenceMonth == correctReferenceMonth)
+            return;
+
+        var targetStatus = currentInvoice?.Status ?? InvoiceStatus.Open;
+        var correctInvoice = await _creditCardInvoiceService.GetOrCreateInvoiceAsync(userId, card, correctReferenceMonth, targetStatus);
+        if (correctInvoice.Id == existing.InvoiceId)
+            return;
+
+        var previousInvoiceId = existing.InvoiceId;
+        existing.InvoiceId = correctInvoice.Id;
+        existing.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.CreditCardTransactions.UpdateAsync(existing);
+        await _unitOfWork.SaveChangesAsync();
+
+        await _creditCardInvoiceService.RecalculateTotalAsync(userId, previousInvoiceId);
+        await _creditCardInvoiceService.RecalculateTotalAsync(userId, correctInvoice.Id);
     }
 
     // Resolve a categoria do usuário pelo categoryId do Pluggy. Transações sem categoryId

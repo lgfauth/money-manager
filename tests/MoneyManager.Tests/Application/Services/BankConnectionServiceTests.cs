@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
+using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
@@ -15,9 +16,11 @@ public class BankConnectionServiceTests
     private readonly IUnitOfWork _unitOfWorkMock;
     private readonly IUserRepository _userRepo;
     private readonly IBankConnectionRepository _bankConnectionRepo;
+    private readonly ICreditCardRepository _cardRepo;
     private readonly IBankMcpClient _bankMcpClient;
     private readonly ISubscriptionService _subscriptionServiceMock;
     private readonly IEncryptionService _encryptionServiceMock;
+    private readonly ICreditCardService _creditCardServiceMock;
     private readonly BankConnectionService _service;
 
     private const string UserId = "user1";
@@ -27,12 +30,15 @@ public class BankConnectionServiceTests
         _unitOfWorkMock = Substitute.For<IUnitOfWork>();
         _userRepo = Substitute.For<IUserRepository>();
         _bankConnectionRepo = Substitute.For<IBankConnectionRepository>();
+        _cardRepo = Substitute.For<ICreditCardRepository>();
         _bankMcpClient = Substitute.For<IBankMcpClient>();
         _subscriptionServiceMock = Substitute.For<ISubscriptionService>();
         _encryptionServiceMock = Substitute.For<IEncryptionService>();
+        _creditCardServiceMock = Substitute.For<ICreditCardService>();
 
         _unitOfWorkMock.Users.Returns(_userRepo);
         _unitOfWorkMock.BankConnections.Returns(_bankConnectionRepo);
+        _unitOfWorkMock.CreditCards.Returns(_cardRepo);
         _encryptionServiceMock.Encrypt(Arg.Any<string>()).Returns(x => "enc:" + x.Arg<string>());
         _encryptionServiceMock.Decrypt(Arg.Any<string>()).Returns(x => x.Arg<string>()["enc:".Length..]);
 
@@ -41,7 +47,7 @@ public class BankConnectionServiceTests
             _bankMcpClient,
             _subscriptionServiceMock,
             Substitute.For<IAccountService>(),
-            Substitute.For<ICreditCardService>(),
+            _creditCardServiceMock,
             Substitute.For<ICreditCardInvoiceService>(),
             Substitute.For<ITransactionService>(),
             Substitute.For<ICreditCardTransactionService>(),
@@ -200,5 +206,71 @@ public class BankConnectionServiceTests
             Arg.Any<int>(),
             Arg.Any<int>(),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_ForCreditCardAccount_ShouldCorrectClosingDayBeforeImportingTransactions()
+    {
+        // Regressão: o ClosingDay do cartão precisa ser corrigido a partir dos dados do banco
+        // ANTES de importar as transações do período, senão elas são associadas a uma fatura
+        // calculada com um ClosingDay desatualizado — divergindo da fatura que o sync mantém
+        // como "Aberta" e fazendo-a aparecer sem nenhuma transação vinculada para o usuário.
+        const string connectionId = "conn1";
+        const string externalAccountId = "acc-ext-1";
+        const string cardId = "card1";
+
+        var connection = new BankConnection
+        {
+            Id = connectionId,
+            UserId = UserId,
+            ExternalConnectionId = "item-1",
+            Status = BankConnectionStatus.Connected,
+            SelectedAccounts =
+            [
+                new SelectedBankAccount
+                {
+                    ExternalAccountId = externalAccountId,
+                    Type = "CREDIT",
+                    MoneyManagerAccountId = cardId,
+                    MoneyManagerEntityType = "CreditCard"
+                }
+            ]
+        };
+
+        _bankConnectionRepo.GetByUserIdAndIdAsync(UserId, connectionId).Returns(connection);
+        _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = "enc:key" });
+        _unitOfWorkMock.Categories.Returns(Substitute.For<IRepository<Category>>());
+
+        // ClosingDay ainda desatualizado no momento do sync — o que o bug expunha.
+        var card = new CreditCard { Id = cardId, UserId = UserId, ClosingDay = 1, BillingDueDay = 10 };
+        _cardRepo.GetByIdAsync(cardId).Returns(card);
+
+        _bankMcpClient.ListAccountsAsync("key", connection.ExternalConnectionId, Arg.Any<CancellationToken>())
+            .Returns(new List<BankMcpAccount>
+            {
+                new(externalAccountId, "CREDIT", "CREDIT_CARD", "Banco", "1234", 0, "item-1", "612",
+                    5000m, 3000m, null, "Visa", null, DateTime.UtcNow.AddDays(10), DateTime.UtcNow.AddDays(3))
+            });
+
+        _bankMcpClient.GetOpenBillAsync("key", externalAccountId, Arg.Any<CancellationToken>())
+            .Returns(new BankMcpOpenBillResult(true, 987.65m, DateTime.UtcNow.AddDays(3), DateTime.UtcNow.AddDays(10), 5, 0));
+
+        _bankMcpClient.ListTransactionsAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(),
+                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new BankMcpTransactionPage(0, 1, 1, []));
+
+        await _service.SyncNowAsync(UserId, connectionId, CancellationToken.None);
+
+        // A correção do cartão (ClosingDay/BillingDueDay a partir do banco) precisa acontecer
+        // antes da busca das transações do período — não depois.
+        Received.InOrder(() =>
+        {
+            _creditCardServiceMock.UpdateFromBankSyncAsync(
+                UserId, cardId, Arg.Any<UpdateCreditCardFromSyncDto>(), Arg.Any<CancellationToken>());
+            _bankMcpClient.ListTransactionsAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(),
+                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
+        });
     }
 }

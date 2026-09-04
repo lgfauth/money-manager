@@ -306,11 +306,22 @@ public class CreditCardInvoiceService : ICreditCardInvoiceService
         if (card == null || card.UserId != userId || card.IsDeleted)
             throw new KeyNotFoundException("Credit card not found");
 
-        var openInvoice = (await _unitOfWork.CreditCardInvoices.GetByCardAsync(userId, creditCardId))
-            .Where(i => i.Status == InvoiceStatus.Open)
-            .OrderBy(i => i.ReferenceMonth)
-            .FirstOrDefault()
-            ?? await EnsureCurrentOpenInvoiceAsync(userId, card);
+        // Resolve a fatura pelo mês de referência implicado pela data de fechamento reportada
+        // pelo banco, em vez de assumir "a fatura aberta mais antiga": se o ClosingDay do cartão
+        // tiver sido corrigido nesta mesma sincronização (ver SyncConnectionAsync), a fatura
+        // "aberta" mais antiga pode não ser mais a fatura do período corrente, o que faria este
+        // método atualizar o total de uma fatura diferente daquela que recebe as transações.
+        var openInvoice = request.CloseDate.HasValue
+            ? await GetOrCreateInvoiceAsync(
+                userId,
+                card,
+                CreditCardDateUtils.FormatReferenceMonth(request.CloseDate.Value),
+                InvoiceStatus.Open)
+            : (await _unitOfWork.CreditCardInvoices.GetByCardAsync(userId, creditCardId))
+                .Where(i => i.Status == InvoiceStatus.Open)
+                .OrderBy(i => i.ReferenceMonth)
+                .FirstOrDefault()
+              ?? await EnsureCurrentOpenInvoiceAsync(userId, card);
 
         openInvoice.TotalAmount = request.TotalAmount;
         openInvoice.DueDate = request.DueDate;

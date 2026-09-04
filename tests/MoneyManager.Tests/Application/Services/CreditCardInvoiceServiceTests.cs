@@ -318,19 +318,23 @@ public class CreditCardInvoiceServiceTests
     {
         var card = MakeCard();
         _cardRepo.GetByIdAsync("card1").Returns(card);
+        var newDueDate = DateTime.UtcNow.AddDays(20);
+        var newCloseDate = DateTime.UtcNow.AddDays(13);
+        var referenceMonth = CreditCardDateUtils.FormatReferenceMonth(newCloseDate);
+
         var open = new CreditCardInvoice
         {
             UserId = UserId,
             CreditCardId = "card1",
-            ReferenceMonth = CreditCardDateUtils.FormatReferenceMonth(DateTime.UtcNow),
+            ReferenceMonth = referenceMonth,
             Status = InvoiceStatus.Open,
             ClosingDate = DateTime.UtcNow.AddDays(10),
             DueDate = DateTime.UtcNow.AddDays(17)
         };
-        _invoiceRepo.GetByCardAsync(UserId, "card1").Returns(new List<CreditCardInvoice> { open });
+        // A fatura agora é resolvida pelo mês de referência implicado pelo CloseDate do banco
+        // (não mais "a fatura aberta mais antiga"), então o mock precisa responder por esse lookup.
+        _invoiceRepo.GetByCardAndReferenceAsync(UserId, "card1", referenceMonth).Returns(open);
 
-        var newDueDate = DateTime.UtcNow.AddDays(20);
-        var newCloseDate = DateTime.UtcNow.AddDays(13);
         var result = await _service.UpdateOrCreateOpenInvoiceAsync(UserId, "card1", new UpdateOpenInvoiceFromSyncDto
         {
             TotalAmount = 987.65m,
