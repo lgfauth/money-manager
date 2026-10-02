@@ -59,6 +59,11 @@ public class BankConnectionService : IBankConnectionService
     // anterior; o dedup por ExternalId mantém o reprocessamento idempotente.
     private const int CreditCardSyncLookbackDays = 62;
 
+    // Categoria Open Finance "Credit card payment": no cartão, é o pagamento da fatura anterior
+    // (ex.: "Pagamento recebido" no Nubank), não uma compra. O pagamento é tratado pelo fluxo de
+    // faturas (SyncPaymentStatusFromBankAsync); importá-lo lançava o valor como dívida na fatura.
+    private const string CreditCardPaymentCategoryId = "05100000";
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBankMcpClient _bankMcpClient;
     private readonly ISubscriptionService _subscriptionService;
@@ -691,6 +696,9 @@ public class BankConnectionService : IBankConnectionService
                         if (!importable)
                             continue;
 
+                        if (creditCard is not null && tx.CategoryId == CreditCardPaymentCategoryId)
+                            continue;
+
                         if (creditCard is not null)
                             await UpsertCreditCardTransactionAsync(connection.UserId, creditCard, tx, categoryMap, ct);
                         else
@@ -704,7 +712,7 @@ public class BankConnectionService : IBankConnectionService
                 }
 
                 if (creditCard is not null)
-                    await RemoveStalePendingCreditCardTransactionsAsync(connection.UserId, creditCard.Id, since, fetchedExternalIds);
+                    await RemoveObsoleteCreditCardTransactionsAsync(connection.UserId, creditCard.Id, since, fetchedExternalIds);
 
                 if (string.Equals(selected.Type, "BANK", StringComparison.Ordinal))
                     await UpdateBankAccountBalanceAsync(connection.UserId, selected, bankAccountsByExternalId);
@@ -945,20 +953,23 @@ public class BankConnectionService : IBankConnectionService
         });
     }
 
-    // Remove compras pendentes que o banco deixou de retornar dentro da janela consultada
-    // (pré-autorização cancelada ou substituída por um lançamento com outro id). Só considera
-    // compras a partir do dia seguinte ao início da janela, para não depender do corte exato
-    // de datas/fuso da consulta ao Banco MCP.
-    private async Task RemoveStalePendingCreditCardTransactionsAsync(
+    // Remove do cartão o que veio do banco e não deveria estar nas faturas:
+    // - compras pendentes que o banco deixou de retornar dentro da janela consultada
+    //   (pré-autorização cancelada ou substituída por um lançamento com outro id). Só considera
+    //   compras a partir do dia seguinte ao início da janela, para não depender do corte exato
+    //   de datas/fuso da consulta ao Banco MCP;
+    // - pagamentos de fatura importados antes de serem ignorados na importação.
+    private async Task RemoveObsoleteCreditCardTransactionsAsync(
         string userId, string creditCardId, DateTime since, IReadOnlySet<string> fetchedExternalIds)
     {
         var windowStart = since.Date.AddDays(1);
         var stale = (await _unitOfWork.CreditCardTransactions.GetByCardAsync(userId, creditCardId))
-            .Where(t => t.IsPending
-                && t.Source == "bank_sync"
-                && t.PurchaseDate >= windowStart
-                && !string.IsNullOrEmpty(t.ExternalId)
-                && !fetchedExternalIds.Contains(t.ExternalId))
+            .Where(t => t.Source == "bank_sync"
+                && (t.OpenBankingCategoryId == CreditCardPaymentCategoryId
+                    || (t.IsPending
+                        && t.PurchaseDate >= windowStart
+                        && !string.IsNullOrEmpty(t.ExternalId)
+                        && !fetchedExternalIds.Contains(t.ExternalId))))
             .ToList();
 
         if (stale.Count == 0)
@@ -979,7 +990,7 @@ public class BankConnectionService : IBankConnectionService
             await _creditCardInvoiceService.RecalculateTotalAsync(userId, invoiceId);
 
         _logger.LogInformation(
-            "{Count} compra(s) pendente(s) do cartão {CreditCardId} removida(s) por não constarem mais no banco",
+            "{Count} transação(ões) obsoleta(s) do cartão {CreditCardId} removida(s) (pendentes que sumiram do banco ou pagamentos de fatura)",
             stale.Count, creditCardId);
     }
 

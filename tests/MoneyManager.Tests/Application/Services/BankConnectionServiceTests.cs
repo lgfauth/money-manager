@@ -519,4 +519,50 @@ public class BankConnectionServiceTests
         Assert.False(confirmed.IsDeleted);
         await _creditCardInvoiceServiceMock.Received().RecalculateTotalAsync(UserId, "inv-1");
     }
+
+    [Fact]
+    public async Task SyncNowAsync_ForCreditCard_ShouldNotImportInvoicePaymentAsPurchase()
+    {
+        // Regressão: o "Pagamento recebido" da fatura anterior entrava como compra, virando dívida na fatura.
+        var payment = new BankMcpTransaction("tx-pagamento", "acc-ext-1", new DateTime(2026, 9, 9, 0, 0, 0, DateTimeKind.Utc),
+            "Pagamento recebido", -1285.42m, "CREDIT", "POSTED", "Credit card payment", "05100000", null);
+        ArrangeCreditCardSync(payment);
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        await _creditCardTransactionServiceMock.DidNotReceive().CreateAsync(Arg.Any<string>(), Arg.Any<CreateCreditCardTransactionRequestDto>());
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_ForCreditCard_ShouldRemovePreviouslyImportedInvoicePayments()
+    {
+        var importedPayment = new CreditCardTransaction
+        {
+            UserId = UserId,
+            CreditCardId = CardId,
+            InvoiceId = "inv-1",
+            ExternalId = "tx-pagamento-antigo",
+            Source = "bank_sync",
+            OpenBankingCategoryId = "05100000",
+            PurchaseDate = new DateTime(2026, 6, 9, 0, 0, 0, DateTimeKind.Utc)
+        };
+        var manualPurchase = new CreditCardTransaction
+        {
+            UserId = UserId,
+            CreditCardId = CardId,
+            InvoiceId = "inv-1",
+            Source = "manual",
+            OpenBankingCategoryId = "05100000",
+            PurchaseDate = new DateTime(2026, 9, 9, 0, 0, 0, DateTimeKind.Utc)
+        };
+        ArrangeCreditCardSync();
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([importedPayment, manualPurchase]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.True(importedPayment.IsDeleted);
+        Assert.False(manualPurchase.IsDeleted);
+        await _creditCardInvoiceServiceMock.Received().RecalculateTotalAsync(UserId, "inv-1");
+    }
 }
