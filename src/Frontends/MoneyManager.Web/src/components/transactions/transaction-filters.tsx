@@ -130,10 +130,10 @@ export function TransactionFilters({
               {selectedCategory || "Todas"}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="w-64 max-w-[85vw]">
             <SelectItem value="">Todas</SelectItem>
             {categories?.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
+              <SelectItem key={cat.id} value={cat.id} textClassName="whitespace-normal">
                 {cat.name}
               </SelectItem>
             ))}

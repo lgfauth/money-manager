@@ -158,7 +158,7 @@ public class BankConnectionServiceTests
     }
 
     [Fact]
-    public async Task SyncNowAsync_WhenAccountAlreadySynced_ShouldQueryFromTwoDaysBeforeLastSync()
+    public async Task SyncNowAsync_WhenAccountAlreadySynced_ShouldQueryFromTenDaysBeforeLastSync()
     {
         // Arrange — conexão já sincronizada anteriormente (LastSyncAt definido na conta).
         var lastSyncAt = new DateTime(2026, 7, 8, 18, 0, 0, DateTimeKind.Utc);
@@ -199,11 +199,66 @@ public class BankConnectionServiceTests
         // Act
         await _service.SyncNowAsync(UserId, connectionId, CancellationToken.None);
 
-        // Assert — a busca deve retroceder 2 dias a partir do LastSyncAt.
+        // Assert — a busca deve retroceder 10 dias a partir do LastSyncAt.
         await _bankMcpClient.Received(1).ListTransactionsAsync(
             "key",
             externalAccountId,
-            lastSyncAt.AddDays(-2),
+            lastSyncAt.AddDays(-10),
+            Arg.Any<DateTime>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WhenCreditCardAlreadySynced_ShouldQueryFromSixtyTwoDaysBeforeLastSync()
+    {
+        // Regressão: transações de cartão chegam ao Open Finance com atraso, mas com a data
+        // original da compra. Com a janela curta das contas bancárias elas nunca eram
+        // buscadas e as faturas ficavam sem transações vinculadas.
+        var lastSyncAt = new DateTime(2026, 10, 2, 6, 0, 0, DateTimeKind.Utc);
+        const string connectionId = "conn1";
+        const string externalAccountId = "acc-ext-1";
+        const string cardId = "card1";
+
+        var connection = new BankConnection
+        {
+            Id = connectionId,
+            UserId = UserId,
+            ExternalConnectionId = "item-1",
+            Status = BankConnectionStatus.Connected,
+            CutoffDate = new DateTime(2026, 4, 1, 0, 0, 0, DateTimeKind.Utc),
+            SelectedAccounts =
+            [
+                new SelectedBankAccount
+                {
+                    ExternalAccountId = externalAccountId,
+                    Type = "CREDIT",
+                    MoneyManagerAccountId = cardId,
+                    MoneyManagerEntityType = "CreditCard",
+                    LastSyncAt = lastSyncAt
+                }
+            ]
+        };
+
+        _bankConnectionRepo.GetByUserIdAndIdAsync(UserId, connectionId).Returns(connection);
+        _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = "enc:key" });
+        _unitOfWorkMock.Categories.Returns(Substitute.For<IRepository<Category>>());
+        _cardRepo.GetByIdAsync(cardId).Returns(new CreditCard { Id = cardId, UserId = UserId, ClosingDay = 7, BillingDueDay = 14 });
+
+        _bankMcpClient.ListAccountsAsync("key", connection.ExternalConnectionId, Arg.Any<CancellationToken>())
+            .Returns([]);
+        _bankMcpClient.ListTransactionsAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(),
+                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new BankMcpTransactionPage(0, 1, 1, []));
+
+        await _service.SyncNowAsync(UserId, connectionId, CancellationToken.None);
+
+        await _bankMcpClient.Received(1).ListTransactionsAsync(
+            "key",
+            externalAccountId,
+            lastSyncAt.AddDays(-62),
             Arg.Any<DateTime>(),
             Arg.Any<int>(),
             Arg.Any<int>(),
