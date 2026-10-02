@@ -667,6 +667,7 @@ public class BankConnectionService : IBankConnectionService
                     since = cutoff;
                 var page = 1;
                 var imported = 0;
+                var fetchedExternalIds = new HashSet<string>(StringComparer.Ordinal);
 
                 // Pagina até buscar todas as transações do período.
                 while (true)
@@ -680,8 +681,16 @@ public class BankConnectionService : IBankConnectionService
                         pageSize: 500,
                         ct);
 
-                    foreach (var tx in result.Results.Where(t => t.Status == "POSTED"))
+                    foreach (var tx in result.Results)
                     {
+                        fetchedExternalIds.Add(tx.Id);
+
+                        // Compras da fatura aberta do cartão vêm como PENDING até o fechamento —
+                        // ignorá-las deixava a fatura corrente sempre sem transações.
+                        var importable = tx.Status == "POSTED" || (creditCard is not null && tx.Status == "PENDING");
+                        if (!importable)
+                            continue;
+
                         if (creditCard is not null)
                             await UpsertCreditCardTransactionAsync(connection.UserId, creditCard, tx, categoryMap, ct);
                         else
@@ -693,6 +702,9 @@ public class BankConnectionService : IBankConnectionService
                     if (page >= result.TotalPages) break;
                     page++;
                 }
+
+                if (creditCard is not null)
+                    await RemoveStalePendingCreditCardTransactionsAsync(connection.UserId, creditCard.Id, since, fetchedExternalIds);
 
                 if (string.Equals(selected.Type, "BANK", StringComparison.Ordinal))
                     await UpdateBankAccountBalanceAsync(connection.UserId, selected, bankAccountsByExternalId);
@@ -878,9 +890,25 @@ public class BankConnectionService : IBankConnectionService
         string userId, CreditCard card, BankMcpTransaction tx,
         IDictionary<string, string> categoryMap, CancellationToken ct)
     {
+        var isPending = tx.Status == "PENDING";
         var existing = await _unitOfWork.CreditCardTransactions.GetByExternalIdAsync(userId, tx.Id);
         if (existing is not null)
         {
+            // Compra pendente confirmada pelo banco: valor, descrição e data podem ter mudado
+            // entre a autorização e o lançamento definitivo.
+            if (existing.IsPending && !isPending)
+            {
+                existing.IsPending = false;
+                existing.Description = tx.Description;
+                existing.PurchaseDate = tx.Date;
+                existing.TotalAmount = Math.Abs(tx.Amount);
+                existing.InstallmentAmount = Math.Abs(tx.Amount);
+                existing.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.CreditCardTransactions.UpdateAsync(existing);
+                await _unitOfWork.SaveChangesAsync();
+                await _creditCardInvoiceService.RecalculateTotalAsync(userId, existing.InvoiceId);
+            }
+
             // Backfill: mesmo tratamento das transações bancárias — só preenche o que está vazio.
             if (!string.IsNullOrEmpty(tx.CategoryId)
                 && (string.IsNullOrEmpty(existing.OpenBankingCategoryId) || string.IsNullOrEmpty(existing.CategoryId)))
@@ -912,8 +940,47 @@ public class BankConnectionService : IBankConnectionService
             ClientRequestId = null,
             Source = "bank_sync",
             ExternalId = tx.Id,
+            IsPending = isPending,
             OpenBankingCategoryId = tx.CategoryId
         });
+    }
+
+    // Remove compras pendentes que o banco deixou de retornar dentro da janela consultada
+    // (pré-autorização cancelada ou substituída por um lançamento com outro id). Só considera
+    // compras a partir do dia seguinte ao início da janela, para não depender do corte exato
+    // de datas/fuso da consulta ao Banco MCP.
+    private async Task RemoveStalePendingCreditCardTransactionsAsync(
+        string userId, string creditCardId, DateTime since, IReadOnlySet<string> fetchedExternalIds)
+    {
+        var windowStart = since.Date.AddDays(1);
+        var stale = (await _unitOfWork.CreditCardTransactions.GetByCardAsync(userId, creditCardId))
+            .Where(t => t.IsPending
+                && t.Source == "bank_sync"
+                && t.PurchaseDate >= windowStart
+                && !string.IsNullOrEmpty(t.ExternalId)
+                && !fetchedExternalIds.Contains(t.ExternalId))
+            .ToList();
+
+        if (stale.Count == 0)
+            return;
+
+        var invoiceIdsTouched = new HashSet<string>();
+        foreach (var transaction in stale)
+        {
+            transaction.IsDeleted = true;
+            transaction.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardTransactions.UpdateAsync(transaction);
+            invoiceIdsTouched.Add(transaction.InvoiceId);
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+
+        foreach (var invoiceId in invoiceIdsTouched)
+            await _creditCardInvoiceService.RecalculateTotalAsync(userId, invoiceId);
+
+        _logger.LogInformation(
+            "{Count} compra(s) pendente(s) do cartão {CreditCardId} removida(s) por não constarem mais no banco",
+            stale.Count, creditCardId);
     }
 
     // Realinha o InvoiceId de uma transação de cartão já importada quando ele não corresponde

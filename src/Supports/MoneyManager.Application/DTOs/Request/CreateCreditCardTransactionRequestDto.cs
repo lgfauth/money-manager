@@ -13,5 +13,6 @@ public class CreateCreditCardTransactionRequestDto
     public string? ClientRequestId { get; set; }
     public string Source { get; set; } = "manual";
     public string? ExternalId { get; set; }
+    public bool IsPending { get; set; } // bank_sync: compra da fatura aberta ainda não confirmada
     public string? OpenBankingCategoryId { get; set; } // categoryId de origem do Pluggy (bank_sync)
 }

@@ -132,6 +132,7 @@ public class CreditCardTransactionService : ICreditCardTransactionService
                     : MoneyManager.Domain.Enums.CreditCardTransactionType.Purchase,
                 Source = request.Source,
                 ExternalId = request.ExternalId,
+                IsPending = request.IsPending,
                 OpenBankingCategoryId = request.OpenBankingCategoryId
             };
 

@@ -53,6 +53,12 @@ public class CreditCardTransaction
     [BsonElement("externalId")]
     public string? ExternalId { get; set; }
 
+    // Compra da fatura aberta ainda não confirmada pelo banco (status PENDING no Open Finance).
+    // Passa a false quando o banco a retorna como POSTED; se o banco deixar de retorná-la
+    // (ex.: pré-autorização cancelada), o sync a remove.
+    [BsonElement("isPending")]
+    public bool IsPending { get; set; }
+
     [BsonElement("openBankingCategoryId")]
     [BsonIgnoreIfNull]
     public string? OpenBankingCategoryId { get; set; } // categoryId de origem do Pluggy — usado para recategorização

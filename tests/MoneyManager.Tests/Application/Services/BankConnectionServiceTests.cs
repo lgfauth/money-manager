@@ -22,6 +22,8 @@ public class BankConnectionServiceTests
     private readonly IEncryptionService _encryptionServiceMock;
     private readonly ICreditCardService _creditCardServiceMock;
     private readonly ICreditCardInvoiceService _creditCardInvoiceServiceMock;
+    private readonly ICreditCardTransactionService _creditCardTransactionServiceMock;
+    private readonly ICreditCardTransactionRepository _cardTxRepo;
     private readonly BankConnectionService _service;
 
     private const string UserId = "user1";
@@ -37,10 +39,13 @@ public class BankConnectionServiceTests
         _encryptionServiceMock = Substitute.For<IEncryptionService>();
         _creditCardServiceMock = Substitute.For<ICreditCardService>();
         _creditCardInvoiceServiceMock = Substitute.For<ICreditCardInvoiceService>();
+        _creditCardTransactionServiceMock = Substitute.For<ICreditCardTransactionService>();
+        _cardTxRepo = Substitute.For<ICreditCardTransactionRepository>();
 
         _unitOfWorkMock.Users.Returns(_userRepo);
         _unitOfWorkMock.BankConnections.Returns(_bankConnectionRepo);
         _unitOfWorkMock.CreditCards.Returns(_cardRepo);
+        _unitOfWorkMock.CreditCardTransactions.Returns(_cardTxRepo);
         _encryptionServiceMock.Encrypt(Arg.Any<string>()).Returns(x => "enc:" + x.Arg<string>());
         _encryptionServiceMock.Decrypt(Arg.Any<string>()).Returns(x => x.Arg<string>()["enc:".Length..]);
 
@@ -52,7 +57,7 @@ public class BankConnectionServiceTests
             _creditCardServiceMock,
             _creditCardInvoiceServiceMock,
             Substitute.For<ITransactionService>(),
-            Substitute.For<ICreditCardTransactionService>(),
+            _creditCardTransactionServiceMock,
             Substitute.For<IRecurringTransactionService>(),
             Substitute.For<IOpenBankingCategoryMigrationService>(),
             _encryptionServiceMock,
@@ -393,5 +398,125 @@ public class BankConnectionServiceTests
         await _bankMcpClient.Received(1).ListCreditCardBillsAsync("key", externalAccountId, Arg.Any<CancellationToken>());
         await _creditCardInvoiceServiceMock.Received(1).SyncPaymentStatusFromBankAsync(
             UserId, cardId, closedBills.Results, Arg.Any<CancellationToken>());
+    }
+
+    // Conexão de cartão já sincronizada, com o Banco MCP devolvendo as transações informadas.
+    private const string CardConnectionId = "conn-card";
+    private const string CardId = "card1";
+    private static readonly DateTime CardLastSyncAt = new(2026, 10, 2, 6, 0, 0, DateTimeKind.Utc);
+
+    private void ArrangeCreditCardSync(params BankMcpTransaction[] transactions)
+    {
+        var connection = new BankConnection
+        {
+            Id = CardConnectionId,
+            UserId = UserId,
+            ExternalConnectionId = "item-1",
+            Status = BankConnectionStatus.Connected,
+            SelectedAccounts =
+            [
+                new SelectedBankAccount
+                {
+                    ExternalAccountId = "acc-ext-1",
+                    Type = "CREDIT",
+                    MoneyManagerAccountId = CardId,
+                    MoneyManagerEntityType = "CreditCard",
+                    LastSyncAt = CardLastSyncAt
+                }
+            ]
+        };
+
+        _bankConnectionRepo.GetByUserIdAndIdAsync(UserId, CardConnectionId).Returns(connection);
+        _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = "enc:key" });
+        _unitOfWorkMock.Categories.Returns(Substitute.For<IRepository<Category>>());
+        _unitOfWorkMock.CreditCardInvoices.Returns(Substitute.For<ICreditCardInvoiceRepository>());
+        _cardRepo.GetByIdAsync(CardId).Returns(new CreditCard { Id = CardId, UserId = UserId, ClosingDay = 7, BillingDueDay = 14 });
+        _bankMcpClient.ListAccountsAsync("key", connection.ExternalConnectionId, Arg.Any<CancellationToken>())
+            .Returns([]);
+        _bankMcpClient.ListTransactionsAsync(
+                Arg.Any<string>(), Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<DateTime>(),
+                Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(new BankMcpTransactionPage(transactions.Length, 1, 1, transactions));
+    }
+
+    private static BankMcpTransaction CardTx(string id, string status, DateTime date, decimal amount = 100m, string description = "Compra")
+        => new(id, "acc-ext-1", date, description, amount, "DEBIT", status, null, null, null);
+
+    [Fact]
+    public async Task SyncNowAsync_ForCreditCard_ShouldImportPendingTransactionsOfOpenInvoice()
+    {
+        // Regressão: compras da fatura aberta vêm como PENDING do Open Finance e eram descartadas,
+        // deixando a fatura corrente sempre sem transações.
+        ArrangeCreditCardSync(CardTx("tx-pending", "PENDING", new DateTime(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc)));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        await _creditCardTransactionServiceMock.Received(1).CreateAsync(
+            UserId,
+            Arg.Is<CreateCreditCardTransactionRequestDto>(r => r.ExternalId == "tx-pending" && r.IsPending));
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WhenPendingCardTransactionIsPosted_ShouldConfirmItWithBankValues()
+    {
+        var existing = new CreditCardTransaction
+        {
+            UserId = UserId,
+            CreditCardId = CardId,
+            InvoiceId = "inv-1",
+            ExternalId = "tx-1",
+            Source = "bank_sync",
+            IsPending = true,
+            Description = "AUTORIZACAO",
+            PurchaseDate = new DateTime(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc),
+            TotalAmount = 90m,
+            InstallmentAmount = 90m
+        };
+        ArrangeCreditCardSync(CardTx("tx-1", "POSTED", existing.PurchaseDate, 100m, "LOJA X"));
+        _cardTxRepo.GetByExternalIdAsync(UserId, "tx-1").Returns(existing);
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([existing]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.False(existing.IsPending);
+        Assert.False(existing.IsDeleted);
+        Assert.Equal("LOJA X", existing.Description);
+        Assert.Equal(100m, existing.InstallmentAmount);
+        await _creditCardInvoiceServiceMock.Received().RecalculateTotalAsync(UserId, "inv-1");
+        await _creditCardTransactionServiceMock.DidNotReceive().CreateAsync(Arg.Any<string>(), Arg.Any<CreateCreditCardTransactionRequestDto>());
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WhenPendingCardTransactionDisappearsFromBank_ShouldRemoveIt()
+    {
+        var stale = new CreditCardTransaction
+        {
+            UserId = UserId,
+            CreditCardId = CardId,
+            InvoiceId = "inv-1",
+            ExternalId = "tx-cancelada",
+            Source = "bank_sync",
+            IsPending = true,
+            PurchaseDate = new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc)
+        };
+        var confirmed = new CreditCardTransaction
+        {
+            UserId = UserId,
+            CreditCardId = CardId,
+            InvoiceId = "inv-1",
+            ExternalId = "tx-antiga",
+            Source = "bank_sync",
+            IsPending = false,
+            PurchaseDate = new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc)
+        };
+        ArrangeCreditCardSync();
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([stale, confirmed]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.True(stale.IsDeleted);
+        Assert.False(confirmed.IsDeleted);
+        await _creditCardInvoiceServiceMock.Received().RecalculateTotalAsync(UserId, "inv-1");
     }
 }
