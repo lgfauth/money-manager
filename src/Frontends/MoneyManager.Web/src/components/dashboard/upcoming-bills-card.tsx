@@ -7,6 +7,8 @@ import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import { cn } from "@/lib/utils";
 import type { DashboardUpcomingInvoice, DashboardUpcomingRecurring } from "@/types/dashboard";
 
+const MAX_VISIBLE_ITEMS = 8;
+
 const invoiceStatusLabels: Record<DashboardUpcomingInvoice["status"], string> = {
   Pending: "Futura",
   Open: "Aberta",
@@ -25,6 +27,12 @@ export function UpcomingBillsCard({ currency, invoices, recurring }: UpcomingBil
   const { formatMonetaryValue } = useMoneyPrivacy();
   const isEmpty = invoices.length === 0 && recurring.length === 0;
 
+  // Faturas têm prioridade (já vêm ordenadas por vencimento); as recorrências ocupam as vagas restantes.
+  const visibleInvoices = invoices.slice(0, MAX_VISIBLE_ITEMS);
+  const visibleRecurring = recurring.slice(0, MAX_VISIBLE_ITEMS - visibleInvoices.length);
+  const hiddenInvoicesCount = invoices.length - visibleInvoices.length;
+  const hiddenRecurringCount = recurring.length - visibleRecurring.length;
+
   return (
     <Card>
       <CardHeader>
@@ -36,11 +44,11 @@ export function UpcomingBillsCard({ currency, invoices, recurring }: UpcomingBil
           <p className="text-sm text-muted-foreground text-center py-8">Nenhum vencimento próximo.</p>
         )}
 
-        {invoices.length > 0 && (
+        {visibleInvoices.length > 0 && (
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Faturas</p>
             <ul className="divide-y">
-              {invoices.map((invoice) => (
+              {visibleInvoices.map((invoice) => (
                 <li key={invoice.invoiceId}>
                   <Link
                     href={`/credit-cards/${invoice.creditCardId}/invoices/${invoice.invoiceId}`}
@@ -69,11 +77,11 @@ export function UpcomingBillsCard({ currency, invoices, recurring }: UpcomingBil
           </div>
         )}
 
-        {recurring.length > 0 && (
+        {visibleRecurring.length > 0 && (
           <div className="space-y-1">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recorrências</p>
             <ul className="divide-y">
-              {recurring.map((item) => {
+              {visibleRecurring.map((item) => {
                 const isIncome = item.type === "Income";
                 return (
                   <li key={item.id} className="flex items-center gap-3 py-2.5">
@@ -104,6 +112,22 @@ export function UpcomingBillsCard({ currency, invoices, recurring }: UpcomingBil
               })}
             </ul>
           </div>
+        )}
+
+        {(hiddenInvoicesCount > 0 || hiddenRecurringCount > 0) && (
+          <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>Há mais vencimentos além destes {MAX_VISIBLE_ITEMS}.</span>
+            {hiddenInvoicesCount > 0 && (
+              <Link href="/credit-cards" className="text-primary hover:underline">
+                Ver todas as faturas →
+              </Link>
+            )}
+            {hiddenRecurringCount > 0 && (
+              <Link href="/recurring" className="text-primary hover:underline">
+                Ver todas as recorrências →
+              </Link>
+            )}
+          </p>
         )}
       </CardContent>
     </Card>

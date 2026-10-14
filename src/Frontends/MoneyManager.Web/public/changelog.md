@@ -42,6 +42,9 @@ O pagamento da fatura anterior, informado pelo banco no extrato do cartão, era 
 - O relatório passou a buscar os dados em paralelo e a carregar apenas as compras no cartão que realmente afetam o período escolhido.
 - Ao trocar o período ou alternar entre competência e caixa, o relatório anterior continua na tela enquanto o novo é calculado, sem voltar para a tela de carregamento.
 
+### 📋 Próximos vencimentos mais enxutos
+O bloco de próximos vencimentos do dashboard agora mostra no máximo 8 itens, priorizando as faturas. Quando houver mais, um atalho leva à lista completa de faturas ou de recorrências.
+
 ### 🔄 Relatórios e dashboard sempre atualizados
 Depois de lançar, editar ou excluir transações, contas, cartões, categorias, orçamentos ou recorrências, os relatórios e o dashboard agora refletem a mudança na hora. Antes, a página de Relatórios podia levar alguns minutos para mostrar o lançamento novo.
 
