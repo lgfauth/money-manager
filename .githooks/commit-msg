@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Garante que commits com alteração de código registrem o changelog do frontend e
+# avisa quando código .NET muda sem nenhuma alteração em tests/.
+# Ativação (uma vez por clone): git config core.hooksPath .githooks
+set -euo pipefail
+
+msg_file="$1"
+changelog="src/Frontends/MoneyManager.Web/public/changelog.md"
+skip_token="[skip changelog]"
+
+staged=$(git diff --cached --name-only --diff-filter=ACMRD)
+code_changes=$(printf '%s\n' "$staged" | grep -E '^src/' | grep -vE '\.md$' || true)
+
+if [ -z "$code_changes" ]; then
+  exit 0
+fi
+
+if ! printf '%s\n' "$staged" | grep -qxF "$changelog" && ! grep -qiF "$skip_token" "$msg_file"; then
+  echo "✖ Commit bloqueado: há alterações em src/ sem atualização do changelog." >&2
+  echo "  Atualize $changelog com a nova versão (veja AGENTS.md)." >&2
+  echo "  Se a mudança for apenas interna (refatoração, testes, CI), inclua \"$skip_token\" na mensagem." >&2
+  exit 1
+fi
+
+backend_changes=$(printf '%s\n' "$code_changes" | grep -E '^src/(Supports|APIs|Workers)/.*\.cs$' || true)
+if [ -n "$backend_changes" ] && ! printf '%s\n' "$staged" | grep -q '^tests/'; then
+  echo "⚠ Aviso: código .NET alterado sem mudanças em tests/. Confirme que os testes foram revisados (dotnet test MoneyManager.sln)." >&2
+fi

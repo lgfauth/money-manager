@@ -16,7 +16,7 @@ The monorepo contains two Next.js applications under `src/Frontends/`:
 | Design system | shadcn/ui + Tailwind v4 | Plain CSS (no component library) |
 | Data fetching | TanStack Query v5 via custom hooks | Raw `fetch` + `useEffect/useState` |
 | State management | Zustand + TanStack Query | Local `useState` only |
-| i18n | `next-intl` (pt-BR default) | None |
+| i18n | `next-intl` configured (pt-BR default), but UI strings are still hardcoded in pt-BR | None |
 | Form handling | `react-hook-form` + Zod | Controlled inputs only |
 | Auth mechanism | JWT in `sessionStorage` + httpOnly cookie | httpOnly cookie (server-side only) |
 | Complexity | Full feature-rich app | Minimal operational tool |
@@ -33,36 +33,53 @@ Both apps use the **App Router** (Next.js 13+). There are no `pages/` directorie
 
 ```
 app/
-  (auth)/           ← route group: public pages (login, register, forgot-password)
+  (auth)/           ← route group: public pages
     login/
     register/
+    account-deleted/
   (dashboard)/      ← route group: protected pages (require authentication)
     layout.tsx      ← client-side auth guard + main shell (sidebar, header, mobile-nav)
+    template.tsx
     page.tsx        ← dashboard home
     transactions/
     accounts/
+    bancos-e-contas/
+    bank-connections/
     budgets/
     categories/
     credit-cards/
-    reports/
+    financial-health/
+    reports/        ← financial reports (data from GET /api/reports/overview)
+    report/         ← user feedback / bug report form
     settings/
     profile/
     recurring/
     onboarding/
+  politica-de-privacidade/   ← legal pages (public)
+  termos-de-uso/
   layout.tsx        ← root layout: fonts, next-intl provider, Providers wrapper
   globals.css
 components/
+  providers.tsx     ← TanStack Query, theme (next-themes), toaster (sonner) and auth hydration
   ui/               ← shadcn/ui primitives (button, dialog, input, etc.)
   layout/           ← sidebar, header, mobile-nav, whats-new-modal
-  shared/           ← reusable cross-feature components (page-header, empty-state, confirm-dialog)
+  shared/           ← reusable cross-feature components (page-header, empty-state, confirm-dialog, stat-card)
+  charts/           ← Recharts wrappers (bar, line, area, pie/donut, tooltip)
   transactions/     ← feature-specific components
   accounts/
+  bancos-e-contas/
+  bank-connections/
   budgets/
   credit-cards/
+  dashboard/
+  financial-health/
   receipts/
+  recurring/
+  reports/
   lgpd/
 config/
   constants.ts      ← app-wide constants (DEFAULT_PAGE_SIZE, DEFAULT_CURRENCY, COLOR_PRESETS)
+  currencies.ts     ← supported currencies
   legal.ts          ← LGPD terms URLs and version
   navigation.ts     ← sidebar nav items
 hooks/
@@ -76,7 +93,9 @@ i18n/
 lib/
   api-client.ts     ← fetch wrapper (fetchWithAuth, apiClient object)
   api-errors.ts     ← ApiClientError class + error message extraction
+  money-privacy.ts  ← currency formatting / value masking helpers
   query-client.ts   ← QueryClient singleton + queryKeys registry
+  user-display.ts   ← user name/avatar display helpers
   utils.ts          ← clsx/cn helpers
   validators.ts     ← Zod schemas
 stores/
@@ -103,8 +122,12 @@ app/
     errors-latency/
     financial-maintenance/
     audit/
-    documents/
-  api/              ← Next.js API routes (proxy + auth endpoints)
+    documents/      ← list + documents/[slug] Markdown editor
+    subscriptions/
+  api/              ← Next.js API routes
+    login/          ← sets the admin auth cookie
+    logout/
+    proxy/[...path] ← server-side proxy to the admin API
   login/
   layout.tsx        ← root layout (minimal: fonts only)
   globals.css
@@ -113,6 +136,8 @@ components/
 lib/
   admin-api.ts      ← fetch helpers for the admin API (request, postJson, putJson, deleteJson)
   admin-auth.ts     ← auth token helpers (httpOnly cookie, no JS access)
+types/
+  subscription.ts
 ```
 
 ### 2.2 Component Architecture
@@ -146,7 +171,7 @@ Page / Component
 
 1. The `apiClient` object (`lib/api-client.ts`) wraps `fetch` with auth headers and error normalization.
 2. Each domain has a dedicated hook file (`hooks/use-*.ts`) that calls `apiClient` through TanStack Query.
-3. Pages and components import only the hook — they never call `apiClient` directly.
+3. Pages and components import only the hook — they should not call `apiClient` directly. (Current exceptions to clean up: `(dashboard)/onboarding/page.tsx` and `(dashboard)/report/page.tsx`.)
 
 #### MoneyManager.Backoffice
 
@@ -459,6 +484,9 @@ There are two layers of route protection:
 const PUBLIC_PATHS = [
   "/login",
   "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/account-deleted",
   "/my-new-public-page",   // ← add here
 ];
 ```
@@ -531,12 +559,14 @@ New protected pages placed inside the `(dashboard)/` route group are automatical
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | Web | Base URL of `MoneyManager.Api.Operational` (empty string = same origin) |
 | `NEXT_PUBLIC_ADMIN_API_URL` | Backoffice | Base URL of `MoneyManager.Api.Backoffice`; falls back to `/api/proxy` if not set or contains placeholder |
+| `ADMIN_API_URL` | Backoffice (server-only) | Target used by the `/api/proxy` route to reach `MoneyManager.Api.Backoffice` |
 
 **Rules**:
 - Variables read on the client must have the `NEXT_PUBLIC_` prefix.
 - Server-only secrets must NOT use the `NEXT_PUBLIC_` prefix.
 - Default to empty string `""` or `process.env.NEXT_PUBLIC_API_URL ?? ""` — never hardcode URLs.
-- Add new variables to `.env.example` (both projects have one).
+- Add new variables to `.env.example` (exists in `MoneyManager.Web`; the Backoffice frontend has none yet — create it when adding a variable there).
+- `NEXT_PUBLIC_*` values are inlined at **build time**: the Dockerfiles receive them as build args (`railway.web.toml` passes `API_URL` as `NEXT_PUBLIC_API_URL`), so changing them requires a rebuild.
 - In `api-client.ts`, the base URL is read once at module load: `const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";`
 
 ---
@@ -686,13 +716,13 @@ export default function Layout() {
 
 Features in active use:
 - **App Router** with route groups `(auth)` and `(dashboard)`
-- **`next-intl` v4** for internationalization (configured via `createNextIntlPlugin` in `next.config.ts`)
+- **`next-intl` v4** configured via `createNextIntlPlugin` in `next.config.ts` (locales `pt-BR`, `en-US`, `es-ES`, `fr-FR`; default `pt-BR`). No component uses `useTranslations` yet — strings are hardcoded in pt-BR
 - **`next/font`** with `Sora` and `DM_Sans` (loaded via `next/font/google` with subset optimization)
 - **`next/image`** configured to allow all `https` hostnames (for remote user profile pictures)
 - **Turbopack** (`next dev --turbopack`, `next build --turbopack`) — the default dev/build bundler
 - **`output: "standalone"`** — builds a self-contained server bundle for Docker/Railway deployment
 - **PWA metadata** — `manifest.json`, `appleWebApp`, `viewport.themeColor` in root layout
-- **`nuqs`** — URL search param state management (used for filter/pagination state in table pages)
+- **`nuqs`** is installed but not used — URL filter/pagination state is read with `useSearchParams` from `next/navigation` (e.g. the transactions page)
 
 Deprecated patterns to avoid:
 - Do not use `getServerSideProps` or `getStaticProps` — these are Pages Router APIs

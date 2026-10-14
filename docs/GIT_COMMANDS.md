@@ -3,20 +3,13 @@
 # Aviso importante
 Jamais realize um commit, fetch, push ou pull ou execute qualquer outro comando git a não ser que seja solicitado por um humano.
 
-# Inicializar repositório (se ainda não fez)
-git init
+# ============================================
+# Repositório
+# ============================================
 
-# Adicionar todos os arquivos
-git add .
-
-# Commit inicial
-git commit -m "feat: Preparado para deploy no Railway com Docker"
-
-# Adicionar remote (substitua com seu repositório)
-# git remote add origin https://github.com/lgfauth/money-manager.git
-
-# Push para GitHub
-# git push -u origin main
+# Remote já configurado:
+# origin  https://github.com/lgfauth/money-manager.git
+# Branch principal: main
 
 # ============================================
 # Comandos úteis para Desenvolvimento
@@ -44,30 +37,38 @@ git commit -m "feat: Preparado para deploy no Railway com Docker"
 # git pull
 
 # ============================================
-# Estrutura de Commits (Conventional Commits)
+# Mensagens de Commit
 # ============================================
 
-# Features:
-# git commit -m "feat: adiciona nova funcionalidade X"
-
-# Fixes:
-# git commit -m "fix: corrige bug na página Y"
-
-# Docs:
-# git commit -m "docs: atualiza README"
-
-# Style:
-# git commit -m "style: ajusta formatação do código"
-
-# Refactor:
-# git commit -m "refactor: melhora estrutura do serviço Z"
+# Mensagens em português do Brasil, descrevendo o que foi feito/corrigido.
+# Commits com alteração de código em src/ devem incluir a atualização do changelog
+# (src/Frontends/MoneyManager.Web/public/changelog.md). Para mudanças apenas internas
+# (refatoração, testes, CI), inclua "[skip changelog]" na mensagem.
+# Exemplos do histórico do projeto:
+# git commit -m "Correção de associação de transações a faturas quando vindas de open banking"
+# git commit -m "Ajustes e novo botão no fluxo de saúde financeira"
+# git commit -m "Remoção de arquivos desnecessários"
 
 # ============================================
-# Ignorados pelo .gitignore
+# Ignorados pelo .gitignore (principais)
 # ============================================
-# - bin/
-# - obj/
-# - .vs/
-# - appsettings.Development.json
+# - bin/ e obj/
+# - .vs/ e .vscode/
+# - appsettings.*.json (exceto appsettings.json e appsettings.Production.json)
 # - node_modules/
-# - .env
+# - .env, .env.local e .env.*.local
+
+# ============================================
+# Hooks e verificações automáticas
+# ============================================
+
+# Ative os hooks versionados uma vez por clone:
+# git config core.hooksPath .githooks
+#
+# .githooks/commit-msg bloqueia commits com alteração de código em src/ sem
+# atualização do changelog (exceto com "[skip changelog]") e avisa quando código
+# .NET muda sem alteração em tests/.
+#
+# No GitHub, os workflows fazem o mesmo nos pushes e PRs para main/develop:
+# - .github/workflows/dotnet-tests.yml  → build + dotnet test
+# - .github/workflows/change-guard.yml  → changelog obrigatório + type-check do frontend Web

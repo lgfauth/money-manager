@@ -1,3 +1,34 @@
+# Versão 1.2.0-beta
+
+*Lançamento: 13 de outubro de 2026*
+
+---
+
+## ✨ Novidades
+
+### 📊 Página de Relatórios renovada e mais precisa
+- **Compras no cartão entram nos relatórios**, cada uma na sua categoria — antes só o pagamento da fatura aparecia, como um único gasto sem categoria.
+- **Competência ou caixa:** escolha se as compras no cartão contam na data de cada parcela (competência, padrão) ou na data em que a fatura é paga (caixa).
+- **Sem contagem em dobro:** transferências entre suas próprias contas e pagamentos de fatura não são mais somados como receita ou despesa.
+- **Comparação com o período anterior** em todos os indicadores, sempre com o mesmo número de dias (ex.: 1 a 13 deste mês contra 1 a 13 do mês passado).
+- Novas seções: evolução mensal, fluxo diário com o saldo real das contas dia a dia, categorias de despesas e receitas com média mensal e orçado vs. realizado, entradas e saídas por conta, gastos por cartão, parcelas futuras e maiores despesas do período.
+- Um aviso explica como os números foram apurados (lançamentos sem categoria, compras pendentes, transferências e outras moedas).
+
+---
+
+## 🐛 Correções e melhorias
+
+### 🏦 Transações do banco que não chegavam
+A sincronização com o Open Finance passou a consultar uma janela maior de dias, para pegar transações que o banco publica com atraso. No cartão de crédito, compras que chegavam só perto do fechamento da fatura agora são importadas normalmente.
+
+### 🕐 Compras pendentes na fatura aberta
+Compras do cartão ainda não confirmadas pelo banco agora aparecem na fatura aberta e são atualizadas automaticamente quando o banco as confirma. Se o banco cancelar a pré-autorização, a compra é removida.
+
+### 💳 Pagamento de fatura lançado como dívida
+O pagamento da fatura anterior, informado pelo banco no extrato do cartão, era importado como uma nova compra e aumentava a fatura. Agora ele é ignorado na importação, e os lançamentos desse tipo que já tinham sido importados são removidos na próxima sincronização.
+
+---
+
 # Versão 1.1.3-beta
 
 *Lançamento: 04 de setembro de 2026*

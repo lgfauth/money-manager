@@ -8,7 +8,7 @@ builder = "NIXPACKS"
 providers = ["dotnet"]
 
 [build.nixpacksPlan.phases.setup]
-nixPkgs = ["dotnet-sdk_9"]
+nixPkgs = ["dotnet-sdk_10"]
 
 [build.nixpacksPlan.phases.build]
 cmds = [

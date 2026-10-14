@@ -8,11 +8,11 @@ The .NET solution (`MoneyManager.sln`) is organized into four project groups und
 |---|---|---|
 | `src/APIs/MoneyManager.Api.Operational` | ASP.NET Core Web API (.NET 10) | Main user-facing API; handles auth, transactions, budgets, accounts, credit cards, reports, push notifications, AI receipt analysis |
 | `src/APIs/MoneyManager.Api.Backoffice` | ASP.NET Core Web API (.NET 10) | Internal admin API; serves the observability portal (jobs, audit, financial maintenance, legal documents) |
-| `src/Supports/MoneyManager.Domain` | Class Library (.NET 10) | Entities, enums, domain exceptions, repository and unit-of-work interfaces. Zero external dependencies |
+| `src/Supports/MoneyManager.Domain` | Class Library (.NET 10) | Entities, enums, domain exceptions, seeds, repository and unit-of-work interfaces. Only depends on `MongoDB.Bson` (mapping attributes) and `FluentValidation` |
 | `src/Supports/MoneyManager.Application` | Class Library (.NET 10) | Application services, DTOs, FluentValidation validators |
-| `src/Supports/MoneyManager.Infrastructure` | Class Library (.NET 10) | MongoDB repositories, JWT token service, AI service, push notification service, process log store, worker command queue |
+| `src/Supports/MoneyManager.Infrastructure` | Class Library (.NET 10) | MongoDB context, migrations and repositories, JWT token service, AES encryption, AI receipt analysis, Banco MCP (Open Finance) client, EfiBank payment gateway, process log store, worker command queue |
 | `src/Supports/MoneyManager.Observability` | Class Library (.NET 10) | Structured process logging (`IProcessLogger`, `ProcessLogger`, `IProcessLogStore`) |
-| `src/Workers/MoneyManager.Worker.Operational` | .NET Generic Host Worker (.NET 10) | Background jobs: recurring transaction processing, daily reminders, credit-card invoice closure |
+| `src/Workers/MoneyManager.Worker.Operational` | .NET Generic Host Worker (.NET 10) | Background jobs: recurring transactions, daily reminders, credit-card invoice status, financial-health snapshots, bank sync (Open Finance), subscription expiration |
 | `tests/MoneyManager.Tests` | xUnit Test Project (.NET 10) | Unit tests covering Application services and Presentation controllers |
 
 ---
@@ -49,11 +49,11 @@ There is **no CQRS, no MediatR, no AutoMapper** in this codebase.
 
 ### 2.3 Dependency Rules
 
-- `Domain` → no references to any other project or NuGet package
+- `Domain` → no references to any other project; only the `MongoDB.Bson` and `FluentValidation` NuGet packages
 - `Application` → references `Domain` and `Observability`
 - `Infrastructure` → references `Domain`, `Application`, and `Observability`
 - `MoneyManager.Api.Operational` (Presentation) → references `Application`, `Infrastructure`, `Observability`, `Domain`
-- `MoneyManager.Worker.Operational` → references `Application`, `Infrastructure`, `Observability`
+- `MoneyManager.Worker.Operational` → references `Application`, `Infrastructure`, `Observability`, `Domain`
 - **Infrastructure is never referenced by Application or Domain** — only by Presentation and Workers via DI
 
 ### 2.4 CQRS Pattern
@@ -67,11 +67,13 @@ This codebase uses **exception-based error signaling**, not a Union/Result type.
 ```csharp
 private static int DetermineStatusCode(Exception exception) => exception switch
 {
-    KeyNotFoundException       => StatusCodes.Status404NotFound,
-    InvalidOperationException  => StatusCodes.Status400BadRequest,
+    KeyNotFoundException        => StatusCodes.Status404NotFound,
+    InvalidOperationException   => StatusCodes.Status400BadRequest,
+    BankMcpKeyExpiredException  => StatusCodes.Status401Unauthorized,
     UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
-    ConcurrencyException       => StatusCodes.Status409Conflict,
-    _                          => StatusCodes.Status500InternalServerError
+    ConcurrencyException        => StatusCodes.Status409Conflict,
+    PremiumRequiredException    => StatusCodes.Status403Forbidden,
+    _                           => StatusCodes.Status500InternalServerError
 };
 ```
 
@@ -92,15 +94,16 @@ catch (Exception ex)
 All error responses are shaped by `ApiErrorResponseFactory` into `ApiErrorResponse`:
 
 ```csharp
-public class ApiErrorResponse
+// MoneyManager.Api.Operational/Models/ApiErrorResponse.cs
+public sealed class ApiErrorResponse
 {
-    public int StatusCode { get; set; }
-    public string Message { get; set; }
-    public List<string> Errors { get; set; }
-    public string TraceId { get; set; }
-    public string Path { get; set; }
-    public DateTime TimestampUtc { get; set; }
-    public string? Details { get; set; }  // only in Development
+    public int StatusCode { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public List<string> Errors { get; init; } = [];
+    public string TraceId { get; init; } = string.Empty;
+    public string Path { get; init; } = string.Empty;
+    public DateTime TimestampUtc { get; init; } = DateTime.UtcNow;
+    public string? Details { get; init; }  // only in Development
 }
 ```
 
@@ -110,13 +113,15 @@ public class ApiErrorResponse
 
 ### 3.1 Adding a New API Endpoint
 
+> The examples in sections 3.1–3.7 use a **hypothetical `SavingsGoal` feature** to illustrate the pattern. It does not exist in the codebase — check real files (e.g. `TransactionService`, `TransactionsController`) for the current shape of each piece.
+
 **Step 1 — Define the Request DTO** in `MoneyManager.Application/DTOs/Request/`:
 
 ```csharp
-// MoneyManager.Application/DTOs/Request/CreateBudgetRequestDto.cs
+// MoneyManager.Application/DTOs/Request/CreateSavingsGoalRequestDto.cs
 namespace MoneyManager.Application.DTOs.Request;
 
-public class CreateBudgetRequestDto
+public class CreateSavingsGoalRequestDto
 {
     public string CategoryId { get; set; } = string.Empty;
     public decimal Limit { get; set; }
@@ -128,10 +133,10 @@ public class CreateBudgetRequestDto
 **Step 2 — Define the Response DTO** in `MoneyManager.Application/DTOs/Response/`:
 
 ```csharp
-// MoneyManager.Application/DTOs/Response/BudgetResponseDto.cs
+// MoneyManager.Application/DTOs/Response/SavingsGoalResponseDto.cs
 namespace MoneyManager.Application.DTOs.Response;
 
-public class BudgetResponseDto
+public class SavingsGoalResponseDto
 {
     public string Id { get; set; } = string.Empty;
     public string CategoryId { get; set; } = string.Empty;
@@ -144,15 +149,15 @@ public class BudgetResponseDto
 **Step 3 — Add the Validator** in `MoneyManager.Application/Validators/`:
 
 ```csharp
-// MoneyManager.Application/Validators/CreateBudgetValidator.cs
+// MoneyManager.Application/Validators/CreateSavingsGoalValidator.cs
 using FluentValidation;
 using MoneyManager.Application.DTOs.Request;
 
 namespace MoneyManager.Application.Validators;
 
-public class CreateBudgetValidator : AbstractValidator<CreateBudgetRequestDto>
+public class CreateSavingsGoalValidator : AbstractValidator<CreateSavingsGoalRequestDto>
 {
-    public CreateBudgetValidator()
+    public CreateSavingsGoalValidator()
     {
         RuleFor(x => x.CategoryId).NotEmpty().WithMessage("Category ID is required");
         RuleFor(x => x.Limit).GreaterThan(0).WithMessage("Limit must be greater than 0");
@@ -164,7 +169,7 @@ public class CreateBudgetValidator : AbstractValidator<CreateBudgetRequestDto>
 **Step 4 — Add the Service** in `MoneyManager.Application/Services/`. Interface and implementation go in the same file:
 
 ```csharp
-// MoneyManager.Application/Services/BudgetService.cs
+// MoneyManager.Application/Services/SavingsGoalService.cs
 using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Entities;
@@ -172,23 +177,23 @@ using MoneyManager.Domain.Interfaces;
 
 namespace MoneyManager.Application.Services;
 
-public interface IBudgetService
+public interface ISavingsGoalService
 {
-    Task<BudgetResponseDto> CreateAsync(string userId, CreateBudgetRequestDto request);
+    Task<SavingsGoalResponseDto> CreateAsync(string userId, CreateSavingsGoalRequestDto request);
 }
 
-public class BudgetService : IBudgetService
+public class SavingsGoalService : ISavingsGoalService
 {
     private readonly IUnitOfWork _unitOfWork;
 
-    public BudgetService(IUnitOfWork unitOfWork)
+    public SavingsGoalService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<BudgetResponseDto> CreateAsync(string userId, CreateBudgetRequestDto request)
+    public async Task<SavingsGoalResponseDto> CreateAsync(string userId, CreateSavingsGoalRequestDto request)
     {
-        var budget = new Budget
+        var goal = new SavingsGoal
         {
             UserId = userId,
             CategoryId = request.CategoryId,
@@ -197,19 +202,19 @@ public class BudgetService : IBudgetService
             Month = request.Month
         };
 
-        await _unitOfWork.Budgets.AddAsync(budget);
+        await _unitOfWork.SavingsGoals.AddAsync(goal);
         await _unitOfWork.SaveChangesAsync();
 
-        return MapToDto(budget);
+        return MapToDto(goal);
     }
 
-    private static BudgetResponseDto MapToDto(Budget b) => new()
+    private static SavingsGoalResponseDto MapToDto(SavingsGoal g) => new()
     {
-        Id = b.Id,
-        CategoryId = b.CategoryId,
-        Limit = b.Limit,
-        Year = b.Year,
-        Month = b.Month
+        Id = g.Id,
+        CategoryId = g.CategoryId,
+        Limit = g.Limit,
+        Year = g.Year,
+        Month = g.Month
     };
 }
 ```
@@ -217,7 +222,7 @@ public class BudgetService : IBudgetService
 **Step 5 — Add the Controller** in `MoneyManager.Api.Operational/Controllers/`:
 
 ```csharp
-// MoneyManager.Api.Operational/Controllers/BudgetsController.cs
+// MoneyManager.Api.Operational/Controllers/SavingsGoalsController.cs
 using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -230,24 +235,24 @@ namespace MoneyManager.Presentation.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class BudgetsController : ControllerBase
+public class SavingsGoalsController : ControllerBase
 {
-    private readonly IBudgetService _budgetService;
-    private readonly IValidator<CreateBudgetRequestDto> _validator;
-    private readonly ILogger<BudgetsController> _logger;
+    private readonly ISavingsGoalService _savingsGoalService;
+    private readonly IValidator<CreateSavingsGoalRequestDto> _validator;
+    private readonly ILogger<SavingsGoalsController> _logger;
 
-    public BudgetsController(
-        IBudgetService budgetService,
-        IValidator<CreateBudgetRequestDto> validator,
-        ILogger<BudgetsController> logger)
+    public SavingsGoalsController(
+        ISavingsGoalService savingsGoalService,
+        IValidator<CreateSavingsGoalRequestDto> validator,
+        ILogger<SavingsGoalsController> logger)
     {
-        _budgetService = budgetService;
+        _savingsGoalService = savingsGoalService;
         _validator = validator;
         _logger = logger;
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateBudgetRequestDto request)
+    public async Task<IActionResult> Create([FromBody] CreateSavingsGoalRequestDto request)
     {
         var userId = HttpContext.GetUserId();
 
@@ -257,13 +262,13 @@ public class BudgetsController : ControllerBase
 
         try
         {
-            var result = await _budgetService.CreateAsync(userId, request);
-            _logger.LogInformation("Budget {BudgetId} created for user {UserId}", result.Id, userId);
+            var result = await _savingsGoalService.CreateAsync(userId, request);
+            _logger.LogInformation("Meta {SavingsGoalId} criada para o usuário {UserId}", result.Id, userId);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating budget for user {UserId}", userId);
+            _logger.LogError(ex, "Erro ao criar meta para o usuário {UserId}", userId);
             return this.ApiBadRequest(ex.Message);
         }
     }
@@ -274,7 +279,7 @@ public class BudgetsController : ControllerBase
 
 ```csharp
 // In Program.cs — follow the existing registration block
-builder.Services.AddScoped<IBudgetService, BudgetService>();
+builder.Services.AddScoped<ISavingsGoalService, SavingsGoalService>();
 // Validators are auto-registered:
 // builder.Services.AddValidatorsFromAssembly(typeof(RegisterRequestValidator).Assembly);
 // No need to register individual validators manually.
@@ -346,7 +351,7 @@ All database access goes through `IUnitOfWork`. For simple entities, the generic
 **Adding a simple query to an existing repository** — inherit from `Repository<T>` and override or add methods:
 
 ```csharp
-// MoneyManager.Infrastructure/Repositories/BudgetRepository.cs
+// MoneyManager.Infrastructure/Repositories/SavingsGoalRepository.cs
 using MongoDB.Driver;
 using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Interfaces;
@@ -354,17 +359,17 @@ using MoneyManager.Infrastructure.Data;
 
 namespace MoneyManager.Infrastructure.Repositories;
 
-public class BudgetRepository : Repository<Budget>, IBudgetRepository
+public class SavingsGoalRepository : Repository<SavingsGoal>, ISavingsGoalRepository
 {
-    public BudgetRepository(MongoContext context) : base(context, "budgets") { }
+    public SavingsGoalRepository(MongoContext context) : base(context, "savings_goals") { }
 
-    public async Task<IEnumerable<Budget>> GetByUserAndMonthAsync(string userId, int year, int month)
+    public async Task<IEnumerable<SavingsGoal>> GetByUserAndMonthAsync(string userId, int year, int month)
     {
-        var filter = Builders<Budget>.Filter.And(
-            Builders<Budget>.Filter.Eq(b => b.UserId, userId),
-            Builders<Budget>.Filter.Eq(b => b.Year, year),
-            Builders<Budget>.Filter.Eq(b => b.Month, month),
-            Builders<Budget>.Filter.Eq(b => b.IsDeleted, false)
+        var filter = Builders<SavingsGoal>.Filter.And(
+            Builders<SavingsGoal>.Filter.Eq(g => g.UserId, userId),
+            Builders<SavingsGoal>.Filter.Eq(g => g.Year, year),
+            Builders<SavingsGoal>.Filter.Eq(g => g.Month, month),
+            Builders<SavingsGoal>.Filter.Eq(g => g.IsDeleted, false)
         );
 
         return await Collection.Find(filter).ToListAsync();
@@ -378,8 +383,8 @@ The `UnitOfWork` uses **lazy initialization** — add new repositories there:
 
 ```csharp
 // In UnitOfWork.cs
-private IBudgetRepository? _budgetRepository;
-public IBudgetRepository Budgets => _budgetRepository ??= new BudgetRepository(_context);
+private ISavingsGoalRepository? _savingsGoalRepository;
+public ISavingsGoalRepository SavingsGoals => _savingsGoalRepository ??= new SavingsGoalRepository(_context);
 ```
 
 ### 3.4 Adding a New Worker or Job
@@ -454,7 +459,9 @@ services.AddScoped<MyJobProcessor>();
 services.AddHostedService<MyJobWorker>();
 ```
 
-**Step 4 — Add schedule options to `appsettings.json`** using the `Schedule` section conventions.
+**Step 4 — Add schedule options**: each worker has its own `*ScheduleOptions` class in `WorkerHost/Options/` with a `SectionName` constant (e.g. `DailyReminderScheduleOptions`), bound in `ServiceCollectionExtensions` with `.ValidateOnStart()`, plus the matching section in the Worker's `appsettings.json`.
+
+> Real workers also receive `WorkerCommandQueueService` to honour `run-now`/pause commands queued by the backoffice, and their processors open each execution with `IProcessLogger.Start("<ProcessName>")` so it shows up in `worker_process_logs`. Follow `ScheduledTransactionWorker` / `DailyReminderWorker` for the complete loop.
 
 ### 3.5 Adding a New Domain Entity
 
@@ -531,21 +538,21 @@ if (!validation.IsValid)
 **Structured logging with `ILogger<T>`** (NLog):
 
 ```csharp
-_logger.LogInformation("Budget {BudgetId} created for user {UserId}", result.Id, userId);
-_logger.LogWarning("Budget limit exceeded for user {UserId}, category {CategoryId}", userId, categoryId);
-_logger.LogError(ex, "Error creating budget for user {UserId}", userId);
+_logger.LogInformation("Meta {SavingsGoalId} criada para o usuário {UserId}", result.Id, userId);
+_logger.LogWarning("Limite da meta excedido para o usuário {UserId}, categoria {CategoryId}", userId, categoryId);
+_logger.LogError(ex, "Erro ao criar meta para o usuário {UserId}", userId);
 ```
 
 **Process logging with `IProcessLogger`** — use this for multi-step business operations to produce a structured JSON trace:
 
 ```csharp
-public class BudgetService : IBudgetService
+public class SavingsGoalService : ISavingsGoalService
 {
     private readonly IProcessLogger _processLogger;
 
-    public async Task<BudgetResponseDto> CreateAsync(string userId, CreateBudgetRequestDto request)
+    public async Task<SavingsGoalResponseDto> CreateAsync(string userId, CreateSavingsGoalRequestDto request)
     {
-        _processLogger.AddStep("Creating budget", new Dictionary<string, object?>
+        _processLogger.AddStep("Criando meta", new Dictionary<string, object?>
         {
             ["userId"] = userId,
             ["categoryId"] = request.CategoryId
@@ -553,8 +560,8 @@ public class BudgetService : IBudgetService
 
         // ... business logic ...
 
-        _processLogger.AddStep("Budget created", new Dictionary<string, object?> { ["budgetId"] = budget.Id });
-        return MapToDto(budget);
+        _processLogger.AddStep("Meta criada", new Dictionary<string, object?> { ["goalId"] = goal.Id });
+        return MapToDto(goal);
     }
 }
 ```
@@ -641,7 +648,7 @@ private static CategoryResponseDto MapToDto(Category c) => new()
 
 For mappings that require async lookups (e.g., resolving account name from id), use `private async Task<TDto> MapToDtoAsync(...)`.
 
-Request DTOs have public init-style setters (not records). Response DTOs use standard public setters.
+Request and response DTOs are plain classes (not records) with standard `{ get; set; }` properties.
 
 ### 4.4 Configuration and Secrets
 
@@ -680,7 +687,7 @@ Secrets are **never hardcoded**. In `appsettings.json` they are left as placehol
 
 - **User isolation on every query**: Every repository query that operates on user data includes a `UserId` filter. The pattern `account.UserId != userId` is checked even after fetching by ID.
 
-- **Soft delete everywhere**: All entities have `IsDeleted = true` as the delete mechanism. No physical deletes for user data.
+- **Soft delete for regular CRUD**: User entities are deleted by setting `IsDeleted = true`. Physical deletes are intentional and limited to the LGPD account-deletion flow (`AccountDeletionService`, via `DeleteManyByUserIdAsync`) and to unlinking a bank connection.
 
 - **Optimistic concurrency**: `Repository<T>.UpdateAsync` checks a `version` field and increments it. If the document was updated concurrently, it throws `ConcurrencyException` (→ HTTP 409).
 
@@ -694,7 +701,7 @@ Secrets are **never hardcoded**. In `appsettings.json` they are left as placehol
 
 - **Process logging for multi-step operations**: `IProcessLogger` is injected into services that perform complex workflows (e.g., `TransactionService`, `AuthService`). Logs are structured JSON with elapsed-time steps.
 
-- **NLog structured logging**: Log messages use structured parameters (`{UserId}`, `{BudgetId}`) rather than string interpolation so the log provider can index them.
+- **NLog structured logging**: Log messages use structured parameters (`{UserId}`, `{SavingsGoalId}`) rather than string interpolation so the log provider can index them.
 
 - **Centralized error response shape**: All errors — whether from middleware or from explicit controller returns — go through `ApiErrorResponseFactory` and produce the same `ApiErrorResponse` structure with `StatusCode`, `Message`, `Errors[]`, `TraceId`, `Path`, and `TimestampUtc`.
 
@@ -825,20 +832,23 @@ return MapToDto(category);
 
 ## 7. .NET Version Notes
 
-This codebase targets **net10.0** for all projects. The following .NET 10 features are already in use:
+This codebase targets **net10.0** for all projects (some `Microsoft.*` packages are still on the 9.0.x line). The following modern C#/ASP.NET Core features are in use:
 
-- **Primary constructors** — used in Worker services:
+- **Primary constructors** (C# 12) — used in Worker services:
   ```csharp
   internal sealed class ScheduledTransactionWorker(
       ILogger<ScheduledTransactionWorker> logger,
       IOptions<WorkerOptions> options,
+      IOptions<ScheduleOptions> scheduleOptions,
+      ITimeProvider timeProvider,
+      WorkerCommandQueueService commandQueue,
       IServiceScopeFactory scopeFactory) : BackgroundService
   ```
 
-- **Collection expressions** — used throughout:
+- **Collection expressions** (C# 12) — used throughout:
   ```csharp
   public List<string> Tags { get; set; } = [];
-  var errors = new List<string>();
+  List<string> errors = [];
   ```
 
 - **`switch` expression for status codes** — used in `ExceptionHandlingMiddleware` and `ApiErrorResponseFactory`
@@ -849,4 +859,4 @@ This codebase targets **net10.0** for all projects. The following .NET 10 featur
 
 - **`ForwardedHeaders`** middleware configured for Railway (proxy-behind-HTTPS deployment)
 
-No `.NET 10` features are in use at the time of writing.
+No .NET 10–specific APIs are in use at the time of writing; the features above are available since C# 12 / .NET 8.

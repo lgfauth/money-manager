@@ -1,97 +1,67 @@
 # MoneyManager — Copilot Instructions
- 
+
+> Fonte principal: `AGENTS.md` na raiz do repositório. Este arquivo repete as regras essenciais
+> para o GitHub Copilot — mantenha os dois em sincronia.
+
 ## Projeto
-Sistema de gerenciamento financeiro pessoal.
-Repositório: lgfauth/money-manager
- 
+Sistema de gerenciamento financeiro pessoal (monorepo). Repositório: lgfauth/money-manager.
+Documentação de referência em `docs/` (comece por `docs/instructions-for-development.md`).
+
 ## Stack
-- Runtime: .NET 10 / C# (latest stable features)
-- API: ASP.NET Core Web API
+- Backend: .NET 10 / C#, ASP.NET Core Web API (API Operacional, API Backoffice) e Worker
 - Banco: MongoDB (driver oficial, sem EF Core)
-- Frontend: Next.js 14+ com App Router e TypeScript
-- Auth: JWT Bearer
-- Validação: FluentValidation (no pipeline, nunca nos services)
-- Logging: NLog via ILogger<T>
+- Frontends: Next.js 15 (Web) e Next.js 16 (Backoffice), App Router, TypeScript
+- Auth: JWT Bearer (cookie httpOnly)
+- Validação: FluentValidation (validators invocados nos controllers, nunca nos services)
+- Logging: NLog via ILogger<T> + IProcessLogger
 - Testes: xUnit + NSubstitute
-## Arquitetura — Clean Architecture (4 camadas)
- 
-### Domain (MoneyManager.Domain)
-- Entidades: User, Category, Account, Budget, Transaction
-- Enums: UserStatus, CategoryType, AccountType, TransactionType, etc.
-- Interfaces: IRepository<T>, IUnitOfWork e afins
-- ZERO dependências externas — nem NuGet, nem outras camadas
-- Entidades com comportamento: sem setters públicos nas propriedades de domínio
 
-### Application (MoneyManager.Application)
-- Services: AuthService, CategoryService, TransactionService, etc.
-- DTOs: objetos de Request e Response separados por feature
-- Validators: regras FluentValidation (nunca dentro dos services)
-- Orquestra o domínio — não tem lógica de infraestrutura aqui
+## ✅ Checklist obrigatório — toda alteração de código
+1. **Testes unitários:** rode `dotnet test MoneyManager.sln`; atualize os testes afetados em
+   `tests/MoneyManager.Tests` e adicione testes para comportamento novo (caminho feliz + erro).
+   Nunca apague ou pule testes para a suíte passar. No frontend, rode `npx tsc --noEmit -p .`.
+2. **Documentação:** ajuste em `docs/` tudo que a alteração deixou desatualizado.
+3. **Changelog:** registre a mudança visível ao usuário em
+   `src/Frontends/MoneyManager.Web/public/changelog.md`, com nova versão no topo
+   (patch para correções, minor para funcionalidades; mesmo dia → acrescente na versão do topo).
+   Mudanças só internas (refatoração, testes, docs, CI) não entram no changelog.
+4. **Validação final:** `dotnet build MoneyManager.sln` sem erros; dados de usuário novos entram no
+   fluxo LGPD (`AccountDeletionService`); features removidas saem de todos os pontos.
 
-### Infrastructure (MoneyManager.Infrastructure)
-- Data: MongoContext, MongoSettings
-- Repositories: implementações concretas dos IRepository
-- Nunca referenciada diretamente pela camada Application ou Domain
-
-### Presentation (MoneyManager.Api.Operational)
-- Controllers REST finos — delegam tudo para os services
-- Middlewares: ExceptionHandlingMiddleware (erros padronizados via ProblemDetails)
-- Extensions: HttpContextExtensions
-- Program.cs: composição root, DI, middlewares
+## Arquitetura — Clean Architecture
+- **Domain** (`MoneyManager.Domain`): entidades (classes com propriedades públicas e atributos
+  `Bson*`), enums, interfaces de repositório/UoW, exceções, seeds. Depende só de `MongoDB.Bson`
+  e `FluentValidation`.
+- **Application** (`MoneyManager.Application`): services (interface + implementação no mesmo
+  arquivo), DTOs em `DTOs/Request` e `DTOs/Response`, validators. Sem lógica de infraestrutura.
+- **Infrastructure** (`MoneyManager.Infrastructure`): MongoContext, migrations, repositórios,
+  JWT, criptografia, IA, gateways. Nunca referenciada por Application ou Domain.
+- **Presentation** (`MoneyManager.Api.Operational` / `MoneyManager.Api.Backoffice`): controllers
+  finos, middlewares (`ExceptionHandlingMiddleware` → `ApiErrorResponse`), composição do DI.
+- **Worker** (`MoneyManager.Worker.Operational`): pares `*Worker` + `*Processor`.
 
 ## Padrões obrigatórios
- 
-### Dependências
-- Sempre injetadas via construtor — nunca instanciadas com new()
-- Novas dependências registradas em Program.cs ou em métodos de extensão
-
-### Resultados de operação
-- Usar Union/Result pattern para retornos tipados
-- NUNCA substituir por throw ou return null onde Union já é usado
-- Erros devem ter tipos específicos — nunca string genérica
-
-### Acesso a dados
-- Repository Pattern: toda query passa pelo IRepository
-- Unit of Work quando múltiplas coleções são afetadas na mesma operação
-- Soft Delete: exclusões usam IsDeleted = true, nunca delete físico
-- User Isolation: toda query inclui filtro por UserId
-
-### Async
-- Tudo async/await — sem .Result ou .Wait()
-- Sem fire-and-forget a não ser em background workers explícitos
-
-### Nomenclatura
-- Classes, métodos, propriedades: PascalCase (inglês)
-- Variáveis locais, parâmetros: camelCase (inglês)
-- Comentários e mensagens de log: português
-- DTOs de request: sufixo Request (ex: CreateTransactionRequest)
-- DTOs de response: sufixo Response (ex: TransactionResponse)
-- Interfaces: prefixo I (ex: ITransactionRepository)
+- Dependências injetadas via construtor e registradas em `Program.cs` / extensões.
+- Erros por exceções específicas (`KeyNotFoundException`, `InvalidOperationException`,
+  `ConcurrencyException`…) convertidas pelo middleware — não há Result/Union pattern.
+- Toda query passa por repositório (`IUnitOfWork`) e filtra por `UserId`.
+- Soft delete (`IsDeleted = true`) no CRUD; delete físico só no fluxo LGPD e na desvinculação bancária.
+- Tudo async/await, sem `.Result`/`.Wait()`.
+- Nomes em inglês (PascalCase/camelCase); comentários, logs e commits em português.
+- DTOs com sufixo `RequestDto` / `ResponseDto`; interfaces com prefixo `I`.
+- Frontend Web: dados via hooks TanStack Query em `src/hooks`, estado de UI em Zustand,
+  formulários react-hook-form + zod.
 
 ## O que NUNCA fazer
-- Lógica de negócio em Controllers
-- Queries diretas ao MongoDB fora dos Repositories
-- Validação dentro dos Services (vai nos Validators)
-- Referência de Infrastructure em Domain ou Application
-- Adicionar pacotes NuGet sem ser explicitamente pedido
-- Alterar assinatura pública de métodos sem instrução explícita
-- Renomear membros públicos sem instrução explícita
-- Nunca delete arquivos ou pastas do repositório sem instrução explícita
-- CQRS ou MediatR — não usamos neste projeto
+- Lógica de negócio em controllers ou queries MongoDB fora dos repositórios
+- Validação dentro dos services
+- Referenciar Infrastructure em Domain ou Application
+- Adicionar pacotes NuGet/npm sem pedido explícito
+- Alterar assinatura pública ou renomear membros públicos sem instrução explícita
+- Apagar arquivos ou pastas sem instrução explícita
+- CQRS, MediatR ou AutoMapper
+- Executar commit/push/pull/fetch sem pedido de um humano
 
 ## Testes
-- Framework: xUnit
-- Mocks: NSubstitute (Substitute.For<IInterface>())
-- Padrão: Arrange / Act / Assert com comentários de seção
-- Um Assert por teste sempre que possível
-- Cobrir: caminho feliz + ao menos um caso de erro por service
-
-## Formato de entrega de código
-- Entregar arquivos na ordem: Domain → Application → Infrastructure → Presentation
-- Cada arquivo em bloco de código separado com o caminho completo no topo
-- Comentários em português apenas onde a lógica é não-óbvia
-- Sem explicações longas após o código — só entregar o que foi pedido
-- Sempre conferir se o código compila e passa nos testes antes de entregar
-- Se foi alterada alguma feature, atualize os testes existentes e adicione novos testes se necessário
-- Se foi adicionada uma nova feature que persiste dados no banco para um usuário, adicione-a ao fluxo de deleção de dados do usuário LGPD
-- Ao remover uma feature, garanta que está realizando a remoção em todos os pontos, frontend, backend, worker/jobs, testes
+- xUnit + NSubstitute (`Substitute.For<IInterface>()`), padrão Arrange / Act / Assert.
+- Cobrir caminho feliz + ao menos um caso de erro por service.

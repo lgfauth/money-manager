@@ -1,0 +1,80 @@
+name: Change Guard
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  changelog:
+    name: Changelog e testes
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Verifica changelog e testes alterados
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        PR_TEXT: ${{ github.event.pull_request.title }} ${{ github.event.pull_request.body }}
+      run: |
+        changelog="src/Frontends/MoneyManager.Web/public/changelog.md"
+        skip_token="[skip changelog]"
+
+        # Push de branch nova não tem base para comparar
+        if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+          echo "Sem commit base para comparar; verificação ignorada."
+          exit 0
+        fi
+
+        changed=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+        code_changes=$(printf '%s\n' "$changed" | grep -E '^src/' | grep -vE '\.md$' || true)
+
+        if [ -z "$code_changes" ]; then
+          echo "Nenhuma alteração de código em src/."
+          exit 0
+        fi
+
+        messages="$(git log --format=%B "$BASE_SHA..$HEAD_SHA") $PR_TEXT"
+
+        if ! printf '%s\n' "$changed" | grep -qxF "$changelog"; then
+          if printf '%s' "$messages" | grep -qiF "$skip_token"; then
+            echo "Changelog dispensado por \"$skip_token\"."
+          else
+            echo "::error file=$changelog::Alterações em src/ sem atualização do changelog. Atualize $changelog com a nova versão (veja AGENTS.md) ou use \"$skip_token\" para mudanças internas."
+            exit 1
+          fi
+        fi
+
+        backend_changes=$(printf '%s\n' "$code_changes" | grep -E '^src/(Supports|APIs|Workers)/.*\.cs$' || true)
+        if [ -n "$backend_changes" ] && ! printf '%s\n' "$changed" | grep -q '^tests/'; then
+          echo "::warning::Código .NET alterado sem mudanças em tests/. Confirme que os testes foram revisados."
+        fi
+
+  frontend:
+    name: Type-check do frontend Web
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/Frontends/MoneyManager.Web
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: npm
+        cache-dependency-path: src/Frontends/MoneyManager.Web/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Type-check
+      run: npx tsc --noEmit -p .
