@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { queryKeys } from "@/lib/query-client";
+import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import type {
   CategoryRequestDto,
   CategoryResponseDto,
@@ -24,6 +24,7 @@ export function useCreateCategory() {
       apiClient.post<CategoryResponseDto>("/api/categories", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.categories });
+      invalidateFinancialSummaries(qc);
       toast.success("Categoria criada com sucesso");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar categoria")),
@@ -37,6 +38,7 @@ export function useUpdateCategory() {
       apiClient.put<void>(`/api/categories/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.categories });
+      invalidateFinancialSummaries(qc);
       toast.success("Categoria atualizada");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar categoria")),
@@ -49,6 +51,7 @@ export function useDeleteCategory() {
     mutationFn: (id: string) => apiClient.delete<void>(`/api/categories/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.categories });
+      invalidateFinancialSummaries(qc);
       toast.success("Categoria excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir categoria")),

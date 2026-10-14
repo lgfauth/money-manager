@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { AlertTriangle, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
@@ -39,6 +40,7 @@ export default function ReportsPage() {
 
   const overview = useReportOverview(period, basis);
   const report = overview.data;
+  const isRefreshing = overview.isPlaceholderData && overview.isFetching;
 
   const handlePresetChange = (value: ReportPreset) => {
     setPreset(value);
@@ -84,8 +86,12 @@ export default function ReportsPage() {
           description="Não há transações registradas neste período."
         />
       ) : (
-        <>
+        <div
+          className={cn("space-y-6 transition-opacity", isRefreshing && "pointer-events-none opacity-60")}
+          aria-busy={isRefreshing}
+        >
           <p className="text-xs text-muted-foreground">
+            {isRefreshing && <span className="font-medium text-foreground">Atualizando… </span>}
             Apurado de {formatPeriodRange(report.period)} em regime de {basisLabels[report.basis]}, comparado
             com {formatPeriodRange(report.previousPeriod)}.
           </p>
@@ -130,7 +136,7 @@ export default function ReportsPage() {
               installments={report.upcomingInstallments}
             />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

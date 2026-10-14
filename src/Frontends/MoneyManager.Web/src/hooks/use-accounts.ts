@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { queryKeys } from "@/lib/query-client";
+import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import type {
   AccountRequestDto,
   AccountResponseDto,
@@ -24,7 +24,7 @@ export function useCreateAccount() {
       apiClient.post<AccountResponseDto>("/api/accounts", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Conta criada com sucesso");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar conta")),
@@ -38,7 +38,7 @@ export function useUpdateAccount() {
       apiClient.put<void>(`/api/accounts/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Conta atualizada");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar conta")),
@@ -51,7 +51,7 @@ export function useDeleteAccount() {
     mutationFn: (id: string) => apiClient.delete<void>(`/api/accounts/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Conta excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir conta")),

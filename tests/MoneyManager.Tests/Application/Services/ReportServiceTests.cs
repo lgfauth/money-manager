@@ -281,8 +281,17 @@ public class ReportServiceTests
         _unitOfWorkMock.Transactions.Returns(transactionRepository);
 
         var cardTransactionRepository = Substitute.For<ICreditCardTransactionRepository>();
-        cardTransactionRepository.GetByUserFromPurchaseDateAsync(OverviewUserId, Arg.Any<DateTime>())
-            .Returns(call => scenario.CardItems.Where(t => t.PurchaseDate >= call.Arg<DateTime>()).ToList());
+        // Reproduz o filtro do repositório: à vista a partir de fromDate, parceladas a partir da janela retroativa
+        cardTransactionRepository.GetByUserFromPurchaseDateAsync(OverviewUserId, Arg.Any<DateTime>(), Arg.Any<DateTime>())
+            .Returns(call =>
+            {
+                var fromDate = call.ArgAt<DateTime>(1);
+                var installmentsFromDate = call.ArgAt<DateTime>(2);
+                return scenario.CardItems
+                    .Where(t => t.PurchaseDate >= fromDate
+                                || (t.TotalInstallments > 1 && t.PurchaseDate >= installmentsFromDate))
+                    .ToList();
+            });
         cardTransactionRepository.GetByInvoicesAsync(OverviewUserId, Arg.Any<IReadOnlyCollection<string>>())
             .Returns(call => scenario.CardItems.Where(t => call.Arg<IReadOnlyCollection<string>>().Contains(t.InvoiceId)).ToList());
         _unitOfWorkMock.CreditCardTransactions.Returns(cardTransactionRepository);
@@ -479,6 +488,20 @@ public class ReportServiceTests
 
         Assert.Equal(3, result.UpcomingInstallments.Count);
         Assert.All(result.UpcomingInstallments, month => Assert.Equal(50m, month.Total));
+    }
+
+    [Fact]
+    public async Task GetOverviewAsync_ShouldLoadOldCardPurchasesOnlyWhenInstallments()
+    {
+        // Arrange
+        SetupOverview(new OverviewScenario());
+
+        // Act
+        await _reportService.GetOverviewAsync(OverviewUserId, February2024());
+
+        // Assert
+        await _unitOfWorkMock.CreditCardTransactions.Received(1).GetByUserFromPurchaseDateAsync(
+            OverviewUserId, new DateTime(2024, 1, 1), new DateTime(2020, 1, 1));
     }
 
     [Fact]

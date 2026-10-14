@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { queryKeys } from "@/lib/query-client";
+import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import type {
   RecurringTransactionRequestDto,
   RecurringTransactionResponseDto,
@@ -30,6 +30,7 @@ export function useCreateRecurring() {
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
+      invalidateFinancialSummaries(qc);
       toast.success("Transação recorrente criada");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar recorrente")),
@@ -49,6 +50,7 @@ export function useUpdateRecurring() {
       apiClient.put<void>(`/api/RecurringTransactions/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
+      invalidateFinancialSummaries(qc);
       toast.success("Recorrente atualizada");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar recorrente")),
@@ -62,6 +64,7 @@ export function useDeleteRecurring() {
       apiClient.delete<void>(`/api/RecurringTransactions/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.recurring });
+      invalidateFinancialSummaries(qc);
       toast.success("Recorrente excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir recorrente")),

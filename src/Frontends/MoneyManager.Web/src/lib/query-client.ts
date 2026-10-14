@@ -30,7 +30,10 @@ export const queryKeys = {
       ? (["credit-card-transactions", cardId] as const)
       : (["credit-card-transactions"] as const),
   recurring: ["recurring"] as const,
-  dashboard: (month: string) => ["dashboard", month] as const,
+  // Chaves sob "dashboard" são invalidadas por invalidateFinancialSummaries
+  dashboardOverview: (month: string) => ["dashboard", "overview", month] as const,
+  dashboardSummary: ["dashboard", "summary"] as const,
+  dashboardRecentTransactions: (today: string) => ["dashboard", "recent-transactions", today] as const,
   reports: (filters: { startDate: string; endDate: string; basis: string }) =>
     ["reports", filters] as const,
   profile: ["profile"] as const,
@@ -49,3 +52,10 @@ export const queryKeys = {
   bankConnectionAccounts: (id: string) =>
     ["bank-connections", id, "accounts"] as const,
 };
+
+// Dashboard e relatórios agregam transações, contas, cartões, categorias, orçamentos e
+// recorrências: qualquer alteração nesses dados precisa refazer os resumos.
+export function invalidateFinancialSummaries(client: QueryClient) {
+  client.invalidateQueries({ queryKey: ["dashboard"] });
+  client.invalidateQueries({ queryKey: ["reports"] });
+}

@@ -9,6 +9,6 @@ public interface ICreditCardTransactionRepository : IRepository<CreditCardTransa
     Task<IEnumerable<CreditCardTransaction>> GetByCardAsync(string userId, string creditCardId);
     Task<IEnumerable<CreditCardTransaction>> GetByParentAsync(string userId, string parentTransactionId);
     Task<CreditCardTransaction?> GetByExternalIdAsync(string userId, string externalId);
-    Task<IEnumerable<CreditCardTransaction>> GetByUserFromPurchaseDateAsync(string userId, DateTime fromDate);
+    Task<IEnumerable<CreditCardTransaction>> GetByUserFromPurchaseDateAsync(string userId, DateTime fromDate, DateTime installmentsFromDate);
     Task<IEnumerable<CreditCardTransaction>> GetByInvoicesAsync(string userId, IReadOnlyCollection<string> invoiceIds);
 }

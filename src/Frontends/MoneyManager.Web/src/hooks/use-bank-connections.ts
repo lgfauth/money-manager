@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-client";
+import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import { getApiErrorMessage } from "@/lib/api-errors";
 import { toast } from "sonner";
 import type {
@@ -113,7 +113,7 @@ export function useSyncBank() {
       qc.invalidateQueries({ queryKey: queryKeys.bankConnections });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["credit-card-transactions"] });
       toast.success("Sincronização concluída");

@@ -66,12 +66,19 @@ public class CreditCardTransactionRepository : Repository<CreditCardTransaction>
         return await Collection.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<CreditCardTransaction>> GetByUserFromPurchaseDateAsync(string userId, DateTime fromDate)
+    // Compras à vista só interessam a partir de fromDate; compras parceladas precisam de uma janela
+    // retroativa maior (installmentsFromDate), pois suas parcelas caem meses depois da compra.
+    public async Task<IEnumerable<CreditCardTransaction>> GetByUserFromPurchaseDateAsync(
+        string userId, DateTime fromDate, DateTime installmentsFromDate)
     {
         var filter = Builders<CreditCardTransaction>.Filter.And(
             Builders<CreditCardTransaction>.Filter.Eq(t => t.UserId, userId),
-            Builders<CreditCardTransaction>.Filter.Gte(t => t.PurchaseDate, fromDate.Date),
-            Builders<CreditCardTransaction>.Filter.Eq(t => t.IsDeleted, false)
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.IsDeleted, false),
+            Builders<CreditCardTransaction>.Filter.Or(
+                Builders<CreditCardTransaction>.Filter.Gte(t => t.PurchaseDate, fromDate.Date),
+                Builders<CreditCardTransaction>.Filter.And(
+                    Builders<CreditCardTransaction>.Filter.Gt(t => t.TotalInstallments, 1),
+                    Builders<CreditCardTransaction>.Filter.Gte(t => t.PurchaseDate, installmentsFromDate.Date)))
         );
 
         return await Collection.Find(filter).ToListAsync();

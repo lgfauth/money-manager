@@ -1,49 +1,55 @@
 "use client";
 
-import {
-  Wallet,
-  TrendingUp,
-  ArrowDownLeft,
-  ArrowUpRight,
-} from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Landmark, Scale } from "lucide-react";
 import { StatCard } from "@/components/shared/stat-card";
+import { getPercentChange } from "@/hooks/use-reports";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
+import type { DashboardSummary } from "@/types/dashboard";
+import type { ReportTotals } from "@/types/report";
+
+const comparisonLabel = "vs mesmo período do mês anterior";
 
 interface OverviewCardsProps {
-  netBalance: number;
-  totalAssets: number;
-  monthlyIncome: number;
-  monthlyExpense: number;
+  summary: DashboardSummary;
+  totals: ReportTotals;
+  previousTotals: ReportTotals;
 }
 
-export function OverviewCards({
-  netBalance,
-  totalAssets,
-  monthlyIncome,
-  monthlyExpense,
-}: OverviewCardsProps) {
+function buildTrend(current: number, previous: number, isIncreaseBad = false) {
+  const change = getPercentChange(current, previous);
+  return change === null ? undefined : { value: change, label: comparisonLabel, isIncreaseBad };
+}
+
+export function OverviewCards({ summary, totals, previousTotals }: OverviewCardsProps) {
   const { formatMonetaryValue } = useMoneyPrivacy();
+  const formatMoney = (value: number) => formatMonetaryValue(value, summary.currency);
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard title="Saldo Liquido" value={formatMonetaryValue(netBalance)} icon={Wallet} />
       <StatCard
-        title="Total em Ativos"
-        value={formatMonetaryValue(totalAssets)}
-        icon={TrendingUp}
-        variant="default"
+        title="Patrimônio Líquido"
+        value={formatMoney(summary.netWorth)}
+        icon={Scale}
+        variant={summary.netWorth >= 0 ? "default" : "expense"}
       />
       <StatCard
-        title="Receitas do Mes"
-        value={formatMonetaryValue(monthlyIncome)}
+        title="Disponível em Contas"
+        value={formatMoney(summary.accountsBalance)}
+        icon={Landmark}
+      />
+      <StatCard
+        title="Receitas do Mês"
+        value={formatMoney(totals.income)}
         icon={ArrowDownLeft}
         variant="income"
+        trend={buildTrend(totals.income, previousTotals.income)}
       />
       <StatCard
-        title="Despesas do Mes"
-        value={formatMonetaryValue(monthlyExpense)}
+        title="Despesas do Mês"
+        value={formatMoney(totals.expense)}
         icon={ArrowUpRight}
         variant="expense"
+        trend={buildTrend(totals.expense, previousTotals.expense, true)}
       />
     </div>
   );

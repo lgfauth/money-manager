@@ -146,7 +146,7 @@ API REST principal consumida pelo Frontend Web. Expõe todas as funcionalidades
 financeiras do usuário autenticado. Controllers atuais:
 
 `Auth`, `Users`, `Profile`, `Categories`, `Accounts`, `Transactions`, `Budgets`,
-`CreditCards`, `CreditCardTransactions`, `RecurringTransactions`, `Reports`,
+`CreditCards`, `CreditCardTransactions`, `RecurringTransactions`, `Reports`, `Dashboard`,
 `FinancialHealth`, `BankConnections`, `Subscriptions`, `Receipts`, `Documents`,
 `Push`, `Onboarding`, `Settings`, `UserReports`, `AccountDeletion`, `Webhooks`, `Admin`.
 
@@ -178,6 +178,11 @@ Destaques:
   cartões no período, em regime de competência (parcelas na data de cada parcela)
   ou de caixa (compras da fatura na data do pagamento), excluindo transferências
   entre contas próprias e pagamentos de fatura para não contar em dobro.
+- **Dashboard** (`Dashboard`) — `GET /api/dashboard/summary` devolve a posição atual
+  (saldo das contas, dívida em faturas não pagas e patrimônio líquido) e os próximos
+  vencimentos (faturas abertas/fechadas/vencidas e recorrências dos próximos 15 dias).
+  Os números do mês no frontend vêm de `/api/reports/overview` em competência, os
+  mesmos da página de Relatórios.
 
 ### 4.2 API de Backoffice — `src/APIs/MoneyManager.Api.Backoffice`
 

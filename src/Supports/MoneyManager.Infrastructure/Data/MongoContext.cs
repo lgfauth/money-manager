@@ -266,6 +266,12 @@ public class MongoContext
                 .Ascending(t => t.UserId)
                 .Ascending(t => t.ParentTransactionId)
         ));
+        // Consultas por período dos relatórios
+        await creditCardTransactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardTransaction>(
+            Builders<MoneyManager.Domain.Entities.CreditCardTransaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.PurchaseDate)
+        ));
         await creditCardTransactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardTransaction>(
             Builders<MoneyManager.Domain.Entities.CreditCardTransaction>.IndexKeys
                 .Ascending(t => t.UserId)

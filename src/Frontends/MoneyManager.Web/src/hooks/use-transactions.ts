@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { queryKeys } from "@/lib/query-client";
+import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import type {
   TransactionRequestDto,
   TransactionResponseDto,
@@ -54,7 +54,7 @@ export function useCreateTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Transação criada com sucesso");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar transação")),
@@ -70,7 +70,7 @@ export function useUpdateTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Transação atualizada");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar transação")),
@@ -85,7 +85,7 @@ export function useDeleteTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Transação excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir transação")),

@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { getApiErrorMessage } from "@/lib/api-errors";
-import { queryKeys } from "@/lib/query-client";
+import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import { toast } from "sonner";
 import type {
   CreateCreditCardRequest,
@@ -38,7 +38,7 @@ export function useCreateCreditCard() {
       apiClient.post<CreditCardResponseDto>("/api/credit-cards", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Cartão criado com sucesso");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao criar cartão")),
@@ -53,7 +53,7 @@ export function useUpdateCreditCard() {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
       qc.invalidateQueries({ queryKey: queryKeys.creditCard(variables.id) });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Cartão atualizado");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao atualizar cartão")),
@@ -66,7 +66,7 @@ export function useDeleteCreditCard() {
     mutationFn: (id: string) => apiClient.delete<void>(`/api/credit-cards/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Cartão excluído");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir cartão")),
@@ -141,7 +141,7 @@ export function usePayCreditCardInvoice() {
         queryKey: queryKeys.creditCardInvoice(variables.cardId, variables.invoiceId),
       });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       toast.success("Pagamento registrado");
     },
@@ -175,7 +175,7 @@ export function useCreateCreditCardTransaction() {
       qc.invalidateQueries({ queryKey: queryKeys.creditCard(variables.creditCardId) });
       qc.invalidateQueries({ queryKey: queryKeys.creditCardInvoices(variables.creditCardId) });
       qc.invalidateQueries({ queryKey: ["credit-card-transactions"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success(variables.isRefund ? "Estorno registrado no cartão" : "Compra registrada no cartão");
     },
     onError: (error) =>
@@ -195,7 +195,7 @@ export function useUpdateCreditCardTransaction() {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
       qc.invalidateQueries({ queryKey: ["credit-card-transactions"] });
       qc.invalidateQueries({ queryKey: ["credit-cards"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Compra atualizada");
     },
     onError: (error) =>
@@ -212,7 +212,7 @@ export function useDeleteCreditCardTransaction() {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
       qc.invalidateQueries({ queryKey: ["credit-card-transactions"] });
       qc.invalidateQueries({ queryKey: ["credit-cards"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Compra excluída");
     },
     onError: (error) =>

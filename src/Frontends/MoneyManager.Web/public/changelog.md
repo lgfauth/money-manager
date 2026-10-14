@@ -1,6 +1,6 @@
 # Versão 1.2.0-beta
 
-*Lançamento: 13 de outubro de 2026*
+*Lançamento: 14 de outubro de 2026*
 
 ---
 
@@ -14,9 +14,20 @@
 - Novas seções: evolução mensal, fluxo diário com o saldo real das contas dia a dia, categorias de despesas e receitas com média mensal e orçado vs. realizado, entradas e saídas por conta, gastos por cartão, parcelas futuras e maiores despesas do período.
 - Um aviso explica como os números foram apurados (lançamentos sem categoria, compras pendentes, transferências e outras moedas).
 
+### 🏠 Dashboard renovado
+- **Patrimônio líquido de verdade:** o saldo das contas menos o que você deve nas faturas do cartão. Antes, três indicadores mostravam o mesmo valor.
+- **Receitas e despesas do mês** com os mesmos números da página de Relatórios (incluindo compras no cartão) e comparação com o mesmo período do mês anterior.
+- **Próximos vencimentos:** faturas a pagar, com destaque para as vencidas, e as recorrências dos próximos 15 dias.
+- **Despesas do mês por categoria** com o uso do orçamento de cada uma.
+- **Uso dos cartões:** quanto do limite está comprometido e o valor da fatura atual de cada cartão.
+- Fluxo diário do mês com o saldo real das contas e saldos por conta no visual padrão do app, inclusive no tema claro.
+
 ---
 
 ## 🐛 Correções e melhorias
+
+### 📅 Datas e transferências nas transações recentes
+As transações recentes do dashboard podiam aparecer com um dia a menos, e transferências entre suas contas eram exibidas como despesa. Agora a data é a do lançamento e transferências aparecem sem sinal.
 
 ### 🏦 Transações do banco que não chegavam
 A sincronização com o Open Finance passou a consultar uma janela maior de dias, para pegar transações que o banco publica com atraso. No cartão de crédito, compras que chegavam só perto do fechamento da fatura agora são importadas normalmente.
@@ -26,6 +37,13 @@ Compras do cartão ainda não confirmadas pelo banco agora aparecem na fatura ab
 
 ### 💳 Pagamento de fatura lançado como dívida
 O pagamento da fatura anterior, informado pelo banco no extrato do cartão, era importado como uma nova compra e aumentava a fatura. Agora ele é ignorado na importação, e os lançamentos desse tipo que já tinham sido importados são removidos na próxima sincronização.
+
+### ⚡ Relatórios mais rápidos
+- O relatório passou a buscar os dados em paralelo e a carregar apenas as compras no cartão que realmente afetam o período escolhido.
+- Ao trocar o período ou alternar entre competência e caixa, o relatório anterior continua na tela enquanto o novo é calculado, sem voltar para a tela de carregamento.
+
+### 🔄 Relatórios e dashboard sempre atualizados
+Depois de lançar, editar ou excluir transações, contas, cartões, categorias, orçamentos ou recorrências, os relatórios e o dashboard agora refletem a mudança na hora. Antes, a página de Relatórios podia levar alguns minutos para mostrar o lançamento novo.
 
 ---
 

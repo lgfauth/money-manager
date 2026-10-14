@@ -71,7 +71,7 @@ components/
   bank-connections/
   budgets/
   credit-cards/
-  dashboard/
+  dashboard/        ← dashboard blocks (data from /api/reports/overview + /api/dashboard/summary)
   financial-health/
   receipts/
   recurring/
@@ -576,6 +576,8 @@ New protected pages placed inside the `(dashboard)/` route group are automatical
 - **Centralized API client**: All HTTP calls go through `lib/api-client.ts`. This is the single place where auth headers are attached and 401 handling (logout + redirect) is enforced. No component or hook ever calls `fetch` directly with a hardcoded URL.
 
 - **Typed query keys**: `lib/query-client.ts` exports a `queryKeys` registry. All `useQuery` and `invalidateQueries` calls reference these constants, preventing cache key typos.
+
+- **Summary invalidation**: the dashboard (`["dashboard", ...]` keys) and the reports page (`["reports", ...]`) aggregate transactions, accounts, credit cards, categories, budgets and recurring transactions. Every mutation on those entities must call `invalidateFinancialSummaries(qc)` from `lib/query-client.ts` — do not invalidate `["dashboard"]` by hand.
 
 - **`ApiClientError` for structured error messages**: The custom error class carries `statusCode`, `messages[]`, and `data`. `getApiErrorMessage()` extracts the first useful message from the server's `ApiErrorResponse` structure for display in toasts.
 

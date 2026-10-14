@@ -165,6 +165,10 @@ A lista completa está no Swagger (em `Development`). Alguns exemplos:
 - `GET /api/reports/summary?month=2026-01` - Resumo do mês
 - `GET /api/reports/by-category?month=2026-01` - Despesas por categoria
 
+### Dashboard
+
+- `GET /api/dashboard/summary` - Patrimônio líquido (contas − faturas em aberto) e próximos vencimentos (faturas e recorrências)
+
 Outros grupos: cartões de crédito e faturas, transações recorrentes, saúde financeira, conexões bancárias (Open Finance), assinaturas, análise de comprovantes, push, onboarding, configurações e exclusão de conta (LGPD).
 
 ## 🏗️ Arquitetura

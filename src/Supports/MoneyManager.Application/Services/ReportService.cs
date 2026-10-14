@@ -162,35 +162,37 @@ public class ReportService : IReportService
         return new ReportRange(previousPeriodEnd.AddDays(1 - dayCount), previousPeriodEnd);
     }
 
+    // As consultas são independentes entre si e rodam em paralelo.
     private async Task<ReportSourceData> LoadSourceDataAsync(string userId, DateTime fromDate, DateTime today)
     {
-        var settings = (await _unitOfWork.UserSettings.GetByUserIdAsync(userId)).FirstOrDefault();
-        var accounts = (await _unitOfWork.Accounts.GetByUserIdAsync(userId))
-            .Where(account => !account.IsDeleted)
-            .ToDictionary(account => account.Id);
-        var cards = (await _unitOfWork.CreditCards.GetByUserAsync(userId))
-            .Where(card => !card.IsDeleted)
-            .ToDictionary(card => card.Id);
-        var categories = (await _unitOfWork.Categories.GetByUserIdAsync(userId))
-            .ToDictionary(category => category.Id);
-        var budgets = (await _unitOfWork.Budgets.GetByUserIdAsync(userId))
-            .Where(budget => !budget.IsDeleted)
-            .ToList();
-        var invoices = (await _unitOfWork.CreditCardInvoices.GetByUserAsync(userId)).ToList();
-        var accountTransactions = (await _unitOfWork.Transactions.GetByUserFromDateAsync(userId, fromDate)).ToList();
-
         var installmentLookbackStart = (fromDate < today ? fromDate : today).AddMonths(-MaxInstallmentLookbackMonths);
-        var accrualCardItems = (await _unitOfWork.CreditCardTransactions.GetByUserFromPurchaseDateAsync(userId, installmentLookbackStart)).ToList();
+
+        var settingsTask = _unitOfWork.UserSettings.GetByUserIdAsync(userId);
+        var accountsTask = _unitOfWork.Accounts.GetByUserIdAsync(userId);
+        var cardsTask = _unitOfWork.CreditCards.GetByUserAsync(userId);
+        var categoriesTask = _unitOfWork.Categories.GetByUserIdAsync(userId);
+        var budgetsTask = _unitOfWork.Budgets.GetByUserIdAsync(userId);
+        var invoicesTask = _unitOfWork.CreditCardInvoices.GetByUserAsync(userId);
+        var accountTransactionsTask = _unitOfWork.Transactions.GetByUserFromDateAsync(userId, fromDate);
+        var cardItemsTask = _unitOfWork.CreditCardTransactions.GetByUserFromPurchaseDateAsync(
+            userId, fromDate, installmentLookbackStart);
+
+        await Task.WhenAll(
+            settingsTask, accountsTask, cardsTask, categoriesTask,
+            budgetsTask, invoicesTask, accountTransactionsTask, cardItemsTask);
+
+        // As tarefas já terminaram; o await apenas extrai os resultados.
+        var settings = (await settingsTask).FirstOrDefault();
 
         return new ReportSourceData(
             string.IsNullOrWhiteSpace(settings?.Currency) ? DefaultCurrency : settings.Currency,
-            accounts,
-            cards,
-            categories,
-            budgets,
-            invoices,
-            accountTransactions,
-            accrualCardItems);
+            (await accountsTask).Where(account => !account.IsDeleted).ToDictionary(account => account.Id),
+            (await cardsTask).Where(card => !card.IsDeleted).ToDictionary(card => card.Id),
+            (await categoriesTask).ToDictionary(category => category.Id),
+            (await budgetsTask).Where(budget => !budget.IsDeleted).ToList(),
+            (await invoicesTask).ToList(),
+            (await accountTransactionsTask).ToList(),
+            (await cardItemsTask).ToList());
     }
 
     private static List<ClassifiedTransaction> ClassifyAccountTransactions(ReportSourceData sourceData)

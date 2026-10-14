@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-client";
+import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import type {
   BudgetRequestDto,
   BudgetResponseDto,
@@ -25,7 +25,7 @@ export function useCreateBudget() {
       apiClient.post<BudgetResponseDto>("/api/budgets", data),
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.budgets(variables.month) });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Orcamento salvo com sucesso");
     },
     onError: () => toast.error("Erro ao salvar orcamento"),
@@ -46,7 +46,7 @@ export function useUpdateBudget() {
       qc.invalidateQueries({
         queryKey: queryKeys.budgets(variables.data.month),
       });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Orcamento atualizado");
     },
     onError: () => toast.error("Erro ao atualizar orcamento"),
@@ -80,7 +80,7 @@ export function useCopyBudget() {
     onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.budgets(variables.targetMonth) });
       qc.invalidateQueries({ queryKey: ["budgets", "all"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateFinancialSummaries(qc);
       toast.success("Orçamento copiado com sucesso");
     },
     onError: () => toast.error("Erro ao copiar orçamento"),

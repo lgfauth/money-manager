@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { format, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiClient } from "@/lib/api-client";
@@ -16,6 +16,8 @@ export function useReportOverview(period: ReportPeriod, basis: ReportBasis) {
       apiClient.get<ReportOverview>(
         `/api/reports/overview?startDate=${period.startDate}&endDate=${period.endDate}&basis=${basis}`
       ),
+    // Ao trocar período/regime, mantém o relatório anterior na tela até o novo chegar.
+    placeholderData: keepPreviousData,
   });
 }
 
