@@ -6,6 +6,7 @@ namespace MoneyManager.Domain.Interfaces;
 public interface ITransactionRepository : IRepository<Transaction>
 {
     Task<IEnumerable<Transaction>> GetByUserAndMonthAsync(string userId, int year, int month);
+    Task<IEnumerable<Transaction>> GetByUserFromDateAsync(string userId, DateTime fromDate);
     Task<Transaction?> GetByClientRequestIdAsync(string userId, string clientRequestId);
     Task<(IEnumerable<Transaction> Items, int TotalCount)> GetPagedByUserAsync(
         string userId,

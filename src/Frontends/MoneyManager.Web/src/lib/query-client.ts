@@ -31,7 +31,7 @@ export const queryKeys = {
       : (["credit-card-transactions"] as const),
   recurring: ["recurring"] as const,
   dashboard: (month: string) => ["dashboard", month] as const,
-  reports: (filters: { startDate: string; endDate: string }) =>
+  reports: (filters: { startDate: string; endDate: string; basis: string }) =>
     ["reports", filters] as const,
   profile: ["profile"] as const,
   settings: ["settings"] as const,

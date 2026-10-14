@@ -65,4 +65,29 @@ public class CreditCardTransactionRepository : Repository<CreditCardTransaction>
 
         return await Collection.Find(filter).FirstOrDefaultAsync();
     }
+
+    public async Task<IEnumerable<CreditCardTransaction>> GetByUserFromPurchaseDateAsync(string userId, DateTime fromDate)
+    {
+        var filter = Builders<CreditCardTransaction>.Filter.And(
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.UserId, userId),
+            Builders<CreditCardTransaction>.Filter.Gte(t => t.PurchaseDate, fromDate.Date),
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.IsDeleted, false)
+        );
+
+        return await Collection.Find(filter).ToListAsync();
+    }
+
+    public async Task<IEnumerable<CreditCardTransaction>> GetByInvoicesAsync(string userId, IReadOnlyCollection<string> invoiceIds)
+    {
+        if (invoiceIds.Count == 0)
+            return [];
+
+        var filter = Builders<CreditCardTransaction>.Filter.And(
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.UserId, userId),
+            Builders<CreditCardTransaction>.Filter.In(t => t.InvoiceId, invoiceIds),
+            Builders<CreditCardTransaction>.Filter.Eq(t => t.IsDeleted, false)
+        );
+
+        return await Collection.Find(filter).ToListAsync();
+    }
 }

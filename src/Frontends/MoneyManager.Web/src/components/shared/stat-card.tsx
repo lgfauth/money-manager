@@ -10,6 +10,9 @@ interface StatCardProps {
   trend?: {
     value: number;
     label: string;
+    unit?: string;
+    // Quando true, aumento é ruim (ex.: despesas) e fica com a cor de despesa.
+    isIncreaseBad?: boolean;
   };
   variant?: "default" | "income" | "expense" | "warning";
 }
@@ -35,6 +38,8 @@ export function StatCard({
   trend,
   variant = "default",
 }: StatCardProps) {
+  const isGood = trend?.isIncreaseBad ? trend.value <= 0 : (trend?.value ?? 0) >= 0;
+
   return (
     <Card
       className={cn(
@@ -60,16 +65,13 @@ export function StatCard({
         {trend && (
           <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
             {trend.value >= 0 ? (
-              <ArrowUp className="h-3 w-3 text-income" />
+              <ArrowUp className={cn("h-3 w-3", isGood ? "text-income" : "text-expense")} />
             ) : (
-              <ArrowDown className="h-3 w-3 text-expense" />
+              <ArrowDown className={cn("h-3 w-3", isGood ? "text-income" : "text-expense")} />
             )}
-            <span
-              className={cn(
-                trend.value >= 0 ? "text-income" : "text-expense"
-              )}
-            >
-              {Math.abs(trend.value).toFixed(1)}%
+            <span className={cn(isGood ? "text-income" : "text-expense")}>
+              {Math.abs(trend.value).toFixed(1)}
+              {trend.unit ?? "%"}
             </span>
             <span>{trend.label}</span>
           </p>

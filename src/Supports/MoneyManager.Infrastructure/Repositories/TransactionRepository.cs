@@ -28,6 +28,19 @@ public class TransactionRepository : Repository<Transaction>, ITransactionReposi
         return await Collection.Find(filter).ToListAsync();
     }
 
+    // Retorna as transações a partir de uma data (inclusive), sem limite superior — usado pelos
+    // relatórios, que precisam das transações posteriores ao período para reconstruir o saldo diário.
+    public async Task<IEnumerable<Transaction>> GetByUserFromDateAsync(string userId, DateTime fromDate)
+    {
+        var filter = Builders<Transaction>.Filter.And(
+            Builders<Transaction>.Filter.Eq(t => t.UserId, userId),
+            Builders<Transaction>.Filter.Gte(t => t.Date, fromDate.Date),
+            Builders<Transaction>.Filter.Eq(t => t.IsDeleted, false)
+        );
+
+        return await Collection.Find(filter).ToListAsync();
+    }
+
     public async Task<Transaction?> GetByClientRequestIdAsync(string userId, string clientRequestId)
     {
         var filter = Builders<Transaction>.Filter.And(

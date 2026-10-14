@@ -1,58 +1,48 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { format, startOfMonth, subMonths } from "date-fns";
-import {
-  DollarSign,
-  TrendingDown,
-  TrendingUp,
-  PiggyBank,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
+import { useState } from "react";
+import { AlertTriangle, DollarSign } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
-import { StatCard } from "@/components/shared/stat-card";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
-import { DonutChart } from "@/components/charts/pie-chart";
-import { CategoryBarChart } from "@/components/charts";
-import { LineChartComponent } from "@/components/charts/line-chart";
-import { useReports, getPresetPeriod, getDefaultPeriod } from "@/hooks/use-reports";
-import { useTransactions } from "@/hooks/use-transactions";
-import { useAccounts } from "@/hooks/use-accounts";
-import { PeriodSelector } from "@/components/shared/period-selector";
-import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
+import { ReportFilters } from "@/components/reports/report-filters";
+import { ReportSummaryCards } from "@/components/reports/report-summary-cards";
+import { ReportDataQualityAlert } from "@/components/reports/report-data-quality-alert";
+import { MonthlyTrendCard } from "@/components/reports/monthly-trend-card";
+import { DailyFlowCard } from "@/components/reports/daily-flow-card";
+import { CategoryBreakdownCard } from "@/components/reports/category-breakdown-card";
+import { SourcesBreakdownCard } from "@/components/reports/sources-breakdown-card";
+import { UpcomingInstallmentsCard } from "@/components/reports/upcoming-installments-card";
+import { TopExpensesCard } from "@/components/reports/top-expenses-card";
+import {
+  formatReportDate,
+  getDefaultPeriod,
+  getPresetPeriod,
+  useReportOverview,
+  type ReportPreset,
+} from "@/hooks/use-reports";
+import type { ReportBasis, ReportPeriod } from "@/types/report";
 
-type Preset = "current" | "previous" | "3m" | "6m" | "year" | "custom";
+const basisLabels: Record<ReportBasis, string> = {
+  Accrual: "competência",
+  Cash: "caixa",
+};
+
+function formatPeriodRange(period: ReportPeriod) {
+  return `${formatReportDate(period.startDate, "dd/MM/yy")} a ${formatReportDate(period.endDate, "dd/MM/yy")}`;
+}
 
 export default function ReportsPage() {
-  const { formatMonetaryValue } = useMoneyPrivacy();
-  const [preset, setPreset] = useState<Preset>("current");
+  const [preset, setPreset] = useState<ReportPreset | "custom">("current");
   const [period, setPeriod] = useState(getDefaultPeriod);
-  const [selectedMonth, setSelectedMonth] = useState<string>(
-    new Date().toISOString().slice(0, 7)
-  );
-  const sixMonthsStart = format(startOfMonth(subMonths(new Date(), 5)), "yyyy-MM-dd");
-  const sixMonthsEnd = format(new Date(), "yyyy-MM-dd");
+  const [basis, setBasis] = useState<ReportBasis>("Accrual");
 
-  const report = useReports(period);
-  const accounts = useAccounts();
-  const transactions6m = useTransactions({
-    page: 1,
-    pageSize: 10000,
-    sortBy: "date",
-    startDate: sixMonthsStart,
-    endDate: sixMonthsEnd,
-  });
+  const overview = useReportOverview(period, basis);
+  const report = overview.data;
 
-  const handlePreset = (p: string) => {
-    const val = p as Preset;
-    setPreset(val);
-    if (val !== "custom") {
-      setPeriod(getPresetPeriod(val as Exclude<Preset, "custom">));
-    }
+  const handlePresetChange = (value: ReportPreset) => {
+    setPreset(value);
+    setPeriod(getPresetPeriod(value));
   };
 
   const handlePeriodChange = (start: string, end: string) => {
@@ -60,173 +50,34 @@ export default function ReportsPage() {
     setPreset("custom");
   };
 
-  const donutData = useMemo(
-    () =>
-      report.expensesByCategory.map((c) => ({
-        name: c.categoryName,
-        value: c.total,
-        color: c.color,
-      })),
-    [report.expensesByCategory]
-  );
-
-  const accountDonutData = useMemo(
-    () =>
-      report.movementByAccount.map((account) => ({
-        name: account.accountName,
-        value: account.total,
-        color: account.color,
-      })),
-    [report.movementByAccount]
-  );
-
-  const availableMonths = useMemo(() => {
-    const months = new Set<string>();
-    const items = transactions6m.data?.items ?? [];
-
-    for (const transaction of items) {
-      months.add(transaction.date.slice(0, 7));
-    }
-
-    if (months.size === 0) {
-      months.add(new Date().toISOString().slice(0, 7));
-    }
-
-    return Array.from(months).sort((a, b) => b.localeCompare(a));
-  }, [transactions6m.data?.items]);
-
-  const effectiveSelectedMonth =
-    availableMonths.find((month) => month === selectedMonth) ?? availableMonths[0];
-
-  const categoryBarData = useMemo(() => {
-    const items = transactions6m.data?.items ?? [];
-    const monthCategoryTotals = new Map<string, { name: string; color: string; value: number }>();
-
-    for (const transaction of items) {
-      if (
-        transaction.type !== "Expense" ||
-        transaction.date.slice(0, 7) !== effectiveSelectedMonth
-      ) {
-        continue;
-      }
-
-      const key = transaction.categoryId || transaction.categoryName || "outros";
-      const current = monthCategoryTotals.get(key) ?? {
-        name: transaction.categoryName || "Outros",
-        color: transaction.categoryColor || "#22c55e",
-        value: 0,
-      };
-
-      current.value += transaction.amount;
-      monthCategoryTotals.set(key, current);
-    }
-
-    return Array.from(monthCategoryTotals.values())
-      .filter((category) => category.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [transactions6m.data?.items, effectiveSelectedMonth]);
-
-  const accountTotal = useMemo(
-    () => (accounts.data ?? []).reduce((sum, account) => sum + account.balance, 0),
-    [accounts.data]
-  );
-
-  const accountExpenseLineData = useMemo(() => {
-    if (!effectiveSelectedMonth) {
-      return [] as Array<{ date: string; accountTotal: number; accumulatedExpense: number }>;
-    }
-
-    const expenseByDay = (transactions6m.data?.items ?? [])
-      .filter(
-        (transaction) =>
-          transaction.type === "Expense" &&
-          transaction.date.slice(0, 7) === effectiveSelectedMonth
-      )
-      .reduce<Record<string, number>>((acc, transaction) => {
-        const day = transaction.date.split("T")[0];
-        acc[day] = (acc[day] ?? 0) + transaction.amount;
-        return acc;
-      }, {});
-
-    const [year, month] = effectiveSelectedMonth.split("-").map(Number);
-    if (!year || !month) {
-      return [] as Array<{ date: string; accountTotal: number; accumulatedExpense: number }>;
-    }
-
-    const startDate = new Date(year, month - 1, 1);
-    const isCurrentMonth =
-      year === new Date().getFullYear() && month === new Date().getMonth() + 1;
-    const endDate = isCurrentMonth
-      ? new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())
-      : new Date(year, month, 0);
-
-    const data: Array<{ date: string; accountTotal: number; accumulatedExpense: number }> = [];
-    let accumulatedExpense = 0;
-    const cursor = new Date(startDate);
-
-    while (cursor <= endDate) {
-      const key = format(cursor, "yyyy-MM-dd");
-      accumulatedExpense += expenseByDay[key] ?? 0;
-
-      data.push({
-        date: format(cursor, "dd/MM"),
-        accountTotal,
-        accumulatedExpense,
-      });
-
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    return data;
-  }, [transactions6m.data?.items, effectiveSelectedMonth, accountTotal]);
-
-  if (report.isLoading) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title="Relatórios" description="Análise financeira detalhada" />
-        <CardGridSkeleton count={4} />
-      </div>
-    );
-  }
-
   const hasData =
-    report.totalIncome > 0 ||
-    report.totalExpense > 0;
+    !!report &&
+    (report.totals.income !== 0 ||
+      report.totals.expense !== 0 ||
+      report.upcomingInstallments.length > 0);
 
   return (
     <div className="space-y-6">
       <PageHeader title="Relatórios" description="Análise financeira detalhada" />
 
-      {/* Period selector */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <PeriodSelector
-          startDate={period.startDate}
-          endDate={period.endDate}
-          onChange={handlePeriodChange}
-          showPresets={false}
-        />
-        <Tabs value={preset} onValueChange={handlePreset}>
-          <TabsList className="h-8">
-            <TabsTrigger value="current" className="text-xs px-2 h-6">
-              Atual
-            </TabsTrigger>
-            <TabsTrigger value="previous" className="text-xs px-2 h-6">
-              Anterior
-            </TabsTrigger>
-            <TabsTrigger value="3m" className="text-xs px-2 h-6">
-              3M
-            </TabsTrigger>
-            <TabsTrigger value="6m" className="text-xs px-2 h-6">
-              6M
-            </TabsTrigger>
-            <TabsTrigger value="year" className="text-xs px-2 h-6">
-              Ano
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
+      <ReportFilters
+        period={period}
+        preset={preset}
+        basis={basis}
+        onPeriodChange={handlePeriodChange}
+        onPresetChange={handlePresetChange}
+        onBasisChange={setBasis}
+      />
 
-      {!hasData ? (
+      {overview.isLoading ? (
+        <CardGridSkeleton count={4} />
+      ) : overview.isError || !report ? (
+        <EmptyState
+          icon={AlertTriangle}
+          title="Não foi possível carregar o relatório"
+          description="Tente novamente em alguns instantes."
+        />
+      ) : !hasData ? (
         <EmptyState
           icon={DollarSign}
           title="Sem dados para o período"
@@ -234,215 +85,51 @@ export default function ReportsPage() {
         />
       ) : (
         <>
-          {/* Stat cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Total Receitas"
-              value={formatMonetaryValue(report.totalIncome)}
-              icon={TrendingUp}
-              variant="income"
-            />
-            <StatCard
-              title="Total Despesas"
-              value={formatMonetaryValue(report.totalExpense)}
-              icon={TrendingDown}
-              variant="expense"
-            />
-            <StatCard
-              title="Saldo Líquido"
-              value={formatMonetaryValue(report.netBalance)}
-              icon={DollarSign}
-              variant={report.netBalance >= 0 ? "income" : "expense"}
-            />
-            <StatCard
-              title="Taxa de Poupança"
-              value={`${report.savingsRate.toFixed(1)}%`}
-              icon={PiggyBank}
-              variant={report.savingsRate >= 0 ? "income" : "warning"}
-            />
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Apurado de {formatPeriodRange(report.period)} em regime de {basisLabels[report.basis]}, comparado
+            com {formatPeriodRange(report.previousPeriod)}.
+          </p>
 
-          {/* Charts */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Gastos por Categoria</CardTitle>
-                <p className="text-sm text-muted-foreground">Selecione o mês</p>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {availableMonths.map((month) => (
-                    <Button
-                      key={month}
-                      size="sm"
-                      variant={month === effectiveSelectedMonth ? "default" : "outline"}
-                      onClick={() => setSelectedMonth(month)}
-                      className="rounded-full px-3 text-xs"
-                    >
-                      {month}
-                    </Button>
-                  ))}
-                </div>
+          <ReportSummaryCards
+            currency={report.currency}
+            totals={report.totals}
+            previousTotals={report.previousTotals}
+          />
 
-                {categoryBarData.length > 0 ? (
-                  <CategoryBarChart data={categoryBarData} />
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-10">
-                    Sem despesas para o mês selecionado.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+          <ReportDataQualityAlert
+            currency={report.currency}
+            dataQuality={report.dataQuality}
+            otherCurrencies={report.otherCurrencies}
+          />
 
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Despesas por Categoria
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {donutData.length > 0 ? (
-                    <DonutChart
-                      data={donutData}
-                      centerValue={formatMonetaryValue(report.totalExpense)}
-                      centerLabel="Total"
-                      height={300}
-                      formatter={(value) => formatMonetaryValue(value)}
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-10">
-                      Nenhuma despesa no período.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    Movimentação por Conta
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {accountDonutData.length > 0 ? (
-                    <DonutChart
-                      data={accountDonutData}
-                      centerValue={formatMonetaryValue(
-                        report.movementByAccount.reduce(
-                          (sum, account) => sum + account.total,
-                          0
-                        )
-                      )}
-                      centerLabel="Movimento"
-                      height={300}
-                      formatter={(value) => formatMonetaryValue(value)}
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-10">
-                      Nenhuma movimentação por conta no período.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Receitas vs Despesas</CardTitle>
-              <p className="text-sm text-muted-foreground">Acumulado do mês selecionado</p>
-            </CardHeader>
-            <CardContent>
-              {accountExpenseLineData.length > 0 ? (
-                <LineChartComponent
-                  data={accountExpenseLineData}
-                  xAxisKey="date"
-                  series={[
-                    {
-                      dataKey: "accountTotal",
-                      name: "Saldo em contas",
-                      color: "oklch(0.72 0.19 142)",
-                    },
-                    {
-                      dataKey: "accumulatedExpense",
-                      name: "Despesa acumulada",
-                      color: "oklch(0.63 0.24 25)",
-                    },
-                  ]}
-                  height={220}
-                  formatter={formatMonetaryValue}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-10">
-                  Sem dados suficientes para o período.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Category breakdown table */}
-          {report.expensesByCategory.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Detalhamento por Categoria
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-muted-foreground">
-                        <th className="pb-2 text-left font-medium">
-                          Categoria
-                        </th>
-                        <th className="pb-2 text-right font-medium">Total</th>
-                        <th className="pb-2 text-right font-medium">
-                          % do Total
-                        </th>
-                        <th className="pb-2 text-left font-medium pl-4 hidden sm:table-cell">
-                          Progresso
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.expensesByCategory.map((cat) => (
-                        <tr
-                          key={cat.categoryId}
-                          className="border-b last:border-0"
-                        >
-                          <td className="py-3">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="h-3 w-3 rounded-full shrink-0"
-                                style={{ backgroundColor: cat.color }}
-                              />
-                              <span className="font-medium">
-                                {cat.categoryName}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 text-right font-medium">
-                            {formatMonetaryValue(cat.total)}
-                          </td>
-                          <td className="py-3 text-right text-muted-foreground">
-                            {cat.percentage.toFixed(1)}%
-                          </td>
-                          <td className="py-3 pl-4 hidden sm:table-cell">
-                            <Progress
-                              value={cat.percentage}
-                              className="h-2 w-24"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+          {report.monthlyTrends.length > 1 && (
+            <MonthlyTrendCard currency={report.currency} trends={report.monthlyTrends} />
           )}
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <DailyFlowCard currency={report.currency} points={report.dailyPoints} />
+            <TopExpensesCard currency={report.currency} expenses={report.topExpenses} />
+          </div>
+
+          <CategoryBreakdownCard
+            currency={report.currency}
+            period={report.period}
+            expenses={report.expensesByCategory}
+            incomes={report.incomesByCategory}
+            showMonthlyAverage={report.monthlyTrends.length > 1}
+          />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <SourcesBreakdownCard
+              currency={report.currency}
+              accounts={report.byAccount}
+              creditCards={report.byCreditCard}
+            />
+            <UpcomingInstallmentsCard
+              currency={report.currency}
+              installments={report.upcomingInstallments}
+            />
+          </div>
         </>
       )}
     </div>
