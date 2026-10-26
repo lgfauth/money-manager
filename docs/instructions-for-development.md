@@ -35,7 +35,7 @@ múltiplas aplicações independentes que compartilham as mesmas camadas de supo
 | **API Operacional** | Web API REST | .NET 10 / ASP.NET Core | 5000 |
 | **API de Backoffice** | Web API REST (interna) | .NET 10 / ASP.NET Core | 5243 |
 | **Worker Operacional** | Background Service | .NET 10 Worker Service | — (sem HTTP) |
-| **Frontend Web** | SPA/SSR | Next.js 15 · React 19 · TS | 3000 |
+| **Frontend Web** | SPA/SSR | Next.js 16 · React 19 · TS | 3000 |
 | **Portal de Administração** | SPA/SSR | Next.js 16 · React 19 · TS | 3010 |
 
 As três aplicações .NET (2 APIs + Worker) reutilizam as bibliotecas **Domain**,
@@ -69,7 +69,7 @@ projetos Next.js independentes, cada um consumindo apenas a sua respectiva API.
 
 ### Frontend (Next.js)
 
-**Web (usuário final)** — Next.js 15.5, React 19, TypeScript 5:
+**Web (usuário final)** — Next.js 16.4.3, React 19, TypeScript 5:
 
 | Biblioteca | Uso |
 |---|---|
@@ -226,7 +226,7 @@ Destaques:
 
 ### 4.4 Frontend Web — `src/Frontends/MoneyManager.Web`
 
-Interface principal do usuário final (Next.js 15 / React 19). Organização em
+Interface principal do usuário final (Next.js 16 / React 19). Organização em
 `src/app` (App Router, com grupos `(auth)` e `(dashboard)`, além das páginas
 legais), `src/components` (por feature: `transactions`, `accounts`, `budgets`,
 `credit-cards`, `financial-health`, `bank-connections`, `bancos-e-contas`,
@@ -448,7 +448,7 @@ src/
 │   ├── MoneyManager.Api.Operational/   ← API principal (usuários)  · :5000
 │   └── MoneyManager.Api.Backoffice/    ← API administrativa        · :5243
 ├── Frontends/
-│   ├── MoneyManager.Web/               ← Frontend do usuário (Next.js 15) · :3000
+│   ├── MoneyManager.Web/               ← Frontend do usuário (Next.js 16) · :3000
 │   └── MoneyManager.Backoffice/        ← Portal admin (Next.js 16)        · :3010
 ├── Supports/
 │   ├── MoneyManager.Domain/            ← Entidades, enums, interfaces

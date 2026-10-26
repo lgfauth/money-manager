@@ -13,7 +13,7 @@ money-manager/
 │   │   ├── MoneyManager.Api.Operational/   # API REST principal (usuários) — controllers, middlewares, Program.cs
 │   │   └── MoneyManager.Api.Backoffice/    # API administrativa interna (operadores)
 │   ├── Frontends/
-│   │   ├── MoneyManager.Web/               # Frontend do usuário (Next.js 15)
+│   │   ├── MoneyManager.Web/               # Frontend do usuário (Next.js 16)
 │   │   └── MoneyManager.Backoffice/        # Portal de administração (Next.js 16)
 │   ├── Supports/
 │   │   ├── MoneyManager.Domain/            # Entidades, enums, interfaces, exceções, seeds

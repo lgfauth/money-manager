@@ -6,8 +6,8 @@ The monorepo contains two Next.js applications under `src/Frontends/`:
 
 | Project | Path | Purpose | Next.js | React |
 |---|---|---|---|---|
-| **MoneyManager.Web** | `src/Frontends/MoneyManager.Web` | User-facing personal finance app (transactions, budgets, accounts, credit cards, reports, settings, PWA) | 15.5 | 19.1 |
-| **MoneyManager.Backoffice** | `src/Frontends/MoneyManager.Backoffice` | Internal admin portal (job control, observability, audit, financial maintenance, legal documents) | 16.2 | 19.2 |
+| **MoneyManager.Web** | `src/Frontends/MoneyManager.Web` | User-facing personal finance app (transactions, budgets, accounts, credit cards, reports, settings, PWA) | 16.4.3 | 19.1 |
+| **MoneyManager.Backoffice** | `src/Frontends/MoneyManager.Backoffice` | Internal admin portal (job control, observability, audit, financial maintenance, legal documents) | 16.4.3 | 19.2 |
 
 ### Key differences between the two apps
 
@@ -714,7 +714,7 @@ export default function Layout() {
 
 ## 7. Next.js Version Notes
 
-### MoneyManager.Web — Next.js 15 (15.5.x)
+### MoneyManager.Web — Next.js 16 (16.4.3)
 
 Features in active use:
 - **App Router** with route groups `(auth)` and `(dashboard)`
@@ -731,7 +731,7 @@ Deprecated patterns to avoid:
 - Do not use `next/head` — use the `metadata` export from Server Components instead
 - Do not use `next/router` — use `next/navigation` (`useRouter`, `usePathname`, `useSearchParams`)
 
-### MoneyManager.Backoffice — Next.js 16 (16.2.x)
+### MoneyManager.Backoffice — Next.js 16 (16.4.3)
 
 This project runs on a newer major version. Features in use:
 - **App Router** with route group `(secure)`
