@@ -120,3 +120,5 @@ appsettings.Local.json
 # context-mem
 .context-mem/
 .gitnexus
+
+.fake
