@@ -24,7 +24,6 @@ export default function RegisterPage() {
       name: data.name,
       email: data.email,
       password: data.password,
-      confirmPassword: data.confirmPassword,
     });
   };
 
@@ -51,7 +50,8 @@ export default function RegisterPage() {
         <h2 className="login-title">Criar conta</h2>
         <p className="login-subtitle">Comece a controlar suas finanças</p>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        {/* method="post": sem JS hidratado, o GET padrão levaria a senha para a URL */}
+        <form method="post" onSubmit={handleSubmit(onSubmit)}>
           <FormErrorSummary
             errors={errors}
             submitCount={submitCount}

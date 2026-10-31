@@ -1,3 +1,4 @@
+using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MoneyManager.Application.DTOs.Request;
@@ -12,10 +13,17 @@ namespace MoneyManager.Presentation.Controllers;
 public class ProfileController : ControllerBase
 {
     private readonly IUserProfileService _userProfileService;
+    private readonly IValidator<ChangePasswordRequestDto> _changePasswordValidator;
+    private readonly IValidator<UpdateEmailRequestDto> _updateEmailValidator;
 
-    public ProfileController(IUserProfileService userProfileService)
+    public ProfileController(
+        IUserProfileService userProfileService,
+        IValidator<ChangePasswordRequestDto> changePasswordValidator,
+        IValidator<UpdateEmailRequestDto> updateEmailValidator)
     {
         _userProfileService = userProfileService;
+        _changePasswordValidator = changePasswordValidator;
+        _updateEmailValidator = updateEmailValidator;
     }
 
     [HttpGet]
@@ -37,6 +45,10 @@ public class ProfileController : ControllerBase
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)
     {
+        var validation = await _changePasswordValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+            return this.ApiValidationError(validation.Errors);
+
         var userId = HttpContext.GetUserId();
         await _userProfileService.ChangePasswordAsync(userId, request);
         return Ok(new { message = "Password changed successfully" });
@@ -45,6 +57,10 @@ public class ProfileController : ControllerBase
     [HttpPost("update-email")]
     public async Task<IActionResult> UpdateEmail([FromBody] UpdateEmailRequestDto request)
     {
+        var validation = await _updateEmailValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+            return this.ApiValidationError(validation.Errors);
+
         var userId = HttpContext.GetUserId();
         var profile = await _userProfileService.UpdateEmailAsync(userId, request);
         return Ok(profile);

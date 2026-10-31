@@ -27,25 +27,14 @@ public sealed class AdminTokenService
     {
         role = AdminRoles.Viewer;
 
-        _logger.LogInformation(
-            "Validating admin credentials. RequestUsername={RequestUsername}, RequestPasswordLength={RequestPasswordLength}",
-            username,
-            password?.Length ?? 0);
+        _logger.LogInformation("Validating admin credentials. RequestUsername={RequestUsername}", username);
 
         var configuredUsers = _configuration.GetSection("AdminAuth:Users").Get<List<AdminUserCredential>>() ?? [];
         _logger.LogInformation("AdminAuth:Users configured count={UsersCount}", configuredUsers.Count);
 
         if (configuredUsers.Count > 0)
         {
-            var usersDebug = configuredUsers.Select(user => new
-            {
-                Username = user.Username,
-                Role = user.Role,
-                HasPassword = !string.IsNullOrWhiteSpace(user.Password),
-                PasswordLength = user.Password?.Length ?? 0
-            }).ToList();
-
-            _logger.LogInformation("Using AdminAuth:Users credentials source. Users={UsersDebug}", usersDebug);
+            _logger.LogInformation("Using AdminAuth:Users credentials source.");
 
             var matchingUser = configuredUsers.FirstOrDefault(user =>
                 string.Equals(user.Username, username, StringComparison.Ordinal)
@@ -85,12 +74,11 @@ public sealed class AdminTokenService
             ?? AdminRoles.Admin;
 
         _logger.LogInformation(
-            "Using single-user credentials source. ConfigUsernameSet={ConfigUsernameSet}, EnvUsernameSet={EnvUsernameSet}, ConfigPasswordSet={ConfigPasswordSet}, EnvPasswordSet={EnvPasswordSet}, EffectivePasswordLength={EffectivePasswordLength}, ConfigRoleSet={ConfigRoleSet}, EnvRoleSet={EnvRoleSet}, EffectiveRole={EffectiveRole}",
+            "Using single-user credentials source. ConfigUsernameSet={ConfigUsernameSet}, EnvUsernameSet={EnvUsernameSet}, ConfigPasswordSet={ConfigPasswordSet}, EnvPasswordSet={EnvPasswordSet}, ConfigRoleSet={ConfigRoleSet}, EnvRoleSet={EnvRoleSet}, EffectiveRole={EffectiveRole}",
             !string.IsNullOrWhiteSpace(configUsername),
             !string.IsNullOrWhiteSpace(envUsername),
             !string.IsNullOrWhiteSpace(configPassword),
             !string.IsNullOrWhiteSpace(envPassword),
-            expectedPassword.Length,
             !string.IsNullOrWhiteSpace(configRole),
             !string.IsNullOrWhiteSpace(envRole),
             expectedRole);
@@ -104,11 +92,7 @@ public sealed class AdminTokenService
         var valid = string.Equals(username, expectedUsername, StringComparison.Ordinal)
             && string.Equals(password, expectedPassword, StringComparison.Ordinal);
 
-        _logger.LogInformation(
-            "Single-user credential comparison result. UsernameMatched={UsernameMatched}, PasswordMatched={PasswordMatched}, FinalValid={FinalValid}",
-            string.Equals(username, expectedUsername, StringComparison.Ordinal),
-            string.Equals(password, expectedPassword, StringComparison.Ordinal),
-            valid);
+        _logger.LogInformation("Single-user credential comparison result. FinalValid={FinalValid}", valid);
 
         if (valid)
         {

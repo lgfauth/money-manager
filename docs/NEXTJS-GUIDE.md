@@ -162,14 +162,14 @@ All pages are Client Components (`"use client"`) because they use `useEffect` + 
 ```
 API (MoneyManager.Api.Operational)
     ↓
-apiClient (lib/api-client.ts)        ← adds Bearer token, handles 401 logout
+apiClient (lib/api-client.ts)        ← adds Bearer token, handles 401 logout (`keepSessionOnUnauthorized` nos endpoints que conferem senha)
     ↓
 Domain hook (hooks/use-transactions.ts)  ← TanStack Query useQuery/useMutation
     ↓
 Page / Component
 ```
 
-1. The `apiClient` object (`lib/api-client.ts`) wraps `fetch` with auth headers and error normalization.
+1. The `apiClient` object (`lib/api-client.ts`) wraps `fetch` with auth headers and error normalization. Forms with passwords or API keys must declare `method="post"`: without hydrated JS, the default GET would put the secret in the URL.
 2. Each domain has a dedicated hook file (`hooks/use-*.ts`) that calls `apiClient` through TanStack Query.
 3. Pages and components import only the hook — they should not call `apiClient` directly. (Current exceptions to clean up: `(dashboard)/onboarding/page.tsx` and `(dashboard)/report/page.tsx`.)
 

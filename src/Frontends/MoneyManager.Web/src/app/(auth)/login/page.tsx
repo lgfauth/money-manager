@@ -48,7 +48,8 @@ export default function LoginPage() {
         <h2 className="login-title">Bem-vindo</h2>
         <p className="login-subtitle">Entre com suas credenciais</p>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        {/* method="post": sem JS hidratado, o GET padrão levaria a senha para a URL */}
+        <form method="post" onSubmit={handleSubmit(onSubmit)}>
           <FormErrorSummary
             errors={errors}
             submitCount={submitCount}

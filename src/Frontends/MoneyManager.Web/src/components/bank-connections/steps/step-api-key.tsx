@@ -140,7 +140,8 @@ export function StepApiKey({ onSuccess, isExpired = false }: StepApiKeyProps) {
 
       <Separator />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* method="post": sem JS hidratado, o GET padrão levaria a API key para a URL */}
+      <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="apiKey" className="flex items-center gap-2">
             <Key className="h-3.5 w-3.5" />

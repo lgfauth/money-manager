@@ -22,11 +22,9 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     public IActionResult Login([FromBody] AdminLoginRequest request)
     {
-        var passwordLength = request.Password?.Length ?? 0;
         _logger.LogInformation(
-            "Admin login attempt received. Username={Username}, PasswordLength={PasswordLength}, RemoteIp={RemoteIp}",
+            "Admin login attempt received. Username={Username}, RemoteIp={RemoteIp}",
             request.Username,
-            passwordLength,
             HttpContext.Connection.RemoteIpAddress?.ToString());
 
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))

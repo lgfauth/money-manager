@@ -99,7 +99,7 @@ export default function ProfilePage() {
   // Password form
   const passwordForm = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
-    defaultValues: { currentPassword: "", newPassword: "", confirmNewPassword: "" },
+    defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
 
   const onPasswordSubmit = passwordForm.handleSubmit((data) => {
@@ -261,7 +261,8 @@ export default function ProfilePage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onPasswordSubmit} className="space-y-4 max-w-md">
+          {/* method="post": sem JS hidratado, o GET padrão levaria a senha para a URL */}
+          <form method="post" onSubmit={onPasswordSubmit} className="space-y-4 max-w-md">
             <FormErrorSummary
               errors={passwordForm.formState.errors}
               submitCount={passwordForm.formState.submitCount}
@@ -272,6 +273,7 @@ export default function ProfilePage() {
               <Label>Senha Atual</Label>
               <Input
                 type="password"
+                autoComplete="current-password"
                 {...passwordForm.register("currentPassword")}
               />
               {passwordForm.formState.errors.currentPassword && (
@@ -284,6 +286,7 @@ export default function ProfilePage() {
               <Label>Nova Senha</Label>
               <Input
                 type="password"
+                autoComplete="new-password"
                 {...passwordForm.register("newPassword")}
               />
               {passwordForm.formState.errors.newPassword && (
@@ -296,11 +299,12 @@ export default function ProfilePage() {
               <Label>Confirmar Nova Senha</Label>
               <Input
                 type="password"
-                {...passwordForm.register("confirmNewPassword")}
+                autoComplete="new-password"
+                {...passwordForm.register("confirmPassword")}
               />
-              {passwordForm.formState.errors.confirmNewPassword && (
+              {passwordForm.formState.errors.confirmPassword && (
                 <p className="text-xs text-destructive">
-                  {passwordForm.formState.errors.confirmNewPassword.message}
+                  {passwordForm.formState.errors.confirmPassword.message}
                 </p>
               )}
             </div>
@@ -341,7 +345,7 @@ export default function ProfilePage() {
               Informe o novo e-mail e sua senha para confirmar.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={onEmailSubmit} className="space-y-4">
+          <form method="post" onSubmit={onEmailSubmit} className="space-y-4">
             <FormErrorSummary
               errors={emailForm.formState.errors}
               submitCount={emailForm.formState.submitCount}
@@ -359,7 +363,11 @@ export default function ProfilePage() {
             </div>
             <div className="space-y-2">
               <Label>Senha (confirmação)</Label>
-              <Input type="password" {...emailForm.register("password")} />
+              <Input
+                type="password"
+                autoComplete="current-password"
+                {...emailForm.register("password")}
+              />
               {emailForm.formState.errors.password && (
                 <p className="text-xs text-destructive">
                   {emailForm.formState.errors.password.message}

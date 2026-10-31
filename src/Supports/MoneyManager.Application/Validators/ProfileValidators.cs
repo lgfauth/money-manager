@@ -8,19 +8,19 @@ public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRe
     public ChangePasswordRequestValidator()
     {
         RuleFor(x => x.CurrentPassword)
-            .NotEmpty().WithMessage("Current password is required");
+            .NotEmpty().WithMessage("Senha atual obrigatória");
 
         RuleFor(x => x.NewPassword)
-            .NotEmpty().WithMessage("New password is required")
-            .MinimumLength(12).WithMessage("Password must have at least 12 characters")
-            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter")
-            .Matches("[0-9]").WithMessage("Password must contain at least one number")
-            .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character")
-            .NotEqual(x => x.CurrentPassword).WithMessage("New password must be different from current password");
+            .NotEmpty().WithMessage("Nova senha obrigatória")
+            .MinimumLength(12).WithMessage("A senha deve ter pelo menos 12 caracteres")
+            .Matches("[A-Z]").WithMessage("A senha deve ter pelo menos uma letra maiúscula")
+            .Matches("[0-9]").WithMessage("A senha deve ter pelo menos um número")
+            .Matches("[^a-zA-Z0-9]").WithMessage("A senha deve ter pelo menos um caractere especial")
+            .NotEqual(x => x.CurrentPassword).WithMessage("A nova senha deve ser diferente da senha atual");
 
         RuleFor(x => x.ConfirmPassword)
-            .NotEmpty().WithMessage("Password confirmation is required")
-            .Equal(x => x.NewPassword).WithMessage("Passwords do not match");
+            .NotEmpty().WithMessage("Confirmação da senha obrigatória")
+            .Equal(x => x.NewPassword).WithMessage("As senhas não conferem");
     }
 }
 

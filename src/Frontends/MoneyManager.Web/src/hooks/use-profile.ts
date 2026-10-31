@@ -42,7 +42,9 @@ export function useUpdateProfile() {
 export function useChangePassword() {
   return useMutation({
     mutationFn: (data: ChangePasswordDto) =>
-      apiClient.post<void>("/api/profile/change-password", data),
+      apiClient.post<void>("/api/profile/change-password", data, {
+        keepSessionOnUnauthorized: true,
+      }),
     onSuccess: () => toast.success("Senha alterada com sucesso"),
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Erro ao alterar senha. Verifique a senha atual.")),
@@ -53,7 +55,9 @@ export function useUpdateEmail() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: UpdateEmailDto) =>
-      apiClient.post<UserProfileDto>("/api/profile/update-email", data),
+      apiClient.post<UserProfileDto>("/api/profile/update-email", data, {
+        keepSessionOnUnauthorized: true,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.profile });
       toast.success("E-mail atualizado com sucesso");
@@ -77,7 +81,9 @@ export function useDataCount() {
 export function useDeleteAccount() {
   return useMutation({
     mutationFn: (data: { password: string; confirmationText: string }) =>
-      apiClient.post<void>("/api/accountdeletion/delete-account", data),
+      apiClient.post<void>("/api/accountdeletion/delete-account", data, {
+        keepSessionOnUnauthorized: true,
+      }),
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Erro ao deletar conta")),
   });

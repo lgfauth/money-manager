@@ -14,7 +14,7 @@ export interface UserProfileDto {
 export interface ChangePasswordDto {
   currentPassword: string;
   newPassword: string;
-  confirmNewPassword: string;
+  confirmPassword: string;
 }
 
 export interface UpdateEmailDto {

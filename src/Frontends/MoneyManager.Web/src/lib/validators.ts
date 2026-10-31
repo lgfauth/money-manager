@@ -4,6 +4,14 @@ import { AccountType } from "@/types/account";
 import { TransactionType } from "@/types/transaction";
 import { RecurrenceFrequency } from "@/types/recurring";
 
+// Espelha a política de senha dos validators do backend
+const newPasswordRules = z
+  .string()
+  .min(12, "A senha deve ter pelo menos 12 caracteres")
+  .regex(/[A-Z]/, "A senha deve ter pelo menos uma letra maiúscula")
+  .regex(/[0-9]/, "A senha deve ter pelo menos um número")
+  .regex(/[^a-zA-Z0-9]/, "A senha deve ter pelo menos um caractere especial");
+
 export const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
   password: z.string().min(1, "Senha obrigatória"),
@@ -13,7 +21,7 @@ export const registerSchema = z
   .object({
     name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
     email: z.string().email("E-mail inválido"),
-    password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+    password: newPasswordRules,
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -69,12 +77,16 @@ export const transactionSchema = z.object({
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Senha atual obrigatória"),
-    newPassword: z.string().min(6, "Nova senha deve ter pelo menos 6 caracteres"),
-    confirmNewPassword: z.string(),
+    newPassword: newPasswordRules,
+    confirmPassword: z.string(),
   })
-  .refine((data) => data.newPassword === data.confirmNewPassword, {
+  .refine((data) => data.newPassword === data.confirmPassword, {
     message: "As senhas não conferem",
-    path: ["confirmNewPassword"],
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: "A nova senha deve ser diferente da senha atual",
+    path: ["newPassword"],
   });
 
 export const updateEmailSchema = z.object({

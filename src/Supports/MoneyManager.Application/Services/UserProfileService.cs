@@ -88,7 +88,7 @@ public class UserProfileService : IUserProfileService
 
         // Verificar senha atual
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
-            throw new UnauthorizedAccessException("Current password is incorrect");
+            throw new UnauthorizedAccessException("Senha atual incorreta");
 
         // Hash da nova senha
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
@@ -107,7 +107,7 @@ public class UserProfileService : IUserProfileService
 
         // Verificar senha
         if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            throw new UnauthorizedAccessException("Password is incorrect");
+            throw new UnauthorizedAccessException("Senha incorreta");
 
         // Verificar se email já existe
         var existingUser = await _unitOfWork.Users.GetByEmailAsync(request.NewEmail);

@@ -28,7 +28,9 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (data: LoginRequestDto) =>
-      apiClient.post<LoginResponseDto | undefined>("/api/auth/login", data),
+      apiClient.post<LoginResponseDto | undefined>("/api/auth/login", data, {
+        keepSessionOnUnauthorized: true,
+      }),
     onSuccess: async (response) => {
       if (isLoginResponseDto(response)) {
         login({ id: response.id, name: response.name, email: response.email }, response.token);

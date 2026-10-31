@@ -32,9 +32,15 @@ async function parseResponseBody(response: Response): Promise<unknown> {
   return text;
 }
 
+interface PostBehavior {
+  // Em endpoints que conferem a senha, o 401 da API significa senha incorreta, não sessão expirada
+  keepSessionOnUnauthorized?: boolean;
+}
+
 async function fetchWithAuth<T>(
   path: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  behavior: PostBehavior = {}
 ): Promise<T> {
   // Inclui Bearer token quando disponível — necessário para browsers que bloqueiam
   // cookies cross-origin (ex: Safari iOS com ITP ativado)
@@ -53,15 +59,18 @@ async function fetchWithAuth<T>(
     },
   });
 
-  if (res.status === 401) {
+  const body = await parseResponseBody(res);
+
+  // O JWT responde 401 sem corpo; senha incorreta volta com a mensagem da API
+  const isRejectedPassword = behavior.keepSessionOnUnauthorized && body !== null;
+
+  if (res.status === 401 && !isRejectedPassword) {
     useAuthStore.getState().logout();
     if (typeof window !== "undefined") {
       window.location.href = "/login";
     }
     throw createApiClientError(401, "Sessao expirada. Faca login novamente.");
   }
-
-  const body = await parseResponseBody(res);
 
   if (!res.ok) {
     const fallback =
@@ -79,11 +88,15 @@ async function fetchWithAuth<T>(
 export const apiClient = {
   get: <T>(path: string) => fetchWithAuth<T>(path),
 
-  post: <T>(path: string, body?: unknown) =>
-    fetchWithAuth<T>(path, {
-      method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
-    }),
+  post: <T>(path: string, body?: unknown, behavior?: PostBehavior) =>
+    fetchWithAuth<T>(
+      path,
+      {
+        method: "POST",
+        body: body ? JSON.stringify(body) : undefined,
+      },
+      behavior
+    ),
 
   postForm: <T>(path: string, formData: FormData) => {
     return fetch(`${API_URL}${path}`, {

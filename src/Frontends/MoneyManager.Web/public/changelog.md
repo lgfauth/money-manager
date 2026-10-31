@@ -1,3 +1,22 @@
+# Versão 1.2.1-beta
+
+*Lançamento: 31 de outubro de 2026*
+
+---
+
+## 🐛 Correções e melhorias
+
+### 🔑 Troca de senha funcionando
+Alterar a senha no perfil sempre falhava dizendo que a nova senha e a confirmação não conferiam, mesmo com os dois campos iguais. Agora a troca funciona normalmente, e o formulário já avisa as regras da senha: pelo menos 12 caracteres, com letra maiúscula, número e caractere especial. As mesmas regras aparecem no cadastro.
+
+### 🔒 Senhas fora do endereço da página
+Se a tela de login, cadastro, perfil ou conexão bancária fosse enviada antes de terminar de carregar, senhas e chaves podiam aparecer no endereço da página. Esse risco foi eliminado.
+
+### 🚪 Senha incorreta não encerra mais a sessão
+Errar a senha ao alterar a senha ou o e-mail, ou ao excluir a conta, desconectava você do sistema. Agora aparece apenas o aviso de senha incorreta. No login, o aviso também passa a ser o correto, em vez de "sessão expirada".
+
+---
+
 # Versão 1.2.0-beta
 
 *Lançamento: 14 de outubro de 2026*
