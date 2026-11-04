@@ -23,6 +23,7 @@ import {
 import { MoneyInput } from "@/components/shared/money-input";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { cn } from "@/lib/utils";
+import { minAllowedDateString, todayString } from "@/lib/validators";
 import { useCategories } from "@/hooks/use-categories";
 import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
 import { useCreateTransaction } from "@/hooks/use-transactions";
@@ -31,6 +32,15 @@ import { TransactionType } from "@/types/transaction";
 import type { ReceiptAnalysisResult } from "@/types/receipt";
 
 const CREDIT_KEYWORDS = ["crédito", "credito", "credit", "cartão", "cartao"];
+
+// Datas fora da janela aceita ao salvar (futuras ou com mais de 30 dias) vêm de leitura
+// errada do comprovante ou de chute da IA; nesses casos o formulário começa com hoje.
+function normalizeReceiptDate(date: string | null | undefined): string {
+  const today = todayString();
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return today;
+  if (date > today || date < minAllowedDateString()) return today;
+  return date;
+}
 
 function isCreditPayment(paymentMethod: string | null): boolean {
   if (!paymentMethod) return false;
@@ -93,7 +103,7 @@ export function ReceiptConfirmationModal({
     defaultValues: {
       description: "",
       amount: 0,
-      date: new Date().toISOString().slice(0, 10),
+      date: todayString(),
       transactionType: "expense",
       categoryId: undefined,
       accountId: undefined,
@@ -127,7 +137,7 @@ export function ReceiptConfirmationModal({
     reset({
       description: result.description,
       amount: result.amount,
-      date: result.date,
+      date: normalizeReceiptDate(result.date),
       transactionType: result.transactionType,
       categoryId: matchCategory?.id ?? undefined,
       accountId: undefined,

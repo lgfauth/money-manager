@@ -89,7 +89,8 @@ public class AnthropicReceiptAnalysisService : IReceiptAnalysisService
                         new
                         {
                             type = "text",
-                            text = AnalysisPrompt
+                            // O modelo não sabe a data atual; sem ela, "use today" vira uma data inventada
+                            text = $"{AnalysisPrompt}\nToday's date is {DateOnly.FromDateTime(DateTime.UtcNow):yyyy-MM-dd}."
                         }
                     }
                 }

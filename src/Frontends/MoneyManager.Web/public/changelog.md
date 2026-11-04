@@ -9,6 +9,9 @@
 ### 🧾 Leitura de comprovantes por foto voltou a funcionar
 Ao enviar a foto de um comprovante ou boleto, a análise falhava e nenhum dado era preenchido. Agora a descrição, o valor, a data e a categoria voltam a ser preenchidos automaticamente. Se a imagem não puder ser analisada, aparece um aviso claro.
 
+### 📅 Data do comprovante sem erro ao salvar
+Quando o comprovante não mostrava a data, ou ela era lida errada, o formulário vinha com uma data antiga (como 01/01/2025) e não deixava salvar. Agora, se a data lida for futura ou tiver mais de 30 dias, o formulário já vem com a data de hoje — é só conferir e confirmar.
+
 ---
 
 # Versão 1.2.1-beta

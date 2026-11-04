@@ -107,6 +107,24 @@ public class AnthropicReceiptAnalysisServiceTests
         Assert.Equal(1024, request.RootElement.GetProperty("max_tokens").GetInt32());
     }
 
+    [Fact]
+    public async Task AnalyzeAsync_ShouldSendTodaysDateInPrompt()
+    {
+        // Arrange
+        var body = $"{{\"content\":[{{\"type\":\"text\",\"text\":\"{Escape(ReceiptJson)}\"}}],\"stop_reason\":\"end_turn\"}}";
+        var handler = new StubHandler(HttpStatusCode.OK, body);
+        var service = CreateService(handler);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd");
+
+        // Act
+        await service.AnalyzeAsync("base64", "image/png");
+
+        // Assert
+        using var request = JsonDocument.Parse(handler.LastRequestBody!);
+        var prompt = request.RootElement.GetProperty("messages")[0].GetProperty("content")[1].GetProperty("text").GetString();
+        Assert.Contains($"Today's date is {today}.", prompt);
+    }
+
     private sealed class StubHandler(HttpStatusCode status, string body) : HttpMessageHandler
     {
         public string? LastRequestBody { get; private set; }

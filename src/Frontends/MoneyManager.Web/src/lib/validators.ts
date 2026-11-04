@@ -47,11 +47,11 @@ function localDateString(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function todayString(): string {
+export function todayString(): string {
   return localDateString(new Date());
 }
 
-function minAllowedDateString(): string {
+export function minAllowedDateString(): string {
   const d = new Date();
   d.setDate(d.getDate() - 30);
   return localDateString(d);
