@@ -1,3 +1,16 @@
+# Versão 1.2.2-beta
+
+*Lançamento: 4 de novembro de 2026*
+
+---
+
+## 🐛 Correções e melhorias
+
+### 🧾 Leitura de comprovantes por foto voltou a funcionar
+Ao enviar a foto de um comprovante ou boleto, a análise falhava e nenhum dado era preenchido. Agora a descrição, o valor, a data e a categoria voltam a ser preenchidos automaticamente. Se a imagem não puder ser analisada, aparece um aviso claro.
+
+---
+
 # Versão 1.2.1-beta
 
 *Lançamento: 31 de outubro de 2026*

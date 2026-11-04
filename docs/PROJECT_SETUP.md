@@ -120,7 +120,7 @@ A API Operacional lê as configurações do `appsettings.json` e de variáveis d
   },
   "AllowedOrigins": ["http://localhost:5002"],
   "Encryption": { "Key": "strong_text_for_secret_here" },
-  "Anthropic": { "ApiKey": "", "Model": "claude-haiku-4-5-20251001" },
+  "Anthropic": { "ApiKey": "", "Model": "claude-haiku-5-5" },
   "Efi": { "ClientId": "...", "ClientSecret": "...", "CertificatePath": "..." },
   "Vapid": { "Subject": "mailto:admin@moneymanager.app", "PublicKey": "...", "PrivateKey": "..." }
 }

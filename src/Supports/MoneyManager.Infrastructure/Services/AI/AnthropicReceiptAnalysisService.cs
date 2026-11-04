@@ -18,7 +18,7 @@ public class AnthropicReceiptAnalysisService : IReceiptAnalysisService
 
     private const string AnthropicApiUrl = "https://api.anthropic.com/v1/messages";
     private const string AnthropicVersion = "2023-06-01";
-    private const string DefaultModel = "claude-opus-4-5-20251101";
+    private const string DefaultModel = "claude-haiku-5-5";
     private const int MaxTokens = 1024;
 
     private const string AnalysisPrompt = """
@@ -67,6 +67,8 @@ public class AnthropicReceiptAnalysisService : IReceiptAnalysisService
         {
             model = _model,
             max_tokens = MaxTokens,
+            // Haiku 5.5 pensa antes de responder por padrão (tokens cobrados); a extração não precisa disso
+            thinking = new { type = "disabled" },
             messages = new[]
             {
                 new
@@ -120,20 +122,30 @@ public class AnthropicReceiptAnalysisService : IReceiptAnalysisService
 
         var responseBody = await response.Content.ReadAsStringAsync();
 
-        // Extrair o texto da resposta da Anthropic
+        // Extrair o texto da resposta da Anthropic. A resposta pode começar com blocos "thinking",
+        // então o texto é localizado pelo tipo do bloco, não pela posição.
         string extractedText;
+        string? stopReason;
         try
         {
             using var doc = JsonDocument.Parse(responseBody);
-            extractedText = doc.RootElement
-                .GetProperty("content")[0]
-                .GetProperty("text")
-                .GetString() ?? string.Empty;
+            stopReason = doc.RootElement.TryGetProperty("stop_reason", out var sr) ? sr.GetString() : null;
+            extractedText = string.Concat(doc.RootElement
+                .GetProperty("content")
+                .EnumerateArray()
+                .Where(block => block.TryGetProperty("type", out var t) && t.GetString() == "text")
+                .Select(block => block.GetProperty("text").GetString()));
         }
         catch (Exception ex)
         {
             throw new InvalidOperationException("Falha ao processar a resposta do serviço de análise.", ex);
         }
+
+        if (stopReason == "refusal")
+            throw new InvalidOperationException("Falha na extração do comprovante: o serviço de análise recusou a imagem.");
+
+        if (stopReason == "max_tokens" && string.IsNullOrWhiteSpace(extractedText))
+            throw new InvalidOperationException("Falha na extração do comprovante: resposta do serviço de análise foi interrompida.");
 
         // Extrair apenas o JSON da resposta (remover possível markdown)
         var jsonStart = extractedText.IndexOf('{');
