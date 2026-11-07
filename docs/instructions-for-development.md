@@ -9,6 +9,15 @@
 
 ---
 
+## Índice rápido
+
+- [Visão geral e arquitetura](#1-visão-geral)
+- [Setup e execução local](PROJECT_SETUP.md)
+- [Desenvolvimento backend (.NET)](DOTNET-GUIDE.md)
+- [Desenvolvimento frontend (Next.js)](NEXTJS-GUIDE.md)
+- [Deploy no Railway](RAILWAY_QUICK_START.md)
+- [Comandos Git](GIT_COMMANDS.md) e [regras para agentes](../AGENTS.md)
+
 ## Sumário
 
 - [1. Visão geral](#1-visão-geral)
@@ -121,8 +130,10 @@ Regras estruturais:
 ### Padrões-chave
 
 - **Repository Pattern** — toda query ao MongoDB passa por um `IRepository<T>`.
-- **Unit of Work** (`IUnitOfWork`) — quando múltiplas coleções são afetadas na
-  mesma operação.
+- **Unit of Work** (`IUnitOfWork`) — centraliza o acesso aos repositórios, inclusive
+  em operações com múltiplas coleções. O `SaveChangesAsync` atual é no-op: as
+  operações MongoDB são executadas pelos repositórios e não há transação automática
+  entre coleções.
 - **Erros por exceção** — os services lançam exceções específicas
   (`KeyNotFoundException`, `InvalidOperationException`, `ConcurrencyException`,
   `PremiumRequiredException`, `BankMcpKeyExpiredException`…) que o
@@ -130,7 +141,9 @@ Regras estruturais:
 - **Soft Delete** — exclusões de dados do usuário marcam `IsDeleted = true`.
   Exceções intencionais com delete físico: o fluxo LGPD (`AccountDeletionService`)
   e a desvinculação de conexão bancária (`BankConnectionService`).
-- **User Isolation** — toda query de dados do usuário inclui filtro por `UserId`.
+- **User Isolation** — consultas de dados do usuário devem filtrar por `UserId`.
+  O `Repository<T>.GetByIdAsync` atual filtra apenas por ID; ao usá-lo, o service
+  deve verificar se o registro pertence ao usuário antes de utilizá-lo.
 - **Injeção por construtor** — dependências nunca instanciadas com `new()`;
   registradas em `Program.cs` ou em métodos de extensão (`ServiceCollectionExtensions`).
 - **Async/await em tudo** — sem `.Result`/`.Wait()`; sem fire-and-forget fora de

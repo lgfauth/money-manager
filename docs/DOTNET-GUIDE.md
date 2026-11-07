@@ -113,7 +113,11 @@ public sealed class ApiErrorResponse
 
 ### 3.1 Adding a New API Endpoint
 
-> The examples in sections 3.1–3.7 use a **hypothetical `SavingsGoal` feature** to illustrate the pattern. It does not exist in the codebase — check real files (e.g. `TransactionService`, `TransactionsController`) for the current shape of each piece.
+> The `SavingsGoal` examples are hypothetical and do not exist in the codebase.
+> Before using them, define the entity, repository contract and implementation,
+> add `SavingsGoals` to `IUnitOfWork` and `UnitOfWork`, and include persisted user
+> data in the account-deletion flow. See `TransactionService` and
+> `TransactionsController` for real implementations.
 
 **Step 1 — Define the Request DTO** in `MoneyManager.Application/DTOs/Request/`:
 
@@ -260,20 +264,16 @@ public class SavingsGoalsController : ControllerBase
         if (!validation.IsValid)
             return this.ApiValidationError(validation.Errors);
 
-        try
-        {
-            var result = await _savingsGoalService.CreateAsync(userId, request);
-            _logger.LogInformation("Meta {SavingsGoalId} criada para o usuário {UserId}", result.Id, userId);
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro ao criar meta para o usuário {UserId}", userId);
-            return this.ApiBadRequest(ex.Message);
-        }
+        var result = await _savingsGoalService.CreateAsync(userId, request);
+        _logger.LogInformation("Meta {SavingsGoalId} criada para o usuário {UserId}", result.Id, userId);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 }
 ```
+
+The example has no GET endpoint, so it returns 201 without a `Location` header.
+If a GET-by-ID action is implemented, use `CreatedAtAction` to reference it. 
+Let service exceptions reach the middleware rather than converting every failure to 400.
 
 **Step 6 — Register in `Program.cs`**:
 
@@ -377,7 +377,9 @@ public class SavingsGoalRepository : Repository<SavingsGoal>, ISavingsGoalReposi
 }
 ```
 
-**Always filter by `UserId` and `IsDeleted = false`** in every user-scoped query.
+**Filter by `UserId` and `IsDeleted = false`** in user-scoped queries. The existing
+generic `GetByIdAsync` filters only by ID; services using it must check ownership
+and deletion status before using the result.
 
 The `UnitOfWork` uses **lazy initialization** — add new repositories there:
 
@@ -386,6 +388,9 @@ The `UnitOfWork` uses **lazy initialization** — add new repositories there:
 private ISavingsGoalRepository? _savingsGoalRepository;
 public ISavingsGoalRepository SavingsGoals => _savingsGoalRepository ??= new SavingsGoalRepository(_context);
 ```
+
+`SaveChangesAsync` currently does nothing: repository operations execute immediately,
+and `IUnitOfWork` does not automatically make changes across collections atomic.
 
 ### 3.4 Adding a New Worker or Job
 
@@ -415,39 +420,33 @@ internal sealed class MyJobProcessor(
 }
 ```
 
-**Step 2 — Create the Worker**:
+**Step 2 — Create the Worker** by following `ScheduledTransactionWorker` or
+`DailyReminderWorker` for scheduling, time zones, cancellation and backoffice
+commands. The loop must execute the processor only when a scheduled run is due
+or an allowed `run-now` command is claimed, not on every polling iteration.
+
+For each execution, the worker creates a scope, starts its scoped `IProcessLogger`,
+calls the processor, and finishes the log, including on failure. `AddStep` requires
+`Start` first. The following is the execution portion only, not a scheduling loop;
+the worker receives `IServiceScopeFactory scopeFactory` through constructor injection:
 
 ```csharp
-// MoneyManager.Worker.Operational/WorkerHost/Services/MyJobWorker.cs
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using TransactionSchedulerWorker.WorkerHost.Options;
-
-namespace TransactionSchedulerWorker.WorkerHost.Services;
-
-internal sealed class MyJobWorker(
-    ILogger<MyJobWorker> logger,
-    IOptions<ScheduleOptions> scheduleOptions,
-    ITimeProvider timeProvider,
-    IServiceScopeFactory scopeFactory) : BackgroundService
+private async Task RunOnceAsync(CancellationToken cancellationToken)
 {
-    private readonly ScheduleOptions _schedule = scheduleOptions.Value;
+    await using var scope = scopeFactory.CreateAsyncScope();
+    var processLogger = scope.ServiceProvider.GetRequiredService<IProcessLogger>();
+    var processor = scope.ServiceProvider.GetRequiredService<MyJobProcessor>();
+    processLogger.Start("MyJob");
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    try
     {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            // Check if it is time to run based on _schedule.Hour / _schedule.Minute
-            // (follow the same time-zone-aware pattern from ScheduledTransactionWorker)
-
-            using var scope = scopeFactory.CreateScope();
-            var processor = scope.ServiceProvider.GetRequiredService<MyJobProcessor>();
-            await processor.ProcessAsync(stoppingToken);
-
-            await timeProvider.Delay(
-                TimeSpan.FromSeconds(_schedule.LoopDelaySeconds), stoppingToken);
-        }
+        await processor.ProcessAsync(cancellationToken);
+        processLogger.Finish(success: true);
+    }
+    catch (Exception ex)
+    {
+        processLogger.Finish(success: false, exception: ex);
+        throw;
     }
 }
 ```
@@ -461,7 +460,9 @@ services.AddHostedService<MyJobWorker>();
 
 **Step 4 — Add schedule options**: each worker has its own `*ScheduleOptions` class in `WorkerHost/Options/` with a `SectionName` constant (e.g. `DailyReminderScheduleOptions`), bound in `ServiceCollectionExtensions` with `.ValidateOnStart()`, plus the matching section in the Worker's `appsettings.json`.
 
-> Real workers also receive `WorkerCommandQueueService` to honour `run-now`/pause commands queued by the backoffice, and their processors open each execution with `IProcessLogger.Start("<ProcessName>")` so it shows up in `worker_process_logs`. Follow `ScheduledTransactionWorker` / `DailyReminderWorker` for the complete loop.
+> Real workers receive `WorkerCommandQueueService` to honour backoffice commands.
+> The worker starts and finishes the process log around the processor call so the
+> execution appears in `worker_process_logs`.
 
 ### 3.5 Adding a New Domain Entity
 
@@ -685,7 +686,9 @@ Secrets are **never hardcoded**. In `appsettings.json` they are left as placehol
 
 ## 5. Good Practices Observed in This Codebase
 
-- **User isolation on every query**: Every repository query that operates on user data includes a `UserId` filter. The pattern `account.UserId != userId` is checked even after fetching by ID.
+- **User isolation**: Filter user-scoped queries by `UserId`. The generic `GetByIdAsync`
+  currently filters only by ID, so the caller must check `account.UserId != userId`
+  and deletion status before using the result.
 
 - **Soft delete for regular CRUD**: User entities are deleted by setting `IsDeleted = true`. Physical deletes are intentional and limited to the LGPD account-deletion flow (`AccountDeletionService`, via `DeleteManyByUserIdAsync`) and to unlinking a bank connection.
 

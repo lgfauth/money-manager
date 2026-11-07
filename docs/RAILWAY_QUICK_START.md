@@ -69,7 +69,9 @@ API_URL=https://sua-api.up.railway.app
 # 5. O container expõe a porta 3000
 ```
 
-> Como `NEXT_PUBLIC_API_URL` é definido em tempo de build, alterar `API_URL` exige um novo deploy do Web.
+> O valor embutido no build exige rebuild para ser alterado. Se a imagem Web foi
+> construída com o placeholder padrão, o `entrypoint.sh` pode substituí-lo nos
+> arquivos JavaScript usando `API_URL` em runtime, ao iniciar o container.
 
 ### 4️⃣ Testar (2 minutos)
 
@@ -210,4 +212,11 @@ ADMIN_PORTAL_ALLOWED_ORIGINS=https://seu-admin.up.railway.app
 ADMIN_API_URL=https://sua-admin-api.up.railway.app
 ```
 
-`ADMIN_API_URL` é usada pelo proxy server-side (`/api/proxy`) e repassada como build arg `NEXT_PUBLIC_ADMIN_API_URL`.
+`ADMIN_API_URL` é usada pelas rotas server-side de login e de proxy. A configuração
+atual também a repassa no build como `NEXT_PUBLIC_ADMIN_API_URL`, selecionando chamadas
+diretas do navegador à API. Nessas chamadas `getAdminToken()` retorna `null` e o
+token do cookie httpOnly não é injetado; requisições protegidas podem retornar 401.
+Somente no modo `/api/proxy` (URL pública
+ausente ou placeholder) o proxy lê o cookie e encaminha a autenticação. Para usar
+esse modo, mantenha `ADMIN_API_URL` no servidor e ajuste a configuração de build
+para não embutir a URL pública. Consulte o [guia Next.js](NEXTJS-GUIDE.md#23-data-flow).

@@ -1,17 +1,18 @@
 # MoneyManager — Copilot Instructions
 
-> Fonte principal: `AGENTS.md` na raiz do repositório. Este arquivo repete as regras essenciais
-> para o GitHub Copilot — mantenha os dois em sincronia.
+> Fonte principal: [AGENTS.md](../AGENTS.md). O resumo abaixo preserva as regras essenciais
+> para clientes que não carregam esse arquivo; mantenha ambos em sincronia.
 
 ## Projeto
-Sistema de gerenciamento financeiro pessoal (monorepo). Repositório: lgfauth/money-manager.
-Documentação de referência em `docs/` (comece por `docs/instructions-for-development.md`).
+Sistema de gerenciamento financeiro pessoal em monorepo. Consulte o
+[índice da documentação](../docs/instructions-for-development.md#índice-rápido) e os
+manifests dos projetos para versões e detalhes atuais.
 
 ## Stack
 - Backend: .NET 10 / C#, ASP.NET Core Web API (API Operacional, API Backoffice) e Worker
 - Banco: MongoDB (driver oficial, sem EF Core)
-- Frontends: Next.js 15 (Web) e Next.js 16 (Backoffice), App Router, TypeScript
-- Auth: JWT Bearer (cookie httpOnly)
+- Frontends: Next.js 16 (Web e Backoffice), App Router, TypeScript
+- Auth: JWT; o Web usa cookie httpOnly e token de sessão para compatibilidade cross-origin
 - Validação: FluentValidation (validators invocados nos controllers, nunca nos services)
 - Logging: NLog via ILogger<T> + IProcessLogger
 - Testes: xUnit + NSubstitute
@@ -19,7 +20,8 @@ Documentação de referência em `docs/` (comece por `docs/instructions-for-deve
 ## ✅ Checklist obrigatório — toda alteração de código
 1. **Testes unitários:** rode `dotnet test MoneyManager.sln`; atualize os testes afetados em
    `tests/MoneyManager.Tests` e adicione testes para comportamento novo (caminho feliz + erro).
-   Nunca apague ou pule testes para a suíte passar. No frontend, rode `npx tsc --noEmit -p .`.
+   Nunca apague ou pule testes para a suíte passar. No frontend alterado, rode
+   `npx tsc --noEmit -p .` e `npx eslint <arquivos alterados>`.
 2. **Documentação:** ajuste em `docs/` tudo que a alteração deixou desatualizado.
 3. **Changelog:** registre a mudança visível ao usuário em
    `src/Frontends/MoneyManager.Web/public/changelog.md`, com nova versão no topo
@@ -29,22 +31,17 @@ Documentação de referência em `docs/` (comece por `docs/instructions-for-deve
    fluxo LGPD (`AccountDeletionService`); features removidas saem de todos os pontos.
 
 ## Arquitetura — Clean Architecture
-- **Domain** (`MoneyManager.Domain`): entidades (classes com propriedades públicas e atributos
-  `Bson*`), enums, interfaces de repositório/UoW, exceções, seeds. Depende só de `MongoDB.Bson`
-  e `FluentValidation`.
-- **Application** (`MoneyManager.Application`): services (interface + implementação no mesmo
-  arquivo), DTOs em `DTOs/Request` e `DTOs/Response`, validators. Sem lógica de infraestrutura.
-- **Infrastructure** (`MoneyManager.Infrastructure`): MongoContext, migrations, repositórios,
-  JWT, criptografia, IA, gateways. Nunca referenciada por Application ou Domain.
-- **Presentation** (`MoneyManager.Api.Operational` / `MoneyManager.Api.Backoffice`): controllers
-  finos, middlewares (`ExceptionHandlingMiddleware` → `ApiErrorResponse`), composição do DI.
-- **Worker** (`MoneyManager.Worker.Operational`): pares `*Worker` + `*Processor`.
+- Domain contém entidades e contratos; Application contém services, DTOs e validators;
+  Infrastructure implementa persistência e integrações; APIs e Worker compõem o DI.
+- Infrastructure não é referenciada por Application ou Domain; workers usam pares
+  `*Worker` + `*Processor`. Detalhes no [guia .NET](../docs/DOTNET-GUIDE.md).
 
 ## Padrões obrigatórios
 - Dependências injetadas via construtor e registradas em `Program.cs` / extensões.
 - Erros por exceções específicas (`KeyNotFoundException`, `InvalidOperationException`,
   `ConcurrencyException`…) convertidas pelo middleware — não há Result/Union pattern.
-- Toda query passa por repositório (`IUnitOfWork`) e filtra por `UserId`.
+- Acesso a dados usa repositórios (`IUnitOfWork`); garanta isolamento por `UserId`.
+  Ao buscar por ID, confira a propriedade antes de usar o resultado.
 - Soft delete (`IsDeleted = true`) no CRUD; delete físico só no fluxo LGPD e na desvinculação bancária.
 - Tudo async/await, sem `.Result`/`.Wait()`.
 - Nomes em inglês (PascalCase/camelCase); comentários, logs e commits em português.

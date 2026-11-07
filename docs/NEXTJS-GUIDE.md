@@ -160,13 +160,9 @@ All pages are Client Components (`"use client"`) because they use `useEffect` + 
 #### MoneyManager.Web
 
 ```
-API (MoneyManager.Api.Operational)
-    ↓
-apiClient (lib/api-client.ts)        ← adds Bearer token, handles 401 logout (`keepSessionOnUnauthorized` nos endpoints que conferem senha)
-    ↓
-Domain hook (hooks/use-transactions.ts)  ← TanStack Query useQuery/useMutation
-    ↓
-Page / Component
+Page / Component → Domain hook → apiClient → Operational API
+                                     ↑
+                       session token and 401 handling
 ```
 
 1. The `apiClient` object (`lib/api-client.ts`) wraps `fetch` with auth headers and error normalization. Forms with passwords or API keys must declare `method="post"`: without hydrated JS, the default GET would put the secret in the URL.
@@ -175,16 +171,25 @@ Page / Component
 
 #### MoneyManager.Backoffice
 
+In proxy mode, the request flow is:
+
 ```
-Admin API (MoneyManager.Api.Backoffice)
-    ↓
-admin-api.ts helper functions     ← adds Bearer token from cookie (server-side proxy mode)
-    ↓
-Page component useEffect()
+Page component → admin-api.ts → /api/proxy → Admin API
+                                    ↑
+                           httpOnly cookie (server-side)
 ```
 
 1. `lib/admin-api.ts` exports plain async functions (no hooks).
 2. Pages call these functions directly inside `useEffect`.
+3. If `NEXT_PUBLIC_ADMIN_API_URL` is unset or is the placeholder, the helpers call
+   `/api/proxy`; the proxy, not the browser helper, reads the httpOnly cookie and
+   forwards the token to the API.
+4. A configured `NEXT_PUBLIC_ADMIN_API_URL` selects direct browser calls instead.
+   `getAdminToken()` currently returns `null`, so these calls do not receive the
+   proxy's Authorization header; protected API requests can return 401. The
+   checked-in `railway.admin.toml` sets this build
+   argument from `ADMIN_API_URL`; review this limitation when deploying. The login
+   route still uses `ADMIN_API_URL` server-side.
 
 ---
 
@@ -413,28 +418,35 @@ export function MyFeatureForm({ onSuccess }: MyFeatureFormProps) {
 src/app/(dashboard)/my-feature/[id]/page.tsx
 ```
 
-**Read the parameter and fetch data**:
+**Put the query in the hook** from section 3.2:
+
+```typescript
+// Add to src/hooks/use-my-feature.ts
+export function useMyFeatureById(id: string) {
+  return useQuery({
+    queryKey: queryKeys.myFeatureById(id),
+    queryFn: () => apiClient.get<MyFeatureResponseDto>(`/api/my-feature/${id}`),
+    enabled: !!id,
+  });
+}
+```
+
+**Read the parameter and call the hook**:
 
 ```tsx
 // src/app/(dashboard)/my-feature/[id]/page.tsx
 "use client";
 
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
-import { queryKeys } from "@/lib/query-client";
-import type { MyFeatureResponseDto } from "@/types/my-feature";
+import { useMyFeatureById } from "@/hooks/use-my-feature";
 
 export default function MyFeatureDetailPage() {
   const params = useParams<{ id: string }>();
 
-  const { data, isLoading } = useQuery({
-    queryKey: queryKeys.myFeatureById(params.id),
-    queryFn: () => apiClient.get<MyFeatureResponseDto>(`/api/my-feature/${params.id}`),
-    enabled: !!params.id,
-  });
+  const { data, isLoading, error } = useMyFeatureById(params.id);
 
   if (isLoading) return <div>Carregando...</div>;
+  if (error) return <div>Erro ao carregar.</div>;
   if (!data) return <div>Não encontrado</div>;
 
   return <div>{data.name}</div>;
@@ -558,15 +570,19 @@ New protected pages placed inside the `(dashboard)/` route group are automatical
 | Variable | Project | Description |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | Web | Base URL of `MoneyManager.Api.Operational` (empty string = same origin) |
-| `NEXT_PUBLIC_ADMIN_API_URL` | Backoffice | Base URL of `MoneyManager.Api.Backoffice`; falls back to `/api/proxy` if not set or contains placeholder |
-| `ADMIN_API_URL` | Backoffice (server-only) | Target used by the `/api/proxy` route to reach `MoneyManager.Api.Backoffice` |
+| `NEXT_PUBLIC_ADMIN_API_URL` | Backoffice | Selects direct browser calls when set; otherwise the client uses `/api/proxy` (also for the placeholder) |
+| `ADMIN_API_URL` | Backoffice (server-only) | Target used by the login and `/api/proxy` routes to reach `MoneyManager.Api.Backoffice` |
 
 **Rules**:
 - Variables read on the client must have the `NEXT_PUBLIC_` prefix.
 - Server-only secrets must NOT use the `NEXT_PUBLIC_` prefix.
 - Default to empty string `""` or `process.env.NEXT_PUBLIC_API_URL ?? ""` — never hardcode URLs.
 - Add new variables to `.env.example` (exists in `MoneyManager.Web`; the Backoffice frontend has none yet — create it when adding a variable there).
-- `NEXT_PUBLIC_*` values are inlined at **build time**: the Dockerfiles receive them as build args (`railway.web.toml` passes `API_URL` as `NEXT_PUBLIC_API_URL`), so changing them requires a rebuild.
+- `NEXT_PUBLIC_*` values are normally inlined at **build time**. For Web,
+  `railway.web.toml` passes `API_URL` as `NEXT_PUBLIC_API_URL`; changing an already
+  embedded value requires a rebuild. If the Web image was built with its default
+  placeholder, its entrypoint can replace it in JavaScript files using runtime
+  `API_URL` when the container starts.
 - In `api-client.ts`, the base URL is read once at module load: `const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";`
 
 ---
@@ -733,7 +749,7 @@ Deprecated patterns to avoid:
 
 ### MoneyManager.Backoffice — Next.js 16 (16.4.3)
 
-This project runs on a newer major version. Features in use:
+Both frontends use Next.js 16. Features in use:
 - **App Router** with route group `(secure)`
 - **`output: "standalone"`** for containerized deployment
 - **Next.js API routes** in `app/api/` used as a server-side proxy (injects admin auth cookie into requests forwarded to `MoneyManager.Api.Backoffice`)

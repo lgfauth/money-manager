@@ -209,7 +209,7 @@ curl -X POST http://localhost:5000/api/auth/register \
   -d '{
     "name": "João Silva",
     "email": "joao@example.com",
-    "password": "Senha@123"
+    "password": "Senha@123456"
   }'
 ```
 
@@ -220,7 +220,7 @@ curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "joao@example.com",
-    "password": "Senha@123"
+    "password": "Senha@123456"
   }'
 ```
 
