@@ -16,6 +16,7 @@
 - [Desenvolvimento backend (.NET)](DOTNET-GUIDE.md)
 - [Desenvolvimento frontend (Next.js)](NEXTJS-GUIDE.md)
 - [Deploy no Railway](RAILWAY_QUICK_START.md)
+- [Fluxo SDD e aprovação por tarefa](SPEC-MONEY.md)
 - [Comandos Git](GIT_COMMANDS.md) e [regras para agentes](../AGENTS.md)
 
 ## Sumário

@@ -19,6 +19,10 @@ frontends em **Next.js** (Web e Backoffice). Documentação de referência em `d
 | `docs/PROJECT_SETUP.md` | Como rodar localmente, configuração e endpoints principais |
 | `docs/RAILWAY_QUICK_START.md` | Deploy no Railway e variáveis por serviço |
 | `docs/GIT_COMMANDS.md` | Regras e comandos de git |
+| `docs/SPEC-MONEY.md` | Fluxo SDD opcional e aprovação por tarefa |
+
+Quando o humano invocar `/spec-money`, siga a skill em `.claude/skills/spec-money/`
+e aguarde aprovação explícita entre tarefas, conforme `docs/SPEC-MONEY.md`.
 
 ## ✅ Checklist obrigatório — toda alteração de código
 

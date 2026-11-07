@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/skills/spec-money/scripts/hook.cjs prompt",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/skills/spec-money/scripts/hook.cjs pre",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

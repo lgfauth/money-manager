@@ -7,6 +7,8 @@
 Sistema de gerenciamento financeiro pessoal em monorepo. Consulte o
 [índice da documentação](../docs/instructions-for-development.md#índice-rápido) e os
 manifests dos projetos para versões e detalhes atuais.
+Quando o humano invocar `/spec-money`, siga a skill e aguarde aprovação explícita
+entre tarefas; veja o [guia SDD](../docs/SPEC-MONEY.md).
 
 ## Stack
 - Backend: .NET 10 / C#, ASP.NET Core Web API (API Operacional, API Backoffice) e Worker
