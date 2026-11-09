@@ -211,7 +211,9 @@ Destaques:
 - **RBAC** com três níveis: `Viewer`, `Operator`, `Admin`.
 - **JWT com secret separado** do JWT operacional (`ADMIN_AUTH_SECRET`).
 - **Fila de comandos de worker** (`WorkerCommandQueueService`) — enfileira
-  `run-now` para os workers via MongoDB.
+  `run-now`/`pause`/`resume` para os workers via MongoDB (`AdminJobsController`:
+  `ScheduledTransactionWorker`, `CreditCardInvoiceWorker`, `DailyReminderWorker`,
+  `BankSyncWorker`, `InvoiceImportWorker`).
 - **Audit log** de todas as ações sensíveis de operadores.
 - **CORS restrito** às origens de `ADMIN_PORTAL_ALLOWED_ORIGINS`.
 - Edição de **documentos legais** (termos de uso e política de privacidade) em
@@ -231,6 +233,7 @@ sobre Application + Infrastructure. Cada worker tem um par
 | `FinancialHealthSnapshotWorker` | `FinancialHealthSnapshot` | Gera snapshots mensais dos baldes de patrimônio (reserva/FIRE) |
 | `BankSyncWorker` | `BankSync` | Sincroniza transações das conexões bancárias (Open Finance) |
 | `SubscriptionExpirationWorker` | `SubscriptionExpiration` | Expira assinaturas vencidas |
+| `InvoiceImportWorker` | `InvoiceImport` | Processa a fila de importações de fatura de cartão por IA (`InvoiceImportProcessor` → `InvoiceImportProcessingService`); verifica a fila a cada 10 s e só registra execução quando há trabalho |
 
 Destaques:
 
@@ -239,6 +242,40 @@ Destaques:
   imediata fora do horário agendado.
 - Execuções registradas via `IProcessLogger` na coleção `worker_process_logs`.
 - **`ITimeProvider`** (`SystemTimeProvider`) para testes sem depender de `DateTime.Now`.
+
+**Importação de fatura de cartão** (`InvoiceImportWorker`, opções na seção `InvoiceImport`):
+
+- Cada ciclo: recupera jobs presos em `Processing` há mais de `StuckAfterMinutes`
+  (10; voltam para `Queued` contando tentativa), expira jobs `Queued` há mais de
+  `QueuedExpirationHours` (24) com "Os arquivos da fatura expiraram. Envie a fatura
+  novamente." e reserva atomicamente até `MaxJobsPerCycle` jobs
+  (`ClaimNextQueuedAsync`).
+- Por job: confere o cartão (do usuário, não excluído e **não sincronizado pelo Open
+  Finance** — `CreditCardImportEligibilityService`), lê os arquivos (ausentes → falha
+  de arquivos expirados, sem chamar a IA), chama `IInvoiceDocumentAnalysisService`
+  com limite `JobTimeoutMinutes` (8, sempre menor que o tempo de job preso) e monta a
+  revisão com `InvoiceImportReviewService`.
+- Revisão (`InvoiceImportReviewService` + `InvoiceImportDuplicateDetector`):
+  fatura "aberta"/"parcial" ou com fechamento depois de hoje → `Failed`; sem
+  fechamento no documento ele é calculado pelo `ClosingDay` (alerta informativo);
+  datas sem ano assumem o ano corrente (ano anterior se caírem depois do fechamento);
+  itens com data futura, compra à vista/1ª parcela com mais de 60 dias, valor zero ou
+  descrição/data vazia ficam bloqueados; fechamento/vencimento divergente do cadastro
+  do cartão gera alerta (até 3 dias informativo, acima bloqueante); titulares
+  agrupados por nome normalizado e prefixo, com pré-seleção (última importação
+  confirmada do cartão → nome do usuário → titular único); prints sobrepostos
+  unificados; fingerprint por item (`ImportFingerprint`) para reimportação; duplicados
+  com transações existentes por correspondência um-para-um (valor, data ±1 dia,
+  descrição como desempate); parcelas 1/N e X/N classificadas como já cadastradas ou
+  "parcelamento anterior não cadastrado".
+- Sucesso → `AwaitingReview`; falha de regra ou definitiva da IA → `Failed` com
+  mensagem amigável; falha temporária (rede, 429, 5xx, tempo esgotado) → volta para
+  `Queued` até `MaxAttempts` (3). Os arquivos são apagados ao fim (sucesso ou falha
+  definitiva) e mantidos em falha temporária. Desligamento do host devolve o job à
+  fila sem contar tentativa.
+- Push ao usuário (sucesso ou falha) com URL `/credit-cards/invoice-imports/{id}`;
+  falha no push não altera o job. Logs sem conteúdo do documento, nomes de titulares
+  ou base64.
 
 ### 4.4 Frontend Web — `src/Frontends/MoneyManager.Web`
 

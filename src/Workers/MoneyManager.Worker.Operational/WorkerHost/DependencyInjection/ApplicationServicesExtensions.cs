@@ -50,6 +50,9 @@ internal static class ApplicationServicesExtensions
         // Anthropic:ApiKey / Anthropic:Model, compartilhados com a API.
         services.AddHttpClient("anthropic", client => client.Timeout = TimeSpan.FromMinutes(10));
         services.AddScoped<IInvoiceDocumentAnalysisService, AnthropicInvoiceDocumentAnalysisService>();
+        services.AddScoped<ICreditCardImportEligibilityService, CreditCardImportEligibilityService>();
+        services.AddScoped<IInvoiceImportReviewService, InvoiceImportReviewService>();
+        services.AddScoped<IInvoiceImportProcessingService, InvoiceImportProcessingService>();
 
         return services;
     }

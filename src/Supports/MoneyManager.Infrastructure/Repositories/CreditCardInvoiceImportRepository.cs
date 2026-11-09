@@ -90,6 +90,15 @@ public class CreditCardInvoiceImportRepository : Repository<CreditCardInvoiceImp
         return await Collection.FindOneAndUpdateAsync(filter, update, options);
     }
 
+    public async Task<bool> AnyQueuedAsync()
+    {
+        var filter = F.And(
+            F.Eq(i => i.Status, InvoiceImportStatus.Queued),
+            F.Eq(i => i.IsDeleted, false));
+
+        return await Collection.Find(filter).Limit(1).AnyAsync();
+    }
+
     public async Task<IEnumerable<CreditCardInvoiceImport>> GetStuckProcessingAsync(DateTime startedBeforeUtc)
     {
         var filter = F.And(

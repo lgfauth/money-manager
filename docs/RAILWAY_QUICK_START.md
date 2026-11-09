@@ -197,6 +197,17 @@ Anthropic__Model=claude-haiku-5-5   # opcional; padrão claude-haiku-5-5
 - Configure-as como **Shared Variables** do projeto no Railway e referencie nos dois serviços, para que tenham sempre o mesmo valor.
 - Sem a chave no Worker, a leitura da fatura falha com a mensagem "O serviço de leitura de faturas não está configurado".
 
+**Importação de fatura (`InvoiceImportWorker`) — opções opcionais** (padrões em `appsettings.json`):
+
+```
+InvoiceImport__PollIntervalSeconds=10     # intervalo de verificação da fila
+InvoiceImport__MaxAttempts=3              # tentativas em falha temporária da IA
+InvoiceImport__StuckAfterMinutes=10       # job em processamento além disso volta para a fila
+InvoiceImport__QueuedExpirationHours=24   # job na fila além disso falha (arquivos expiram em 24 h)
+InvoiceImport__JobTimeoutMinutes=8        # limite de um job; mantenha menor que StuckAfterMinutes
+InvoiceImport__MaxJobsPerCycle=5          # jobs processados por ciclo
+```
+
 ---
 
 ## 🛡️ Backoffice (API + Portal Admin)

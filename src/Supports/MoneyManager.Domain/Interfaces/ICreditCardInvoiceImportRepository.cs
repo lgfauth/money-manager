@@ -24,6 +24,9 @@ public interface ICreditCardInvoiceImportRepository : IRepository<CreditCardInvo
     /// </summary>
     Task<CreditCardInvoiceImport?> ClaimNextQueuedAsync(DateTime nowUtc);
 
+    /// <summary>Indica se há algum job Queued (não excluído) aguardando o Worker.</summary>
+    Task<bool> AnyQueuedAsync();
+
     /// <summary>Jobs em Processing iniciados antes de <paramref name="startedBeforeUtc"/> (presos).</summary>
     Task<IEnumerable<CreditCardInvoiceImport>> GetStuckProcessingAsync(DateTime startedBeforeUtc);
 

@@ -48,6 +48,11 @@ public static class ServiceCollectionExtensions
             .Bind(configuration.GetSection(BankSyncOptions.SectionName))
             .ValidateOnStart();
 
+        services
+            .AddOptions<InvoiceImportOptions>()
+            .Bind(configuration.GetSection(InvoiceImportOptions.SectionName))
+            .ValidateOnStart();
+
         services.AddSingleton<ITimeProvider>(sp => new SystemTimeProvider(TimeProvider.System));
         services.AddProcessLogger();
 
@@ -59,6 +64,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<SubscriptionExpirationProcessor>();
         services.AddScoped<BankSyncProcessor>();
+        services.AddScoped<InvoiceImportProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
         services.AddHostedService<DailyReminderWorker>();
@@ -66,6 +72,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<FinancialHealthSnapshotWorker>();
         services.AddHostedService<SubscriptionExpirationWorker>();
         services.AddHostedService<BankSyncWorker>();
+        services.AddHostedService<InvoiceImportWorker>();
 
         return services;
     }
