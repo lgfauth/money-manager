@@ -168,7 +168,7 @@ A lista completa está no Swagger (em `Development`). Alguns exemplos:
 ### Importação de fatura de cartão (IA)
 
 - `GET /api/credit-card-invoice-imports/eligible-cards` - Cartões que aceitam importação (não sincronizados pelo Open Finance)
-- `POST /api/credit-card-invoice-imports` - Upload multipart (`creditCardId` + `files`: 1 PDF até 20 MB ou 1–10 imagens JPEG/PNG/WebP até 5 MB cada); responde `202` com `id` e `status` e o Worker processa em segundo plano
+- `POST /api/credit-card-invoice-imports` - Upload multipart (`creditCardId` + `files`: 1 PDF até 20 MB ou 1–10 imagens JPEG/PNG/WebP até 10 MB cada, normalizadas para JPEG ≤ 5 MB, ou 1 planilha `.xlsx` até 5 MB, convertida em texto); responde `202` com `id` e `status` e o Worker processa em segundo plano
 - `GET /api/credit-card-invoice-imports` - Importações recentes do usuário
 - `GET /api/credit-card-invoice-imports/{id}` - Status, dados da fatura, titulares, alertas e itens extraídos
 - `POST /api/credit-card-invoice-imports/{id}/confirm` - Confirma titulares e itens (editados) e cadastra as transações na fatura do mês importado (`409` se já confirmada, cartão sincronizado ou cadastro do cartão divergente; `400` para itens inválidos)
@@ -199,7 +199,7 @@ Segue Clean Architecture com as seguintes camadas:
 - ✅ Saúde financeira (metas, reserva, FIRE)
 - ✅ Open Finance (Pluggy via Banco MCP) para sincronizar contas e cartões
 - ✅ Análise de comprovantes por IA (Anthropic Claude)
-- ✅ Importação de fatura de cartão por IA (PDF ou imagens), processada em segundo plano pelo Worker
+- ✅ Importação de fatura de cartão por IA (PDF, imagens ou planilha `.xlsx`), processada em segundo plano pelo Worker
 - ✅ Assinatura premium (gateway EfiBank) e notificações Web Push
 - ✅ Validação com FluentValidation
 - ✅ Isolamento de dados por usuário

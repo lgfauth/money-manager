@@ -24,6 +24,8 @@ public class CreditCardInvoiceImportServiceTests
     private readonly ICreditCardInvoiceImportFileRepository _files = Substitute.For<ICreditCardInvoiceImportFileRepository>();
     private readonly ICreditCardImportEligibilityService _eligibility = Substitute.For<ICreditCardImportEligibilityService>();
     private readonly IInvoiceImportReviewService _review = Substitute.For<IInvoiceImportReviewService>();
+    private readonly IImageNormalizationService _images = Substitute.For<IImageNormalizationService>();
+    private readonly ISpreadsheetTextExtractor _spreadsheets = Substitute.For<ISpreadsheetTextExtractor>();
     private readonly ICreditCardTransactionService _transactions = Substitute.For<ICreditCardTransactionService>();
     private readonly FixedTimeProvider _time = new(new DateTimeOffset(2026, 11, 9, 15, 0, 0, TimeSpan.Zero));
     private readonly CreditCardInvoiceImportService _service;
@@ -35,8 +37,11 @@ public class CreditCardInvoiceImportServiceTests
         _unitOfWork.CreditCardInvoiceImportFiles.Returns(_files);
         _cards.GetByIdAsync(CardId).Returns(new CreditCard { Id = CardId, UserId = UserId, Name = "Nubank" });
         _imports.AddAsync(Arg.Any<CreditCardInvoiceImport>()).Returns(ci => ci.Arg<CreditCardInvoiceImport>());
+        // Normalização falsa: devolve um JPEG com metade do tamanho de entrada
+        _images.Normalize(Arg.Any<byte[]>())
+            .Returns(ci => new NormalizedImage(new byte[ci.Arg<byte[]>().Length / 2], "image/jpeg", 100, 100));
         _service = new CreditCardInvoiceImportService(
-            _unitOfWork, _eligibility, _review, _transactions, _time,
+            _unitOfWork, _eligibility, _review, _transactions, _images, _spreadsheets, _time,
             Substitute.For<ILogger<CreditCardInvoiceImportService>>());
     }
 
@@ -73,7 +78,11 @@ public class CreditCardInvoiceImportServiceTests
         Assert.Equal([0, 1], savedFiles!.Select(f => f.Order));
         Assert.All(savedFiles, f => Assert.Equal(result.Id, f.ImportId));
         Assert.All(savedFiles, f => Assert.Equal(UserId, f.UserId));
-        Assert.Equal([100L, 200L], savedFiles.Select(f => f.SizeBytes));
+        // O arquivo gravado é o normalizado (JPEG), não o original
+        Assert.Equal([50L, 100L], savedFiles.Select(f => f.SizeBytes));
+        Assert.Equal([50, 100], savedFiles.Select(f => f.Content.Length));
+        Assert.All(savedFiles, f => Assert.Equal("image/jpeg", f.ContentType));
+        _images.Received(2).Normalize(Arg.Any<byte[]>());
         Received.InOrder(() =>
         {
             _files.AddManyAsync(Arg.Any<IEnumerable<CreditCardInvoiceImportFile>>());
@@ -95,6 +104,78 @@ public class CreditCardInvoiceImportServiceTests
         await _imports.Received(1).AddAsync(Arg.Is<CreditCardInvoiceImport>(j => j.SourceType == InvoiceImportSourceType.Pdf));
         await _files.Received(1).AddManyAsync(Arg.Is<IEnumerable<CreditCardInvoiceImportFile>>(f =>
             f.Single().ContentType == "application/pdf"));
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithPdf_ShouldNotNormalizeAndStoreOriginalBytes()
+    {
+        // Arrange
+        var pdf = CreateInvoiceImportValidatorTests.Pdf(300);
+
+        // Act
+        await _service.CreateAsync(UserId, Request(pdf));
+
+        // Assert
+        _images.DidNotReceive().Normalize(Arg.Any<byte[]>());
+        await _files.Received(1).AddManyAsync(Arg.Is<IEnumerable<CreditCardInvoiceImportFile>>(f =>
+            f.Single().Content == pdf.Content && f.Single().SizeBytes == 300));
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithSpreadsheet_ShouldStoreOnlyConvertedText()
+    {
+        // Arrange
+        var xlsx = new InvoiceImportUploadFileRequestDto
+        {
+            FileName = "fatura.xlsx",
+            ContentType = "application/octet-stream",
+            Content = [0x50, 0x4B, 0x03, 0x04, 1, 2, 3]
+        };
+        _spreadsheets.Extract(xlsx.Content).Returns(new SpreadsheetContent(
+            [new SpreadsheetSheet("Lançamentos", [new SpreadsheetRow(5, ["2026-10-03", "MERCADO", "123.45"])])], false));
+        List<CreditCardInvoiceImportFile>? saved = null;
+        await _files.AddManyAsync(Arg.Do<IEnumerable<CreditCardInvoiceImportFile>>(f => saved = f.ToList()));
+
+        // Act
+        await _service.CreateAsync(UserId, Request(xlsx));
+
+        // Assert
+        await _imports.Received(1).AddAsync(Arg.Is<CreditCardInvoiceImport>(j => j.SourceType == InvoiceImportSourceType.Spreadsheet));
+        var file = Assert.Single(saved!);
+        Assert.Equal("text/plain", file.ContentType);
+        var text = System.Text.Encoding.UTF8.GetString(file.Content);
+        Assert.Contains("[Aba: Lançamentos]", text);
+        Assert.Contains("5\t2026-10-03\tMERCADO\t123.45", text);
+        Assert.False(file.Content.AsSpan().StartsWith(xlsx.Content.AsSpan(0, 4))); // o .xlsx original não é gravado
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenSpreadsheetIsRejected_ShouldCreateNothing()
+    {
+        // Arrange
+        var xlsx = new InvoiceImportUploadFileRequestDto
+        {
+            FileName = "fatura.xlsx",
+            ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            Content = [0x50, 0x4B, 0x03, 0x04]
+        };
+        _spreadsheets.Extract(Arg.Any<byte[]>()).Throws(new InvalidSpreadsheetException("bomba"));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidSpreadsheetException>(() => _service.CreateAsync(UserId, Request(xlsx)));
+        await AssertNothingCreatedAsync();
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenAnImageCannotBeNormalized_ShouldCreateNothing()
+    {
+        // Arrange
+        _images.Normalize(Arg.Any<byte[]>()).Throws(new ImageNormalizationException("corrompida"));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ImageNormalizationException>(() =>
+            _service.CreateAsync(UserId, Request(CreateInvoiceImportValidatorTests.Jpeg(), CreateInvoiceImportValidatorTests.Jpeg())));
+        await AssertNothingCreatedAsync();
     }
 
     [Fact]

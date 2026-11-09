@@ -128,6 +128,34 @@ public class CreditCardInvoiceImportsControllerTests
         Assert.Equal(StatusCodes.Status409Conflict, obj.StatusCode);
     }
 
+    [Fact]
+    public async Task Create_WhenImageCannotBeNormalized_ShouldReturnBadRequest()
+    {
+        // Arrange
+        _service.CreateAsync(UserId, Arg.Any<CreateInvoiceImportRequestDto>())
+            .ThrowsAsync(new ImageNormalizationException("Uma das imagens está corrompida."));
+
+        // Act
+        var result = await _controller.Create(CardId, [JpegFile()]);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Create_WhenImageLibraryIsUnavailable_ShouldReturnServiceUnavailable()
+    {
+        // Arrange
+        _service.CreateAsync(UserId, Arg.Any<CreateInvoiceImportRequestDto>())
+            .ThrowsAsync(new ImageProcessingUnavailableException("indisponível"));
+
+        // Act
+        var result = await _controller.Create(CardId, [JpegFile()]);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
     // --- Queries ---
 
     [Fact]

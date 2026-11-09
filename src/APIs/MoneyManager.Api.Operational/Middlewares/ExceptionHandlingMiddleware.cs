@@ -45,6 +45,7 @@ public class ExceptionHandlingMiddleware
         UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
         ConcurrencyException => StatusCodes.Status409Conflict,
         InvoiceImportConflictException => StatusCodes.Status409Conflict,
+        ImageProcessingUnavailableException => StatusCodes.Status503ServiceUnavailable,
         PremiumRequiredException => StatusCodes.Status403Forbidden,
         _ => StatusCodes.Status500InternalServerError
     };

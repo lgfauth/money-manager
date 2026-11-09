@@ -47,9 +47,20 @@ Anthropic__ApiKey=...
 Efi__ClientId=...  Efi__ClientSecret=...  Efi__CertificatePath=...
 Vapid__PublicKey=...  Vapid__PrivateKey=...
 
+# Opcionais — normalização das imagens da importação de fatura (padrões abaixo):
+ImageNormalization__MaxLongSide=1568
+ImageNormalization__InitialQuality=85
+ImageNormalization__MinQuality=40
+ImageNormalization__QualityStep=10
+
 # 4. A API escuta na porta definida pela variável PORT (o Railway injeta automaticamente; padrão 8080)
 # 5. Copie a URL gerada (ex: https://xxx.up.railway.app)
 ```
+
+> A normalização de imagens usa SkiaSharp; a biblioteca nativa de Linux vem do pacote
+> `SkiaSharp.NativeAssets.Linux.NoDependencies`, então o `Dockerfile.api` não precisa de
+> pacotes de sistema extras. Se ela não carregar, o upload de imagens responde `503` e o
+> log registra o erro da biblioteca nativa.
 
 > `ALLOWED_ORIGIN` é obrigatória: sem ao menos uma origem de CORS a API não inicia. Aceita várias origens separadas por vírgula.
 

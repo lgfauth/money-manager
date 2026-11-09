@@ -131,9 +131,7 @@ public class CreateInvoiceImportValidatorTests
     }
 
     [Theory]
-    [InlineData("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
-    [InlineData("text/csv")]
-    [InlineData("image/gif")]
+        [InlineData("image/gif")]
     [InlineData("")]
     public async Task Validate_WithUnsupportedType_ShouldFail(string contentType)
     {
@@ -155,7 +153,7 @@ public class CreateInvoiceImportValidatorTests
         var errors = await ErrorsOf(Request(Pdf(), Jpeg()));
 
         // Assert
-        Assert.Contains("Envie um único PDF ou só imagens, sem misturar os tipos de arquivo.", errors);
+        Assert.Contains("Envie um único PDF, uma única planilha ou só imagens, sem misturar os tipos de arquivo.", errors);
     }
 
     [Fact]
@@ -192,13 +190,13 @@ public class CreateInvoiceImportValidatorTests
     }
 
     [Fact]
-    public async Task Validate_WithImageOverFiveMegabytes_ShouldFail()
+    public async Task Validate_WithImageOverTenMegabytes_ShouldFail()
     {
         // Act
         var errors = await ErrorsOf(Request(Jpeg(CreateInvoiceImportValidator.MaxImageBytes + 1)));
 
         // Assert
-        Assert.Contains("Cada imagem pode ter no máximo 5 MB.", errors);
+        Assert.Contains("Cada imagem pode ter no máximo 10 MB.", errors);
     }
 
     [Fact]
@@ -239,5 +237,105 @@ public class CreateInvoiceImportValidatorTests
     {
         // Act & Assert
         Assert.Equal(expected, CreateInvoiceImportValidator.ResolveSourceType(contentType));
+    }
+
+    // --- Planilha .xlsx ---
+
+    private static InvoiceImportUploadFileRequestDto Xlsx(
+        long size = 1024,
+        string contentType = CreateInvoiceImportValidator.XlsxContentType,
+        string fileName = "fatura.xlsx") => new()
+    {
+        FileName = fileName,
+        ContentType = contentType,
+        Content = WithSignature([0x50, 0x4B, 0x03, 0x04], size)
+    };
+
+    [Theory]
+    [InlineData(CreateInvoiceImportValidator.XlsxContentType, "fatura.xlsx")]
+    [InlineData("application/octet-stream", "fatura.XLSX")]
+    [InlineData("application/vnd.ms-excel", "fatura.xlsx")]
+    public async Task Validate_WithXlsx_ShouldPass(string contentType, string fileName)
+    {
+        // Act
+        var result = await _validator.ValidateAsync(Request(Xlsx(contentType: contentType, fileName: fileName)));
+
+        // Assert
+        Assert.True(result.IsValid);
+        Assert.Equal(InvoiceImportSourceType.Spreadsheet, CreateInvoiceImportValidator.ResolveSourceType(Xlsx(contentType: contentType, fileName: fileName)));
+    }
+
+    [Fact]
+    public async Task Validate_WithOctetStreamWithoutXlsxExtension_ShouldFail()
+    {
+        // Act
+        var errors = await ErrorsOf(Request(Xlsx(contentType: "application/octet-stream", fileName: "fatura.bin")));
+
+        // Assert
+        Assert.Contains(CreateInvoiceImportValidator.UnsupportedTypeMessage, errors);
+    }
+
+    [Theory]
+    [InlineData("application/vnd.ms-excel", "fatura.xls")]
+    [InlineData("application/vnd.ms-excel.sheet.macroEnabled.12", "fatura.xlsm")]
+    [InlineData("text/csv", "fatura.csv")]
+    [InlineData("application/octet-stream", "fatura.xls")]
+    public async Task Validate_WithLegacySpreadsheetFormats_ShouldAskToExportAsXlsx(string contentType, string fileName)
+    {
+        // Act
+        var errors = await ErrorsOf(Request(Xlsx(contentType: contentType, fileName: fileName)));
+
+        // Assert
+        Assert.Contains(CreateInvoiceImportValidator.ExportAsXlsxMessage, errors);
+    }
+
+    [Fact]
+    public async Task Validate_WithPasswordProtectedXlsx_ShouldAskToExportAsXlsx()
+    {
+        // Arrange: .xlsx com senha é um arquivo OLE/CFB
+        var file = Xlsx();
+        file.Content = WithSignature([0xD0, 0xCF, 0x11, 0xE0], 1024);
+
+        // Act
+        var errors = await ErrorsOf(Request(file));
+
+        // Assert
+        Assert.Contains(CreateInvoiceImportValidator.ExportAsXlsxMessage, errors);
+    }
+
+    [Fact]
+    public async Task Validate_WithXlsxExtensionButNotZip_ShouldFail()
+    {
+        // Arrange: CSV renomeado para .xlsx
+        var file = Xlsx();
+        file.Content = "Data;Valor"u8.ToArray();
+
+        // Act
+        var errors = await ErrorsOf(Request(file));
+
+        // Assert
+        Assert.Contains("O arquivo enviado não é uma planilha .xlsx válida. Exporte a fatura novamente em .xlsx.", errors);
+    }
+
+    [Fact]
+    public async Task Validate_WithSpreadsheetOverFiveMegabytes_ShouldFail()
+    {
+        // Act
+        var errors = await ErrorsOf(Request(Xlsx(CreateInvoiceImportValidator.MaxSpreadsheetBytes + 1)));
+
+        // Assert
+        Assert.Contains("A planilha excede o tamanho máximo de 5 MB.", errors);
+    }
+
+    [Fact]
+    public async Task Validate_WithTwoSpreadsheetsOrMixedWithPdf_ShouldFail()
+    {
+        // Act
+        var two = await ErrorsOf(Request(Xlsx(), Xlsx()));
+        var mixed = await ErrorsOf(Request(Xlsx(), Pdf()));
+
+        // Assert
+        Assert.Contains("Envie apenas uma planilha por importação.", two);
+        Assert.Contains("Envie um único PDF, uma única planilha ou só imagens, sem misturar os tipos de arquivo.", mixed);
     }
 }

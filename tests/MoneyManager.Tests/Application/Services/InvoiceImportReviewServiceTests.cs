@@ -684,4 +684,120 @@ public class InvoiceImportReviewServiceTests
         Assert.Single(result.Items);
         Assert.Equal(1, Assert.Single(result.Holders).ItemCount);
     }
+
+    // --- Conferência com a planilha (anti-alucinação) ---
+
+    private static SpreadsheetContent Sheet(bool truncated = false) => new(
+    [
+        new SpreadsheetSheet("Fatura",
+        [
+            new SpreadsheetRow(7, ["2026-10-20", "MERCADO BOM", "", "150.5"]),
+            new SpreadsheetRow(8, ["21/10", "PADARIA", "R$ 1.234,56"]),
+            new SpreadsheetRow(9, ["ESTORNO LOJA", "-30"])
+        ])
+    ], truncated);
+
+    private static InvoiceDocumentItemDto FromRow(InvoiceDocumentItemDto item, string? sheet, int? row) =>
+        item with { Source = new InvoiceDocumentSourceDto(null, null, sheet, row) };
+
+    [Fact]
+    public async Task BuildReviewAsync_WithSpreadsheet_ShouldAcceptItemsMatchingTheirRow()
+    {
+        // Arrange
+        var analysis = StandardAnalysis(
+            FromRow(Item(D(2026, 10, 20), "MERCADO BOM", 150.5m), "Fatura", 7),
+            FromRow(Item(NoYear(10, 21), "PADARIA", 1234.56m), "fatura", 8),
+            FromRow(Item(D(2026, 10, 22), "ESTORNO LOJA", 30m, type: CreditCardTransactionType.Refund), null, 9));
+
+        // Act
+        var result = await _service.BuildReviewAsync(UserId, _card, analysis, Today, Sheet());
+
+        // Assert
+        Assert.All(result.Items, i => Assert.DoesNotContain(InvoiceImportWarningCode.NotFoundInSpreadsheet, i.Warnings));
+        Assert.DoesNotContain(result.Warnings, w => w.Code == InvoiceImportWarningCode.CellTruncated);
+    }
+
+    [Theory]
+    [InlineData(7, 999.99, 20)]  // valor inventado
+    [InlineData(7, 150.5, 19)]   // data diferente da linha
+    [InlineData(42, 150.5, 20)]  // linha inexistente
+    [InlineData(null, 150.5, 20)] // sem referência de linha
+    public async Task BuildReviewAsync_WithItemNotInItsRow_ShouldFlagBlockingNotFound(int? row, double amount, int day)
+    {
+        // Arrange
+        var analysis = StandardAnalysis(FromRow(Item(D(2026, 10, day), "MERCADO BOM", (decimal)amount), "Fatura", row));
+
+        // Act
+        var result = await _service.BuildReviewAsync(UserId, _card, analysis, Today, Sheet());
+
+        // Assert
+        var item = Assert.Single(result.Items);
+        Assert.Contains(InvoiceImportWarningCode.NotFoundInSpreadsheet, item.Warnings);
+        Assert.True(InvoiceImportReviewService.IsBlocking(InvoiceImportWarningCode.NotFoundInSpreadsheet));
+        Assert.False(item.IsSelectedByDefault);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithUnknownSheet_ShouldFlagNotFound()
+    {
+        // Arrange
+        var analysis = StandardAnalysis(FromRow(Item(D(2026, 10, 20), "MERCADO BOM", 150.5m), "Outra aba", 7));
+
+        // Act
+        var result = await _service.BuildReviewAsync(UserId, _card, analysis, Today, Sheet());
+
+        // Assert
+        Assert.Contains(InvoiceImportWarningCode.NotFoundInSpreadsheet, Assert.Single(result.Items).Warnings);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithTruncatedCells_ShouldAddInformativeWarning()
+    {
+        // Arrange
+        var analysis = StandardAnalysis(FromRow(Item(D(2026, 10, 20), "MERCADO BOM", 150.5m), "Fatura", 7));
+
+        // Act
+        var result = await _service.BuildReviewAsync(UserId, _card, analysis, Today, Sheet(truncated: true));
+
+        // Assert
+        var warning = Assert.Single(result.Warnings, w => w.Code == InvoiceImportWarningCode.CellTruncated);
+        Assert.False(warning.IsBlocking);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithoutSpreadsheet_ShouldNotCheckRows()
+    {
+        // Arrange: PDF/imagens não têm texto de origem exato
+        var analysis = StandardAnalysis(Item(D(2026, 10, 20), "MERCADO BOM", 150.5m));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        Assert.DoesNotContain(InvoiceImportWarningCode.NotFoundInSpreadsheet, Assert.Single(result.Items).Warnings);
+    }
+
+    [Theory]
+    [InlineData("150.5", 150.5)]
+    [InlineData("-1234.56", -1234.56)]
+    [InlineData("R$ 1.234,56", 1234.56)]
+    [InlineData("-R$ 12,00", -12)]
+    [InlineData("1,234.56", 1234.56)]
+    public void TryParseSpreadsheetAmount_ShouldReadInvariantAndBrazilianFormats(string cell, double expected)
+    {
+        // Act & Assert
+        Assert.True(InvoiceImportReviewService.TryParseSpreadsheetAmount(cell, out var value));
+        Assert.Equal((decimal)expected, value);
+    }
+
+    [Theory]
+    [InlineData("2026-10-20")]
+    [InlineData("21/10")]
+    [InlineData("MERCADO")]
+    [InlineData("")]
+    public void TryParseSpreadsheetAmount_ShouldRejectDatesAndText(string cell)
+    {
+        // Act & Assert
+        Assert.False(InvoiceImportReviewService.TryParseSpreadsheetAmount(cell, out _));
+    }
 }

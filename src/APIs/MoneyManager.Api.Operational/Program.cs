@@ -61,6 +61,9 @@ builder.Services.AddScoped<ICreditCardImportEligibilityService, CreditCardImport
 builder.Services.AddScoped<IInvoiceImportReviewService, InvoiceImportReviewService>();
 builder.Services.AddScoped<ICreditCardInvoiceImportService, CreditCardInvoiceImportService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.Configure<ImageNormalizationOptions>(builder.Configuration.GetSection(ImageNormalizationOptions.SectionName));
+builder.Services.AddSingleton<IImageNormalizationService, SkiaImageNormalizationService>();
+builder.Services.AddSingleton<ISpreadsheetTextExtractor, MoneyManager.Infrastructure.Services.Spreadsheets.XlsxTextExtractor>();
 
 // Register receipt analysis service
 builder.Services.AddHttpClient("anthropic");

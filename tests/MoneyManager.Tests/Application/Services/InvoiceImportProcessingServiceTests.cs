@@ -88,6 +88,45 @@ public class InvoiceImportProcessingServiceTests
     // --- Sucesso ---
 
     [Fact]
+    public async Task ProcessPendingAsync_WithSpreadsheetJob_ShouldPassStoredTextToReviewForRowCheck()
+    {
+        // Arrange
+        var job = Job();
+        job.SourceType = InvoiceImportSourceType.Spreadsheet;
+        var text = SpreadsheetText.Format(new SpreadsheetContent(
+            [new SpreadsheetSheet("Fatura", [new SpreadsheetRow(7, ["2026-10-20", "MERCADO", "10"])])], false));
+        _imports.ClaimNextQueuedAsync(Now).Returns(job, (CreditCardInvoiceImport?)null);
+        _files.GetByImportAsync(UserId, job.Id).Returns(
+            [new CreditCardInvoiceImportFile { UserId = UserId, ImportId = job.Id, ContentType = "text/plain", Content = System.Text.Encoding.UTF8.GetBytes(text) }]);
+        SpreadsheetContent? received = null;
+        _review.BuildReviewAsync(UserId, _card, AnalysisResult, Today, Arg.Do<SpreadsheetContent?>(c => received = c))
+            .Returns(InvoiceImportReviewResult.Failure("qualquer"));
+
+        // Act
+        await Run();
+
+        // Assert
+        Assert.NotNull(received);
+        var row = Assert.Single(Assert.Single(received!.Sheets).Rows);
+        Assert.Equal(7, row.Number);
+        Assert.Equal(["2026-10-20", "MERCADO", "10"], row.Cells);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WithPdfJob_ShouldNotPassSpreadsheet()
+    {
+        // Arrange
+        Claim(Job());
+        ReviewSucceeds();
+
+        // Act
+        await Run();
+
+        // Assert
+        await _review.Received(1).BuildReviewAsync(UserId, _card, AnalysisResult, Today, null);
+    }
+
+    [Fact]
     public async Task ProcessPendingAsync_WithValidJob_ShouldSaveReviewDeleteFilesAndNotify()
     {
         // Arrange

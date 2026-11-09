@@ -75,6 +75,7 @@ projetos Next.js independentes, cada um consumindo apenas a sua respectiva API.
 | Cache | `Microsoft.Extensions.Caching.Memory` |
 | Web Push | `WebPush` (notificações push) |
 | Markdown (backoffice) | `Markdig` |
+| Imagens (importação de fatura) | `SkiaSharp` + `SkiaSharp.NativeAssets.Linux.NoDependencies` 3.119 (no `MoneyManager.Infrastructure`; a biblioteca nativa de Linux vem no pacote, sem pacotes de sistema no Docker) |
 | Nullable / ImplicitUsings | Habilitados em todos os projetos |
 
 ### Frontend (Next.js)
@@ -173,9 +174,36 @@ Destaques:
   Anthropic (Claude) e extrai descrição, valor, data e categoria.
 - **Importação de fatura de cartão por IA** (`CreditCardInvoiceImports` →
   `CreditCardInvoiceImportService`) — upload multipart (`creditCardId` + `files`) de
-  **um PDF** (até 20 MB) ou de **1 a 10 imagens** JPEG/PNG/WebP (até 5 MB cada, 40 MB no
+  **um PDF** (até 20 MB) ou de **1 a 10 imagens** JPEG/PNG/WebP (até 10 MB cada, 40 MB no
   total), sem misturar tipos, validado por `CreateInvoiceImportValidator` (inclui a
-  assinatura dos bytes do tipo declarado). O cartão precisa ser do usuário (senão `404`),
+  assinatura dos bytes do tipo declarado). Antes de gravar, cada imagem passa por
+  `IImageNormalizationService` (`SkiaImageNormalizationService`, SkiaSharp, opções na
+  seção `ImageNormalization`): corrige a orientação EXIF, reduz o lado maior para
+  `MaxLongSide` (1568 px), aplica fundo branco e recomprime em JPEG começando em
+  `InitialQuality` (85) e baixando `QualityStep` (10) até `MinQuality` (40) para caber em
+  5 MB. Imagem corrompida, truncada, com tipo falso, acima de `MaxInputPixels` (60 MP)
+  ou que não coube em 5 MB → `400` (`ImageNormalizationException`); biblioteca nativa
+  ausente → `503` (`ImageProcessingUnavailableException`). PDFs são gravados intactos.
+  Também aceita **uma planilha `.xlsx`** (até 5 MB; tipo do Excel ou `application/octet-stream`
+  com extensão `.xlsx`; `.xls`, `.xlsm`, `.csv` e planilhas com senha → `400` orientando
+  exportar em `.xlsx`). A planilha é convertida em texto por `ISpreadsheetTextExtractor`
+  (`XlsxTextExtractor`, leitor nativo com `System.IO.Compression` + `System.Xml`, sem pacote)
+  e só o texto (`SpreadsheetText`, `text/plain`: `[Aba: nome]` e uma linha por linha da
+  planilha com o número original e as células separadas por TAB) é gravado — o `.xlsx`
+  nunca. Regras do leitor (`InvalidSpreadsheetException` → `400`): assinatura ZIP e
+  `[Content_Types].xml` com `spreadsheetml.sheet.main+xml` (OLE/CFB e `macroEnabled`
+  recusados); até 200 entradas, 20 MB por parte e 50 MB no total contados na leitura,
+  taxa de compressão até 100:1 (avaliada a partir de 1 MB lido); XML com
+  `DtdProcessing.Prohibit` e sem resolver; lê só workbook, rels, `sharedStrings`, `styles` e
+  abas visíveis (macros, links externos, desenhos, comentários e caches nunca são abertos;
+  fórmulas só pelo valor calculado); até 10 abas visíveis, 5.000 linhas não vazias e 50
+  colunas, células cortadas em 500 caracteres com alerta `CellTruncated`; datas seriais
+  (sistemas 1900, com o falso 29/02/1900, e 1904) viram `yyyy-MM-dd` e números saem em
+  cultura invariante. No Worker, o texto gravado volta como `SpreadsheetContent` para a
+  **conferência anti-alucinação** do `InvoiceImportReviewService`: o valor de cada item
+  precisa estar na linha citada (aba + linha) e, se a linha tiver data, a data também;
+  senão o item recebe o alerta bloqueante `NotFoundInSpreadsheet` ("não encontrado na
+  planilha"), que não se corrige editando — o item precisa ser desmarcado. O cartão precisa ser do usuário (senão `404`),
   não pode ser sincronizado pelo Open Finance nem ter outro job `Queued`/`Processing`
   (`409`, via `InvoiceImportConflictException`). Grava os arquivos e depois o job
   `Queued` e responde `202`; o processamento é do `InvoiceImportWorker` (seção 4.3).

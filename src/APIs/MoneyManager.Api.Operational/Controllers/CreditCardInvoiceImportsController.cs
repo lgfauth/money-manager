@@ -68,6 +68,18 @@ public class CreditCardInvoiceImportsController : ControllerBase
         {
             return this.ApiConflict(ex.Message);
         }
+        catch (ImageNormalizationException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+        catch (InvalidSpreadsheetException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+        catch (ImageProcessingUnavailableException ex)
+        {
+            return this.ApiError(StatusCodes.Status503ServiceUnavailable, ex.Message);
+        }
     }
 
     [HttpGet("eligible-cards")]

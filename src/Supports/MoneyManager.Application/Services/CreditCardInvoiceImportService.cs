@@ -82,6 +82,8 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICreditCardImportEligibilityService _eligibility;
     private readonly IInvoiceImportReviewService _review;
+    private readonly IImageNormalizationService _imageNormalization;
+    private readonly ISpreadsheetTextExtractor _spreadsheetExtractor;
     private readonly ICreditCardTransactionService _transactions;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<CreditCardInvoiceImportService> _logger;
@@ -91,6 +93,8 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
         ICreditCardImportEligibilityService eligibility,
         IInvoiceImportReviewService review,
         ICreditCardTransactionService transactions,
+        IImageNormalizationService imageNormalization,
+        ISpreadsheetTextExtractor spreadsheetExtractor,
         TimeProvider timeProvider,
         ILogger<CreditCardInvoiceImportService> logger)
     {
@@ -98,6 +102,8 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
         _eligibility = eligibility;
         _review = review;
         _transactions = transactions;
+        _imageNormalization = imageNormalization;
+        _spreadsheetExtractor = spreadsheetExtractor;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -117,7 +123,7 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
         if (await _unitOfWork.CreditCardInvoiceImports.GetActiveByCardAsync(userId, card.Id) is not null)
             throw new InvoiceImportConflictException(ActiveImportMessage);
 
-        var sourceType = CreateInvoiceImportValidator.ResolveSourceType(request.Files[0].ContentType)
+        var sourceType = CreateInvoiceImportValidator.ResolveSourceType(request.Files[0])
                          ?? throw new InvalidOperationException(CreateInvoiceImportValidator.UnsupportedTypeMessage);
 
         var now = DateTime.UtcNow;
@@ -132,16 +138,28 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
             UpdatedAt = now
         };
 
+        // Imagens: orientação, redução e JPEG ≤ 5 MB; planilha: só o texto convertido (o .xlsx não é gravado);
+        // PDF é gravado como veio
         var files = request.Files
-            .Select((f, index) => new CreditCardInvoiceImportFile
+            .Select((f, index) =>
             {
-                UserId = userId,
-                ImportId = job.Id,
-                Order = index,
-                ContentType = CreateInvoiceImportValidator.NormalizeContentType(f.ContentType),
-                SizeBytes = f.SizeBytes,
-                Content = f.Content,
-                CreatedAt = now
+                var (contentType, content) = sourceType switch
+                {
+                    InvoiceImportSourceType.Images => Normalize(f.Content),
+                    InvoiceImportSourceType.Spreadsheet => ConvertSpreadsheet(f.Content),
+                    _ => (CreateInvoiceImportValidator.NormalizeContentType(f.ContentType), f.Content)
+                };
+
+                return new CreditCardInvoiceImportFile
+                {
+                    UserId = userId,
+                    ImportId = job.Id,
+                    Order = index,
+                    ContentType = contentType,
+                    SizeBytes = content.LongLength,
+                    Content = content,
+                    CreatedAt = now
+                };
             })
             .ToList();
 
@@ -163,6 +181,18 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
             job.Id, userId, job.SourceType, job.FileCount, files.Sum(f => f.SizeBytes));
 
         return new InvoiceImportCreatedResponseDto { Id = job.Id, Status = job.Status.ToString() };
+    }
+
+    private (string ContentType, byte[] Content) ConvertSpreadsheet(byte[] content)
+    {
+        var spreadsheet = _spreadsheetExtractor.Extract(content);
+        return (SpreadsheetText.ContentType, System.Text.Encoding.UTF8.GetBytes(SpreadsheetText.Format(spreadsheet)));
+    }
+
+    private (string ContentType, byte[] Content) Normalize(byte[] content)
+    {
+        var image = _imageNormalization.Normalize(content);
+        return (image.ContentType, image.Content);
     }
 
     public async Task<CreditCardInvoiceImportResponseDto> GetByIdAsync(string userId, string importId)

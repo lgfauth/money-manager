@@ -12,11 +12,17 @@ namespace MoneyManager.Application.Services;
 /// </summary>
 public interface IInvoiceImportReviewService
 {
+    /// <summary>
+    /// Monta a revisão. Com <paramref name="spreadsheet"/> (origem planilha), cada item é conferido com a linha
+    /// referenciada: valor (e data, se a linha tiver data) precisam existir nela, senão o item recebe o alerta
+    /// bloqueante "não encontrado na planilha".
+    /// </summary>
     Task<InvoiceImportReviewResult> BuildReviewAsync(
         string userId,
         CreditCard card,
         InvoiceDocumentAnalysisResultDto analysis,
-        DateOnly today);
+        DateOnly today,
+        SpreadsheetContent? spreadsheet = null);
 
     /// <summary>
     /// Alertas de conferência do fechamento/vencimento do documento com <c>ClosingDay</c>/<c>BillingDueDay</c>.
@@ -102,7 +108,8 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
         string userId,
         CreditCard card,
         InvoiceDocumentAnalysisResultDto analysis,
-        DateOnly today)
+        DateOnly today,
+        SpreadsheetContent? spreadsheet = null)
     {
         var doc = analysis.Invoice;
         var todayDate = ToDate(today);
@@ -192,6 +199,21 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
         var items = analysis.Items
             .Select(i => BuildItem(i, closingDate, today, categories))
             .ToList();
+
+        // Planilha: o texto de origem é exato, então todo item precisa conferir com a linha citada
+        if (spreadsheet is not null)
+        {
+            ApplySpreadsheetCheck(items, spreadsheet);
+            if (spreadsheet.HasTruncatedCells)
+            {
+                warnings.Add(new InvoiceImportWarning
+                {
+                    Code = InvoiceImportWarningCode.CellTruncated,
+                    Message = "Algumas células da planilha tinham mais de 500 caracteres e foram cortadas.",
+                    IsBlocking = false
+                });
+            }
+        }
 
         // Prints sobrepostos: a mesma compra vista em duas imagens vira um item
         items = InvoiceImportDuplicateDetector.MergeOverlappingScreenshots(items);
@@ -305,6 +327,99 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
             codes.Add(InvoiceImportWarningCode.InvalidAmount);
 
         return codes;
+    }
+
+    // --- Conferência com a planilha ---
+
+    internal static void ApplySpreadsheetCheck(List<InvoiceImportItem> items, SpreadsheetContent spreadsheet)
+    {
+        foreach (var item in items)
+        {
+            if (!MatchesSpreadsheetRow(item, spreadsheet))
+            {
+                item.Warnings.Add(InvoiceImportWarningCode.NotFoundInSpreadsheet);
+                item.IsSelectedByDefault = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// O valor do item precisa estar em alguma célula da linha citada (aba + linha) e, quando a linha tiver
+    /// data, a data do item também.
+    /// </summary>
+    internal static bool MatchesSpreadsheetRow(InvoiceImportItem item, SpreadsheetContent spreadsheet)
+    {
+        if (item.Source?.Row is not { } rowNumber)
+            return false;
+
+        var sheet = item.Source.Sheet is { } name
+            ? spreadsheet.Sheets.FirstOrDefault(s => string.Equals(s.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase))
+            : spreadsheet.Sheets.Count == 1 ? spreadsheet.Sheets[0] : null;
+        var row = sheet?.Rows.FirstOrDefault(r => r.Number == rowNumber);
+        if (row is null)
+            return false;
+
+        var amount = Math.Round(Math.Abs(item.Amount), 2);
+        if (!row.Cells.Any(c => TryParseSpreadsheetAmount(c, out var v) && Math.Round(Math.Abs(v), 2) == amount))
+            return false;
+
+        var rowDates = row.Cells.Select(ParseSpreadsheetDate).Where(d => d is not null).Select(d => d!.Value).ToList();
+        if (rowDates.Count == 0 || item.Date is null)
+            return true;
+
+        var itemDate = item.Date.Value.Date;
+        return rowDates.Any(d => d.Day == itemDate.Day && d.Month == itemDate.Month && (d.Year is null || d.Year == itemDate.Year));
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex IsoDateRegex =
+        new(@"^(\d{4})-(\d{2})-(\d{2})$", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly System.Text.RegularExpressions.Regex BrDateRegex =
+        new(@"^(\d{1,2})/(\d{1,2})(?:/(\d{2}|\d{4}))?$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private static (int Day, int Month, int? Year)? ParseSpreadsheetDate(string cell)
+    {
+        var text = cell.Trim();
+        var iso = IsoDateRegex.Match(text);
+        if (iso.Success)
+            return (int.Parse(iso.Groups[3].Value), int.Parse(iso.Groups[2].Value), int.Parse(iso.Groups[1].Value));
+
+        var br = BrDateRegex.Match(text);
+        if (!br.Success)
+            return null;
+
+        int? year = null;
+        if (br.Groups[3].Success)
+        {
+            var y = int.Parse(br.Groups[3].Value);
+            year = y < 100 ? 2000 + y : y;
+        }
+        var day = int.Parse(br.Groups[1].Value);
+        var month = int.Parse(br.Groups[2].Value);
+        return day is >= 1 and <= 31 && month is >= 1 and <= 12 ? (day, month, year) : null;
+    }
+
+    /// <summary>
+    /// Valor de uma célula: número invariante do leitor (<c>-1234.5</c>) ou texto em reais (<c>R$ 1.234,50</c>).
+    /// </summary>
+    internal static bool TryParseSpreadsheetAmount(string cell, out decimal value)
+    {
+        value = 0;
+        var text = cell.Replace("R$", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace(' ', ' ')
+            .Replace(" ", string.Empty)
+            .Trim();
+        if (text.Length == 0 || IsoDateRegex.IsMatch(text) || BrDateRegex.IsMatch(text))
+            return false;
+
+        var lastComma = text.LastIndexOf(',');
+        var lastDot = text.LastIndexOf('.');
+        if (lastComma > lastDot)
+            text = text.Replace(".", string.Empty).Replace(',', '.'); // 1.234,56
+        else if (lastComma >= 0)
+            text = text.Replace(",", string.Empty);                  // 1,234.56
+
+        return decimal.TryParse(text, System.Globalization.NumberStyles.Number | System.Globalization.NumberStyles.AllowExponent,
+            System.Globalization.CultureInfo.InvariantCulture, out value);
     }
 
     // --- Itens ---

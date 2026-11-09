@@ -70,6 +70,8 @@ public class CreditCardInvoiceImportConfirmTests
             _eligibility,
             new InvoiceImportReviewService(_unitOfWork),
             _transactions,
+            Substitute.For<IImageNormalizationService>(),
+            Substitute.For<ISpreadsheetTextExtractor>(),
             new FixedTimeProvider(new DateTimeOffset(2026, 11, 9, 15, 0, 0, TimeSpan.Zero)),
             Substitute.For<ILogger<CreditCardInvoiceImportService>>());
     }

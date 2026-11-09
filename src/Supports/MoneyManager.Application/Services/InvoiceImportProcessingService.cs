@@ -209,7 +209,12 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
                 }
             }
 
-            var review = await _reviewService.BuildReviewAsync(job.UserId, card, analysis, today);
+            // Planilha: o texto gravado é a própria fonte da conferência de cada item
+            var spreadsheet = job.SourceType == InvoiceImportSourceType.Spreadsheet
+                ? SpreadsheetText.Parse(System.Text.Encoding.UTF8.GetString(files[0].Content))
+                : null;
+
+            var review = await _reviewService.BuildReviewAsync(job.UserId, card, analysis, today, spreadsheet);
             if (!review.IsSuccess)
                 return await FailAsync(job, review.FailureMessage!);
 
