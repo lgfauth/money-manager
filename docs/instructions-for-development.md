@@ -243,7 +243,18 @@ Destaques:
   `ClosingDay` desatualizado). O upsert de transações sincronizadas
   (`UpsertCreditCardTransactionAsync`) também reavalia e realinha o `InvoiceId`
   de transações já existentes (`RepairInvoiceLinkAsync`) sempre que o `ClosingDay`
-  atual do cartão implicar um mês de referência diferente do vinculado.
+  atual do cartão implicar um mês de referência diferente do vinculado — exceto
+  transações de origem `invoice_import`, que ficam na fatura escolhida na importação.
+  **Conciliação com faturas importadas** (cartão vinculado ao Open Finance depois de
+  uma importação): antes de criar uma compra `POSTED` que não existe por `ExternalId`,
+  o sync procura no mesmo cartão uma transação de origem **`invoice_import`** sem
+  `ExternalId`, com o mesmo valor (o da parcela) e data da compra com até 1 dia de
+  diferença. Se encontrar, **adota** essa transação: grava `ExternalId` e
+  `OpenBankingCategoryId` (a categoria só é preenchida se estiver vazia) e mantém
+  descrição, valor e fatura, sem criar outra. A correspondência é um-para-um dentro do
+  sync (desempate: data mais próxima, descrição normalizada igual, parcela mais
+  antiga); transações já conciliadas, manuais, de comprovante ou do próprio sync nunca
+  são adotadas; compras `PENDING` e compras sem correspondência seguem o fluxo normal.
 - **Assinaturas / pagamento** (`Subscriptions`) — cobrança via gateway EfiBank.
 - **Web Push** (`Push`) — assinaturas de notificações do usuário.
 - **Fluxo LGPD** (`AccountDeletion`) — exclusão completa dos dados do usuário.

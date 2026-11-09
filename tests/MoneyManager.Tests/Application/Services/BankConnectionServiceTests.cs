@@ -565,4 +565,170 @@ public class BankConnectionServiceTests
         Assert.False(manualPurchase.IsDeleted);
         await _creditCardInvoiceServiceMock.Received().RecalculateTotalAsync(UserId, "inv-1");
     }
+
+    // --- Conciliação do sync com transações da importação de fatura ---
+
+    private static readonly DateTime ImportedPurchaseDate = new(2026, 9, 12, 0, 0, 0, DateTimeKind.Utc);
+
+    private static CreditCardTransaction ImportedTx(
+        string id, decimal amount = 100m, DateTime? date = null, string source = "invoice_import",
+        string? externalId = null, string description = "LOJA IMPORTADA", int installmentNumber = 1)
+        => new()
+        {
+            Id = id,
+            UserId = UserId,
+            CreditCardId = CardId,
+            InvoiceId = "inv-importada",
+            Description = description,
+            CategoryId = "cat-escolhida",
+            PurchaseDate = date ?? ImportedPurchaseDate,
+            TotalAmount = amount,
+            InstallmentAmount = amount,
+            InstallmentNumber = installmentNumber,
+            TotalInstallments = 1,
+            Source = source,
+            ExternalId = externalId,
+            InvoiceImportId = source == "invoice_import" ? "imp-1" : null
+        };
+
+    private static BankMcpTransaction PostedCardTx(string id, DateTime date, decimal amount = 100m, string description = "LOJA BANCO")
+        => new(id, "acc-ext-1", date, description, amount, "DEBIT", "POSTED", "Shopping", "08000000", null);
+
+    [Fact]
+    public async Task SyncNowAsync_WhenPurchaseMatchesInvoiceImport_ShouldAdoptItInsteadOfCreating()
+    {
+        var imported = ImportedTx("t-imp", date: ImportedPurchaseDate.AddDays(1));
+        ArrangeCreditCardSync(PostedCardTx("tx-banco", ImportedPurchaseDate));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([imported]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Equal("tx-banco", imported.ExternalId);
+        Assert.Equal("08000000", imported.OpenBankingCategoryId);
+        // Descrição, categoria, valor, origem e fatura escolhidos na importação são mantidos
+        Assert.Equal("LOJA IMPORTADA", imported.Description);
+        Assert.Equal("cat-escolhida", imported.CategoryId);
+        Assert.Equal(100m, imported.InstallmentAmount);
+        Assert.Equal("invoice_import", imported.Source);
+        Assert.Equal("inv-importada", imported.InvoiceId);
+        Assert.False(imported.IsDeleted);
+        await _cardTxRepo.Received(1).UpdateAsync(imported);
+        await _creditCardTransactionServiceMock.DidNotReceive().CreateAsync(Arg.Any<string>(), Arg.Any<CreateCreditCardTransactionRequestDto>());
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WithSeveralImportedCandidates_ShouldMatchOneToOne()
+    {
+        // Duas compras iguais na fatura importada e no banco: cada uma do banco adota uma diferente;
+        // a terceira do banco, sem candidata livre, é criada normalmente.
+        var first = ImportedTx("t-imp-1");
+        var second = ImportedTx("t-imp-2");
+        ArrangeCreditCardSync(
+            PostedCardTx("tx-a", ImportedPurchaseDate),
+            PostedCardTx("tx-b", ImportedPurchaseDate),
+            PostedCardTx("tx-c", ImportedPurchaseDate));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([first, second]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Equal("tx-a", first.ExternalId);
+        Assert.Equal("tx-b", second.ExternalId);
+        await _creditCardTransactionServiceMock.Received(1).CreateAsync(
+            UserId, Arg.Is<CreateCreditCardTransactionRequestDto>(r => r.ExternalId == "tx-c" && r.Source == "bank_sync"));
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WithSeveralImportedCandidates_ShouldPreferClosestDateThenSameDescription()
+    {
+        var dayBefore = ImportedTx("t-dia-anterior", date: ImportedPurchaseDate.AddDays(-1), description: "LOJA BANCO");
+        var sameDayOther = ImportedTx("t-mesmo-dia-outra", description: "OUTRA LOJA");
+        var sameDaySame = ImportedTx("t-mesmo-dia-igual", description: "PAG*Loja Banco");
+        ArrangeCreditCardSync(PostedCardTx("tx-banco", ImportedPurchaseDate));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([dayBefore, sameDayOther, sameDaySame]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Equal("tx-banco", sameDaySame.ExternalId);
+        Assert.Null(sameDayOther.ExternalId);
+        Assert.Null(dayBefore.ExternalId);
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WhenImportedTransactionAlreadyReconciled_ShouldNotAdoptIt()
+    {
+        var reconciled = ImportedTx("t-imp", externalId: "tx-outro");
+        ArrangeCreditCardSync(PostedCardTx("tx-banco", ImportedPurchaseDate));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([reconciled]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Equal("tx-outro", reconciled.ExternalId);
+        await _creditCardTransactionServiceMock.Received(1).CreateAsync(
+            UserId, Arg.Is<CreateCreditCardTransactionRequestDto>(r => r.ExternalId == "tx-banco"));
+    }
+
+    [Theory]
+    [InlineData("manual")]
+    [InlineData("receipt")]
+    public async Task SyncNowAsync_ShouldIgnoreNonImportedCandidates(string source)
+    {
+        var other = ImportedTx("t-outra", source: source);
+        ArrangeCreditCardSync(PostedCardTx("tx-banco", ImportedPurchaseDate));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([other]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Null(other.ExternalId);
+        await _cardTxRepo.DidNotReceive().UpdateAsync(other);
+        await _creditCardTransactionServiceMock.Received(1).CreateAsync(
+            UserId, Arg.Is<CreateCreditCardTransactionRequestDto>(r => r.ExternalId == "tx-banco"));
+    }
+
+    [Theory]
+    [InlineData(100.01, 0)] // valor diferente
+    [InlineData(100, 2)]    // data fora da tolerância de 1 dia
+    public async Task SyncNowAsync_WhenNoImportedCandidateMatches_ShouldCreateTransaction(double amount, int daysApart)
+    {
+        var imported = ImportedTx("t-imp", amount: (decimal)amount, date: ImportedPurchaseDate.AddDays(daysApart));
+        ArrangeCreditCardSync(PostedCardTx("tx-banco", ImportedPurchaseDate));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([imported]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Null(imported.ExternalId);
+        await _creditCardTransactionServiceMock.Received(1).CreateAsync(
+            UserId, Arg.Is<CreateCreditCardTransactionRequestDto>(r => r.ExternalId == "tx-banco" && r.Source == "bank_sync"));
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WhenPendingPurchaseMatchesInvoiceImport_ShouldKeepCurrentBehavior()
+    {
+        var imported = ImportedTx("t-imp");
+        ArrangeCreditCardSync(CardTx("tx-pendente", "PENDING", ImportedPurchaseDate));
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([imported]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Null(imported.ExternalId);
+        await _creditCardTransactionServiceMock.Received(1).CreateAsync(
+            UserId, Arg.Is<CreateCreditCardTransactionRequestDto>(r => r.ExternalId == "tx-pendente" && r.IsPending));
+    }
+
+    [Fact]
+    public async Task SyncNowAsync_WhenAdoptedImportIsSyncedAgain_ShouldNotMoveItToAnotherInvoice()
+    {
+        // Parcela X/N importada fica numa fatura posterior à data da compra; o realinhamento pela
+        // data (RepairInvoiceLinkAsync) a moveria para a fatura do mês da compra.
+        var adopted = ImportedTx("t-imp", externalId: "tx-banco", installmentNumber: 3);
+        adopted.OpenBankingCategoryId = "08000000";
+        ArrangeCreditCardSync(PostedCardTx("tx-banco", ImportedPurchaseDate));
+        _cardTxRepo.GetByExternalIdAsync(UserId, "tx-banco").Returns(adopted);
+        _cardTxRepo.GetByCardAsync(UserId, CardId).Returns([adopted]);
+
+        await _service.SyncNowAsync(UserId, CardConnectionId, CancellationToken.None);
+
+        Assert.Equal("inv-importada", adopted.InvoiceId);
+        await _unitOfWorkMock.CreditCardInvoices.DidNotReceive().GetByIdAsync("inv-importada");
+        await _creditCardTransactionServiceMock.DidNotReceive().CreateAsync(Arg.Any<string>(), Arg.Any<CreateCreditCardTransactionRequestDto>());
+    }
 }

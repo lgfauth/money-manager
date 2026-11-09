@@ -674,6 +674,12 @@ public class BankConnectionService : IBankConnectionService
                 var imported = 0;
                 var fetchedExternalIds = new HashSet<string>(StringComparer.Ordinal);
 
+                // Transações de fatura importada ainda não conciliadas com o banco: o sync as adota
+                // em vez de criar outra (cartão vinculado ao Open Finance depois da importação).
+                var reconciliationCandidates = creditCard is not null
+                    ? await LoadInvoiceImportReconciliationCandidatesAsync(connection.UserId, creditCard.Id)
+                    : [];
+
                 // Pagina até buscar todas as transações do período.
                 while (true)
                 {
@@ -700,7 +706,7 @@ public class BankConnectionService : IBankConnectionService
                             continue;
 
                         if (creditCard is not null)
-                            await UpsertCreditCardTransactionAsync(connection.UserId, creditCard, tx, categoryMap, ct);
+                            await UpsertCreditCardTransactionAsync(connection.UserId, creditCard, tx, categoryMap, reconciliationCandidates, ct);
                         else
                             await UpsertTransactionAsync(connection.UserId, selected.MoneyManagerAccountId!, tx, categoryMap, ct);
 
@@ -896,10 +902,21 @@ public class BankConnectionService : IBankConnectionService
 
     private async Task UpsertCreditCardTransactionAsync(
         string userId, CreditCard card, BankMcpTransaction tx,
-        IDictionary<string, string> categoryMap, CancellationToken ct)
+        IDictionary<string, string> categoryMap, List<CreditCardTransaction> reconciliationCandidates,
+        CancellationToken ct)
     {
         var isPending = tx.Status == "PENDING";
         var existing = await _unitOfWork.CreditCardTransactions.GetByExternalIdAsync(userId, tx.Id);
+
+        // Compra já cadastrada pela importação de fatura: adota a transação existente.
+        // Compras pendentes mantêm o fluxo atual (a fatura importada é sempre fechada).
+        if (existing is null && !isPending
+            && FindInvoiceImportMatch(reconciliationCandidates, tx) is { } imported)
+        {
+            reconciliationCandidates.Remove(imported);
+            await AdoptInvoiceImportTransactionAsync(userId, imported, tx, categoryMap);
+            return;
+        }
         if (existing is not null)
         {
             // Compra pendente confirmada pelo banco: valor, descrição e data podem ter mudado
@@ -931,7 +948,10 @@ public class BankConnectionService : IBankConnectionService
                 await _unitOfWork.SaveChangesAsync();
             }
 
-            await RepairInvoiceLinkAsync(userId, card, existing);
+            // A transação importada já está na fatura escolhida na importação (parcelas X/N em
+            // faturas posteriores à compra); realinhar pela data da compra a moveria de fatura.
+            if (existing.Source != CreditCardTransactionService.InvoiceImportSource)
+                await RepairInvoiceLinkAsync(userId, card, existing);
             return;
         }
 
@@ -951,6 +971,66 @@ public class BankConnectionService : IBankConnectionService
             IsPending = isPending,
             OpenBankingCategoryId = tx.CategoryId
         });
+    }
+
+    // Transações da importação de fatura (origem invoice_import) ainda sem ExternalId — as únicas
+    // que o sync pode adotar. Lançamentos manuais, de comprovante e do próprio sync nunca entram.
+    private async Task<List<CreditCardTransaction>> LoadInvoiceImportReconciliationCandidatesAsync(
+        string userId, string creditCardId)
+    {
+        return (await _unitOfWork.CreditCardTransactions.GetByCardAsync(userId, creditCardId))
+            .Where(t => t.Source == CreditCardTransactionService.InvoiceImportSource
+                && string.IsNullOrEmpty(t.ExternalId)
+                && !t.IsDeleted)
+            .ToList();
+    }
+
+    // Correspondência da compra do banco com uma transação importada: mesmo valor (o da parcela,
+    // que é o valor lançado na fatura) e data da compra com até 1 dia de diferença. Entre várias
+    // candidatas, prefere a data mais próxima, depois a descrição igual e, por fim, a parcela mais
+    // antiga — o desempate só troca qual transação recebe o ExternalId, sem perder lançamento.
+    private static CreditCardTransaction? FindInvoiceImportMatch(
+        IReadOnlyCollection<CreditCardTransaction> candidates, BankMcpTransaction tx)
+    {
+        if (candidates.Count == 0)
+            return null;
+
+        var amount = Math.Abs(tx.Amount);
+        var description = InvoiceImportText.NormalizeDescription(tx.Description);
+
+        return candidates
+            .Where(t => string.IsNullOrEmpty(t.ExternalId)
+                && Math.Abs(t.InstallmentAmount) == amount
+                && Math.Abs((t.PurchaseDate.Date - tx.Date.Date).TotalDays) <= 1)
+            .OrderBy(t => Math.Abs((t.PurchaseDate.Date - tx.Date.Date).TotalDays))
+            .ThenBy(t => InvoiceImportText.NormalizeDescription(t.Description) == description ? 0 : 1)
+            .ThenBy(t => t.InstallmentNumber)
+            .ThenBy(t => t.CreatedAt)
+            .FirstOrDefault();
+    }
+
+    // Vincula a transação importada à compra do banco: grava ExternalId e a categoria do Open
+    // Finance; descrição, valor, fatura e categoria escolhidas na importação são mantidas
+    // (a categoria só é preenchida se a importação a deixou vazia).
+    private async Task AdoptInvoiceImportTransactionAsync(
+        string userId, CreditCardTransaction imported, BankMcpTransaction tx,
+        IDictionary<string, string> categoryMap)
+    {
+        imported.ExternalId = tx.Id;
+        if (!string.IsNullOrEmpty(tx.CategoryId))
+        {
+            imported.OpenBankingCategoryId = tx.CategoryId;
+            if (string.IsNullOrEmpty(imported.CategoryId))
+                imported.CategoryId = await ResolveCategoryIdAsync(userId, tx.CategoryId, categoryMap);
+        }
+
+        imported.UpdatedAt = DateTime.UtcNow;
+        await _unitOfWork.CreditCardTransactions.UpdateAsync(imported);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Transação {TransactionId} da importação de fatura conciliada com a transação {ExternalId} do Open Finance",
+            imported.Id, tx.Id);
     }
 
     // Remove do cartão o que veio do banco e não deveria estar nas faturas:
