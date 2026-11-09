@@ -23,6 +23,9 @@ public class CreditCardInvoiceImportServiceTests
     private readonly ICreditCardInvoiceImportRepository _imports = Substitute.For<ICreditCardInvoiceImportRepository>();
     private readonly ICreditCardInvoiceImportFileRepository _files = Substitute.For<ICreditCardInvoiceImportFileRepository>();
     private readonly ICreditCardImportEligibilityService _eligibility = Substitute.For<ICreditCardImportEligibilityService>();
+    private readonly IInvoiceImportReviewService _review = Substitute.For<IInvoiceImportReviewService>();
+    private readonly ICreditCardTransactionService _transactions = Substitute.For<ICreditCardTransactionService>();
+    private readonly FixedTimeProvider _time = new(new DateTimeOffset(2026, 11, 9, 15, 0, 0, TimeSpan.Zero));
     private readonly CreditCardInvoiceImportService _service;
 
     public CreditCardInvoiceImportServiceTests()
@@ -33,7 +36,8 @@ public class CreditCardInvoiceImportServiceTests
         _cards.GetByIdAsync(CardId).Returns(new CreditCard { Id = CardId, UserId = UserId, Name = "Nubank" });
         _imports.AddAsync(Arg.Any<CreditCardInvoiceImport>()).Returns(ci => ci.Arg<CreditCardInvoiceImport>());
         _service = new CreditCardInvoiceImportService(
-            _unitOfWork, _eligibility, Substitute.For<ILogger<CreditCardInvoiceImportService>>());
+            _unitOfWork, _eligibility, _review, _transactions, _time,
+            Substitute.For<ILogger<CreditCardInvoiceImportService>>());
     }
 
     private static CreateInvoiceImportRequestDto Request(params InvoiceImportUploadFileRequestDto[] files) =>
@@ -332,4 +336,9 @@ public class CreditCardInvoiceImportServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.DiscardAsync(UserId, ImportId));
     }
+}
+
+internal sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
+{
+    public override DateTimeOffset GetUtcNow() => now;
 }

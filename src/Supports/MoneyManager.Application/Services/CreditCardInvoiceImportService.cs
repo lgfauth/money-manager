@@ -37,6 +37,13 @@ public interface ICreditCardInvoiceImportService
     /// Outros estados lançam <see cref="InvoiceImportConflictException"/>.
     /// </summary>
     Task DiscardAsync(string userId, string importId);
+
+    /// <summary>
+    /// Confirma a importação: revalida titulares, itens, cadastro do cartão e duplicidade, cadastra os itens
+    /// escolhidos (origem <c>invoice_import</c>) na fatura do mês importado e marca o job <c>Confirmed</c>.
+    /// Itens já importados (fingerprint) são pulados, então repetir após uma falha não duplica nada.
+    /// </summary>
+    Task<CreditCardInvoiceImportResponseDto> ConfirmAsync(string userId, string importId, ConfirmInvoiceImportRequestDto request);
 }
 
 public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
@@ -49,21 +56,49 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
         "Já existe uma fatura deste cartão em processamento. Aguarde a conclusão antes de enviar outra.";
     public const string CannotDiscardMessage =
         "Esta importação não pode ser descartada no estado atual.";
+    public const string NotAwaitingReviewMessage =
+        "Esta importação não está aguardando revisão; ela pode já ter sido confirmada ou estar em confirmação.";
+    public const string HolderRequiredMessage =
+        "Escolha de quais titulares os lançamentos serão importados.";
+    public const string InvalidItemsMessage =
+        "Alguns lançamentos selecionados precisam de correção antes da importação.";
+
+    // Datas da fatura são do calendário brasileiro
+    private const string BrazilTimeZoneId = "E. South America Standard Time";
+
+    // Códigos recalculados por IInvoiceImportReviewService.ValidateItem após as edições do usuário
+    private static readonly HashSet<InvoiceImportWarningCode> ItemValidationCodes =
+    [
+        InvoiceImportWarningCode.MissingDate,
+        InvoiceImportWarningCode.MissingDescription,
+        InvoiceImportWarningCode.InvalidAmount,
+        InvoiceImportWarningCode.FutureDate,
+        InvoiceImportWarningCode.OutOfAllowedPeriod
+    ];
 
     private static readonly HashSet<InvoiceImportStatus> DiscardableStatuses =
         [InvoiceImportStatus.AwaitingReview, InvoiceImportStatus.Failed];
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICreditCardImportEligibilityService _eligibility;
+    private readonly IInvoiceImportReviewService _review;
+    private readonly ICreditCardTransactionService _transactions;
+    private readonly TimeProvider _timeProvider;
     private readonly ILogger<CreditCardInvoiceImportService> _logger;
 
     public CreditCardInvoiceImportService(
         IUnitOfWork unitOfWork,
         ICreditCardImportEligibilityService eligibility,
+        IInvoiceImportReviewService review,
+        ICreditCardTransactionService transactions,
+        TimeProvider timeProvider,
         ILogger<CreditCardInvoiceImportService> logger)
     {
         _unitOfWork = unitOfWork;
         _eligibility = eligibility;
+        _review = review;
+        _transactions = transactions;
+        _timeProvider = timeProvider;
         _logger = logger;
     }
 
@@ -189,6 +224,282 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
 
         _logger.LogInformation("Importação de fatura {ImportId} descartada pelo usuário {UserId}", job.Id, userId);
     }
+
+    public async Task<CreditCardInvoiceImportResponseDto> ConfirmAsync(
+        string userId, string importId, ConfirmInvoiceImportRequestDto request)
+    {
+        var job = await _unitOfWork.CreditCardInvoiceImports.GetByIdForUserAsync(userId, importId)
+                  ?? throw new KeyNotFoundException(ImportNotFoundMessage);
+
+        if (job.Status != InvoiceImportStatus.AwaitingReview)
+            throw new InvoiceImportConflictException(NotAwaitingReviewMessage);
+
+        if (job.Invoice?.ClosingDate is not { } closingDate || string.IsNullOrEmpty(job.ReferenceMonth))
+            throw new InvoiceImportConflictException(NotAwaitingReviewMessage);
+
+        // 1. Cartão atual: do usuário, não excluído, não sincronizado e com fechamento/vencimento compatíveis
+        var card = await _unitOfWork.CreditCards.GetByIdAsync(job.CreditCardId);
+        if (card is null || card.IsDeleted || card.UserId != userId)
+            throw new KeyNotFoundException(CardNotFoundMessage);
+
+        if (await _eligibility.IsSyncedByOpenFinanceAsync(userId, card.Id))
+            throw new InvoiceImportConflictException(CreditCardImportEligibilityService.SyncedCardMessage);
+
+        var blockingSchedule = _review.CheckCardSchedule(job.Invoice, card).Where(w => w.IsBlocking).ToList();
+        if (blockingSchedule.Count > 0)
+            throw new InvoiceImportConflictException(string.Join(" ", blockingSchedule.Select(w => w.Message)));
+
+        // 2. Titulares
+        var holderNames = job.Holders.Select(h => h.Name).ToList();
+        var selectedHolders = ResolveSelectedHolders(holderNames, request.SelectedHolders ?? []);
+        bool IsIncluded(InvoiceImportItem item) =>
+            selectedHolders is null
+            || selectedHolders.Contains(item.HolderName ?? InvoiceImportReviewService.UnidentifiedHolderName);
+
+        // 3. Itens com as edições do usuário
+        var working = job.Items.Select(CloneItem).ToList();
+        var byId = working.ToDictionary(i => i.Id, StringComparer.Ordinal);
+        var errors = new List<string>();
+        var chosen = new List<InvoiceImportItem>();
+
+        foreach (var edit in request.Items)
+        {
+            if (!byId.TryGetValue(edit.Id, out var item))
+            {
+                errors.Add("Um dos lançamentos enviados não pertence a esta importação.");
+                continue;
+            }
+
+            ApplyEdit(item, edit);
+            if (IsIncluded(item))
+                chosen.Add(item);
+        }
+
+        await ValidateCategoriesAsync(userId, chosen, errors);
+        if (errors.Count > 0)
+            throw new InvoiceImportValidationException(InvalidItemsMessage, errors.Distinct().ToList());
+
+        // 4. Revalidação das regras de item e da duplicidade contra os dados atuais
+        var today = GetBrazilToday();
+        foreach (var item in working)
+        {
+            item.Warnings.RemoveAll(ItemValidationCodes.Contains);
+            item.Warnings.AddRange(_review.ValidateItem(item, closingDate, today));
+        }
+
+        await _review.ApplyDuplicateChecksAsync(
+            userId, card, job.ReferenceMonth, working, selectedHolders?.ToList());
+
+        var toCreate = new List<InvoiceImportItem>();
+        var skipped = 0;
+        foreach (var item in chosen)
+        {
+            if (item.Warnings.Contains(InvoiceImportWarningCode.AlreadyImported))
+            {
+                skipped++;
+                continue;
+            }
+
+            var blocking = item.Warnings.Where(InvoiceImportReviewService.IsBlocking).ToList();
+            if (blocking.Count > 0)
+                errors.Add($"{DescribeItem(item)}: {string.Join("; ", blocking.Select(DescribeWarning))}.");
+            else
+                toCreate.Add(item);
+        }
+
+        if (errors.Count > 0)
+            throw new InvoiceImportValidationException(InvalidItemsMessage, errors);
+
+        // 5. Troca atômica AwaitingReview → Confirming (versão otimista): duplo clique ou outra aba recebem 409
+        job.Status = InvoiceImportStatus.Confirming;
+        job.UpdatedAt = DateTime.UtcNow;
+        try
+        {
+            await _unitOfWork.CreditCardInvoiceImports.UpdateAsync(job);
+        }
+        catch (ConcurrencyException)
+        {
+            throw new InvoiceImportConflictException(NotAwaitingReviewMessage);
+        }
+
+        // 6. Cadastro
+        var affectedInvoices = new HashSet<string>(StringComparer.Ordinal);
+        try
+        {
+            foreach (var item in toCreate)
+            {
+                var created = await _transactions.CreateAsync(userId, BuildTransactionRequest(job, item));
+                foreach (var tx in created)
+                    affectedInvoices.Add(tx.InvoiceId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Falha ao cadastrar os lançamentos da importação {ImportId}; ela volta para revisão",
+                job.Id);
+            await RevertToReviewAsync(job);
+            throw;
+        }
+
+        job.Status = InvoiceImportStatus.Confirmed;
+        job.ConfirmedAt = DateTime.UtcNow;
+        job.UpdatedAt = job.ConfirmedAt.Value;
+        job.SelectedHolders = selectedHolders?.ToList() ?? holderNames;
+        job.Items = working;
+        job.Result = new InvoiceImportConfirmationResult
+        {
+            CreatedCount = toCreate.Count,
+            SkippedCount = skipped,
+            AffectedInvoiceIds = affectedInvoices.OrderBy(id => id, StringComparer.Ordinal).ToList()
+        };
+        await _unitOfWork.CreditCardInvoiceImports.UpdateAsync(job);
+
+        _logger.LogInformation(
+            "Importação de fatura {ImportId} confirmada pelo usuário {UserId}: {CreatedCount} lançamento(s) criado(s), {SkippedCount} já importado(s), {InvoiceCount} fatura(s) afetada(s)",
+            job.Id, userId, toCreate.Count, skipped, affectedInvoices.Count);
+
+        return MapToDto(job);
+    }
+
+    /// <summary>
+    /// Titulares incluídos: null quando a fatura tem no máximo um titular (todos os itens entram).
+    /// </summary>
+    private static HashSet<string>? ResolveSelectedHolders(List<string> holderNames, List<string> requested)
+    {
+        if (holderNames.Count <= 1)
+            return null;
+
+        if (requested.Count == 0)
+            throw new InvoiceImportValidationException(HolderRequiredMessage);
+
+        var unknown = requested.Where(r => !holderNames.Contains(r, StringComparer.Ordinal)).ToList();
+        if (unknown.Count > 0)
+            throw new InvoiceImportValidationException(
+                "Um dos titulares escolhidos não pertence a esta fatura.", unknown);
+
+        return requested.ToHashSet(StringComparer.Ordinal);
+    }
+
+    private async Task ValidateCategoriesAsync(string userId, List<InvoiceImportItem> items, List<string> errors)
+    {
+        if (!items.Any(i => !string.IsNullOrEmpty(i.CategoryId)))
+            return;
+
+        var categoryIds = (await _unitOfWork.Categories.GetByUserIdAsync(userId))
+            .Where(c => c.UserId == userId && !c.IsDeleted)
+            .Select(c => c.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        foreach (var item in items.Where(i => !string.IsNullOrEmpty(i.CategoryId) && !categoryIds.Contains(i.CategoryId!)))
+            errors.Add($"{DescribeItem(item)}: categoria não encontrada.");
+    }
+
+    private static void ApplyEdit(InvoiceImportItem item, ConfirmInvoiceImportItemRequestDto edit)
+    {
+        item.Date = edit.Date?.Date;
+        item.Description = (edit.Description ?? string.Empty).Trim();
+        item.Amount = edit.Amount;
+        item.CategoryId = string.IsNullOrWhiteSpace(edit.CategoryId) ? null : edit.CategoryId;
+
+        // "1 de 1" ou sem parcelas: compra à vista
+        if (edit.TotalInstallments is > 1 && edit.InstallmentNumber is { } number)
+        {
+            item.InstallmentNumber = number;
+            item.TotalInstallments = edit.TotalInstallments;
+        }
+        else
+        {
+            item.InstallmentNumber = null;
+            item.TotalInstallments = null;
+        }
+    }
+
+    private static CreateCreditCardTransactionRequestDto BuildTransactionRequest(CreditCardInvoiceImport job, InvoiceImportItem item)
+    {
+        var isRefund = item.Type == CreditCardTransactionType.Refund;
+        var totalInstallments = isRefund ? 1 : item.TotalInstallments ?? 1;
+        var amount = Math.Abs(item.Amount);
+
+        return new CreateCreditCardTransactionRequestDto
+        {
+            CreditCardId = job.CreditCardId,
+            Description = item.Description,
+            CategoryId = item.CategoryId,
+            PurchaseDate = DateTime.SpecifyKind(item.Date!.Value.Date, DateTimeKind.Utc),
+            // O valor da fatura é o da parcela; o total da compra é parcela × N
+            TotalAmount = amount * totalInstallments,
+            TotalInstallments = totalInstallments,
+            IsRefund = isRefund,
+            Source = CreditCardTransactionService.InvoiceImportSource,
+            TargetReferenceMonth = job.ReferenceMonth,
+            // 1/N nova → parcelamento completo; X/N → só X..N, nada em fatura anterior
+            FirstInstallmentNumber = isRefund ? 1 : item.InstallmentNumber ?? 1,
+            InvoiceImportId = job.Id,
+            ImportFingerprint = item.Fingerprint
+        };
+    }
+
+    private async Task RevertToReviewAsync(CreditCardInvoiceImport job)
+    {
+        try
+        {
+            job.Status = InvoiceImportStatus.AwaitingReview;
+            job.UpdatedAt = DateTime.UtcNow;
+            await _unitOfWork.CreditCardInvoiceImports.UpdateAsync(job);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Não foi possível devolver a importação {ImportId} para revisão", job.Id);
+        }
+    }
+
+    private DateOnly GetBrazilToday()
+    {
+        var brazilNow = TimeZoneInfo.ConvertTime(_timeProvider.GetUtcNow(), TimeZoneInfo.FindSystemTimeZoneById(BrazilTimeZoneId));
+        return DateOnly.FromDateTime(brazilNow.DateTime);
+    }
+
+    private static string DescribeItem(InvoiceImportItem item)
+    {
+        var description = string.IsNullOrWhiteSpace(item.Description) ? "Lançamento sem descrição" : item.Description;
+        return item.Date is { } date ? $"{description} ({date:dd/MM})" : description;
+    }
+
+    private static string DescribeWarning(InvoiceImportWarningCode code) => code switch
+    {
+        InvoiceImportWarningCode.MissingDate => "informe a data",
+        InvoiceImportWarningCode.MissingDescription => "informe a descrição",
+        InvoiceImportWarningCode.InvalidAmount => "o valor deve ser maior que zero",
+        InvoiceImportWarningCode.FutureDate => "a data não pode ser futura nem posterior ao fechamento da fatura",
+        InvoiceImportWarningCode.OutOfAllowedPeriod =>
+            $"compras à vista ou 1ª parcela com mais de {InvoiceImportReviewService.MaxDaysInPast} dias não podem ser importadas",
+        InvoiceImportWarningCode.NotFoundInSpreadsheet => "o lançamento não foi encontrado na planilha",
+        _ => "o lançamento precisa de correção"
+    };
+
+    private static InvoiceImportItem CloneItem(InvoiceImportItem i) => new()
+    {
+        Id = i.Id,
+        Date = i.Date,
+        Description = i.Description,
+        Amount = i.Amount,
+        Type = i.Type,
+        InstallmentNumber = i.InstallmentNumber,
+        TotalInstallments = i.TotalInstallments,
+        HolderName = i.HolderName,
+        HolderType = i.HolderType,
+        CardLastDigits = i.CardLastDigits,
+        CardType = i.CardType,
+        Source = i.Source,
+        CategoryHint = i.CategoryHint,
+        CategoryId = i.CategoryId,
+        Confidence = i.Confidence,
+        Notes = i.Notes,
+        Warnings = [.. i.Warnings],
+        IsSelectedByDefault = i.IsSelectedByDefault,
+        Fingerprint = i.Fingerprint
+    };
 
     private async Task DeleteFilesQuietlyAsync(string userId, string importId)
     {

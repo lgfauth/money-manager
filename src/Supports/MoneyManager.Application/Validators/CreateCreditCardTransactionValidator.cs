@@ -24,6 +24,17 @@ public class CreateCreditCardTransactionValidator : AbstractValidator<CreateCred
             .InclusiveBetween(1, 18).When(x => !x.IsRefund)
             .WithMessage("Número de parcelas deve estar entre 1 e 18");
 
+        // A origem invoice_import e seus campos são exclusivos da confirmação de importação de fatura
+        RuleFor(x => x.Source)
+            .NotEqual("invoice_import")
+            .WithMessage("Origem de transação inválida");
+
+        RuleFor(x => x)
+            .Must(x => x.TargetReferenceMonth is null && x.FirstInstallmentNumber is null
+                       && x.InvoiceImportId is null && x.ImportFingerprint is null)
+            .WithName("Source")
+            .WithMessage("Campos de importação de fatura não são aceitos neste cadastro");
+
         RuleFor(x => x.PurchaseDate)
             .NotEmpty().WithMessage("Data da compra é obrigatória")
             .Must(d => d.Date <= DateTime.UtcNow.Date)

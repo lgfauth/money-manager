@@ -20,13 +20,16 @@ public class CreditCardInvoiceImportsController : ControllerBase
 {
     private readonly ICreditCardInvoiceImportService _service;
     private readonly IValidator<CreateInvoiceImportRequestDto> _validator;
+    private readonly IValidator<ConfirmInvoiceImportRequestDto> _confirmValidator;
 
     public CreditCardInvoiceImportsController(
         ICreditCardInvoiceImportService service,
-        IValidator<CreateInvoiceImportRequestDto> validator)
+        IValidator<CreateInvoiceImportRequestDto> validator,
+        IValidator<ConfirmInvoiceImportRequestDto> confirmValidator)
     {
         _service = service;
         _validator = validator;
+        _confirmValidator = confirmValidator;
     }
 
     [HttpPost]
@@ -92,6 +95,32 @@ public class CreditCardInvoiceImportsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return this.ApiNotFound(ex.Message);
+        }
+    }
+
+    [HttpPost("{id}/confirm")]
+    public async Task<IActionResult> Confirm(string id, [FromBody] ConfirmInvoiceImportRequestDto request)
+    {
+        var validation = await _confirmValidator.ValidateAsync(request);
+        if (!validation.IsValid)
+            return this.ApiValidationError(validation.Errors, "Confirmação inválida.");
+
+        try
+        {
+            var result = await _service.ConfirmAsync(HttpContext.GetUserId(), id, request);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return this.ApiNotFound(ex.Message);
+        }
+        catch (InvoiceImportConflictException ex)
+        {
+            return this.ApiConflict(ex.Message);
+        }
+        catch (InvoiceImportValidationException ex)
+        {
+            return this.ApiBadRequest(ex.Message, ex.Errors);
         }
     }
 

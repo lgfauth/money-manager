@@ -180,6 +180,159 @@ public class CreditCardTransactionServiceTests
             }));
     }
 
+    // --- Origem invoice_import (confirmação de importação de fatura) ---
+
+    private CreditCard SetupInvoicesPerMonth(InvoiceStatus status, List<(string Month, InvoiceStatus Status)> requested)
+    {
+        var card = MakeCard();
+        _cardRepo.GetByIdAsync(card.Id).Returns(card);
+        _invoiceServiceMock.EnsureCurrentOpenInvoiceAsync(UserId, card)
+            .Returns(new CreditCardInvoice { Id = "inv-current", Status = InvoiceStatus.Open });
+        _invoiceServiceMock
+            .GetOrCreateInvoiceAsync(UserId, card, Arg.Any<string>(), Arg.Any<InvoiceStatus>())
+            .Returns(ci =>
+            {
+                var month = ci.ArgAt<string>(2);
+                requested.Add((month, ci.ArgAt<InvoiceStatus>(3)));
+                // Mesmo dia de fechamento da compra: garante que o redirecionamento do fluxo manual não se aplica
+                return new CreditCardInvoice { Id = $"inv-{month}", ReferenceMonth = month, Status = status, ClosingDate = new DateTime(2026, 10, 3) };
+            });
+        return card;
+    }
+
+    [Fact]
+    public async Task CreateAsync_InvoiceImportFromInstallmentX_ShouldCreateOnlyXToNStartingOnTargetMonth()
+    {
+        // Arrange
+        var requested = new List<(string Month, InvoiceStatus Status)>();
+        SetupInvoicesPerMonth(InvoiceStatus.Closed, requested);
+        var added = new List<CreditCardTransaction>();
+        _ccTransactionRepo.AddAsync(Arg.Do<CreditCardTransaction>(t => added.Add(t)));
+
+        // Act
+        var result = (await _service.CreateAsync(UserId, new CreateCreditCardTransactionRequestDto
+        {
+            CreditCardId = "card1",
+            Description = "Notebook",
+            TotalAmount = 1000m,
+            TotalInstallments = 10,
+            PurchaseDate = new DateTime(2026, 3, 3, 0, 0, 0, DateTimeKind.Utc),
+            Source = CreditCardTransactionService.InvoiceImportSource,
+            TargetReferenceMonth = "2026-10",
+            FirstInstallmentNumber = 8,
+            InvoiceImportId = "import-1",
+            ImportFingerprint = "fp-1"
+        })).ToList();
+
+        // Assert
+        Assert.Equal([8, 9, 10], result.Select(r => r.InstallmentNumber));
+        Assert.All(result, r => Assert.Equal(100m, r.InstallmentAmount));
+        Assert.Equal(["inv-2026-10", "inv-2026-11", "inv-2026-12"], result.Select(r => r.InvoiceId));
+        Assert.Null(result[0].ParentTransactionId);
+        Assert.All(result.Skip(1), r => Assert.Equal(result[0].Id, r.ParentTransactionId));
+        Assert.All(added, t => Assert.Equal("invoice_import", t.Source));
+        Assert.All(added, t => Assert.Equal("import-1", t.InvoiceImportId));
+        Assert.Equal(["fp-1", null, null], added.Select(t => t.ImportFingerprint));
+        await _invoiceServiceMock.Received(3).RecalculateTotalAsync(UserId, Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task CreateAsync_InvoiceImportOnPastMonth_ShouldCreateMissingInvoiceAsClosed()
+    {
+        // Arrange
+        var requested = new List<(string Month, InvoiceStatus Status)>();
+        SetupInvoicesPerMonth(InvoiceStatus.Closed, requested);
+        var pastMonth = CreditCardDateUtils.FormatReferenceMonth(DateTime.UtcNow.AddMonths(-2));
+
+        // Act
+        await _service.CreateAsync(UserId, new CreateCreditCardTransactionRequestDto
+        {
+            CreditCardId = "card1",
+            Description = "Mercado",
+            TotalAmount = 50m,
+            PurchaseDate = DateTime.UtcNow.AddMonths(-2),
+            Source = CreditCardTransactionService.InvoiceImportSource,
+            TargetReferenceMonth = pastMonth
+        });
+
+        // Assert
+        Assert.Equal([(pastMonth, InvoiceStatus.Closed)], requested);
+    }
+
+    [Theory]
+    [InlineData(InvoiceStatus.Paid)]
+    [InlineData(InvoiceStatus.Overdue)]
+    public async Task CreateAsync_InvoiceImport_ShouldAcceptPaidAndOverdueInvoices(InvoiceStatus status)
+    {
+        // Arrange
+        SetupInvoicesPerMonth(status, []);
+
+        // Act
+        var result = (await _service.CreateAsync(UserId, new CreateCreditCardTransactionRequestDto
+        {
+            CreditCardId = "card1",
+            Description = "Mercado",
+            TotalAmount = 50m,
+            PurchaseDate = new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc),
+            Source = CreditCardTransactionService.InvoiceImportSource,
+            TargetReferenceMonth = "2026-10"
+        })).ToList();
+
+        // Assert
+        Assert.Equal("inv-2026-10", Assert.Single(result).InvoiceId);
+    }
+
+    [Fact]
+    public async Task CreateAsync_ManualSource_ShouldIgnoreInvoiceImportOptions()
+    {
+        // Arrange
+        SetupCardWithOpenInvoice(out _);
+        var added = new List<CreditCardTransaction>();
+        _ccTransactionRepo.AddAsync(Arg.Do<CreditCardTransaction>(t => added.Add(t)));
+
+        // Act
+        var result = (await _service.CreateAsync(UserId, new CreateCreditCardTransactionRequestDto
+        {
+            CreditCardId = "card1",
+            Description = "Parcelado",
+            TotalAmount = 300m,
+            TotalInstallments = 3,
+            PurchaseDate = DateTime.UtcNow,
+            Source = "manual",
+            TargetReferenceMonth = "2020-01",
+            FirstInstallmentNumber = 3,
+            InvoiceImportId = "import-1",
+            ImportFingerprint = "fp-1"
+        })).ToList();
+
+        // Assert
+        Assert.Equal([1, 2, 3], result.Select(r => r.InstallmentNumber));
+        Assert.All(added, t => Assert.Null(t.InvoiceImportId));
+        Assert.All(added, t => Assert.Null(t.ImportFingerprint));
+        await _invoiceServiceMock.DidNotReceive()
+            .GetOrCreateInvoiceAsync(UserId, Arg.Any<CreditCard>(), "2020-01", Arg.Any<InvoiceStatus>());
+    }
+
+    [Fact]
+    public async Task CreateAsync_BankSyncOnClosedInvoice_ShouldStillBeAccepted()
+    {
+        // Arrange
+        SetupInvoicesPerMonth(InvoiceStatus.Closed, []);
+
+        // Act
+        var result = await _service.CreateAsync(UserId, new CreateCreditCardTransactionRequestDto
+        {
+            CreditCardId = "card1",
+            Description = "Compra sync",
+            TotalAmount = 40m,
+            PurchaseDate = new DateTime(2026, 9, 20, 0, 0, 0, DateTimeKind.Utc),
+            Source = "bank_sync"
+        });
+
+        // Assert
+        Assert.Single(result);
+    }
+
     [Fact]
     public async Task GetAllAsync_ShouldMapCardCurrencyAndCategory()
     {

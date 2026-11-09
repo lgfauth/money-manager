@@ -182,6 +182,26 @@ Destaques:
   Também lista os cartões elegíveis, consulta/lista as importações do usuário (as 20
   mais recentes) e descarta (`AwaitingReview`/`Failed` → `Discarded` com soft delete;
   outros estados → `409`).
+  **Confirmação** (`POST /{id}/confirm`, `ConfirmInvoiceImportValidator` +
+  `ConfirmAsync`): recebe os titulares escolhidos e os itens a cadastrar já editados;
+  só aceita job `AwaitingReview` e troca para `Confirming` com versão otimista (duplo
+  clique/outra aba → `409`). Antes de gravar, revalida contra o cadastro **atual**:
+  cartão sincronizado → `409`; fechamento/vencimento com diferença acima de 3 dias →
+  `409` até ajustar o cartão; mais de um titular sem escolha, item/titular/categoria
+  inexistente ou item com alerta bloqueante não corrigido → `400`
+  (`InvoiceImportValidationException`, com a lista de problemas) sem criar nada. Itens
+  de titulares não escolhidos nunca são criados; itens já importados (fingerprint) são
+  pulados. Cada item vira transação pelo `CreditCardTransactionService` com origem
+  **`invoice_import`**, que aceita faturas `Closed`/`Overdue`/`Paid`, grava na fatura do
+  mês importado (`TargetReferenceMonth`; mês já fechado sem fatura nasce `Closed`) e
+  começa o parcelamento em X (`FirstInstallmentNumber`: 1/N → parcelamento completo,
+  X/N → só X..N com a numeração original, nada em fatura anterior), gravando
+  `InvoiceImportId` em todas as parcelas e `ImportFingerprint` só na do mês importado.
+  O valor do documento é o da parcela (total da compra = parcela × N). Falha no meio
+  devolve o job a `AwaitingReview`; repetir não duplica. No fim, `Confirmed` com
+  contadores (`Result`) e `SelectedHolders` (base da pré-seleção da próxima importação).
+  A origem `invoice_import` e seus campos são recusados no cadastro manual
+  (`CreateCreditCardTransactionValidator`).
 - **Open Finance / conexões bancárias** (`BankConnections`) — sincronização de
   transações via MCP bancário (Pluggy). **Invariante importante** (`BankConnectionService.
   SyncConnectionAsync`): o `ClosingDay`/`BillingDueDay` do cartão é corrigido a

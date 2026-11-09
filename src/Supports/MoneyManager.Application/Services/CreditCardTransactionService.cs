@@ -18,6 +18,9 @@ public interface ICreditCardTransactionService
 
 public class CreditCardTransactionService : ICreditCardTransactionService
 {
+    /// <summary>Origem das transações criadas pela confirmação de importação de fatura.</summary>
+    public const string InvoiceImportSource = "invoice_import";
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICreditCardInvoiceService _invoiceService;
     private readonly IProcessLogger _processLogger;
@@ -66,6 +69,13 @@ public class CreditCardTransactionService : ICreditCardTransactionService
         await _invoiceService.EnsureCurrentOpenInvoiceAsync(userId, card);
 
         var totalInstallments = request.IsRefund ? 1 : Math.Max(1, request.TotalInstallments);
+
+        // Importação de fatura: fatura de destino explícita e parcelamento podendo começar em X
+        var isInvoiceImport = request.Source == InvoiceImportSource;
+        var targetReferenceMonth = isInvoiceImport ? request.TargetReferenceMonth : null;
+        var firstInstallment = isInvoiceImport
+            ? Math.Clamp(request.FirstInstallmentNumber ?? 1, 1, totalInstallments)
+            : 1;
         var installmentAmount = Math.Round(request.TotalAmount / totalInstallments, 2, MidpointRounding.AwayFromZero);
 
         var roundingDiff = request.TotalAmount - (installmentAmount * totalInstallments);
@@ -74,27 +84,40 @@ public class CreditCardTransactionService : ICreditCardTransactionService
         var created = new List<CreditCardTransaction>();
         var invoiceIdsTouched = new HashSet<string>();
 
-        for (var i = 1; i <= totalInstallments; i++)
+        for (var i = firstInstallment; i <= totalInstallments; i++)
         {
-            var monthOffset = request.FirstInstallmentOnCurrentInvoice ? i - 1 : i;
-            var targetDate = CreditCardDateUtils.SafeInstallmentDate(request.PurchaseDate, monthOffset);
-            var referenceMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(targetDate, card.ClosingDay);
+            string referenceMonth;
+            CreditCardInvoice invoice;
 
-            var initialStatus = ResolveInitialStatusForInstallment(referenceMonth);
-            var invoice = await _invoiceService.GetOrCreateInvoiceAsync(userId, card, referenceMonth, initialStatus);
-
-            // Compra realizada exatamente no dia de fechamento após o worker ter fechado a fatura:
-            // o worker já abriu a fatura do período seguinte — redirecionar a parcela para ela.
-            // Inclui "Paid" pois a fatura pode já ter sido fechada e paga no mesmo dia do fechamento.
-            if ((invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.Overdue || invoice.Status == InvoiceStatus.Paid)
-                && targetDate.Date == invoice.ClosingDate.Date)
+            if (targetReferenceMonth is not null)
             {
-                referenceMonth = CreditCardDateUtils.AddMonths(referenceMonth, 1);
-                var nextStatus = ResolveInitialStatusForInstallment(referenceMonth);
-                invoice = await _invoiceService.GetOrCreateInvoiceAsync(userId, card, referenceMonth, nextStatus);
+                referenceMonth = CreditCardDateUtils.AddMonths(targetReferenceMonth, i - firstInstallment);
+                invoice = await _invoiceService.GetOrCreateInvoiceAsync(
+                    userId, card, referenceMonth, ResolveInitialStatusForImportedInstallment(referenceMonth, card));
+            }
+            else
+            {
+                var monthOffset = request.FirstInstallmentOnCurrentInvoice ? i - 1 : i;
+                var targetDate = CreditCardDateUtils.SafeInstallmentDate(request.PurchaseDate, monthOffset);
+                referenceMonth = CreditCardDateUtils.ReferenceMonthForPurchaseDate(targetDate, card.ClosingDay);
+
+                var initialStatus = ResolveInitialStatusForInstallment(referenceMonth);
+                invoice = await _invoiceService.GetOrCreateInvoiceAsync(userId, card, referenceMonth, initialStatus);
+
+                // Compra realizada exatamente no dia de fechamento após o worker ter fechado a fatura:
+                // o worker já abriu a fatura do período seguinte — redirecionar a parcela para ela.
+                // Inclui "Paid" pois a fatura pode já ter sido fechada e paga no mesmo dia do fechamento.
+                if ((invoice.Status == InvoiceStatus.Closed || invoice.Status == InvoiceStatus.Overdue || invoice.Status == InvoiceStatus.Paid)
+                    && targetDate.Date == invoice.ClosingDate.Date)
+                {
+                    referenceMonth = CreditCardDateUtils.AddMonths(referenceMonth, 1);
+                    var nextStatus = ResolveInitialStatusForInstallment(referenceMonth);
+                    invoice = await _invoiceService.GetOrCreateInvoiceAsync(userId, card, referenceMonth, nextStatus);
+                }
             }
 
-            if (request.Source != "bank_sync"
+            // Sync bancário e importação de fatura registram o que o banco já faturou, inclusive em faturas fechadas
+            if (request.Source != "bank_sync" && !isInvoiceImport
                 && (invoice.Status == InvoiceStatus.Closed
                     || invoice.Status == InvoiceStatus.Paid
                     || invoice.Status == InvoiceStatus.Overdue))
@@ -133,13 +156,15 @@ public class CreditCardTransactionService : ICreditCardTransactionService
                 Source = request.Source,
                 ExternalId = request.ExternalId,
                 IsPending = request.IsPending,
-                OpenBankingCategoryId = request.OpenBankingCategoryId
+                OpenBankingCategoryId = request.OpenBankingCategoryId,
+                InvoiceImportId = isInvoiceImport ? request.InvoiceImportId : null,
+                ImportFingerprint = isInvoiceImport && i == firstInstallment ? request.ImportFingerprint : null
             };
 
             await _unitOfWork.CreditCardTransactions.AddAsync(transaction);
             await _unitOfWork.SaveChangesAsync();
 
-            if (i == 1)
+            if (i == firstInstallment)
             {
                 parentId = transaction.Id;
             }
@@ -356,6 +381,15 @@ public class CreditCardTransactionService : ICreditCardTransactionService
         }
 
         return InvoiceStatus.Pending;
+    }
+
+    // Fatura criada pela importação: mês já fechado nasce Closed; os demais seguem a regra normal
+    private static InvoiceStatus ResolveInitialStatusForImportedInstallment(string referenceMonth, CreditCard card)
+    {
+        var closingDate = CreditCardDateUtils.ComputeClosingDate(referenceMonth, card.ClosingDay);
+        return closingDate.Date < DateTime.UtcNow.Date
+            ? InvoiceStatus.Closed
+            : ResolveInitialStatusForInstallment(referenceMonth);
     }
 
     private async Task<List<CreditCardTransactionResponseDto>> BuildDtosAsync(string userId, List<CreditCardTransaction> transactions)

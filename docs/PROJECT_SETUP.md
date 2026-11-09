@@ -171,6 +171,7 @@ A lista completa está no Swagger (em `Development`). Alguns exemplos:
 - `POST /api/credit-card-invoice-imports` - Upload multipart (`creditCardId` + `files`: 1 PDF até 20 MB ou 1–10 imagens JPEG/PNG/WebP até 5 MB cada); responde `202` com `id` e `status` e o Worker processa em segundo plano
 - `GET /api/credit-card-invoice-imports` - Importações recentes do usuário
 - `GET /api/credit-card-invoice-imports/{id}` - Status, dados da fatura, titulares, alertas e itens extraídos
+- `POST /api/credit-card-invoice-imports/{id}/confirm` - Confirma titulares e itens (editados) e cadastra as transações na fatura do mês importado (`409` se já confirmada, cartão sincronizado ou cadastro do cartão divergente; `400` para itens inválidos)
 - `DELETE /api/credit-card-invoice-imports/{id}` - Descarta a importação (`AwaitingReview` ou `Failed`)
 
 ### Dashboard

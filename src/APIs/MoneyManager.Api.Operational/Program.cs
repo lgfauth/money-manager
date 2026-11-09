@@ -58,7 +58,9 @@ builder.Services.AddScoped<ICreditCardService, CreditCardService>();
 builder.Services.AddScoped<ICreditCardTransactionService, CreditCardTransactionService>();
 builder.Services.AddScoped<IFinancialHealthService, FinancialHealthService>();
 builder.Services.AddScoped<ICreditCardImportEligibilityService, CreditCardImportEligibilityService>();
+builder.Services.AddScoped<IInvoiceImportReviewService, InvoiceImportReviewService>();
 builder.Services.AddScoped<ICreditCardInvoiceImportService, CreditCardInvoiceImportService>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 // Register receipt analysis service
 builder.Services.AddHttpClient("anthropic");

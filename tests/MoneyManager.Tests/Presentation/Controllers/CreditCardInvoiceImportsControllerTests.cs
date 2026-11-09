@@ -25,7 +25,8 @@ public class CreditCardInvoiceImportsControllerTests
     public CreditCardInvoiceImportsControllerTests()
     {
         // Validator real: o controller é quem invoca a validação
-        _controller = new CreditCardInvoiceImportsController(_service, new CreateInvoiceImportValidator())
+        _controller = new CreditCardInvoiceImportsController(
+            _service, new CreateInvoiceImportValidator(), new ConfirmInvoiceImportValidator())
         {
             ControllerContext = new ControllerContext
             {
@@ -180,6 +181,81 @@ public class CreditCardInvoiceImportsControllerTests
 
         // Act
         var result = await _controller.GetById(ImportId);
+
+        // Assert
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    // --- Confirm ---
+
+    private static ConfirmInvoiceImportRequestDto ConfirmRequest() => new()
+    {
+        SelectedHolders = ["MARIA"],
+        Items = [new ConfirmInvoiceImportItemRequestDto { Id = "a", Description = "Mercado", Amount = 10m, Date = new DateTime(2026, 10, 20) }]
+    };
+
+    [Fact]
+    public async Task Confirm_WhenSuccessful_ShouldReturnOk()
+    {
+        // Arrange
+        var dto = new CreditCardInvoiceImportResponseDto { Id = ImportId, Status = "Confirmed" };
+        _service.ConfirmAsync(UserId, ImportId, Arg.Any<ConfirmInvoiceImportRequestDto>()).Returns(dto);
+
+        // Act
+        var result = await _controller.Confirm(ImportId, ConfirmRequest());
+
+        // Assert
+        Assert.Same(dto, Assert.IsType<OkObjectResult>(result).Value);
+    }
+
+    [Fact]
+    public async Task Confirm_WithoutItems_ShouldReturnBadRequestWithoutCallingService()
+    {
+        // Act
+        var result = await _controller.Confirm(ImportId, new ConfirmInvoiceImportRequestDto());
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _service.DidNotReceive().ConfirmAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfirmInvoiceImportRequestDto>());
+    }
+
+    [Fact]
+    public async Task Confirm_WhenItemsAreInvalid_ShouldReturnBadRequest()
+    {
+        // Arrange
+        _service.ConfirmAsync(UserId, ImportId, Arg.Any<ConfirmInvoiceImportRequestDto>())
+            .ThrowsAsync(new InvoiceImportValidationException("inválido", ["Mercado: informe a data."]));
+
+        // Act
+        var result = await _controller.Confirm(ImportId, ConfirmRequest());
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Confirm_WhenAlreadyConfirmedOrSynced_ShouldReturnConflict()
+    {
+        // Arrange
+        _service.ConfirmAsync(UserId, ImportId, Arg.Any<ConfirmInvoiceImportRequestDto>())
+            .ThrowsAsync(new InvoiceImportConflictException(CreditCardInvoiceImportService.NotAwaitingReviewMessage));
+
+        // Act
+        var result = await _controller.Confirm(ImportId, ConfirmRequest());
+
+        // Assert
+        Assert.Equal(StatusCodes.Status409Conflict, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Confirm_WhenNotFound_ShouldReturnNotFound()
+    {
+        // Arrange
+        _service.ConfirmAsync(UserId, ImportId, Arg.Any<ConfirmInvoiceImportRequestDto>())
+            .ThrowsAsync(new KeyNotFoundException("Importação não encontrada."));
+
+        // Act
+        var result = await _controller.Confirm(ImportId, ConfirmRequest());
 
         // Assert
         Assert.IsType<NotFoundObjectResult>(result);
