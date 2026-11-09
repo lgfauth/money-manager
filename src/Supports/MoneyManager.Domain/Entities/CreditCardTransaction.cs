@@ -63,6 +63,16 @@ public class CreditCardTransaction
     [BsonIgnoreIfNull]
     public string? OpenBankingCategoryId { get; set; } // categoryId de origem do Pluggy — usado para recategorização
 
+    // Job de importação de fatura que originou a transação (Source = "invoice_import").
+    [BsonElement("invoiceImportId")]
+    [BsonIgnoreIfNull]
+    public string? InvoiceImportId { get; set; }
+
+    // Chave do item importado, usada para impedir que a mesma fatura seja importada duas vezes.
+    [BsonElement("importFingerprint")]
+    [BsonIgnoreIfNull]
+    public string? ImportFingerprint { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

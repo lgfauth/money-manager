@@ -25,6 +25,8 @@ public class UnitOfWork : IUnitOfWork
     private IMonthlySnapshotRepository? _monthlySnapshots;
     private ISubscriptionRepository? _subscriptionRepository;
     private IBankConnectionRepository? _bankConnectionRepository;
+    private ICreditCardInvoiceImportRepository? _creditCardInvoiceImportRepository;
+    private ICreditCardInvoiceImportFileRepository? _creditCardInvoiceImportFileRepository;
 
     public UnitOfWork(MongoContext context)
     {
@@ -48,6 +50,8 @@ public class UnitOfWork : IUnitOfWork
     public IMonthlySnapshotRepository MonthlySnapshots => _monthlySnapshots ??= new MonthlySnapshotRepository(_context);
     public ISubscriptionRepository Subscriptions => _subscriptionRepository ??= new SubscriptionRepository(_context);
     public IBankConnectionRepository BankConnections => _bankConnectionRepository ??= new BankConnectionRepository(_context);
+    public ICreditCardInvoiceImportRepository CreditCardInvoiceImports => _creditCardInvoiceImportRepository ??= new CreditCardInvoiceImportRepository(_context);
+    public ICreditCardInvoiceImportFileRepository CreditCardInvoiceImportFiles => _creditCardInvoiceImportFileRepository ??= new CreditCardInvoiceImportFileRepository(_context);
 
     public async Task<int> SaveChangesAsync()
     {

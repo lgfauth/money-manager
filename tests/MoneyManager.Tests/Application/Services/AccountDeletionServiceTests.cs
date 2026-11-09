@@ -17,6 +17,8 @@ public class AccountDeletionServiceTests
     private readonly ITransactionRepository _transactionRepo;
     private readonly IRepository<Budget> _budgetRepo;
     private readonly IRepository<RecurringTransaction> _recurringRepo;
+    private readonly ICreditCardInvoiceImportRepository _invoiceImportRepo;
+    private readonly ICreditCardInvoiceImportFileRepository _invoiceImportFileRepo;
     private readonly AccountDeletionService _service;
 
     private const string UserId = "user-abc";
@@ -31,6 +33,8 @@ public class AccountDeletionServiceTests
         _transactionRepo = Substitute.For<ITransactionRepository>();
         _budgetRepo = Substitute.For<IRepository<Budget>>();
         _recurringRepo = Substitute.For<IRepository<RecurringTransaction>>();
+        _invoiceImportRepo = Substitute.For<ICreditCardInvoiceImportRepository>();
+        _invoiceImportFileRepo = Substitute.For<ICreditCardInvoiceImportFileRepository>();
 
         _unitOfWork.Users.Returns(_userRepo);
         _unitOfWork.Accounts.Returns(_accountRepo);
@@ -38,6 +42,8 @@ public class AccountDeletionServiceTests
         _unitOfWork.Transactions.Returns(_transactionRepo);
         _unitOfWork.Budgets.Returns(_budgetRepo);
         _unitOfWork.RecurringTransactions.Returns(_recurringRepo);
+        _unitOfWork.CreditCardInvoiceImports.Returns(_invoiceImportRepo);
+        _unitOfWork.CreditCardInvoiceImportFiles.Returns(_invoiceImportFileRepo);
 
         _service = new AccountDeletionService(_unitOfWork, _logger);
     }
@@ -98,6 +104,8 @@ public class AccountDeletionServiceTests
         await _transactionRepo.Received(1).DeleteManyByUserIdAsync(UserId);
         await _accountRepo.Received(1).DeleteManyByUserIdAsync(UserId);
         await _categoryRepo.Received(1).DeleteManyByUserIdAsync(UserId);
+        await _invoiceImportFileRepo.Received(1).DeleteManyByUserIdAsync(UserId);
+        await _invoiceImportRepo.Received(1).DeleteManyByUserIdAsync(UserId);
         await _userRepo.Received(1).DeleteAsync(UserId);
         await _unitOfWork.Received(1).SaveChangesAsync();
     }
@@ -124,5 +132,7 @@ public class AccountDeletionServiceTests
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
             () => _service.DeleteUserAccountAsync(UserId, "senha-errada"));
+        await _invoiceImportRepo.DidNotReceive().DeleteManyByUserIdAsync(Arg.Any<string>());
+        await _invoiceImportFileRepo.DidNotReceive().DeleteManyByUserIdAsync(Arg.Any<string>());
     }
 }

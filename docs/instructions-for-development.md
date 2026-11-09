@@ -141,7 +141,9 @@ Regras estruturais:
   `ExceptionHandlingMiddleware` converte em status HTTP. Não há Result/Union pattern.
 - **Soft Delete** — exclusões de dados do usuário marcam `IsDeleted = true`.
   Exceções intencionais com delete físico: o fluxo LGPD (`AccountDeletionService`)
-  e a desvinculação de conexão bancária (`BankConnectionService`).
+  e a desvinculação de conexão bancária (`BankConnectionService`), além dos
+  arquivos temporários de importação de fatura (`CreditCardInvoiceImportFile`),
+  apagados ao fim do processamento e expirados por TTL de 24 horas.
 - **User Isolation** — consultas de dados do usuário devem filtrar por `UserId`.
   O `Repository<T>.GetByIdAsync` atual filtra apenas por ID; ao usá-lo, o service
   deve verificar se o registro pertence ao usuário antes de utilizá-lo.
@@ -308,7 +310,9 @@ Entidades principais (`src/Supports/MoneyManager.Domain/Entities`):
 | `Budget` | Orçamento mensal por categoria |
 | `CreditCard` | Cartão de crédito com limite e fechamento |
 | `CreditCardInvoice` | Fatura mensal (Pending, Open, Closed, Paid, Overdue) |
-| `CreditCardTransaction` | Compra no crédito com parcelamento |
+| `CreditCardTransaction` | Compra no crédito com parcelamento (campos opcionais `InvoiceImportId` e `ImportFingerprint` quando vem de importação de fatura) |
+| `CreditCardInvoiceImport` | Job de importação de fatura fechada de cartão por IA (status, origem, dados da fatura, titulares, alertas e itens extraídos para revisão) — coleção `credit_card_invoice_imports` |
+| `CreditCardInvoiceImportFile` | Arquivo normalizado de uma importação (JPEG, PDF ou texto da planilha), apagado ao fim do processamento e com índice TTL de 24 h — coleção `credit_card_invoice_import_files` |
 | `RecurringTransaction` | Transação recorrente (diária, semanal, quinzenal, mensal, trimestral, semestral, anual) |
 | `Subscription` | Assinatura do usuário (plano/pagamento) |
 | `BankConnection` | Conexão Open Finance com instituição bancária |
@@ -321,7 +325,8 @@ Entidades principais (`src/Supports/MoneyManager.Domain/Entities`):
 Enums: `AccountType`, `CategoryType`, `TransactionType`, `TransactionStatus`,
 `RecurrenceFrequency`, `InvoiceStatus`, `CreditCardTransactionType`,
 `BankConnectionStatus`, `SubscriptionStatus`, `PlanType`, `UserStatus`,
-`OnboardingStrategy`.
+`OnboardingStrategy`, `InvoiceImportStatus`, `InvoiceImportSourceType`,
+`InvoiceImportHolderType`, `InvoiceImportCardType`, `InvoiceImportWarningCode`.
 
 ---
 

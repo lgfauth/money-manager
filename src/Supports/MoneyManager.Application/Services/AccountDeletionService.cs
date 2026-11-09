@@ -52,6 +52,9 @@ public class AccountDeletionService : IAccountDeletionService
             await _unitOfWork.Transactions.DeleteManyByUserIdAsync(userId);
             await _unitOfWork.Accounts.DeleteManyByUserIdAsync(userId);
             await _unitOfWork.Categories.DeleteManyByUserIdAsync(userId);
+            // Importações de fatura: arquivos enviados e jobs (com itens de titulares e adicionais)
+            await _unitOfWork.CreditCardInvoiceImportFiles.DeleteManyByUserIdAsync(userId);
+            await _unitOfWork.CreditCardInvoiceImports.DeleteManyByUserIdAsync(userId);
 
             await _unitOfWork.Users.DeleteAsync(userId);
             await _unitOfWork.SaveChangesAsync();

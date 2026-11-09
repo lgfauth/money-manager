@@ -21,5 +21,7 @@ public interface IUnitOfWork : IDisposable
     IMonthlySnapshotRepository MonthlySnapshots { get; }
     ISubscriptionRepository Subscriptions { get; }
     IBankConnectionRepository BankConnections { get; }
+    ICreditCardInvoiceImportRepository CreditCardInvoiceImports { get; }
+    ICreditCardInvoiceImportFileRepository CreditCardInvoiceImportFiles { get; }
     Task<int> SaveChangesAsync();
 }

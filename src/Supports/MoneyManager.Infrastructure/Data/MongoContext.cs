@@ -2,6 +2,7 @@ using MongoDB.Driver;
 using MongoDB.Bson;
 using System.Security.Authentication;
 using MoneyManager.Infrastructure.Data.Migrations;
+using MoneyManager.Infrastructure.Repositories;
 
 namespace MoneyManager.Infrastructure.Data;
 
@@ -278,6 +279,58 @@ public class MongoContext
                 .Ascending(t => t.ExternalId),
             new CreateIndexOptions { Sparse = true }
         ));
+        // Prevenção de reimportação de fatura: busca por cartão + fingerprint do item importado
+        await creditCardTransactionsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardTransaction>(
+            Builders<MoneyManager.Domain.Entities.CreditCardTransaction>.IndexKeys
+                .Ascending(t => t.UserId)
+                .Ascending(t => t.CreditCardId)
+                .Ascending(t => t.ImportFingerprint),
+            new CreateIndexOptions<MoneyManager.Domain.Entities.CreditCardTransaction>
+            {
+                PartialFilterExpression = new BsonDocument
+                {
+                    { "importFingerprint", new BsonDocument { { "$type", "string" } } }
+                }
+            }
+        ));
+
+        // Create credit_card_invoice_imports collection
+        if (!collectionNames.Contains(CreditCardInvoiceImportRepository.CollectionName))
+        {
+            await _database.CreateCollectionAsync(CreditCardInvoiceImportRepository.CollectionName);
+        }
+        var invoiceImportsCollection = _database.GetCollection<MoneyManager.Domain.Entities.CreditCardInvoiceImport>(CreditCardInvoiceImportRepository.CollectionName);
+        await invoiceImportsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoiceImport>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoiceImport>.IndexKeys
+                .Ascending(i => i.UserId)
+                .Descending(i => i.CreatedAt)
+        ));
+        await invoiceImportsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoiceImport>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoiceImport>.IndexKeys
+                .Ascending(i => i.UserId)
+                .Ascending(i => i.CreditCardId)
+                .Ascending(i => i.Status)
+        ));
+        // Reserva do próximo job pelo Worker e varredura de jobs presos/antigos
+        await invoiceImportsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoiceImport>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoiceImport>.IndexKeys
+                .Ascending(i => i.Status)
+                .Ascending(i => i.CreatedAt)
+        ));
+
+        // Create credit_card_invoice_import_files collection
+        if (!collectionNames.Contains(CreditCardInvoiceImportFileRepository.CollectionName))
+        {
+            await _database.CreateCollectionAsync(CreditCardInvoiceImportFileRepository.CollectionName);
+        }
+        var invoiceImportFilesCollection = _database.GetCollection<MoneyManager.Domain.Entities.CreditCardInvoiceImportFile>(CreditCardInvoiceImportFileRepository.CollectionName);
+        await invoiceImportFilesCollection.Indexes.CreateOneAsync(BuildInvoiceImportFilesTtlIndex());
+        await invoiceImportFilesCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoiceImportFile>(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoiceImportFile>.IndexKeys
+                .Ascending(f => f.UserId)
+                .Ascending(f => f.ImportId)
+                .Ascending(f => f.Order)
+        ));
 
         // Create subscriptions collection
         if (!collectionNames.Contains("subscriptions"))
@@ -325,6 +378,20 @@ public class MongoContext
     {
         await CreateCollectionsAndIndexesAsync();
     }
+
+    /// <summary>
+    /// Prazo máximo de permanência dos arquivos de importação de fatura no banco.
+    /// </summary>
+    public static readonly TimeSpan InvoiceImportFilesTtl = TimeSpan.FromHours(24);
+
+    /// <summary>
+    /// Índice TTL dos arquivos de importação de fatura: o MongoDB apaga sozinho qualquer arquivo
+    /// esquecido após <see cref="InvoiceImportFilesTtl"/>, sem depender do Worker.
+    /// </summary>
+    public static CreateIndexModel<MoneyManager.Domain.Entities.CreditCardInvoiceImportFile> BuildInvoiceImportFilesTtlIndex() =>
+        new(
+            Builders<MoneyManager.Domain.Entities.CreditCardInvoiceImportFile>.IndexKeys.Ascending(f => f.CreatedAt),
+            new CreateIndexOptions { Name = "createdAt_ttl", ExpireAfter = InvoiceImportFilesTtl });
 
     private static async Task DropIndexIfExistsAsync<T>(IMongoCollection<T> collection, string indexName)
     {
