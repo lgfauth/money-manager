@@ -16,6 +16,8 @@ public class InvoiceImportReviewServiceTests
     private readonly IRepository<Category> _categories = Substitute.For<IRepository<Category>>();
     private readonly ICreditCardInvoiceImportRepository _imports = Substitute.For<ICreditCardInvoiceImportRepository>();
     private readonly IUserRepository _users = Substitute.For<IUserRepository>();
+    private readonly ICreditCardTransactionRepository _transactions = Substitute.For<ICreditCardTransactionRepository>();
+    private readonly ICreditCardInvoiceRepository _invoices = Substitute.For<ICreditCardInvoiceRepository>();
     private readonly InvoiceImportReviewService _service;
 
     private readonly CreditCard _card = new() { Id = "card-1", UserId = UserId, ClosingDay = 2, BillingDueDay = 10 };
@@ -25,6 +27,9 @@ public class InvoiceImportReviewServiceTests
         _unitOfWork.Categories.Returns(_categories);
         _unitOfWork.CreditCardInvoiceImports.Returns(_imports);
         _unitOfWork.Users.Returns(_users);
+        _unitOfWork.CreditCardTransactions.Returns(_transactions);
+        _unitOfWork.CreditCardInvoices.Returns(_invoices);
+        _transactions.GetByCardAsync(UserId, "card-1").Returns([]);
         _categories.GetByUserIdAsync(UserId).Returns([]);
         _users.GetByIdAsync(UserId).Returns(new User { Id = UserId, Name = "Usuário Sem Fatura" });
         _service = new InvoiceImportReviewService(_unitOfWork);
@@ -314,8 +319,10 @@ public class InvoiceImportReviewServiceTests
         Assert.Contains(InvoiceImportWarningCode.OutOfAllowedPeriod, result.Items[1].Warnings);
         Assert.False(result.Items[1].IsSelectedByDefault);
         Assert.Contains(InvoiceImportWarningCode.OutOfAllowedPeriod, result.Items[2].Warnings);
-        // Parcela X > 1 é isenta dos 60 dias (data da compra original)
-        Assert.Empty(result.Items[3].Warnings);
+        // Parcela X > 1 é isenta dos 60 dias (data da compra original); como não há parcelamento
+        // cadastrado, recebe só o alerta da Tarefa 4
+        Assert.DoesNotContain(InvoiceImportWarningCode.OutOfAllowedPeriod, result.Items[3].Warnings);
+        Assert.Equal([InvoiceImportWarningCode.PreviousInstallmentsNotRegistered], result.Items[3].Warnings);
         Assert.Equal(9, result.Items[3].InstallmentNumber);
         Assert.Equal(10, result.Items[3].TotalInstallments);
     }
@@ -620,5 +627,61 @@ public class InvoiceImportReviewServiceTests
 
         // Assert
         Assert.All(holders, h => Assert.False(h.IsSuggested));
+    }
+    // --- Duplicidade (Tarefa 4) ---
+
+    [Fact]
+    public async Task BuildReviewAsync_WhenInvoiceWasAlreadyImported_ShouldAddGeneralWarningWithDate()
+    {
+        // Arrange
+        _imports.GetLastConfirmedByCardAsync(UserId, "card-1", "2026-11")
+            .Returns(new CreditCardInvoiceImport { ConfirmedAt = new DateTime(2026, 11, 5, 15, 0, 0, DateTimeKind.Utc) });
+
+        // Act
+        var result = await Build(StandardAnalysis(Item(D(2026, 10, 20))));
+
+        // Assert
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal(InvoiceImportWarningCode.InvoiceAlreadyImported, warning.Code);
+        Assert.Contains("05/11", warning.Message);
+        Assert.False(warning.IsBlocking);
+        Assert.NotNull(result.Items[0].Fingerprint);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_ShouldDetectDuplicatesOnlyForSuggestedHolders()
+    {
+        // Arrange — usuário é o João; a compra da Maria vem antes e não pode consumir a transação existente
+        _users.GetByIdAsync(UserId).Returns(new User { Id = UserId, FullName = "Joao da Silva" });
+        _transactions.GetByCardAsync(UserId, "card-1").Returns([
+            new CreditCardTransaction { UserId = UserId, CreditCardId = "card-1", PurchaseDate = new DateTime(2026, 10, 20),
+                TotalAmount = 5m, InstallmentAmount = 5m, InstallmentNumber = 1, TotalInstallments = 1, Description = "CAFE" }
+        ]);
+        var analysis = StandardAnalysis(
+            Item(D(2026, 10, 20), "CAFE", 5m, holder: "MARIA DA SILVA"),
+            Item(D(2026, 10, 20), "CAFE", 5m, holder: "JOAO DA SILVA"));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        Assert.Empty(result.Items[0].Warnings);
+        Assert.Equal([InvoiceImportWarningCode.PossibleDuplicate], result.Items[1].Warnings);
+        Assert.False(result.Items[1].IsSelectedByDefault);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithOverlappingScreenshots_ShouldMergeBeforeGroupingHolders()
+    {
+        // Arrange
+        InvoiceDocumentItemDto FromFile(int file) =>
+            Item(D(2026, 10, 20), "PADARIA", 12m, holder: "ANA") with { Source = new InvoiceDocumentSourceDto(file, null, null, null) };
+
+        // Act
+        var result = await Build(StandardAnalysis(FromFile(0), FromFile(1)));
+
+        // Assert
+        Assert.Single(result.Items);
+        Assert.Equal(1, Assert.Single(result.Holders).ItemCount);
     }
 }

@@ -38,6 +38,66 @@ internal static class InvoiceImportText
         return sb.ToString().TrimEnd().Normalize(NormalizationForm.FormC);
     }
 
+    // Prefixos de adquirentes/gateways que o banco põe antes do nome do estabelecimento
+    private static readonly string[] GatewayPrefixes =
+        ["MERCADOPAGO", "MERCADO PAGO", "PAGSEGURO", "PAYPAL", "PICPAY", "SUMUP"];
+
+    private static readonly System.Text.RegularExpressions.Regex InstallmentPattern = new(
+        @"\b(PARCELA|PARC)?\s*\d{1,2}\s*(/|DE)\s*\d{1,2}\b",
+        System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// Descrição comparável de um lançamento: normalizada, sem número de parcela ("3/10", "Parcela 3 de 10"),
+    /// sem pontuação e sem prefixo de adquirente/gateway ("IFD*", "PAG*", "MERCADOPAGO ").
+    /// </summary>
+    public static string NormalizeDescription(string? value)
+    {
+        var text = Normalize(value);
+        if (text.Length == 0)
+            return text;
+
+        // "XXX*LOJA" → "LOJA" (prefixo curto terminado em asterisco)
+        var star = text.IndexOf('*');
+        if (star is > 0 and <= 12 && star < text.Length - 1)
+            text = text[(star + 1)..];
+
+        text = InstallmentPattern.Replace(text, " ");
+
+        var sb = new StringBuilder(text.Length);
+        foreach (var ch in text)
+            sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+        text = Normalize(sb.ToString());
+
+        foreach (var prefix in GatewayPrefixes)
+        {
+            if (text.StartsWith(prefix + " ", StringComparison.Ordinal) && text.Length > prefix.Length + 1)
+            {
+                text = text[(prefix.Length + 1)..];
+                break;
+            }
+        }
+
+        return text;
+    }
+
+    /// <summary>
+    /// Descrições parecidas (desempate na detecção de duplicados): iguais, uma contém a outra
+    /// ou compartilham alguma palavra com 3+ letras.
+    /// </summary>
+    public static bool DescriptionsLookAlike(string? a, string? b)
+    {
+        var na = NormalizeDescription(a);
+        var nb = NormalizeDescription(b);
+        if (na.Length == 0 || nb.Length == 0)
+            return false;
+
+        if (na == nb || na.Contains(nb, StringComparison.Ordinal) || nb.Contains(na, StringComparison.Ordinal))
+            return true;
+
+        var wordsA = na.Split(' ').Where(w => w.Length >= 3 && !w.All(char.IsDigit)).ToHashSet(StringComparer.Ordinal);
+        return nb.Split(' ').Any(w => w.Length >= 3 && wordsA.Contains(w));
+    }
+
     /// <summary>
     /// Nomes equivalentes quando, normalizados, um é prefixo do outro — o banco pode cortar o nome
     /// (ex.: 20 caracteres no Itaú).

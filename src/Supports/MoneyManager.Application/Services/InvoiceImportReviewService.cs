@@ -28,6 +28,18 @@ public interface IInvoiceImportReviewService
     /// Códigos de alerta das regras de item (data, descrição, valor, futuro, 60 dias) para o fechamento informado.
     /// </summary>
     IReadOnlyList<InvoiceImportWarningCode> ValidateItem(InvoiceImportItem item, DateTime closingDate, DateOnly today);
+
+    /// <summary>
+    /// Calcula os fingerprints e aplica a detecção de duplicidade (reimportação, transações existentes do
+    /// cartão e parcelamentos) aos itens dos titulares incluídos. <paramref name="includedHolders"/> null
+    /// inclui todos. Devolve os alertas gerais (ex.: fatura já importada). Pode ser reaplicado na confirmação.
+    /// </summary>
+    Task<IReadOnlyList<InvoiceImportWarning>> ApplyDuplicateChecksAsync(
+        string userId,
+        CreditCard card,
+        string referenceMonth,
+        IReadOnlyList<InvoiceImportItem> items,
+        IReadOnlyCollection<string>? includedHolders);
 }
 
 /// <summary>
@@ -181,9 +193,17 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
             .Select(i => BuildItem(i, closingDate, today, categories))
             .ToList();
 
+        // Prints sobrepostos: a mesma compra vista em duas imagens vira um item
+        items = InvoiceImportDuplicateDetector.MergeOverlappingScreenshots(items);
+
         // 6. Titulares
         var holders = GroupHolders(items);
         await SuggestHoldersAsync(userId, card.Id, holders);
+
+        // 7. Duplicidade e parcelamentos, considerando só os titulares sugeridos (todos, se nenhum for sugerido)
+        var suggested = holders.Where(h => h.IsSuggested).Select(h => h.Name).ToList();
+        warnings.AddRange(await ApplyDuplicateChecksAsync(
+            userId, card, referenceMonth, items, suggested.Count > 0 ? suggested : null));
 
         return new InvoiceImportReviewResult(true, null, referenceMonth, invoice, holders, warnings, items);
     }
@@ -212,6 +232,45 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
             if (warning is not null)
                 warnings.Add(warning);
         }
+
+        return warnings;
+    }
+
+    public async Task<IReadOnlyList<InvoiceImportWarning>> ApplyDuplicateChecksAsync(
+        string userId,
+        CreditCard card,
+        string referenceMonth,
+        IReadOnlyList<InvoiceImportItem> items,
+        IReadOnlyCollection<string>? includedHolders)
+    {
+        var warnings = new List<InvoiceImportWarning>();
+
+        var previous = await _unitOfWork.CreditCardInvoiceImports.GetLastConfirmedByCardAsync(userId, card.Id, referenceMonth);
+        if (previous is not null)
+        {
+            var confirmedAt = previous.ConfirmedAt ?? previous.UpdatedAt;
+            warnings.Add(new InvoiceImportWarning
+            {
+                Code = InvoiceImportWarningCode.InvoiceAlreadyImported,
+                Message = $"Esta fatura já foi importada em {confirmedAt:dd/MM}. Os lançamentos já importados aparecem marcados.",
+                IsBlocking = false
+            });
+        }
+
+        // Fingerprint de todos os itens (o ordinal depende da lista completa), detecção só dos incluídos
+        InvoiceImportDuplicateDetector.AssignFingerprints(card.Id, referenceMonth, items);
+
+        var existing = (await _unitOfWork.CreditCardTransactions.GetByCardAsync(userId, card.Id))
+            .Where(t => t.UserId == userId && !t.IsDeleted)
+            .ToList();
+        var importedInvoice = await _unitOfWork.CreditCardInvoices.GetByCardAndReferenceAsync(userId, card.Id, referenceMonth);
+
+        InvoiceImportDuplicateDetector.Apply(
+            items,
+            item => includedHolders is null
+                    || includedHolders.Contains(item.HolderName ?? UnidentifiedHolderName, StringComparer.Ordinal),
+            existing,
+            importedInvoice?.Id);
 
         return warnings;
     }
