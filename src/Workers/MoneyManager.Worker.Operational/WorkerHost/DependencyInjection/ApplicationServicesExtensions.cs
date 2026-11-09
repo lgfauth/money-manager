@@ -6,6 +6,7 @@ using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Observability;
 using MoneyManager.Infrastructure.Repositories;
 using MoneyManager.Infrastructure.Services;
+using MoneyManager.Infrastructure.Services.AI;
 using MoneyManager.Infrastructure.WorkerControl;
 using MoneyManager.Observability;
 
@@ -44,6 +45,11 @@ internal static class ApplicationServicesExtensions
         services.AddScoped<IOpenBankingCategoryMigrationService, OpenBankingCategoryMigrationService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IPaymentGateway, NullPaymentGateway>();
+
+        // Importação de fatura: leitura do documento pela IA (Anthropic). A chave e o modelo vêm de
+        // Anthropic:ApiKey / Anthropic:Model, compartilhados com a API.
+        services.AddHttpClient("anthropic", client => client.Timeout = TimeSpan.FromMinutes(10));
+        services.AddScoped<IInvoiceDocumentAnalysisService, AnthropicInvoiceDocumentAnalysisService>();
 
         return services;
     }

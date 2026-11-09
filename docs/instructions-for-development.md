@@ -286,7 +286,8 @@ Expõe `InternalsVisibleTo` para o projeto de testes.
 Implementações concretas: `Data/` (`MongoContext`, `MongoSettings`, `Migrations/`
 com `MigrationRunner` e migrations versionadas), `Repositories/`, `Security/`
 (`TokenService`), `Services/` (`AesEncryptionService`, `BankMcpClient`,
-`EfiBankPaymentGateway`, `AI/AnthropicReceiptAnalysisService`),
+`EfiBankPaymentGateway`, `AI/AnthropicReceiptAnalysisService`,
+`AI/AnthropicInvoiceDocumentAnalysisService`),
 `WorkerControl/` (`WorkerCommandQueueService`) e `Observability/`.
 
 ### `MoneyManager.Observability`
@@ -441,7 +442,7 @@ Configurado via arquivos `railway.*.toml` (`railway.api.toml`,
   `AdminCors__AllowedOrigins__*`).
 - **Frontends:** `NEXT_PUBLIC_API_URL` (web, embutida no build) /
   `ADMIN_API_URL` e `NEXT_PUBLIC_ADMIN_API_URL` (backoffice).
-- **Integrações:** `Anthropic__ApiKey`/`Anthropic__Model` (IA), `Efi__*`
+- **Integrações:** `Anthropic__ApiKey`/`Anthropic__Model` (IA — compartilhadas entre API e Worker), `Efi__*`
   (EfiBank), `Vapid__*` (Web Push). A API key do Banco MCP (Pluggy) é informada
   por cada usuário e salva criptografada.
 
@@ -451,7 +452,8 @@ Configurado via arquivos `railway.*.toml` (`railway.api.toml`,
 
 | Integração | Componente | Uso |
 |---|---|---|
-| **Anthropic (Claude)** | `AnthropicReceiptAnalysisService` | Análise de comprovantes/faturas por imagem → JSON estruturado (descrição, valor, data, categoria) |
+| **Anthropic (Claude)** | `AnthropicReceiptAnalysisService` | Análise de comprovantes por imagem → JSON estruturado (descrição, valor, data, categoria) |
+| **Anthropic (Claude)** | `AnthropicInvoiceDocumentAnalysisService` / `IInvoiceDocumentAnalysisService` | Leitura de fatura de cartão (PDF como bloco `document`, imagens como blocos `image` em ordem, planilha como texto) com resposta por streaming → dados da fatura, lançamentos (data, descrição, valor, compra/estorno, parcela, titular, cartão, origem, categoria, confiança) e pendências. Falhas lançam `InvoiceDocumentAnalysisException` com `IsTransient` (rede, 429, 5xx/529) ou definitiva (chave ausente, recusa, `max_tokens`, JSON inválido). Registrado no Worker |
 | **Open Finance (Pluggy via MCP)** | `BankMcpClient` / `IBankMcpClient` | Sincronização de contas e transações bancárias |
 | **EfiBank** | `EfiBankPaymentGateway` / `IPaymentGateway` | Gateway de pagamento para assinaturas |
 | **Web Push** | `PushService` + `WebPush` | Notificações push ao usuário |

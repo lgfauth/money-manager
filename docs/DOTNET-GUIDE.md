@@ -344,6 +344,15 @@ builder.Services.AddScoped<IMyExternalService, MyExternalService>();
 }
 ```
 
+**Long calls and retries (worker jobs)** — when the call can produce a large response or run for
+minutes, follow `AnthropicInvoiceDocumentAnalysisService`: send with
+`HttpCompletionOption.ResponseHeadersRead` and read the response as a stream (SSE), bound the whole
+call with a linked `CancellationTokenSource`, and classify failures with a domain exception that
+carries `IsTransient` (`InvoiceDocumentAnalysisException`): network errors, timeouts, 408/429/5xx are
+transient (the worker retries), everything else is definitive. Never log the document content,
+base64 or extracted personal data. A service used only by the Worker is registered in
+`WorkerHost/DependencyInjection/ApplicationServicesExtensions.cs`, not in the API `Program.cs`.
+
 ### 3.3 Database Access
 
 All database access goes through `IUnitOfWork`. For simple entities, the generic `Repository<T>` is sufficient. For queries beyond what the base repository provides, create a specialized repository.

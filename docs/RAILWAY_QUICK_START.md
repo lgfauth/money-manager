@@ -182,6 +182,8 @@ MongoDB__ConnectionString=<mesma connection string da API>
 MongoDB__DatabaseName=<mesmo banco da API>
 Encryption__Key=<MESMO valor configurado na API>
 ASPNETCORE_ENVIRONMENT=Production
+Anthropic__ApiKey=<MESMA chave da API>
+Anthropic__Model=claude-haiku-5-5   # opcional; padrão claude-haiku-5-5
 ```
 
 **Importante — `Encryption__Key`:**
@@ -189,6 +191,11 @@ ASPNETCORE_ENVIRONMENT=Production
 - Precisa ser **idêntica** à da API — chaves diferentes tornam impossível descriptografar os dados já salvos.
 - Gere com `openssl rand -base64 48` (somente na primeira vez; depois reutilize o mesmo valor nos dois serviços).
 - Sintoma quando ausente: `System.FormatException: The input is not a valid Base-64 string` no log do worker ao iniciar o sync (o placeholder do `appsettings.Production.json` chega ao `AesEncryptionService`).
+
+**`Anthropic__ApiKey` / `Anthropic__Model` — variáveis compartilhadas:**
+- Usadas pela API (análise de comprovantes) e pelo Worker (leitura de faturas de cartão importadas, `AnthropicInvoiceDocumentAnalysisService`).
+- Configure-as como **Shared Variables** do projeto no Railway e referencie nos dois serviços, para que tenham sempre o mesmo valor.
+- Sem a chave no Worker, a leitura da fatura falha com a mensagem "O serviço de leitura de faturas não está configurado".
 
 ---
 
