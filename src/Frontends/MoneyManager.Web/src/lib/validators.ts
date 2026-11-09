@@ -180,6 +180,51 @@ export const bankMcpApiKeySchema = z.object({
     .regex(/^sk_live_/, "A API key deve começar com sk_live_"),
 });
 
+// Edição de um lançamento na revisão da importação de fatura. Parcelas em texto para aceitar
+// campo vazio (compra à vista); limites espelham ConfirmInvoiceImportValidator.
+export const invoiceImportItemSchema = z
+  .object({
+    date: z.string().min(1, "Informe a data da compra"),
+    description: z
+      .string()
+      .trim()
+      .min(1, "Informe a descrição")
+      .max(200, "A descrição pode ter no máximo 200 caracteres"),
+    amount: z.number().positive("O valor deve ser maior que zero"),
+    categoryId: z.string().nullable(),
+    installmentNumber: z.string().regex(/^\d*$/, "Use apenas números"),
+    totalInstallments: z.string().regex(/^\d*$/, "Use apenas números"),
+  })
+  .superRefine((data, ctx) => {
+    const hasNumber = data.installmentNumber !== "";
+    const hasTotal = data.totalInstallments !== "";
+    if (hasNumber !== hasTotal) {
+      ctx.addIssue({
+        code: "custom",
+        path: [hasNumber ? "totalInstallments" : "installmentNumber"],
+        message: "Informe a parcela atual e o total de parcelas juntos",
+      });
+      return;
+    }
+    if (!hasNumber) return;
+    const number = Number(data.installmentNumber);
+    const total = Number(data.totalInstallments);
+    if (total < 1 || total > 48) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["totalInstallments"],
+        message: "O total de parcelas deve estar entre 1 e 48",
+      });
+    }
+    if (number < 1 || number > total) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["installmentNumber"],
+        message: "A parcela atual deve estar entre 1 e o total de parcelas",
+      });
+    }
+  });
+
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type CategoryFormData = z.infer<typeof categorySchema>;
@@ -193,3 +238,4 @@ export type CreditCardTransactionFormData = z.infer<typeof creditCardTransaction
 export type PayCreditCardInvoiceFormData = z.infer<typeof payCreditCardInvoiceSchema>;
 export type UpdateCreditCardTransactionFormData = z.infer<typeof updateCreditCardTransactionSchema>;
 export type BankMcpApiKeyFormData = z.infer<typeof bankMcpApiKeySchema>;
+export type InvoiceImportItemFormData = z.infer<typeof invoiceImportItemSchema>;

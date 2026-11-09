@@ -10,6 +10,7 @@ const routeLabels: Record<string, string> = {
   accounts: "Contas",
   "credit-cards": "Bancos e Contas",
   invoices: "Faturas",
+  "invoice-imports": "Importações de fatura",
   transactions: "Transações",
   categories: "Categorias",
   budgets: "Orçamentos",
@@ -28,7 +29,8 @@ const routeHrefOverrides: Record<string, string> = {
   "credit-cards": "/bancos-e-contas",
 };
 
-const nonNavigableBreadcrumbHrefs = new Set<string>([]);
+// A lista de importações de fatura ainda não tem página própria
+const nonNavigableBreadcrumbHrefs = new Set<string>(["/credit-cards/invoice-imports"]);
 
 const ID_SEGMENT_PATTERN = /^(?:[0-9a-f]{24}|[0-9a-f]{32}|[0-9a-f-]{36})$/i;
 

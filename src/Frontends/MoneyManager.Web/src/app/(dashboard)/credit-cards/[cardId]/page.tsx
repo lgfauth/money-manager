@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FileText, Plus } from "lucide-react";
+import { ArrowLeft, FileText, FileUp, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
@@ -24,6 +24,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useBreadcrumbLabel } from "@/stores/breadcrumb-store";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
+import { useInvoiceImportEligibleCards } from "@/hooks/use-invoice-imports";
+import { useBankSyncStatus } from "@/hooks/use-bank-sync-status";
+import { newInvoiceImportHref } from "@/lib/invoice-import";
 
 export default function CreditCardDetailPage() {
   const { formatMonetaryValue } = useMoneyPrivacy();
@@ -35,6 +38,8 @@ export default function CreditCardDetailPage() {
   const { data: invoices, isLoading: invoicesLoading } =
     useCreditCardInvoices(cardId);
   const openInvoiceMutation = useOpenCreditCardInvoice();
+  const { data: eligibleCards, isLoading: eligibleLoading } = useInvoiceImportEligibleCards();
+  const syncStatus = useBankSyncStatus();
 
   useBreadcrumbLabel(cardId, card?.name);
 
@@ -93,6 +98,15 @@ export default function CreditCardDetailPage() {
   else if (usedPercent >= CREDIT_LIMIT_THRESHOLD_WARNING)
     usageColor = "bg-amber-500";
 
+  // A API decide quem pode importar (GET eligible-cards); o mapa de sync só explica o motivo
+  const canImport = eligibleCards?.some((c) => c.id === card.id) ?? false;
+  const importUnavailableReason =
+    eligibleLoading || canImport
+      ? null
+      : syncStatus[card.id]
+        ? "A importação de fatura não está disponível: as compras deste cartão já chegam pelo Open Finance."
+        : "A importação de fatura não está disponível para este cartão no momento.";
+
   return (
     <div className="space-y-6">
       <PageHeader title={card.name} description="Faturas e detalhes do cartão.">
@@ -104,7 +118,22 @@ export default function CreditCardDetailPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Voltar
         </Button>
+        <Button
+          size="sm"
+          onClick={() => router.push(newInvoiceImportHref(card.id))}
+          disabled={!canImport}
+          aria-describedby={importUnavailableReason ? "invoice-import-unavailable" : undefined}
+        >
+          <FileUp className="mr-2 h-4 w-4" />
+          Importar fatura
+        </Button>
       </PageHeader>
+
+      {importUnavailableReason && (
+        <p id="invoice-import-unavailable" className="-mt-3 text-xs text-muted-foreground sm:text-right">
+          {importUnavailableReason}
+        </p>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border bg-card p-4">

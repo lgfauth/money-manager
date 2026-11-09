@@ -29,6 +29,9 @@ export const queryKeys = {
     cardId
       ? (["credit-card-transactions", cardId] as const)
       : (["credit-card-transactions"] as const),
+  invoiceImports: ["invoice-imports"] as const,
+  invoiceImport: (id: string) => ["invoice-imports", id] as const,
+  invoiceImportEligibleCards: ["invoice-imports", "eligible-cards"] as const,
   recurring: ["recurring"] as const,
   // Chaves sob "dashboard" são invalidadas por invalidateFinancialSummaries
   dashboardOverview: (month: string) => ["dashboard", "overview", month] as const,

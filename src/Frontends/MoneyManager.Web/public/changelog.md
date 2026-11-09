@@ -1,3 +1,22 @@
+# Versão 1.3.0-beta
+
+*Lançamento: 9 de novembro de 2026*
+
+---
+
+## ✨ Novidades
+
+### 🧾 Importe a fatura do cartão de crédito
+Agora você pode cadastrar os lançamentos de uma fatura fechada de uma só vez. Na página de faturas do cartão, toque em **Importar fatura** e envie o PDF, fotos ou prints da fatura (direto da câmera, no celular) ou a planilha .xlsx do banco. A leitura é feita por inteligência artificial e você pode continuar usando o MoneyManager enquanto ela acontece.
+
+### ✅ Você revisa antes de cadastrar
+Quando a leitura termina, você confere cada lançamento: escolhe de quais titulares importar, corrige data, descrição, valor, parcelas e categoria, e marca só o que deve entrar. Alertas explicam o que precisa de atenção, como compras repetidas ou fora do período de 60 dias. Os totais são comparados com o valor da fatura, e nada é cadastrado até você confirmar.
+
+### 💳 Disponível para cartões cadastrados manualmente
+Cartões sincronizados pelo Open Finance já recebem as compras automaticamente, por isso a importação fica disponível apenas para os demais cartões.
+
+---
+
 # Versão 1.2.2-beta
 
 *Lançamento: 4 de novembro de 2026*

@@ -47,7 +47,7 @@ app/
     bank-connections/
     budgets/
     categories/
-    credit-cards/
+    credit-cards/   ← cards, invoices and invoice-imports/ (AI invoice import: new = upload, [importId] = tracking, review/confirmation, result)
     financial-health/
     reports/        ← financial reports (data from GET /api/reports/overview)
     report/         ← user feedback / bug report form
@@ -71,6 +71,7 @@ components/
   bank-connections/
   budgets/
   credit-cards/
+  invoice-imports/  ← AI invoice import (upload: card picker, file picker with drag-and-drop/camera; status badge, processing steps, invoice summary/warnings, review: holders, items list, item editor sheet, totals/confirmation, result)
   dashboard/        ← dashboard blocks (data from /api/reports/overview + /api/dashboard/summary)
   financial-health/
   receipts/
@@ -93,6 +94,8 @@ i18n/
 lib/
   api-client.ts     ← fetch wrapper (fetchWithAuth, apiClient object)
   api-errors.ts     ← ApiClientError class + error message extraction
+  invoice-import.ts ← invoice import labels, route helper, active statuses, polling interval, date formatting
+  invoice-import-review.ts ← review rules mirrored from the backend (blocking warnings, 60-day/future date, card schedule tolerance, totals, confirm payload) — guidance only, the API revalidates
   money-privacy.ts  ← currency formatting / value masking helpers
   query-client.ts   ← QueryClient singleton + queryKeys registry
   user-display.ts   ← user name/avatar display helpers
@@ -608,6 +611,16 @@ New protected pages placed inside the `(dashboard)/` route group are automatical
 - **Auth hydration on app start**: `Providers.tsx` calls `useAuthStore.getState().hydrate()` via `useEffect` once on mount. This hits `/api/auth/me` to verify the cookie and populate the Zustand store. Components wait for `isHydrated` before checking `isAuthenticated`.
 
 - **Money privacy toggle**: `money-privacy-store.ts` + `use-money-privacy.ts` allow users to hide all monetary values across the app. Components read from this store rather than implementing their own hide/show logic.
+
+- **Conditional polling for background jobs**: `use-invoice-imports.ts` polls an import only while it is active (`Queued`, `Processing`, `Confirming`) through a `refetchInterval` function that returns `false` in final states; the interval pauses with the tab hidden (TanStack Query default) and the query refetches on window focus. Follow this pattern for any job processed by the Worker — never poll unconditionally.
+
+- **Multipart upload with progress**: `useCreateInvoiceImport` (`use-invoice-imports.ts`) sends the invoice files with `XMLHttpRequest` instead of `apiClient.postForm`, because `fetch` does not report upload progress. It sends the same Bearer token and cookie as `apiClient`, handles `401` the same way and exposes `progress` (0–100). Upload limits and messages mirror `CreateInvoiceImportValidator` in `lib/invoice-import.ts` (`validateInvoiceImportFiles`), so invalid batches are refused without calling the API; files without a browser-reported type get it from the extension before sending. On errors the page keeps the chosen files.
+
+- **`useSearchParams` needs `<Suspense>`**: a client page that reads query parameters (e.g. `credit-cards/invoice-imports/new?cardId=`) wraps the component that calls `useSearchParams` in `<Suspense>`; otherwise the production build fails while prerendering the route.
+
+- **Mirrored business rules are guidance only**: `lib/invoice-import-review.ts` repeats backend rules (item warnings, card closing/due tolerance) so the review can explain and block early, but the confirmation is always revalidated by the API. Keep these rules in that single file and update them together with the backend. For error lists, read `message` and `errors` from the `ApiErrorResponse` (`error.data`) with `readInvoiceImportApiError` (`lib/invoice-import.ts`) — `getApiErrorMessages` also collects `traceId`, `path` and the timestamp.
+
+- **Date-only values from the API**: dates without time (invoice closing/due dates, purchase dates) arrive as UTC midnight. Format them by calendar parts (`formatDateOnly` in `lib/invoice-import.ts`), not with `new Date(iso)`, which shows the previous day in Brazilian time.
 
 - **Centralized constants**: `src/config/constants.ts` holds `DEFAULT_PAGE_SIZE`, `DEFAULT_CURRENCY`, color presets, and threshold percentages. No magic numbers are scattered through the codebase.
 
