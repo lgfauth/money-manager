@@ -165,6 +165,14 @@ A lista completa está no Swagger (em `Development`). Alguns exemplos:
 - `GET /api/reports/summary?month=2026-01` - Resumo do mês
 - `GET /api/reports/by-category?month=2026-01` - Despesas por categoria
 
+### Importação de fatura de cartão (IA)
+
+- `GET /api/credit-card-invoice-imports/eligible-cards` - Cartões que aceitam importação (não sincronizados pelo Open Finance)
+- `POST /api/credit-card-invoice-imports` - Upload multipart (`creditCardId` + `files`: 1 PDF até 20 MB ou 1–10 imagens JPEG/PNG/WebP até 5 MB cada); responde `202` com `id` e `status` e o Worker processa em segundo plano
+- `GET /api/credit-card-invoice-imports` - Importações recentes do usuário
+- `GET /api/credit-card-invoice-imports/{id}` - Status, dados da fatura, titulares, alertas e itens extraídos
+- `DELETE /api/credit-card-invoice-imports/{id}` - Descarta a importação (`AwaitingReview` ou `Failed`)
+
 ### Dashboard
 
 - `GET /api/dashboard/summary` - Patrimônio líquido (contas − faturas em aberto) e próximos vencimentos (faturas e recorrências)
@@ -190,6 +198,7 @@ Segue Clean Architecture com as seguintes camadas:
 - ✅ Saúde financeira (metas, reserva, FIRE)
 - ✅ Open Finance (Pluggy via Banco MCP) para sincronizar contas e cartões
 - ✅ Análise de comprovantes por IA (Anthropic Claude)
+- ✅ Importação de fatura de cartão por IA (PDF ou imagens), processada em segundo plano pelo Worker
 - ✅ Assinatura premium (gateway EfiBank) e notificações Web Push
 - ✅ Validação com FluentValidation
 - ✅ Isolamento de dados por usuário

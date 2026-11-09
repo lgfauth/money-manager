@@ -162,7 +162,7 @@ API REST principal consumida pelo Frontend Web. Expõe todas as funcionalidades
 financeiras do usuário autenticado. Controllers atuais:
 
 `Auth`, `Users`, `Profile`, `Categories`, `Accounts`, `Transactions`, `Budgets`,
-`CreditCards`, `CreditCardTransactions`, `RecurringTransactions`, `Reports`, `Dashboard`,
+`CreditCards`, `CreditCardTransactions`, `CreditCardInvoiceImports`, `RecurringTransactions`, `Reports`, `Dashboard`,
 `FinancialHealth`, `BankConnections`, `Subscriptions`, `Receipts`, `Documents`,
 `Push`, `Onboarding`, `Settings`, `UserReports`, `AccountDeletion`, `Webhooks`, `Admin`.
 
@@ -171,6 +171,17 @@ Destaques:
 - **JWT em cookie httpOnly**, com logout que revoga o token (`TokenBlacklistService`).
 - **Análise de comprovantes por IA** (`Receipts`) — envia imagem para a API da
   Anthropic (Claude) e extrai descrição, valor, data e categoria.
+- **Importação de fatura de cartão por IA** (`CreditCardInvoiceImports` →
+  `CreditCardInvoiceImportService`) — upload multipart (`creditCardId` + `files`) de
+  **um PDF** (até 20 MB) ou de **1 a 10 imagens** JPEG/PNG/WebP (até 5 MB cada, 40 MB no
+  total), sem misturar tipos, validado por `CreateInvoiceImportValidator` (inclui a
+  assinatura dos bytes do tipo declarado). O cartão precisa ser do usuário (senão `404`),
+  não pode ser sincronizado pelo Open Finance nem ter outro job `Queued`/`Processing`
+  (`409`, via `InvoiceImportConflictException`). Grava os arquivos e depois o job
+  `Queued` e responde `202`; o processamento é do `InvoiceImportWorker` (seção 4.3).
+  Também lista os cartões elegíveis, consulta/lista as importações do usuário (as 20
+  mais recentes) e descarta (`AwaitingReview`/`Failed` → `Discarded` com soft delete;
+  outros estados → `409`).
 - **Open Finance / conexões bancárias** (`BankConnections`) — sincronização de
   transações via MCP bancário (Pluggy). **Invariante importante** (`BankConnectionService.
   SyncConnectionAsync`): o `ClosingDay`/`BillingDueDay` do cartão é corrigido a

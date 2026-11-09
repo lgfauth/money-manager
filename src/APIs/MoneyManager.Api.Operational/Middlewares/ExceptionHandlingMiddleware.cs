@@ -44,6 +44,7 @@ public class ExceptionHandlingMiddleware
         BankMcpKeyExpiredException => StatusCodes.Status401Unauthorized,
         UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
         ConcurrencyException => StatusCodes.Status409Conflict,
+        InvoiceImportConflictException => StatusCodes.Status409Conflict,
         PremiumRequiredException => StatusCodes.Status403Forbidden,
         _ => StatusCodes.Status500InternalServerError
     };
