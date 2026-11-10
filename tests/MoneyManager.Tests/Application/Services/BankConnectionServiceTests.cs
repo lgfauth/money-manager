@@ -122,6 +122,51 @@ public class BankConnectionServiceTests
     }
 
     [Fact]
+    public async Task RemoveBankMcpApiKeyAsync_WithoutConnections_ShouldClearKeyAndExpiration()
+    {
+        // Arrange
+        var user = new User { Id = UserId, BankMcpApiKey = "enc:key", BankMcpKeyExpiredAt = DateTime.UtcNow };
+        _userRepo.GetByIdAsync(UserId).Returns(user);
+        _bankConnectionRepo.GetByUserIdAsync(UserId).Returns(new List<BankConnection>());
+
+        // Act
+        await _service.RemoveBankMcpApiKeyAsync(UserId, CancellationToken.None);
+
+        // Assert
+        Assert.Null(user.BankMcpApiKey);
+        Assert.Null(user.BankMcpKeyExpiredAt);
+        await _userRepo.Received(1).UpdateAsync(user);
+        await _unitOfWorkMock.Received(1).SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task RemoveBankMcpApiKeyAsync_WithConnections_ShouldThrowAndKeepKey()
+    {
+        var user = new User { Id = UserId, BankMcpApiKey = "enc:key" };
+        _userRepo.GetByIdAsync(UserId).Returns(user);
+        _bankConnectionRepo.GetByUserIdAsync(UserId)
+            .Returns(new List<BankConnection> { new() { UserId = UserId, ExternalConnectionId = "item1" } });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.RemoveBankMcpApiKeyAsync(UserId, CancellationToken.None));
+
+        Assert.Equal("enc:key", user.BankMcpApiKey);
+        await _userRepo.DidNotReceive().UpdateAsync(Arg.Any<User>());
+    }
+
+    [Fact]
+    public async Task RemoveBankMcpApiKeyAsync_WithoutKey_ShouldDoNothing()
+    {
+        _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = null });
+        _bankConnectionRepo.GetByUserIdAsync(UserId).Returns(new List<BankConnection>());
+
+        await _service.RemoveBankMcpApiKeyAsync(UserId, CancellationToken.None);
+
+        await _userRepo.DidNotReceive().UpdateAsync(Arg.Any<User>());
+        await _unitOfWorkMock.DidNotReceive().SaveChangesAsync();
+    }
+
+    [Fact]
     public async Task GetAvailableConnectionsAsync_WithoutApiKey_ShouldReturnHasApiKeyFalse()
     {
         _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = null });
@@ -150,6 +195,48 @@ public class BankConnectionServiceTests
         Assert.True(result.ApiKeyExpired);
         Assert.Empty(result.Connections);
         await _bankMcpClient.DidNotReceive().ListConnectionsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetAvailableConnectionsAsync_WhenBankMcpRejectsKey_ShouldMarkExpiredAndReturnApiKeyExpired()
+    {
+        // Arrange — chave ainda não marcada como expirada, mas o Banco MCP responde 401
+        var user = new User { Id = UserId, BankMcpApiKey = "enc:key", BankMcpKeyExpiredAt = null };
+        _userRepo.GetByIdAsync(UserId).Returns(user);
+        _bankMcpClient.ListConnectionsAsync("key", Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<BankMcpListConnectionsResult>(new BankMcpKeyExpiredException()));
+
+        // Act — não pode propagar a exceção (viraria erro HTTP e derrubaria a sessão no frontend)
+        var result = await _service.GetAvailableConnectionsAsync(UserId, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.HasApiKey);
+        Assert.True(result.ApiKeyExpired);
+        Assert.Empty(result.Connections);
+        Assert.NotNull(user.BankMcpKeyExpiredAt);
+        await _userRepo.Received(1).UpdateAsync(user);
+        await _unitOfWorkMock.Received(1).SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task GetAvailableConnectionsAsync_WithValidKey_ShouldReturnConnections()
+    {
+        _userRepo.GetByIdAsync(UserId).Returns(new User { Id = UserId, BankMcpApiKey = "enc:key" });
+        _bankMcpClient.ListConnectionsAsync("key", Arg.Any<CancellationToken>())
+            .Returns(new BankMcpListConnectionsResult(
+                new List<BankMcpConnection> { new("item1", "612", "Nubank", "UPDATED") },
+                1,
+                "https://mcp/add"));
+        _bankConnectionRepo.GetByUserIdAsync(UserId).Returns(new List<BankConnection>());
+
+        var result = await _service.GetAvailableConnectionsAsync(UserId, CancellationToken.None);
+
+        Assert.True(result.HasApiKey);
+        Assert.False(result.ApiKeyExpired);
+        Assert.Equal("https://mcp/add", result.AddConnectionUrl);
+        var connection = Assert.Single(result.Connections);
+        Assert.Equal("item1", connection.ItemId);
+        Assert.False(connection.AlreadyRegistered);
     }
 
     [Fact]

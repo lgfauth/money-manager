@@ -31,6 +31,12 @@ Cartões sincronizados pelo Open Finance já recebem as compras automaticamente,
 
 ## 🐛 Correções e melhorias
 
+### 🔐 Bancos e Contas não encerra mais a sua sessão
+Se a chave do Banco MCP tivesse expirado ou sido revogada, abrir **Bancos e Contas** te desconectava do MoneyManager. Agora você continua conectado. Se você tem bancos conectados, a página avisa que a chave expirou e pede uma nova; se não tem, nenhum aviso aparece.
+
+### 🔑 Aviso de API key do Banco MCP sem uso
+Se você desconectou todos os bancos mas a sua API key do Banco MCP continua salva e válida, **Bancos e Contas** agora avisa. Você escolhe entre **Remover chave**, para apagá-la do MoneyManager, ou **Vincular contas**, para conectar seus bancos de novo.
+
 ### 📅 Data da compra mantida ao editar transação do cartão
 Ao editar uma compra do cartão de crédito, o campo de data vinha com o dia anterior e, ao salvar, a compra recuava um dia — mesmo quando você mudava só a descrição ou a categoria. Agora a data aparece e é salva no dia certo. Compras que já tiveram a data alterada por esse problema precisam ser corrigidas manualmente.
 

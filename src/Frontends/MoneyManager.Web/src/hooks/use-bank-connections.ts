@@ -45,6 +45,19 @@ export function useSaveApiKey() {
 
 export const useSaveBankMcpApiKey = useSaveApiKey;
 
+export function useRemoveBankMcpApiKey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiClient.delete<void>("/api/bank-connections/api-key"),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.bankConnectionsAvailable });
+      toast.success("API key do Banco MCP removida");
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao remover API key")),
+  });
+}
+
 export function useAvailableConnections(enabled = false) {
   return useQuery({
     queryKey: queryKeys.bankConnectionsAvailable,

@@ -45,6 +45,7 @@ import {
   useAvailableConnections,
   useBankConnections,
   useDisconnectBank,
+  useRemoveBankMcpApiKey,
   useSyncBank,
   useUnlinkBankAccount,
 } from "@/hooks/use-bank-connections";
@@ -76,6 +77,7 @@ export default function BancosEContasPage() {
   const syncBank = useSyncBank();
   const disconnectBank = useDisconnectBank();
   const unlinkBankAccount = useUnlinkBankAccount();
+  const removeApiKey = useRemoveBankMcpApiKey();
   const syncStatus = useBankSyncStatus(); // único hook de sync — passado como prop para os cards
   const { data: eligibleCards, isLoading: loadingEligibleCards } =
     useInvoiceImportEligibleCards();
@@ -85,6 +87,7 @@ export default function BancosEContasPage() {
   const deleteCard = useDeleteCreditCard();
 
   const [setupOpen, setSetupOpen] = useState(false);
+  const [confirmRemoveApiKey, setConfirmRemoveApiKey] = useState(false);
   const [disconnectConnection, setDisconnectConnection] =
     useState<BankConnectionDto | null>(null);
   const [unlinkTarget, setUnlinkTarget] = useState<{
@@ -103,6 +106,15 @@ export default function BancosEContasPage() {
     useState<CreditCardResponseDto | null>(null);
   const [deletingCard, setDeletingCard] =
     useState<CreditCardResponseDto | null>(null);
+
+  // Quem tem banco conectado usa o Banco MCP; sem conexões, uma key salva é só um resto de uso anterior
+  const usesBankMcp = !loadingConnections && connections.length > 0;
+  const showExpiredKeyWarning = usesBankMcp && !!availableData?.apiKeyExpired;
+  const showUnusedKeyWarning =
+    !loadingConnections &&
+    connections.length === 0 &&
+    !!availableData?.hasApiKey &&
+    !availableData.apiKeyExpired;
 
   const sortedAccounts = [...accounts].sort(
     (a, b) =>
@@ -324,7 +336,7 @@ export default function BancosEContasPage() {
             </p>
           </div>
 
-          {availableData?.apiKeyExpired && (
+          {showExpiredKeyWarning && (
             <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm">
               <span className="mt-0.5 text-destructive">⚠</span>
               <div className="flex-1">
@@ -338,6 +350,35 @@ export default function BancosEContasPage() {
               <Button size="sm" variant="destructive" onClick={() => setSetupOpen(true)}>
                 Atualizar key
               </Button>
+            </div>
+          )}
+
+          {showUnusedKeyWarning && (
+            <div className="flex flex-col gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm sm:flex-row sm:items-start">
+              <span className="mt-0.5 text-amber-500">⚠</span>
+              <div className="flex-1">
+                <p className="font-medium">
+                  Sua API key do Banco MCP continua ativa
+                </p>
+                <p className="mt-0.5 text-muted-foreground">
+                  Você não tem bancos conectados, mas a chave de integração
+                  ainda está salva e válida. Remova a chave se não vai mais usar
+                  o Banco MCP, ou vincule suas contas novamente.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setConfirmRemoveApiKey(true)}
+                  disabled={removeApiKey.isPending}
+                >
+                  Remover chave
+                </Button>
+                <Button size="sm" onClick={() => setSetupOpen(true)}>
+                  Vincular contas
+                </Button>
+              </div>
             </div>
           )}
 
@@ -477,6 +518,20 @@ export default function BancosEContasPage() {
       />
 
       <BankSetupModal open={setupOpen} onOpenChange={setSetupOpen} />
+
+      <ConfirmDialog
+        open={confirmRemoveApiKey}
+        onOpenChange={setConfirmRemoveApiKey}
+        title="Remover API key do Banco MCP"
+        description="A chave será apagada do MoneyManager. Para conectar um banco depois, você precisará informar uma API key novamente."
+        onConfirm={() =>
+          removeApiKey.mutate(undefined, {
+            onSuccess: () => setConfirmRemoveApiKey(false),
+          })
+        }
+        confirmLabel="Remover"
+        variant="destructive"
+      />
 
       <AlertDialog
         open={!!unlinkTarget}

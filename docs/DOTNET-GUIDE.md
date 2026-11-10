@@ -69,7 +69,7 @@ private static int DetermineStatusCode(Exception exception) => exception switch
 {
     KeyNotFoundException        => StatusCodes.Status404NotFound,
     InvalidOperationException   => StatusCodes.Status400BadRequest,
-    BankMcpKeyExpiredException  => StatusCodes.Status401Unauthorized,
+    BankMcpKeyExpiredException  => StatusCodes.Status422UnprocessableEntity, // 401 é só para a sessão: o frontend desloga
     UnauthorizedAccessException => StatusCodes.Status401Unauthorized,
     ConcurrencyException        => StatusCodes.Status409Conflict,
     InvoiceImportConflictException => StatusCodes.Status409Conflict,

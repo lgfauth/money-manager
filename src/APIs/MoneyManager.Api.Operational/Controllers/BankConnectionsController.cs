@@ -56,6 +56,22 @@ public class BankConnectionsController : ControllerBase
         }
     }
 
+    // DELETE /api/bank-connections/api-key — remove a key do Banco MCP de quem não tem bancos conectados.
+    [HttpDelete("api-key")]
+    public async Task<IActionResult> RemoveApiKey(CancellationToken ct)
+    {
+        var userId = HttpContext.GetUserId();
+        try
+        {
+            await _bankConnectionService.RemoveBankMcpApiKeyAsync(userId, ct);
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+    }
+
     // GET /api/bank-connections/available — lista conexões disponíveis no workspace para o usuário registrar.
     [HttpGet("available")]
     public async Task<IActionResult> GetAvailableConnections(CancellationToken ct)

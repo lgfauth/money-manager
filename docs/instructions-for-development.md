@@ -259,6 +259,14 @@ Destaques:
   sync (desempate: data mais próxima, descrição normalizada igual, parcela mais
   antiga); transações já conciliadas, manuais, de comprovante ou do próprio sync nunca
   são adotadas; compras `PENDING` e compras sem correspondência seguem o fluxo normal.
+  **API key do Banco MCP**: fica salva no `User` (`BankMcpApiKey`, criptografada) mesmo
+  depois de desconectar todos os bancos. Quando o Banco MCP a rejeita (401), o
+  `GET /api/bank-connections/available` marca `BankMcpKeyExpiredAt` e responde
+  `apiKeyExpired: true`. A `BankMcpKeyExpiredException` vira **422**, nunca 401,
+  porque o frontend desloga ao receber 401. Em Bancos e Contas, o aviso de chave
+  expirada só aparece para quem tem banco conectado; sem bancos e com a chave válida,
+  a página oferece remover a chave (`DELETE /api/bank-connections/api-key`,
+  recusado com 400 enquanto houver conexões) ou abrir a vinculação de contas.
 - **Assinaturas / pagamento** (`Subscriptions`) — cobrança via gateway EfiBank.
 - **Fluxo LGPD** (`AccountDeletion`) — exclusão completa dos dados do usuário.
 - **ExceptionHandlingMiddleware** — erros padronizados no formato `ApiErrorResponse`

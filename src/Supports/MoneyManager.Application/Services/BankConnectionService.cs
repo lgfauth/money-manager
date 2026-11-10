@@ -14,6 +14,9 @@ public interface IBankConnectionService
     // Salva (criptografada) e valida a API key do Banco MCP do usuário.
     Task<SaveApiKeyResultDto> SaveBankMcpApiKeyAsync(string userId, string apiKey, CancellationToken ct);
 
+    // Remove a API key do Banco MCP salva para o usuário. Só é permitido sem conexões bancárias.
+    Task RemoveBankMcpApiKeyAsync(string userId, CancellationToken ct);
+
     // Lista as conexões disponíveis no workspace do Banco MCP para o usuário registrar.
     Task<BankMcpAvailableConnectionsResponseDto> GetAvailableConnectionsAsync(string userId, CancellationToken ct);
 
@@ -158,6 +161,30 @@ public class BankConnectionService : IBankConnectionService
         };
     }
 
+    public async Task RemoveBankMcpApiKeyAsync(string userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        // Sem a chave, o Worker não sincroniza nem é possível revogar o consentimento das conexões
+        var connections = await _unitOfWork.BankConnections.GetByUserIdAsync(userId);
+        if (connections.Any())
+            throw new InvalidOperationException(
+                "Desconecte seus bancos antes de remover a API key do Banco MCP.");
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Usuário não encontrado");
+
+        if (string.IsNullOrEmpty(user.BankMcpApiKey) && !user.BankMcpKeyExpiredAt.HasValue)
+            return;
+
+        user.BankMcpApiKey = null;
+        user.BankMcpKeyExpiredAt = null;
+        await _unitOfWork.Users.UpdateAsync(user);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation("API key do Banco MCP removida para usuário {UserId}", userId);
+    }
+
     public async Task<BankMcpAvailableConnectionsResponseDto> GetAvailableConnectionsAsync(string userId, CancellationToken ct)
     {
         await _subscriptionService.EnsurePremiumAccessAsync(userId);
@@ -188,7 +215,31 @@ public class BankConnectionService : IBankConnectionService
 
         var apiKey = _encryptionService.Decrypt(user.BankMcpApiKey);
 
-        var result = await _bankMcpClient.ListConnectionsAsync(apiKey, ct);
+        BankMcpListConnectionsResult result;
+        try
+        {
+            result = await _bankMcpClient.ListConnectionsAsync(apiKey, ct);
+        }
+        catch (BankMcpKeyExpiredException)
+        {
+            // Chave revogada/expirada antes de o Worker marcar: registra agora para a tela
+            // pedir uma nova chave, em vez de propagar um 401 que derrubaria a sessão do usuário.
+            _logger.LogWarning(
+                "Banco MCP rejeitou a API key ao listar conexões do usuário {UserId} - marcando como expirada",
+                userId);
+
+            user.BankMcpKeyExpiredAt = DateTime.UtcNow;
+            await _unitOfWork.Users.UpdateAsync(user);
+            await _unitOfWork.SaveChangesAsync();
+
+            return new BankMcpAvailableConnectionsResponseDto
+            {
+                HasApiKey = true,
+                ApiKeyExpired = true,
+                Connections = [],
+                AddConnectionUrl = string.Empty
+            };
+        }
 
         var existingConnections = await _unitOfWork.BankConnections.GetByUserIdAsync(userId);
         var existingDict = existingConnections.ToDictionary(c => c.ExternalConnectionId);
