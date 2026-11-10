@@ -46,6 +46,9 @@ Várias telas mostravam as datas um dia antes: uma compra do dia 22 aparecia com
 ### 💰 Data inicial da Saúde Financeira no dia de hoje
 Ao configurar a Saúde Financeira à noite (depois das 21h), a data do saldo inicial já vinha preenchida com o dia seguinte. Agora ela vem com a data de hoje.
 
+### 🧾 Aviso correto quando a leitura de faturas está indisponível
+Quando o serviço de leitura por inteligência artificial estava fora do ar por um problema de configuração do MoneyManager, a importação de fatura pedia que você verificasse o arquivo, mesmo com o arquivo correto. Agora o aviso explica que o serviço de leitura está indisponível no momento. O mesmo vale para a leitura de comprovantes.
+
 ---
 
 # Versão 1.2.2-beta

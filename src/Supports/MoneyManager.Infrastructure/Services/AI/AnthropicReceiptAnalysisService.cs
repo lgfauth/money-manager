@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Application.Services;
+using MoneyManager.Infrastructure.Configuration;
 
 namespace MoneyManager.Infrastructure.Services.AI;
 
@@ -53,7 +54,9 @@ public class AnthropicReceiptAnalysisService : IReceiptAnalysisService
         IConfiguration configuration)
     {
         _httpClient = httpClientFactory.CreateClient("anthropic");
-        _apiKey = configuration["Anthropic:ApiKey"] ?? string.Empty;
+        // Placeholder do appsettings ("${Anthropic__ApiKey}") = variável não definida no serviço
+        var apiKey = configuration["Anthropic:ApiKey"];
+        _apiKey = EnvironmentValidator.IsPlaceholder(apiKey) ? string.Empty : apiKey!;
         _model = configuration["Anthropic:Model"] ?? DefaultModel;
     }
 

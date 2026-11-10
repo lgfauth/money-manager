@@ -693,6 +693,21 @@ public MyWorker(IOptions<ScheduleOptions> scheduleOptions)
 
 Secrets are **never hardcoded**. In `appsettings.json` they are left as placeholder strings (e.g., `"strong_text_for_secret_here"`). Real values are injected via environment variables in production (Railway convention: `Jwt__SecretKey` maps to `Jwt:SecretKey`).
 
+Every required variable is declared in `MoneyManager.Infrastructure/Configuration/EnvironmentRequirements.cs`
+(one list per service: `OperationalApi`, `BackofficeApi`, `Worker`). Each `Program.cs` validates it right
+after `Build()`:
+
+```csharp
+var environmentReport = EnvironmentValidator.Validate(
+    "MoneyManager.Api.Operational", app.Configuration, EnvironmentRequirements.OperationalApi);
+EnvironmentValidator.ReportOrThrow(environmentReport, app.Services, failOnCritical: !app.Environment.IsDevelopment());
+```
+
+`Critical` requirements abort startup outside Development; `Feature` requirements log an `[EnvCheck]` error,
+write an `EnvironmentValidation` ProcessLog and make `/health` report `degraded`. When adding a secret or an
+external integration, add its requirement to the matching lists. When reading a secret, treat
+`EnvironmentValidator.IsPlaceholder(value)` as "not configured", because .NET does not expand `${...}` placeholders.
+
 ---
 
 ## 5. Good Practices Observed in This Codebase

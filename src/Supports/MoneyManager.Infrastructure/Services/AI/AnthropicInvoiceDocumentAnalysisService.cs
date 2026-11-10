@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using MoneyManager.Application.Services;
+using MoneyManager.Infrastructure.Configuration;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Exceptions;
 
@@ -96,7 +97,9 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         IConfiguration configuration)
     {
         _httpClient = httpClientFactory.CreateClient("anthropic");
-        _apiKey = configuration["Anthropic:ApiKey"] ?? string.Empty;
+        // Placeholder do appsettings ("${Anthropic__ApiKey}") = variável não definida no serviço
+        var apiKey = configuration["Anthropic:ApiKey"];
+        _apiKey = EnvironmentValidator.IsPlaceholder(apiKey) ? string.Empty : apiKey!;
         _model = configuration["Anthropic:Model"] ?? DefaultModel;
     }
 

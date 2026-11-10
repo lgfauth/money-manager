@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using MoneyManager.Application.Services;
 using MoneyManager.Application.Validators;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Infrastructure.Configuration;
 using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Repositories;
 using MoneyManager.Infrastructure.Security;
@@ -257,6 +258,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Verificação das variáveis de ambiente: problema crítico interrompe a subida; o restante deixa o
+// serviço "degraded" (log de erro na subida e status no /health)
+var environmentReport = EnvironmentValidator.Validate(
+    "MoneyManager.Api.Operational", app.Configuration, EnvironmentRequirements.OperationalApi);
+EnvironmentValidator.ReportOrThrow(environmentReport, app.Services, failOnCritical: !app.Environment.IsDevelopment());
+
 // Configure for Railway deployment (Railway injeta PORT; fallback 8080 mantém o comportamento atual)
 app.Urls.Add($"http://0.0.0.0:{Environment.GetEnvironmentVariable("PORT") ?? "8080"}");
 
@@ -350,11 +357,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Sempre 200 para não derrubar o deploy no Railway; "status" indica "degraded" quando falta variável
 app.MapGet("/health", () => Results.Ok(new
 {
-    status = "healthy",
+    status = environmentReport.Status,
     timestamp = DateTime.UtcNow,
-    environment = app.Environment.EnvironmentName
+    environment = app.Environment.EnvironmentName,
+    environmentVariables = environmentReport.ToHealthPayload()
 }));
 
 app.MapGet("/", () => Results.Ok(new { status = "healthy" }));

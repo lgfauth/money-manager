@@ -108,10 +108,33 @@ railway restart --service api
 railway variables
 ```
 
+## 🩺 Verificação de variáveis de ambiente na subida
+
+As duas APIs e o Worker verificam as variáveis de ambiente ao iniciar (`EnvironmentValidator`, lista por
+serviço em `EnvironmentRequirements`). A verificação detecta variável ausente, vazia, com o placeholder
+do appsettings (`${...}`, `strong_text_for_secret_here`, `CHANGE_ME`…) ou em formato inválido.
+
+| Gravidade | Variáveis | Efeito |
+|---|---|---|
+| **Crítica** | `MongoDB__ConnectionString`, `MongoDB__DatabaseName`, `Jwt__SecretKey` (API, ≥ 32 caracteres), `ADMIN_AUTH_SECRET` (Backoffice, ≥ 32 caracteres) | O serviço **não sobe**. O deploy falha no Railway e o log mostra `[EnvCheck] … não pode iniciar` com o nome da variável |
+| **Funcionalidade** | `Encryption__Key` (Base64 ≥ 48 bytes), `Anthropic__ApiKey`, `Efi__ClientId`, `Efi__ClientSecret`, `Efi__CertificatePath` (arquivo existente) | O serviço sobe **degradado**: log de erro `[EnvCheck]` por variável e aviso `iniciou DEGRADADO` |
+
+Onde aparece:
+- **Log do Railway**, na subida: procure por `[EnvCheck]`.
+- **`GET /health`** das APIs: `status` passa a `degraded` e `environmentVariables.issues` lista variável,
+  funcionalidade afetada e causa. Os valores nunca aparecem. O endpoint continua respondendo 200 para não
+  bloquear o deploy.
+- **Observabilidade do Backoffice**: o Worker e a API Backoffice gravam um ProcessLog `EnvironmentValidation`
+  com falha quando há problema.
+
+Em `Development` a verificação só registra no log e não interrompe a subida, porque os appsettings locais
+usam valores de exemplo.
+
 ## 🔧 Troubleshooting Rápido
 
 **API não inicia:**
 ```bash
+# Procure "[EnvCheck]" no log do deploy: ele nomeia a variável crítica com problema
 # Verifique as variáveis do MongoDB e do CORS
 railway variables | grep -E "MongoDB__|ALLOWED_ORIGIN"
 
@@ -205,7 +228,7 @@ Anthropic__Model=claude-haiku-5-5   # opcional; padrão claude-haiku-5-5
 **`Anthropic__ApiKey` / `Anthropic__Model` — variáveis compartilhadas:**
 - Usadas pela API (análise de comprovantes) e pelo Worker (leitura de faturas de cartão importadas, `AnthropicInvoiceDocumentAnalysisService`).
 - Configure-as como **Shared Variables** do projeto no Railway e referencie nos dois serviços, para que tenham sempre o mesmo valor.
-- Sem a chave no Worker, a leitura da fatura falha com a mensagem "O serviço de leitura de faturas não está configurado".
+- Sem a chave no Worker (ou com o placeholder `${Anthropic__ApiKey}` do `appsettings.Production.json`, que o .NET não expande), a leitura da fatura falha com a mensagem "O serviço de leitura de faturas não está configurado" e a verificação de ambiente aponta a variável na subida (veja abaixo).
 
 **Importação de fatura (`InvoiceImportWorker`) — opções opcionais** (padrões em `appsettings.json`):
 

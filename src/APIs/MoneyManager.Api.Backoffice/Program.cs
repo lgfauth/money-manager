@@ -8,6 +8,7 @@ using MoneyManager.Application.DTOs.Request;
 using MoneyManager.Application.Services;
 using MoneyManager.Application.Validators;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Infrastructure.Configuration;
 using MoneyManager.Infrastructure.Data;
 using MoneyManager.Infrastructure.Observability;
 using MoneyManager.Infrastructure.Repositories;
@@ -153,6 +154,12 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// Verificação das variáveis de ambiente: problema crítico interrompe a subida; o restante deixa o
+// serviço "degraded" (log de erro na subida, ProcessLog na observabilidade e status no /health)
+var environmentReport = EnvironmentValidator.Validate(
+    "MoneyManager.Api.Backoffice", app.Configuration, EnvironmentRequirements.BackofficeApi);
+EnvironmentValidator.ReportOrThrow(environmentReport, app.Services, failOnCritical: !app.Environment.IsDevelopment());
+
 app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
@@ -188,10 +195,11 @@ app.UseAuthorization();
 
 app.MapGet("/health", () => Results.Ok(new
 {
-    status = "healthy",
+    status = environmentReport.Status,
     service = "MoneyManager.Api.Administration",
     timestamp = DateTime.UtcNow,
-    environment = app.Environment.EnvironmentName
+    environment = app.Environment.EnvironmentName,
+    environmentVariables = environmentReport.ToHealthPayload()
 }));
 
 app.MapControllers();

@@ -225,7 +225,7 @@ Segue Clean Architecture com as seguintes camadas:
 - ✅ Testes unitários com xUnit e NSubstitute
 - ✅ Rate limiting nos endpoints de autenticação
 - ✅ Middleware global de tratamento de exceções
-- ✅ Health check (`/health`)
+- ✅ Health check (`/health`), com o resultado da verificação de variáveis de ambiente (`healthy` / `degraded`)
 
 ## 📝 Exemplo de Uso
 

@@ -412,7 +412,9 @@ com `MigrationRunner` e migrations versionadas), `Repositories/`, `Security/`
 (`TokenService`), `Services/` (`AesEncryptionService`, `BankMcpClient`,
 `EfiBankPaymentGateway`, `AI/AnthropicReceiptAnalysisService`,
 `AI/AnthropicInvoiceDocumentAnalysisService`),
-`WorkerControl/` (`WorkerCommandQueueService`) e `Observability/`.
+`WorkerControl/` (`WorkerCommandQueueService`), `Observability/` e `Configuration/`
+(`EnvironmentValidator` e `EnvironmentRequirements`: verificação das variáveis de ambiente na
+subida das APIs e do Worker, refletida no `/health`).
 
 ### `MoneyManager.Observability`
 Logging estruturado de processos: `IProcessLogger`/`ProcessLogger`, `LogStep`,
@@ -568,6 +570,11 @@ Configurado via arquivos `railway.*.toml` (`railway.api.toml`,
 - **Integrações:** `Anthropic__ApiKey`/`Anthropic__Model` (IA — compartilhadas entre API e Worker), `Efi__*`
   (EfiBank). A API key do Banco MCP (Pluggy) é informada
   por cada usuário e salva criptografada.
+
+As variáveis acima são verificadas na subida de cada serviço (`EnvironmentRequirements`). Uma variável
+crítica com problema impede a subida, e uma de funcionalidade deixa o `/health` em `degraded`. Detalhes em
+[RAILWAY_QUICK_START.md](RAILWAY_QUICK_START.md#-verificação-de-variáveis-de-ambiente-na-subida). Ao criar
+um segredo ou integração novo, inclua-o em `EnvironmentRequirements`.
 
 ---
 

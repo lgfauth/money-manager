@@ -394,6 +394,22 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_WhenApiKeyIsAppsettingsPlaceholder_ShouldTreatAsNotConfiguredWithoutCallingApi()
+    {
+        // Arrange — env var ausente no Railway: o .NET não expande "${...}" e o literal chegaria ao header
+        var handler = new StubHandler(HttpStatusCode.OK, Sse(FullResultJson));
+        var service = CreateService(handler, apiKey: "${Anthropic__ApiKey}");
+
+        // Act
+        var ex = await Assert.ThrowsAsync<InvoiceDocumentAnalysisException>(() => service.AnalyzeAsync(PdfRequest));
+
+        // Assert
+        Assert.False(ex.IsTransient);
+        Assert.Contains("não está configurado", ex.Message);
+        Assert.Equal(0, handler.CallCount);
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_WhenRefused_ShouldThrowDefinitiveFailure()
     {
         // Arrange
