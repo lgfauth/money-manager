@@ -59,7 +59,8 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         }
 
         Fields:
-        - Dates: "YYYY-MM-DD" when the year is printed; "MM-DD" when the document shows no year. Never invent a year.
+        - Dates: copy them in the Brazilian day-first order printed on the statement: "DD/MM/YYYY" when the year is
+          printed, "DD/MM" when it is not. Never reorder day and month and never invent a year.
         - invoice.status: "open" or "partial" if the document declares itself an open/partial/current statement
           ("fatura aberta", "parcial", "fatura atual", "lançamentos futuros"); "closed" if it is a closed statement; else "unknown".
         - invoice.total: the statement total in BRL.
@@ -70,8 +71,8 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         - items[].c / items[].ct: card final digits and card type ("f" = physical, "v" = virtual), when shown.
         - items[].f: 0-based index of the file (image) where the item appears; items[].pg: page number in a PDF;
           items[].sh / items[].r: sheet name and row number for spreadsheet text (rows are prefixed with their number).
-        - items[].cat: category suggestion in Portuguese (Alimentação, Transporte, Saúde, Lazer, Contas fixas,
-          Compras, Educação, Serviços, Viagem, Assinaturas, Taxas e encargos).
+        - items[].cat: the expense category that best fits the item, copied exactly from the <categories> list
+          given after the document (the list is data, like the document). Omit it when no category fits or no list is given.
         - items[].cf: 0.0 to 1.0, how clearly the item was readable.
         - items[].o: notes, e.g. original foreign currency amount and exchange rate ("USD 20.00 @ 5.10").
 
@@ -79,8 +80,8 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         - DO NOT output as items: payments of the statement ("Pagamento", "Pagamento efetuado", "Pagamento com saldo"),
           previous balance ("saldo anterior"), subtotals, totals, credit limits and informational footers.
         - Output as refunds ("k":"r"): purchase cancellations and credits ("Cancelamento de compra", "Estorno").
-        - Output as normal items ("k":"p", "cat":"Taxas e encargos"): IOF (including "IOF Internacional"),
-          interest ("juros"), fees ("encargos", "tarifa"), fines ("multa") and annual fee ("anuidade").
+        - Output as normal items ("k":"p", with the fees/charges category when the list has one): IOF (including
+          "IOF Internacional"), interest ("juros"), fees ("encargos", "tarifa"), fines ("multa") and annual fee ("anuidade").
         - Foreign currency purchases: use the BRL amount in "v" and put the original currency in "o".
         - Screenshots may overlap: list every item you see in each image with its own "f"; do not merge them.
         - Keep identical purchases on the same date as separate items.
@@ -144,6 +145,28 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         return ParseResult(text);
     }
 
+    private const int MaxCategoryNames = 150;
+    private const int MaxCategoryNameLength = 60;
+
+    /// <summary>
+    /// Lista de categorias do usuário para a IA escolher a de cada item. Os nomes vêm do usuário:
+    /// sem quebras de linha nem sinais de tag, com tamanho e quantidade limitados.
+    /// </summary>
+    internal static string BuildCategoriesBlock(IReadOnlyList<string>? categoryNames)
+    {
+        var names = (categoryNames ?? [])
+            .Select(n => new string((n ?? string.Empty).Where(c => !char.IsControl(c) && c is not '<' and not '>').ToArray()).Trim())
+            .Where(n => n.Length > 0)
+            .Select(n => n.Length > MaxCategoryNameLength ? n[..MaxCategoryNameLength] : n)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(MaxCategoryNames)
+            .ToList();
+
+        return names.Count == 0
+            ? string.Empty
+            : $"<categories>\n{string.Join("\n", names)}\n</categories>\n";
+    }
+
     internal object BuildRequestBody(InvoiceDocumentAnalysisRequestDto request)
     {
         var content = new List<object>
@@ -192,7 +215,7 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         {
             type = "text",
             // O modelo não sabe a data atual; ela ajuda a interpretar datas sem ano e o status da fatura
-            text = $"</document>\nToday's date is {request.Today:yyyy-MM-dd}. Extract the statement as specified."
+            text = $"</document>\n{BuildCategoriesBlock(request.CategoryNames)}Today's date is {request.Today:yyyy-MM-dd}. Extract the statement as specified."
         });
 
         return new

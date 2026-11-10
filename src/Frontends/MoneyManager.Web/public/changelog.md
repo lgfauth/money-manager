@@ -1,6 +1,31 @@
-# Versão 1.3.1-beta
+# Versão 1.3.0-beta
 
 *Lançamento: 10 de novembro de 2026*
+
+---
+
+## ✨ Novidades
+
+### 🧾 Importe a fatura do cartão de crédito
+Agora você pode cadastrar os lançamentos de uma fatura fechada de uma só vez. Em **Bancos e Contas** ou na página de faturas do cartão, toque em **Importar fatura** e envie o PDF, fotos ou prints da fatura (direto da câmera, no celular) ou a planilha .xlsx do banco. Se você tiver só um cartão disponível, ele já vem escolhido. A leitura é feita por inteligência artificial e você pode continuar usando o MoneyManager enquanto ela acontece.
+
+### ✅ Você revisa antes de cadastrar
+Quando a leitura termina, você confere cada lançamento: escolhe de quais titulares importar, corrige data, descrição, valor, parcelas e categoria, e marca só o que deve entrar. Alertas explicam o que precisa de atenção, como compras repetidas ou fora do período de 60 dias. Os totais são comparados com o valor da fatura, e nada é cadastrado até você confirmar.
+
+### 🏷️ Lançamentos importados já vêm com categoria
+Cada lançamento da fatura chega à revisão com uma das suas categorias de despesa. Se você já categorizou antes uma compra com a mesma descrição, a mesma categoria é usada de novo; senão, a leitura sugere a que mais combina. Você pode trocar qualquer uma antes de importar.
+
+### ✨ Categorias padrão em um clique
+Em **Categorias**, o botão **Criar categorias padrão** cadastra uma lista pronta de categorias de receitas e despesas, que você pode editar depois. Só entram as que você ainda não tem. Se você ainda não tiver categorias ao revisar uma fatura importada, o mesmo botão aparece na revisão e já aplica as categorias sugeridas aos lançamentos.
+
+### 💾 Continue a revisão depois
+Você pode sair da revisão no meio do caminho e voltar mais tarde sem perder o que já fez: titulares escolhidos, lançamentos marcados e correções continuam lá, mesmo se a página for recarregada. As alterações ficam guardadas só neste navegador e são apagadas ao importar, descartar ou sair da conta. Se quiser recomeçar, use **Desfazer alterações**.
+
+### 🔔 Acompanhe a importação de qualquer tela
+Enquanto a fatura é lida, um ícone no topo da tela mostra as importações em andamento e as que esperam sua revisão. Quando a leitura termina, um aviso aparece onde você estiver, com o atalho para revisar. No mesmo ícone, ou em **Importações de fatura**, na seção de cartões de **Bancos e Contas**, você vê as 20 mais recentes e volta a qualquer uma delas.
+
+### 💳 Disponível para cartões cadastrados manualmente
+Cartões sincronizados pelo Open Finance já recebem as compras automaticamente, por isso a importação fica disponível apenas para os demais cartões. Quando a importação não estiver disponível (nenhum cartão cadastrado ou apenas cartões sincronizados), a tela explica o motivo.
 
 ---
 
@@ -14,34 +39,6 @@ Várias telas mostravam as datas um dia antes: uma compra do dia 22 aparecia com
 
 ### 💰 Data inicial da Saúde Financeira no dia de hoje
 Ao configurar a Saúde Financeira à noite (depois das 21h), a data do saldo inicial já vinha preenchida com o dia seguinte. Agora ela vem com a data de hoje.
-
-### 🏦 Importação de fatura também em Bancos e Contas
-O botão **Importar fatura** agora aparece na seção de cartões de crédito de **Bancos e Contas**, junto com o atalho **Importações de fatura** para voltar às importações anteriores. Se você tiver só um cartão disponível para importação, ele já vem escolhido. Quando a importação não estiver disponível (nenhum cartão cadastrado ou apenas cartões sincronizados pelo Open Finance), a tela explica o motivo.
-
-### 💾 Revisão da fatura salva para continuar depois
-Agora você pode sair da revisão de uma fatura importada no meio do caminho e voltar mais tarde, pelo ícone do topo ou pela lista de importações, sem perder o que já fez: titulares escolhidos, lançamentos marcados e correções continuam lá, mesmo se a página for recarregada. As alterações ficam guardadas só neste navegador e são apagadas ao importar, descartar ou sair da conta. Se quiser recomeçar, use **Desfazer alterações**.
-
----
-
-# Versão 1.3.0-beta
-
-*Lançamento: 9 de novembro de 2026*
-
----
-
-## ✨ Novidades
-
-### 🧾 Importe a fatura do cartão de crédito
-Agora você pode cadastrar os lançamentos de uma fatura fechada de uma só vez. Na página de faturas do cartão, toque em **Importar fatura** e envie o PDF, fotos ou prints da fatura (direto da câmera, no celular) ou a planilha .xlsx do banco. A leitura é feita por inteligência artificial e você pode continuar usando o MoneyManager enquanto ela acontece.
-
-### ✅ Você revisa antes de cadastrar
-Quando a leitura termina, você confere cada lançamento: escolhe de quais titulares importar, corrige data, descrição, valor, parcelas e categoria, e marca só o que deve entrar. Alertas explicam o que precisa de atenção, como compras repetidas ou fora do período de 60 dias. Os totais são comparados com o valor da fatura, e nada é cadastrado até você confirmar.
-
-### 🔔 Acompanhe a importação de qualquer tela
-Enquanto a fatura é lida, um ícone no topo da tela mostra as importações em andamento e as que esperam sua revisão. Quando a leitura termina, um aviso aparece onde você estiver, com o atalho para revisar. No mesmo ícone, **Ver todas as importações** mostra as 20 mais recentes, para você voltar a qualquer uma delas.
-
-### 💳 Disponível para cartões cadastrados manualmente
-Cartões sincronizados pelo Open Finance já recebem as compras automaticamente, por isso a importação fica disponível apenas para os demais cartões.
 
 ---
 

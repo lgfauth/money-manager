@@ -38,6 +38,8 @@ export function useCreateCreditCard() {
       apiClient.post<CreditCardResponseDto>("/api/credit-cards", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      // Cadastro/edição/exclusão muda quem pode importar fatura
+      qc.invalidateQueries({ queryKey: queryKeys.invoiceImportEligibleCards });
       invalidateFinancialSummaries(qc);
       toast.success("Cartão criado com sucesso");
     },
@@ -52,6 +54,8 @@ export function useUpdateCreditCard() {
       apiClient.put<CreditCardResponseDto>(`/api/credit-cards/${id}`, data),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      // Cadastro/edição/exclusão muda quem pode importar fatura
+      qc.invalidateQueries({ queryKey: queryKeys.invoiceImportEligibleCards });
       qc.invalidateQueries({ queryKey: queryKeys.creditCard(variables.id) });
       invalidateFinancialSummaries(qc);
       toast.success("Cartão atualizado");
@@ -66,6 +70,8 @@ export function useDeleteCreditCard() {
     mutationFn: (id: string) => apiClient.delete<void>(`/api/credit-cards/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      // Cadastro/edição/exclusão muda quem pode importar fatura
+      qc.invalidateQueries({ queryKey: queryKeys.invoiceImportEligibleCards });
       invalidateFinancialSummaries(qc);
       toast.success("Cartão excluído");
     },

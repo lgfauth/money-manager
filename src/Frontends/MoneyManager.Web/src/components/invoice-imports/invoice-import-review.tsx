@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, CheckCircle2, History, Info, Loader2, Pencil, RotateCcw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, History, Info, Loader2, Pencil, RotateCcw, Tags } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { CreditCardForm } from "@/components/credit-cards/credit-card-form";
+import { CreateDefaultCategoriesButton } from "@/components/categories/create-default-categories-button";
 import {
   InvoiceImportSummary,
   InvoiceImportWarnings,
@@ -24,6 +25,7 @@ import { ApiClientError } from "@/lib/api-errors";
 import { formatDateTime, readInvoiceImportApiError } from "@/lib/invoice-import";
 import { cn } from "@/lib/utils";
 import {
+  applyCategoryHints,
   blockingScheduleMismatches,
   brazilToday,
   buildInitialReviewState,
@@ -43,6 +45,7 @@ import {
 } from "@/lib/invoice-import-review";
 import { useAuthStore } from "@/stores/auth-store";
 import { useInvoiceImportDraftStore } from "@/stores/invoice-import-draft-store";
+import { CategoryType, type CategoryResponseDto } from "@/types/category";
 import type { CreditCardResponseDto } from "@/types/credit-card";
 import type { CreditCardInvoiceImportResponseDto } from "@/types/invoice-import";
 
@@ -125,6 +128,23 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
     if (isDirty) saveDraft(userId, job.id, job.version, review);
     else clearDraft(job.id);
   }, [review, isDirty, userId, job.id, job.version, saveDraft, clearDraft]);
+
+  // Sem categorias de despesa, os lançamentos ficam sem categoria: oferece criar as padrão e
+  // aplica as sugestões da leitura (que usou a lista padrão justamente por isso)
+  const hasNoExpenseCategories =
+    categories !== undefined && !categories.some((c) => c.type === CategoryType.Expense);
+
+  const handleDefaultCategoriesCreated = (created: CategoryResponseDto[]) => {
+    const { review: next, applied } = applyCategoryHints(job, review, created);
+    if (applied > 0) {
+      setReview(next);
+      toast.success(
+        applied === 1
+          ? "1 lançamento recebeu a categoria sugerida"
+          : `${applied} lançamentos receberam a categoria sugerida`
+      );
+    }
+  };
 
   const categoryNames = useMemo(
     () => new Map((categories ?? []).map((c) => [c.id, c.name])),
@@ -311,6 +331,27 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
       )}
 
       <InvoiceImportSummary job={job} />
+
+      {hasNoExpenseCategories && (
+        <div
+          role="status"
+          className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="flex gap-2 text-muted-foreground">
+            <Tags className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              Você ainda não tem categorias de despesa, por isso os lançamentos estão sem
+              categoria. Quer criar as categorias padrão? Aplicamos a categoria sugerida na
+              leitura a cada lançamento, e você pode ajustar antes de importar.
+            </span>
+          </p>
+          <CreateDefaultCategoriesButton
+            size="sm"
+            className="shrink-0"
+            onCreated={handleDefaultCategoriesCreated}
+          />
+        </div>
+      )}
 
       {(isDirty || initial.staleDraft) && (
         <div

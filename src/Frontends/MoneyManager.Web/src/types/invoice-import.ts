@@ -37,7 +37,8 @@ export type InvoiceImportWarningCode =
   | "DueDayMismatch"
   | "InvoiceAlreadyImported"
   | "UnreadableContent"
-  | "CellTruncated";
+  | "CellTruncated"
+  | "DocumentDateCorrected";
 
 export interface InvoiceImportCreatedResponseDto {
   id: string;

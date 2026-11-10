@@ -83,6 +83,9 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
     /// <summary>Tolerância de dias entre o documento e o cadastro do cartão (fins de semana e feriados).</summary>
     public const int ScheduleToleranceDays = 3;
 
+    /// <summary>Maior intervalo plausível entre o fechamento e o vencimento de uma fatura.</summary>
+    public const int MaxClosingToDueDays = 45;
+
     private static readonly HashSet<InvoiceImportWarningCode> BlockingItemCodes =
     [
         InvoiceImportWarningCode.MissingDate,
@@ -121,8 +124,9 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
         var warnings = new List<InvoiceImportWarning>();
 
         // 1. Fechamento, vencimento e mês de referência
-        var docClosing = ResolveStandaloneDate(doc.ClosingDate, todayDate);
-        var docDue = ResolveDueDate(doc.DueDate, docClosing, todayDate);
+        var (docClosing, docDue, dateCorrection) = ResolveClosingAndDue(doc.ClosingDate, doc.DueDate, todayDate);
+        if (dateCorrection is not null)
+            warnings.Add(dateCorrection);
 
         string? referenceMonth;
         DateTime closingDate;
@@ -196,8 +200,9 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
 
         // 5. Itens
         var categories = await GetExpenseCategoriesAsync(userId);
+        var categoryHistory = await GetCategoryHistoryAsync(userId, categories);
         var items = analysis.Items
-            .Select(i => BuildItem(i, closingDate, today, categories))
+            .Select(i => BuildItem(i, closingDate, today, categories, categoryHistory))
             .ToList();
 
         // Planilha: o texto de origem é exato, então todo item precisa conferir com a linha citada
@@ -428,7 +433,8 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
         InvoiceDocumentItemDto source,
         DateTime closingDate,
         DateOnly today,
-        IReadOnlyDictionary<string, string> categories)
+        IReadOnlyDictionary<string, string> categories,
+        IReadOnlyDictionary<string, string> categoryHistory)
     {
         int? installmentNumber = source.InstallmentNumber;
         int? totalInstallments = source.TotalInstallments;
@@ -461,7 +467,8 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
                     Row = source.Source.Row
                 },
             CategoryHint = source.CategoryHint,
-            CategoryId = MatchCategory(source.CategoryHint, categories),
+            // O que o usuário já escolheu para a mesma compra vale mais que a sugestão da IA
+            CategoryId = MatchHistory(source.Description, categoryHistory) ?? MatchCategory(source.CategoryHint, categories),
             Confidence = source.Confidence,
             Notes = source.Notes
         };
@@ -475,6 +482,37 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
     {
         var key = InvoiceImportText.Normalize(hint);
         return key.Length > 0 && categories.TryGetValue(key, out var id) ? id : null;
+    }
+
+    private static string? MatchHistory(string? description, IReadOnlyDictionary<string, string> history)
+    {
+        var key = InvoiceImportText.NormalizeDescription(description);
+        return key.Length > 0 && history.TryGetValue(key, out var id) ? id : null;
+    }
+
+    /// <summary>
+    /// Histórico de categorização do usuário nos cartões: descrição comparável → categoria de despesa ativa
+    /// da compra mais recente com essa descrição.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<string, string>> GetCategoryHistoryAsync(
+        string userId, IReadOnlyDictionary<string, string> categories)
+    {
+        if (categories.Count == 0)
+            return new Dictionary<string, string>();
+
+        var activeIds = categories.Values.ToHashSet(StringComparer.Ordinal);
+        var transactions = await _unitOfWork.CreditCardTransactions.GetByUserAsync(userId);
+
+        return transactions
+            .Where(t => t.UserId == userId && !t.IsDeleted
+                && t.CategoryId is not null && activeIds.Contains(t.CategoryId))
+            .Select(t => (Key: InvoiceImportText.NormalizeDescription(t.Description), t.CategoryId, t.PurchaseDate, t.UpdatedAt))
+            .Where(t => t.Key.Length > 0)
+            .GroupBy(t => t.Key, StringComparer.Ordinal)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(t => t.PurchaseDate).ThenByDescending(t => t.UpdatedAt).First().CategoryId!,
+                StringComparer.Ordinal);
     }
 
     private async Task<IReadOnlyDictionary<string, string>> GetExpenseCategoriesAsync(string userId)
@@ -670,6 +708,62 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
     }
 
     /// <summary>
+    /// Resolve fechamento e vencimento do documento. O vencimento vem de 1 a <see cref="MaxClosingToDueDays"/>
+    /// dias depois do fechamento; se o par lido não respeitar isso e inverter dia e mês de uma das datas
+    /// (ou das duas) resolver, usa a versão coerente e avisa o usuário para conferir.
+    /// </summary>
+    private static (DateTime? Closing, DateTime? Due, InvoiceImportWarning? Correction) ResolveClosingAndDue(
+        InvoiceDocumentDateDto? closingDate, InvoiceDocumentDateDto? dueDate, DateTime today)
+    {
+        var closing = ResolveStandaloneDate(closingDate, today);
+        var due = ResolveDueDate(dueDate, closing, today);
+        if (closing is null || due is null || IsCoherent(closing.Value, due.Value))
+            return (closing, due, null);
+
+        var candidates = new[] { (SwapClosing: true, SwapDue: false), (false, true), (true, true) };
+        foreach (var (swapClosing, swapDue) in candidates)
+        {
+            var closingCandidate = swapClosing ? SwapDayAndMonth(closingDate!) : closingDate;
+            var dueCandidate = swapDue ? SwapDayAndMonth(dueDate!) : dueDate;
+            if (closingCandidate is null || dueCandidate is null)
+                continue;
+
+            var c = ResolveStandaloneDate(closingCandidate, today);
+            var d = ResolveDueDate(dueCandidate, c, today);
+            if (c is null || d is null || !IsCoherent(c.Value, d.Value))
+                continue;
+
+            var corrections = new List<string>();
+            if (swapClosing)
+                corrections.Add($"fechamento de {closing:dd/MM/yyyy} para {c:dd/MM/yyyy}");
+            if (swapDue)
+                corrections.Add($"vencimento de {due:dd/MM/yyyy} para {d:dd/MM/yyyy}");
+
+            var warning = new InvoiceImportWarning
+            {
+                Code = InvoiceImportWarningCode.DocumentDateCorrected,
+                Message = $"A leitura trouxe dia e mês invertidos; corrigimos o {string.Join(" e o ", corrections)}. Confira na fatura.",
+                IsBlocking = false
+            };
+            return (c, d, warning);
+        }
+
+        return (closing, due, null);
+    }
+
+    private static bool IsCoherent(DateTime closing, DateTime due)
+    {
+        var days = (due.Date - closing.Date).TotalDays;
+        return days >= 1 && days <= MaxClosingToDueDays;
+    }
+
+    /// <summary>Data com dia e mês trocados; null quando a troca não gera outra data válida.</summary>
+    private static InvoiceDocumentDateDto? SwapDayAndMonth(InvoiceDocumentDateDto date) =>
+        date.Day <= 12 && date.Day != date.Month
+            ? date with { Day = date.Month, Month = date.Day }
+            : null;
+
+    /// <summary>
     /// Mês de referência (yyyy-MM) cuja data calculada pelo cadastro do cartão fica mais perto da data do documento.
     /// Cobre fechamento/vencimento adiados para o mês seguinte por fim de semana ou feriado.
     /// </summary>
@@ -698,7 +792,7 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
             return new InvoiceImportWarning
             {
                 Code = code,
-                Message = $"O {label} da fatura foi dia {documentDate.Day}, e o cartão está cadastrado com dia {registeredDay} (diferença de até {ScheduleToleranceDays} dias, comum em fins de semana e feriados).",
+                Message = $"O {label} da fatura foi em {documentDate:dd/MM/yyyy}; pelo cadastro do cartão (dia {registeredDay}) seria {expectedDate:dd/MM/yyyy}. Diferença de até {ScheduleToleranceDays} dias, comum em fins de semana e feriados.",
                 IsBlocking = false
             };
         }
@@ -706,7 +800,7 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
         return new InvoiceImportWarning
         {
             Code = code,
-            Message = $"O {label} da fatura é dia {documentDate.Day}, mas o cartão está cadastrado com dia {registeredDay}; ajuste o cadastro do cartão para continuar.",
+            Message = $"O {label} da fatura é {documentDate:dd/MM/yyyy}, mas pelo cadastro do cartão (dia {registeredDay}) seria {expectedDate:dd/MM/yyyy}; confira a data na fatura ou ajuste o cadastro do cartão para continuar.",
             IsBlocking = true
         };
     }

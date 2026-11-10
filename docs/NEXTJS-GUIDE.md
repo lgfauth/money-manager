@@ -70,6 +70,7 @@ components/
   bancos-e-contas/
   bank-connections/
   budgets/
+  categories/       ← create-default-categories-button (categories page and invoice import review)
   credit-cards/
   invoice-imports/  ← AI invoice import (header indicator, transition watcher with toasts; upload: card picker, file picker with drag-and-drop/camera; status badge, processing steps, invoice summary/warnings, review: holders, items list, item editor sheet, totals/confirmation, result)
   dashboard/        ← dashboard blocks (data from /api/reports/overview + /api/dashboard/summary)
@@ -623,6 +624,8 @@ New protected pages placed inside the `(dashboard)/` route group are automatical
 - **Multipart upload with progress**: `useCreateInvoiceImport` (`use-invoice-imports.ts`) sends the invoice files with `XMLHttpRequest` instead of `apiClient.postForm`, because `fetch` does not report upload progress. It sends the same Bearer token and cookie as `apiClient`, handles `401` the same way and exposes `progress` (0–100). Upload limits and messages mirror `CreateInvoiceImportValidator` in `lib/invoice-import.ts` (`validateInvoiceImportFiles`), so invalid batches are refused without calling the API; files without a browser-reported type get it from the extension before sending. On errors the page keeps the chosen files.
 
 - **No service worker / no push**: the Web has no service worker and no browser (Web Push) notifications — users are notified only inside the app (header indicator and toasts). `lib/legacy-service-worker-cleanup.ts`, called once by the dashboard layout, unregisters the old `/sw.js` and its push subscription in browsers that installed it before it was removed (spec 004); it is temporary and can be deleted in a future version. Do not add a service worker for notifications.
+
+- **Derived server lists need explicit invalidation**: `useInvoiceImportEligibleCards` (`GET /api/credit-card-invoice-imports/eligible-cards`) depends on the user's cards and on which ones are synced by Open Finance, but lives under its own key (`queryKeys.invoiceImportEligibleCards`). Every mutation that changes either — create/update/delete card (`use-credit-cards.ts`) and complete onboarding, sync, disconnect or unlink (`use-bank-connections.ts`) — invalidates it too; with the default `staleTime` (5 min) and `refetchOnWindowFocus: false`, a missed invalidation leaves the UI stale until logout. When adding a query derived from other entities, add its key to the mutations of those entities.
 
 - **Local drafts of server data**: the invoice import review keeps the user's unsaved work in `invoice-import-draft-store.ts`, never the server data itself (that stays in TanStack Query). A draft stores the import `version`; `InvoiceImportReview` restores it only when the version still matches (`restoreReviewState` in `lib/invoice-import-review.ts`) and otherwise discards it with a warning. It saves only when the state differs from the server's (`isSameReviewState`) and offers "Desfazer alterações". Drafts hold invoice descriptions and amounts, so they are cleared on confirm/discard (mutation `onSuccess`), when the import leaves `AwaitingReview` or returns `404`, on `logout()` and when another user logs in on the same browser (`ensureOwner`); drafts untouched for 30 days are dropped.
 

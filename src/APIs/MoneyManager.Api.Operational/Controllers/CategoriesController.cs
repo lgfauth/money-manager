@@ -40,6 +40,21 @@ public class CategoriesController : ControllerBase
         }
     }
 
+    /// <summary>Cria as categorias da lista padrão que o usuário ainda não tem (idempotente).</summary>
+    [HttpPost("defaults")]
+    public async Task<IActionResult> CreateDefaults()
+    {
+        try
+        {
+            var result = await _categoryService.CreateDefaultsAsync(HttpContext.GetUserId());
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return this.ApiBadRequest(ex.Message);
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? type)
     {

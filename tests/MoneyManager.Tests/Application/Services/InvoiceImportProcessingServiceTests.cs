@@ -23,6 +23,7 @@ public class InvoiceImportProcessingServiceTests
     private readonly ICreditCardInvoiceImportRepository _imports = Substitute.For<ICreditCardInvoiceImportRepository>();
     private readonly ICreditCardInvoiceImportFileRepository _files = Substitute.For<ICreditCardInvoiceImportFileRepository>();
     private readonly ICreditCardRepository _cards = Substitute.For<ICreditCardRepository>();
+    private readonly IRepository<Category> _categories = Substitute.For<IRepository<Category>>();
     private readonly IInvoiceDocumentAnalysisService _analysis = Substitute.For<IInvoiceDocumentAnalysisService>();
     private readonly IInvoiceImportReviewService _review = Substitute.For<IInvoiceImportReviewService>();
     private readonly ICreditCardImportEligibilityService _eligibility = Substitute.For<ICreditCardImportEligibilityService>();
@@ -39,6 +40,8 @@ public class InvoiceImportProcessingServiceTests
         _unitOfWork.CreditCardInvoiceImports.Returns(_imports);
         _unitOfWork.CreditCardInvoiceImportFiles.Returns(_files);
         _unitOfWork.CreditCards.Returns(_cards);
+        _unitOfWork.Categories.Returns(_categories);
+        _categories.GetByUserIdAsync(UserId).Returns([]);
         _cards.GetByIdAsync(CardId).Returns(_card);
         _imports.GetStuckProcessingAsync(Arg.Any<DateTime>()).Returns([]);
         _imports.GetQueuedCreatedBeforeAsync(Arg.Any<DateTime>()).Returns([]);
@@ -148,6 +151,47 @@ public class InvoiceImportProcessingServiceTests
         await _files.Received(1).DeleteByImportAsync(UserId, job.Id);
         await _analysis.Received(1).AnalyzeAsync(
             Arg.Is<InvoiceDocumentAnalysisRequestDto>(r => r.SourceType == InvoiceImportSourceType.Pdf && r.Files.Count == 1 && r.Today == Today),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_ShouldSendUserActiveExpenseCategoriesToAnalysis()
+    {
+        // Arrange
+        _categories.GetByUserIdAsync(UserId).Returns(
+        [
+            new Category { UserId = UserId, Name = "Mercado", Type = CategoryType.Expense },
+            new Category { UserId = UserId, Name = "Salário", Type = CategoryType.Income },
+            new Category { UserId = UserId, Name = "Antiga", Type = CategoryType.Expense, IsDeleted = true },
+            new Category { UserId = "other", Name = "Alheia", Type = CategoryType.Expense }
+        ]);
+        Claim(Job());
+        ReviewSucceeds();
+
+        // Act
+        await Run();
+
+        // Assert
+        await _analysis.Received(1).AnalyzeAsync(
+            Arg.Is<InvoiceDocumentAnalysisRequestDto>(r => r.CategoryNames!.SequenceEqual(new[] { "Mercado" })),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WithoutExpenseCategories_ShouldSendDefaultListToAnalysis()
+    {
+        // Arrange — as sugestões casam com as categorias padrão quando o usuário as cria na revisão
+        Claim(Job());
+        ReviewSucceeds();
+        var expected = MoneyManager.Domain.Seeds.DefaultCategorySeed.Categories
+            .Where(c => c.Type == CategoryType.Expense).Select(c => c.Name).ToList();
+
+        // Act
+        await Run();
+
+        // Assert
+        await _analysis.Received(1).AnalyzeAsync(
+            Arg.Is<InvoiceDocumentAnalysisRequestDto>(r => r.CategoryNames!.SequenceEqual(expected)),
             Arg.Any<CancellationToken>());
     }
 

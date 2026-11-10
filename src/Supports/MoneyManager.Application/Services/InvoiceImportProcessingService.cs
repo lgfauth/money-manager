@@ -3,6 +3,7 @@ using MoneyManager.Domain.Entities;
 using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Exceptions;
 using MoneyManager.Domain.Interfaces;
+using MoneyManager.Domain.Seeds;
 using MoneyManager.Observability;
 
 namespace MoneyManager.Application.Services;
@@ -183,6 +184,8 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
             if (files.Count == 0 || files.Count < job.FileCount)
                 return await FailAsync(job, ExpiredFilesMessage);
 
+            var categoryNames = await GetCategoryNamesForAnalysisAsync(job.UserId);
+
             InvoiceDocumentAnalysisResultDto analysis;
             using (var jobTimeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken))
             {
@@ -193,7 +196,8 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
                         new InvoiceDocumentAnalysisRequestDto(
                             job.SourceType,
                             files.Select(f => new InvoiceDocumentFileDto(f.ContentType, f.Content)).ToList(),
-                            today),
+                            today,
+                            categoryNames),
                         jobTimeout.Token);
                 }
                 catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
@@ -320,4 +324,20 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
         ["attempts"] = job.Attempts,
         ["status"] = job.Status.ToString()
     };
+
+    /// <summary>
+    /// Categorias de despesa ativas do usuário, entre as quais a IA escolhe a de cada item. Sem nenhuma,
+    /// usa a lista padrão: a sugestão casa com as categorias quando o usuário as cria na revisão.
+    /// </summary>
+    private async Task<IReadOnlyList<string>> GetCategoryNamesForAnalysisAsync(string userId)
+    {
+        var names = (await _unitOfWork.Categories.GetByUserIdAsync(userId))
+            .Where(c => c.UserId == userId && !c.IsDeleted && c.Type == CategoryType.Expense)
+            .Select(c => c.Name)
+            .ToList();
+
+        return names.Count > 0
+            ? names
+            : DefaultCategorySeed.Categories.Where(c => c.Type == CategoryType.Expense).Select(c => c.Name).ToList();
+    }
 }

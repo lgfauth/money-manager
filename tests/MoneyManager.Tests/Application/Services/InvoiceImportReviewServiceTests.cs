@@ -30,6 +30,7 @@ public class InvoiceImportReviewServiceTests
         _unitOfWork.CreditCardTransactions.Returns(_transactions);
         _unitOfWork.CreditCardInvoices.Returns(_invoices);
         _transactions.GetByCardAsync(UserId, "card-1").Returns([]);
+        _transactions.GetByUserAsync(UserId).Returns([]);
         _categories.GetByUserIdAsync(UserId).Returns([]);
         _users.GetByIdAsync(UserId).Returns(new User { Id = UserId, Name = "Usuário Sem Fatura" });
         _service = new InvoiceImportReviewService(_unitOfWork);
@@ -405,8 +406,9 @@ public class InvoiceImportReviewServiceTests
         if (docClosingDay == 6)
         {
             Assert.True(mismatches[0].IsBlocking);
-            Assert.Contains("dia 6", mismatches[0].Message);
-            Assert.Contains("dia 2", mismatches[0].Message);
+            // Mensagem com as datas completas, para a diferença de mês não ficar escondida
+            Assert.Contains("06/11/2026", mismatches[0].Message);
+            Assert.Contains("(dia 2) seria 02/11/2026", mismatches[0].Message);
             Assert.Contains("ajuste o cadastro", mismatches[0].Message);
         }
         else if (docClosingDay == 5)
@@ -429,6 +431,146 @@ public class InvoiceImportReviewServiceTests
         Assert.Equal(InvoiceImportWarningCode.DueDayMismatch, warning.Code);
         Assert.True(warning.IsBlocking);
         Assert.Contains("vencimento", warning.Message);
+    }
+
+    // --- Categorias ---
+
+    [Fact]
+    public async Task BuildReviewAsync_WithCategoryHint_ShouldMatchUserCategoryIgnoringAccentsAndCase()
+    {
+        // Arrange
+        _categories.GetByUserIdAsync(UserId).Returns(
+            [new Category { Id = "cat-food", UserId = UserId, Name = "Alimentação", Type = CategoryType.Expense }]);
+        var analysis = StandardAnalysis(Item(D(2026, 10, 20), "RESTAURANTE", category: "ALIMENTACAO"));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        Assert.Equal("cat-food", Assert.Single(result.Items).CategoryId);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithPreviouslyCategorizedPurchase_ShouldPreferHistoryOverAiHint()
+    {
+        // Arrange — o usuário já pôs a mesma compra em "Transporte"; a IA sugere "Serviços"
+        _categories.GetByUserIdAsync(UserId).Returns(
+        [
+            new Category { Id = "cat-transport", UserId = UserId, Name = "Transporte", Type = CategoryType.Expense },
+            new Category { Id = "cat-services", UserId = UserId, Name = "Serviços", Type = CategoryType.Expense }
+        ]);
+        _transactions.GetByUserAsync(UserId).Returns(
+        [
+            new CreditCardTransaction { UserId = UserId, Description = "UBER *TRIP", CategoryId = "cat-services", PurchaseDate = new DateTime(2026, 8, 1) },
+            new CreditCardTransaction { UserId = UserId, Description = "Uber *Trip", CategoryId = "cat-transport", PurchaseDate = new DateTime(2026, 9, 1) }
+        ]);
+        var analysis = StandardAnalysis(Item(D(2026, 10, 20), "UBER *TRIP", category: "Serviços"));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert — vale a escolha mais recente do usuário
+        Assert.Equal("cat-transport", Assert.Single(result.Items).CategoryId);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithHistoryPointingToDeletedCategory_ShouldFallBackToAiHint()
+    {
+        // Arrange
+        _categories.GetByUserIdAsync(UserId).Returns(
+        [
+            new Category { Id = "cat-old", UserId = UserId, Name = "Antiga", Type = CategoryType.Expense, IsDeleted = true },
+            new Category { Id = "cat-food", UserId = UserId, Name = "Alimentação", Type = CategoryType.Expense }
+        ]);
+        _transactions.GetByUserAsync(UserId).Returns(
+        [
+            new CreditCardTransaction { UserId = UserId, Description = "PADARIA", CategoryId = "cat-old", PurchaseDate = new DateTime(2026, 9, 1) },
+            new CreditCardTransaction { UserId = UserId, Description = "PADARIA", CategoryId = "cat-x", PurchaseDate = new DateTime(2026, 9, 2), IsDeleted = true }
+        ]);
+        var analysis = StandardAnalysis(Item(D(2026, 10, 20), "PADARIA", category: "Alimentação"));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        Assert.Equal("cat-food", Assert.Single(result.Items).CategoryId);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithoutCategories_ShouldKeepHintAndLeaveCategoryEmpty()
+    {
+        // Arrange
+        var analysis = StandardAnalysis(Item(D(2026, 10, 20), "PADARIA", category: "Alimentação"));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        var item = Assert.Single(result.Items);
+        Assert.Null(item.CategoryId);
+        Assert.Equal("Alimentação", item.CategoryHint);
+    }
+
+    // --- Coerência entre fechamento e vencimento (dia e mês invertidos na leitura) ---
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task BuildReviewAsync_WithClosingDayAndMonthSwapped_ShouldCorrectAndInform(bool yearPrinted)
+    {
+        // Arrange — fatura fecha 08/11 e vence 15/11, mas o fechamento foi lido como 11/08
+        var card = new CreditCard { Id = "card-1", UserId = UserId, ClosingDay = 8, BillingDueDay = 15 };
+        var analysis = yearPrinted
+            ? Analysis(D(2026, 8, 11), D(2026, 11, 15), Item(D(2026, 11, 3)))
+            : Analysis(NoYear(8, 11), NoYear(11, 15), Item(NoYear(11, 3)));
+
+        // Act
+        var result = await Build(analysis, card: card);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Equal("2026-11", result.ReferenceMonth);
+        Assert.Equal(new DateTime(2026, 11, 8), result.Invoice!.ClosingDate);
+        Assert.Equal(new DateTime(2026, 11, 15), result.Invoice.DueDate);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal(InvoiceImportWarningCode.DocumentDateCorrected, warning.Code);
+        Assert.False(warning.IsBlocking);
+        Assert.Contains("fechamento de 11/08/2026 para 08/11/2026", warning.Message);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithDueDayAndMonthSwapped_ShouldCorrectDue()
+    {
+        // Arrange — vence 10/11, lido como 11/10 (antes do fechamento de 02/11)
+        var analysis = Analysis(D(2026, 11, 2), D(2026, 10, 11), Item(D(2026, 10, 20)));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        Assert.Equal(new DateTime(2026, 11, 2), result.Invoice!.ClosingDate);
+        Assert.Equal(new DateTime(2026, 11, 10), result.Invoice.DueDate);
+        var warning = Assert.Single(result.Warnings);
+        Assert.Equal(InvoiceImportWarningCode.DocumentDateCorrected, warning.Code);
+        Assert.Contains("vencimento de 11/10/2026 para 10/11/2026", warning.Message);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithIncoherentDatesThatCannotBeSwapped_ShouldKeepThemAndBlock()
+    {
+        // Arrange — dias acima de 12 não admitem troca; fechamento em agosto e vencimento em novembro
+        var analysis = Analysis(D(2026, 8, 20), D(2026, 11, 15), Item(D(2026, 8, 10)));
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        Assert.DoesNotContain(result.Warnings, w => w.Code == InvoiceImportWarningCode.DocumentDateCorrected);
+        Assert.Equal(new DateTime(2026, 8, 20), result.Invoice!.ClosingDate);
+        var due = Assert.Single(result.Warnings, w => w.Code == InvoiceImportWarningCode.DueDayMismatch);
+        Assert.True(due.IsBlocking);
+        Assert.Contains("15/11/2026", due.Message);
+        Assert.Contains("seria 10/09/2026", due.Message);
     }
 
     [Fact]

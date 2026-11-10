@@ -5,6 +5,7 @@ import type {
   InvoiceImportSourceType,
   InvoiceImportWarningCode,
 } from "@/types/invoice-import";
+import { CategoryType, type CategoryResponseDto } from "@/types/category";
 
 // Regras da revisão de uma importação de fatura no navegador. Espelham o backend
 // (InvoiceImportReviewService, CreditCardInvoiceImportService e ConfirmInvoiceImportValidator)
@@ -334,4 +335,44 @@ export function blockingScheduleMismatches(
     if (exceeds(invoice.dueDate, expectedDue)) codes.push("DueDayMismatch");
   }
   return codes;
+}
+
+/** Nome comparável de categoria: sem acentos, maiúsculas e espaços simples (mesma regra do servidor). */
+function normalizeCategoryName(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Mn}/gu, "")
+    .toUpperCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Aplica a categoria sugerida na leitura (`categoryHint`) aos lançamentos ainda sem categoria,
+ * quando existe categoria de despesa com o mesmo nome — usado depois de criar as categorias padrão.
+ * Retorna o mesmo estado quando nada muda.
+ */
+export function applyCategoryHints(
+  job: CreditCardInvoiceImportResponseDto,
+  review: ReviewState,
+  categories: CategoryResponseDto[]
+): { review: ReviewState; applied: number } {
+  const byName = new Map<string, string>();
+  for (const c of categories) {
+    if (c.type !== CategoryType.Expense) continue;
+    const key = normalizeCategoryName(c.name);
+    if (!byName.has(key)) byName.set(key, c.id);
+  }
+
+  let applied = 0;
+  const items = { ...review.items };
+  for (const item of job.items) {
+    const state = items[item.id];
+    if (!state || state.categoryId || !item.categoryHint) continue;
+    const id = byName.get(normalizeCategoryName(item.categoryHint));
+    if (!id) continue;
+    items[item.id] = { ...state, categoryId: id };
+    applied++;
+  }
+  return applied === 0 ? { review, applied } : { review: { ...review, items }, applied };
 }

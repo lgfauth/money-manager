@@ -96,6 +96,8 @@ export function useCompleteOnboarding(connectionId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.bankConnections });
       qc.invalidateQueries({ queryKey: queryKeys.bankConnectionsAvailable });
+      // Cartão vinculado/desvinculado do Open Finance muda quem pode importar fatura
+      qc.invalidateQueries({ queryKey: queryKeys.invoiceImportEligibleCards });
       toast.success("Banco conectado! Importando transações...");
     },
     onError: (error) =>
@@ -113,6 +115,8 @@ export function useSyncBank() {
       qc.invalidateQueries({ queryKey: queryKeys.bankConnections });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      // Cartão vinculado/desvinculado do Open Finance muda quem pode importar fatura
+      qc.invalidateQueries({ queryKey: queryKeys.invoiceImportEligibleCards });
       invalidateFinancialSummaries(qc);
       qc.invalidateQueries({ queryKey: ["transactions"] });
       qc.invalidateQueries({ queryKey: ["credit-card-transactions"] });
@@ -141,6 +145,8 @@ export function useDisconnectBank() {
       qc.invalidateQueries({ queryKey: queryKeys.bankConnections });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      // Cartão vinculado/desvinculado do Open Finance muda quem pode importar fatura
+      qc.invalidateQueries({ queryKey: queryKeys.invoiceImportEligibleCards });
       toast.success("Banco desconectado");
     },
     onError: (error) =>
@@ -159,6 +165,8 @@ export function useUnlinkBankAccount() {
       qc.invalidateQueries({ queryKey: queryKeys.bankConnections });
       qc.invalidateQueries({ queryKey: queryKeys.accounts });
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
+      // Cartão vinculado/desvinculado do Open Finance muda quem pode importar fatura
+      qc.invalidateQueries({ queryKey: queryKeys.invoiceImportEligibleCards });
       toast.success("Conta/cartão desvinculado com sucesso");
     },
     onError: (error) =>

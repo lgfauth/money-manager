@@ -21,11 +21,14 @@ public sealed record InvoiceDocumentFileDto(string ContentType, byte[] Content);
 
 /// <summary>
 /// Entrada da análise. <paramref name="Today"/> é a data de hoje informada à IA (sem ela o modelo não sabe a data atual).
+/// <paramref name="CategoryNames"/> são as categorias de despesa entre as quais a IA escolhe a de cada item
+/// (vazio ou null: a IA não sugere categoria).
 /// </summary>
 public sealed record InvoiceDocumentAnalysisRequestDto(
     InvoiceImportSourceType SourceType,
     IReadOnlyList<InvoiceDocumentFileDto> Files,
-    DateOnly Today);
+    DateOnly Today,
+    IReadOnlyList<string>? CategoryNames = null);
 
 /// <summary>
 /// Data lida do documento. <paramref name="Year"/> é null quando o documento não mostra o ano

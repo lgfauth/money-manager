@@ -1,5 +1,6 @@
 using MoneyManager.Application.Services;
 using MoneyManager.Domain.Entities;
+using MoneyManager.Domain.Enums;
 using MoneyManager.Domain.Interfaces;
 using NSubstitute;
 using Xunit;
@@ -113,15 +114,17 @@ public class OnboardingServiceTests
     // --- GetCategorySuggestionsAsync ---
 
     [Fact]
-    public async Task GetCategorySuggestionsAsync_ShouldReturnDefaultSuggestions()
+    public async Task GetCategorySuggestionsAsync_ShouldReturnDefaultCategoryList()
     {
         // Act
         var result = await _service.GetCategorySuggestionsAsync();
 
-        // Assert
-        Assert.NotEmpty(result);
-        Assert.Contains(result, s => s.Name == "Salário");
-        Assert.Contains(result, s => s.Name == "Alimentação");
+        // Assert — mesma lista do "Criar categorias padrão", na mesma ordem
+        Assert.Equal(
+            MoneyManager.Domain.Seeds.DefaultCategorySeed.Categories.Select(c => (c.Name, c.Type, c.Color)),
+            result.Select(s => (s.Name, s.Type, s.Color)));
+        Assert.All(result, s => Assert.True(s.IsDefault));
+        Assert.Contains(result, s => s.Name == "Renda & Recebimentos" && s.Type == CategoryType.Income);
     }
 
     // --- CompleteOnboardingAsync ---

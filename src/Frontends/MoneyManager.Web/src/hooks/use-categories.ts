@@ -7,6 +7,7 @@ import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import type {
   CategoryRequestDto,
   CategoryResponseDto,
+  CreateDefaultCategoriesResponseDto,
 } from "@/types/category";
 import { toast } from "sonner";
 
@@ -55,5 +56,28 @@ export function useDeleteCategory() {
       toast.success("Categoria excluída");
     },
     onError: (error) => toast.error(getApiErrorMessage(error, "Erro ao excluir categoria")),
+  });
+}
+
+/** Cria as categorias da lista padrão que o usuário ainda não tem (idempotente no servidor). */
+export function useCreateDefaultCategories() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<CreateDefaultCategoriesResponseDto>("/api/categories/defaults", {}),
+    onSuccess: (result) => {
+      qc.setQueryData(queryKeys.categories, result.categories);
+      qc.invalidateQueries({ queryKey: queryKeys.categories });
+      invalidateFinancialSummaries(qc);
+      toast.success(
+        result.createdCount === 0
+          ? "Você já tem todas as categorias padrão"
+          : result.createdCount === 1
+            ? "1 categoria padrão criada"
+            : `${result.createdCount} categorias padrão criadas`
+      );
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Erro ao criar as categorias padrão")),
   });
 }

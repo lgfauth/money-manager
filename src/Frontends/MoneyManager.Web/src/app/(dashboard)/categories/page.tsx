@@ -36,6 +36,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { ColorPicker } from "@/components/shared/color-picker";
 import { CardGridSkeleton } from "@/components/shared/loading-skeleton";
+import { CreateDefaultCategoriesButton } from "@/components/categories/create-default-categories-button";
 import { categorySchema, type CategoryFormData } from "@/lib/validators";
 import {
   useCategories,
@@ -116,13 +117,16 @@ export default function CategoriesPage() {
   const renderGrid = (items: CategoryResponseDto[]) => {
     if (items.length === 0) {
       return (
-        <EmptyState
-          icon={Tags}
-          title="Nenhuma categoria"
-          description="Crie sua primeira categoria para organizar suas finanças"
-          actionLabel="Nova Categoria"
-          onAction={openCreate}
-        />
+        <div className="flex flex-col items-center">
+          <EmptyState
+            icon={Tags}
+            title="Nenhuma categoria"
+            description="Crie sua primeira categoria ou comece pela lista padrão, que você pode editar depois"
+            actionLabel="Nova Categoria"
+            onAction={openCreate}
+          />
+          <CreateDefaultCategoriesButton className="-mt-8 mb-8" />
+        </div>
       );
     }
 
@@ -177,6 +181,7 @@ export default function CategoriesPage() {
   return (
     <div className="space-y-6">
       <PageHeader title="Categorias" description="Organize suas receitas e despesas">
+        <CreateDefaultCategoriesButton />
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Categoria

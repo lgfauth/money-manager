@@ -1,6 +1,7 @@
 using MoneyManager.Application.DTOs.Response;
 using MoneyManager.Domain.Interfaces;
 using MoneyManager.Domain.Enums;
+using MoneyManager.Domain.Seeds;
 
 namespace MoneyManager.Application.Services;
 
@@ -75,21 +76,20 @@ public class OnboardingService : IOnboardingService
         };
     }
 
-    public async Task<List<CategorySuggestionDto>> GetCategorySuggestionsAsync()
+    /// <summary>Sugestões de categorias do onboarding: a mesma lista padrão do botão "Criar categorias padrão".</summary>
+    public Task<List<CategorySuggestionDto>> GetCategorySuggestionsAsync()
     {
-        return await Task.FromResult(new List<CategorySuggestionDto>
-        {
-            // Receitas
-            new CategorySuggestionDto { Name = "Salário", Type = CategoryType.Income, Color = "#28a745", Icon = "fa-money-bill-wave", IsDefault = true },
-            new CategorySuggestionDto { Name = "Freelance", Type = CategoryType.Income, Color = "#17a2b8", Icon = "fa-laptop-code", IsDefault = true },
-            new CategorySuggestionDto { Name = "Investimentos", Type = CategoryType.Income, Color = "#20c997", Icon = "fa-chart-line", IsDefault = true },
-            
-            // Despesas
-            new CategorySuggestionDto { Name = "Moradia", Type = CategoryType.Expense, Color = "#fd7e14", Icon = "fa-home", IsDefault = true },
-            new CategorySuggestionDto { Name = "Alimentação", Type = CategoryType.Expense, Color = "#dc3545", Icon = "fa-utensils", IsDefault = true },
-            new CategorySuggestionDto { Name = "Transporte", Type = CategoryType.Expense, Color = "#ffc107", Icon = "fa-car", IsDefault = true },
-            new CategorySuggestionDto { Name = "Lazer", Type = CategoryType.Expense, Color = "#007bff", Icon = "fa-gamepad", IsDefault = true },
-        });
+        var suggestions = DefaultCategorySeed.Categories
+            .Select(c => new CategorySuggestionDto
+            {
+                Name = c.Name,
+                Type = c.Type,
+                Color = c.Color,
+                IsDefault = true
+            })
+            .ToList();
+
+        return Task.FromResult(suggestions);
     }
 
     public async Task CompleteOnboardingAsync(string userId)

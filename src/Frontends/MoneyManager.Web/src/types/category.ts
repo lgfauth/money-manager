@@ -15,3 +15,9 @@ export interface CategoryResponseDto {
   type: CategoryType;
   color: string;
 }
+
+/** Resposta de POST /api/categories/defaults: quantas foram criadas e as categorias ativas do usuário. */
+export interface CreateDefaultCategoriesResponseDto {
+  createdCount: number;
+  categories: CategoryResponseDto[];
+}

@@ -164,6 +164,7 @@ A lista completa está no Swagger (em `Development`). Alguns exemplos:
 ### Categorias, Contas e Transações
 
 - `POST|GET /api/categories`, `GET|PUT|DELETE /api/categories/{id}`
+- `POST /api/categories/defaults` (cria as categorias padrão que faltam)
 - `POST|GET /api/accounts`, `GET|PUT|DELETE /api/accounts/{id}`
 - `POST|GET /api/transactions`, `GET|PUT|DELETE /api/transactions/{id}`
 

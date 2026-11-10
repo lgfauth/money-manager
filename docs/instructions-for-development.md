@@ -169,6 +169,11 @@ financeiras do usuário autenticado. Controllers atuais:
 Destaques:
 
 - **JWT em cookie httpOnly**, com logout que revoga o token (`TokenBlacklistService`).
+- **Categorias padrão** (`POST /api/categories/defaults`, `CategoryService.CreateDefaultsAsync`):
+  cria as categorias da lista `DefaultCategorySeed` (`Domain/Seeds`) que o usuário ainda não
+  tem — mesmo nome e tipo, sem diferenciar acentos e maiúsculas —, reativa as padrão excluídas
+  e devolve as categorias ativas. Idempotente; acionada pelo botão "Criar categorias padrão"
+  da página de categorias e da revisão da importação de fatura.
 - **Análise de comprovantes por IA** (`Receipts`) — envia imagem para a API da
   Anthropic (Claude) e extrai descrição, valor, data e categoria.
 - **Importação de fatura de cartão por IA** (`CreditCardInvoiceImports` →
@@ -326,7 +331,14 @@ Destaques:
   fatura "aberta"/"parcial" ou com fechamento depois de hoje → `Failed`; sem
   fechamento no documento ele é calculado pelo `ClosingDay` (alerta informativo);
   datas sem ano assumem o ano corrente (ano anterior se caírem depois do fechamento);
-  itens com data futura, compra à vista/1ª parcela com mais de 60 dias, valor zero ou
+  a IA devolve datas na ordem brasileira (`DD/MM/AAAA` ou `DD/MM`) e, se o vencimento
+  não cair de 1 a 45 dias após o fechamento, a revisão tenta inverter dia e mês de uma
+  ou das duas datas e, achando um par coerente, usa-o com alerta informativo
+  `DocumentDateCorrected`; categoria de cada item: a IA escolhe entre as categorias de
+  despesa ativas do usuário (bloco `<categories>` após o documento; sem nenhuma, a lista
+  padrão de despesas do `DefaultCategorySeed`) e a revisão usa primeiro o histórico — a
+  categoria da compra de cartão mais recente do usuário com a mesma descrição comparável
+  (`NormalizeDescription`) — e, sem histórico, a sugestão da IA casada por nome; itens com data futura, compra à vista/1ª parcela com mais de 60 dias, valor zero ou
   descrição/data vazia ficam bloqueados; fechamento/vencimento divergente do cadastro
   do cartão gera alerta (até 3 dias informativo, acima bloqueante); titulares
   agrupados por nome normalizado e prefixo, com pré-seleção (última importação

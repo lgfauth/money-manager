@@ -28,5 +28,7 @@ public enum InvoiceImportWarningCode
     DueDayMismatch,
     InvoiceAlreadyImported,
     UnreadableContent,
-    CellTruncated
+    CellTruncated,
+    /// <summary>Fechamento ou vencimento lido com dia e mês invertidos e corrigido pela coerência entre as duas datas.</summary>
+    DocumentDateCorrected
 }

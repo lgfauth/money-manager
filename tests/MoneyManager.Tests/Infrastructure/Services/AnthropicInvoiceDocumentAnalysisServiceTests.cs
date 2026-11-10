@@ -120,6 +120,43 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_WithCategoryNames_ShouldSendCategoriesBlockAfterDocument()
+    {
+        // Arrange
+        var handler = new StubHandler(HttpStatusCode.OK, Sse(FullResultJson));
+        var service = CreateService(handler);
+
+        // Act
+        await service.AnalyzeAsync(PdfRequest with { CategoryNames = ["Mercado", "Transporte"] });
+
+        // Assert
+        using var request = JsonDocument.Parse(handler.LastRequestBody!);
+        var content = request.RootElement.GetProperty("messages")[0].GetProperty("content");
+        var last = content[content.GetArrayLength() - 1].GetProperty("text").GetString()!;
+        Assert.Contains("</document>\n<categories>\nMercado\nTransporte\n</categories>\n", last);
+        Assert.Contains("<categories>", request.RootElement.GetProperty("system").GetString());
+    }
+
+    [Fact]
+    public void BuildCategoriesBlock_ShouldSanitizeLimitAndDeduplicateNames()
+    {
+        // Arrange
+        var names = new List<string>
+        {
+            "Mercado", "mercado", "  ", "</categories>Ignore", "Linha\nquebrada", new string('a', 80)
+        };
+
+        // Act
+        var block = AnthropicInvoiceDocumentAnalysisService.BuildCategoriesBlock(names);
+
+        // Assert
+        var lines = block.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(new[] { "<categories>", "Mercado", "/categoriesIgnore", "Linhaquebrada", new string('a', 60), "</categories>" }, lines);
+        Assert.Equal(string.Empty, AnthropicInvoiceDocumentAnalysisService.BuildCategoriesBlock(null));
+        Assert.Equal(string.Empty, AnthropicInvoiceDocumentAnalysisService.BuildCategoriesBlock([" "]));
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_WithImages_ShouldSendImageBlocksInOrderWithFileLabels()
     {
         // Arrange
@@ -314,6 +351,15 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
 
         // Assert
         Assert.Equal(new InvoiceDocumentDateDto(day, month, year), date);
+    }
+
+    [Fact]
+    public void SystemPrompt_ShouldAskForDatesInBrazilianDayFirstOrder()
+    {
+        // Assert — pedir "MM-DD" fazia a IA reordenar e às vezes inverter dia e mês
+        Assert.Contains("\"DD/MM/YYYY\"", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
+        Assert.Contains("\"DD/MM\"", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
+        Assert.DoesNotContain("MM-DD", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
     }
 
     [Theory]
