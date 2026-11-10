@@ -39,6 +39,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { InvoiceImportIndicator } from "@/components/invoice-imports/invoice-import-indicator";
 import { Breadcrumb } from "./breadcrumb";
 
 export function Header() {
@@ -73,11 +74,12 @@ export function Header() {
       </Button>
 
       {/* Breadcrumb */}
-      <div className="flex-1">
+      <div className="min-w-0 flex-1 overflow-hidden">
         <Breadcrumb pathname={pathname} />
       </div>
 
       <div className="flex items-center gap-1">
+        <InvoiceImportIndicator />
         <Button
           variant="ghost"
           size="icon"

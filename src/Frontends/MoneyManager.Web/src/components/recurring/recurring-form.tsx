@@ -33,6 +33,7 @@ import {
 import { MoneyInput } from "@/components/shared/money-input";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { cn } from "@/lib/utils";
+import { toDateInputValue } from "@/lib/dates";
 
 interface RecurringFormProps {
   open: boolean;
@@ -117,8 +118,8 @@ export function RecurringForm({
         accountId: editingRecurring.accountId,
         categoryId: editingRecurring.categoryId,
         frequency: editingRecurring.frequency,
-        startDate: editingRecurring.startDate.split("T")[0],
-        endDate: editingRecurring.endDate?.split("T")[0],
+        startDate: toDateInputValue(editingRecurring.startDate),
+        endDate: editingRecurring.endDate ? toDateInputValue(editingRecurring.endDate) : undefined,
         isActive: editingRecurring.isActive,
         notes: editingRecurring.notes ?? "",
       });

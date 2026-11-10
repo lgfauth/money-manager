@@ -29,9 +29,6 @@ const routeHrefOverrides: Record<string, string> = {
   "credit-cards": "/bancos-e-contas",
 };
 
-// A lista de importações de fatura ainda não tem página própria
-const nonNavigableBreadcrumbHrefs = new Set<string>(["/credit-cards/invoice-imports"]);
-
 const ID_SEGMENT_PATTERN = /^(?:[0-9a-f]{24}|[0-9a-f]{32}|[0-9a-f-]{36})$/i;
 
 interface BreadcrumbProps {
@@ -78,12 +75,11 @@ export function Breadcrumb({ pathname }: BreadcrumbProps) {
       </Link>
       {visibleSegments.map((item, i) => {
         const isLast = i === visibleSegments.length - 1;
-        const isNavigable = !nonNavigableBreadcrumbHrefs.has(item.href);
 
         return (
           <Fragment key={item.href}>
             <ChevronRight className="h-3 w-3" />
-            {isLast || !isNavigable ? (
+            {isLast ? (
               <span className="font-medium text-foreground">{item.label}</span>
             ) : (
               <Link

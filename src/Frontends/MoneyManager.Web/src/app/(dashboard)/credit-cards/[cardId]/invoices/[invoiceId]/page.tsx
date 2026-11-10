@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileText, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { formatDateOnly } from "@/lib/dates";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { TableSkeleton } from "@/components/shared/loading-skeleton";
@@ -19,15 +20,6 @@ import {
 import type { CreditCardTransactionResponseDto } from "@/types/credit-card";
 import { useBreadcrumbLabel } from "@/stores/breadcrumb-store";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
-
-const fmtDate = (iso: string) => {
-  const d = new Date(iso);
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
-};
 
 const fmtRefMonth = (ref: string) => {
   const [year, month] = ref.split("-").map(Number);
@@ -122,17 +114,17 @@ export default function InvoiceDetailPage() {
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Fechamento</p>
-          <p className="text-lg font-semibold">{fmtDate(invoice.closingDate)}</p>
+          <p className="text-lg font-semibold">{formatDateOnly(invoice.closingDate)}</p>
         </div>
         <div className="rounded-xl border bg-card p-4">
           <p className="text-xs text-muted-foreground">Vencimento</p>
-          <p className="text-lg font-semibold">{fmtDate(invoice.dueDate)}</p>
+          <p className="text-lg font-semibold">{formatDateOnly(invoice.dueDate)}</p>
         </div>
       </div>
 
       {invoice.status === "paid" && invoice.paidAt && (
         <div className="rounded-lg border border-income/30 bg-income/10 p-3 text-sm text-income">
-          Fatura paga em {fmtDate(invoice.paidAt)}
+          Fatura paga em {formatDateOnly(invoice.paidAt)}
           {invoice.paidAmount !== null &&
             ` — ${formatMonetaryValue(invoice.paidAmount, invoice.currency)}`}
           .
@@ -170,7 +162,7 @@ export default function InvoiceDetailPage() {
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    {tx.categoryName} · {fmtDate(tx.purchaseDate)}
+                    {tx.categoryName} · {formatDateOnly(tx.purchaseDate)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">

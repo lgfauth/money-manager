@@ -391,16 +391,6 @@
       "closingDay": "Dia do Fechamento do Mês",
       "defaultBudget": "Orçamento Padrão"
     },
-    "notifications": {
-      "title": "Notificações Push",
-      "enable": "Habilitar Notificações",
-      "enableDesc": "Receba notificações sobre sua conta",
-      "recurring": "Notificar Recorrentes Processadas",
-      "recurringDesc": "Aviso quando transações recorrentes forem processadas",
-      "dailyReminder": "Lembrete Diário",
-      "dailyReminderDesc": "Resumo diário das suas finanças",
-      "test": "Testar Notificação"
-    },
     "appearance": {
       "title": "Aparência",
       "theme": "Tema",

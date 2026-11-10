@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { useMoneyPrivacyStore } from "@/stores/money-privacy-store";
+import { useInvoiceImportDraftStore } from "@/stores/invoice-import-draft-store";
 
 interface DecodedUser {
   id: string;
@@ -58,12 +59,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: (user: DecodedUser, token?: string) => {
     if (token) writeSessionToken(token);
     useMoneyPrivacyStore.getState().setHideMoneyValues(true);
+    useInvoiceImportDraftStore.getState().ensureOwner(user.id);
     set({ user, token: token ?? null, isAuthenticated: true, isHydrated: true });
   },
 
   logout: () => {
     clearSessionToken();
     useMoneyPrivacyStore.getState().setHideMoneyValues(true);
+    // Rascunhos de revisão têm descrições e valores da fatura: não ficam no navegador
+    useInvoiceImportDraftStore.getState().clearAll();
     set({ user: null, token: null, isAuthenticated: false });
   },
 
@@ -84,6 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (res.ok) {
         const user: DecodedUser = await res.json();
         useMoneyPrivacyStore.getState().setHideMoneyValues(true);
+        useInvoiceImportDraftStore.getState().ensureOwner(user.id);
         set({ user, token: sessionToken, isAuthenticated: true, isHydrated: true });
       } else {
         clearSessionToken();

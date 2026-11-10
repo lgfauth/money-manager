@@ -9,10 +9,12 @@ import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { TermsConsentModal } from "@/components/lgpd/terms-consent-modal";
 import { WhatsNewModal } from "@/components/layout/whats-new-modal";
+import { InvoiceImportWatcher } from "@/components/invoice-imports/invoice-import-watcher";
 import { ReceiptFab } from "@/components/receipts/ReceiptFab";
 import { ReceiptConfirmationModal } from "@/components/receipts/ReceiptConfirmationModal";
 import type { ReceiptAnalysisResult } from "@/types/receipt";
 import { useUnlinkedTargets } from "@/hooks/use-unlinked-targets";
+import { removeLegacyPushServiceWorker } from "@/lib/legacy-service-worker-cleanup";
 import {
   LEGAL_PRIVACY_POLICY_URL,
   LEGAL_TERMS_OF_USE_URL,
@@ -32,6 +34,13 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [receiptResult, setReceiptResult] = useState<ReceiptAnalysisResult | null>(null);
   const { hasAnyManualTarget } = useUnlinkedTargets();
+
+  // Temporário: remove o service worker de push antigo (especificação 004)
+  useEffect(() => {
+    removeLegacyPushServiceWorker().catch(() => {
+      // Sem impacto no app: o worker antigo só seria removido na próxima visita
+    });
+  }, []);
 
   const handleReceiptResult = useCallback((r: ReceiptAnalysisResult) => {
     setReceiptResult(r);
@@ -89,6 +98,7 @@ export default function DashboardLayout({
         onAccept={handleAcceptTerms}
       />
       <WhatsNewModal />
+      <InvoiceImportWatcher />
     </div>
   );
 }

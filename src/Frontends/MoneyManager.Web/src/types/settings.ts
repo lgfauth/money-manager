@@ -3,9 +3,6 @@ export interface UserSettingsDto {
   dateFormat: string;
   monthClosingDay: number;
   defaultBudget?: number;
-  pushNotificationsEnabled: boolean;
-  notifyRecurringProcessed: boolean;
-  notifyDailyReminder: boolean;
   theme: string;
   primaryColor: string;
 }

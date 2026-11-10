@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/shared/money-input";
 import { cn } from "@/lib/utils";
+import { todayDateInputValue } from "@/lib/dates";
 import { Check, ChevronRight, ChevronLeft } from "lucide-react";
 import type { UpsertFinancialHealthSettingsRequest } from "@/types/financial-health";
 import { CategoryType } from "@/types/category";
@@ -98,15 +99,11 @@ export default function FinancialHealthSetupPage() {
   });
 
   const [reserveBalance, setReserveBalance] = useState(0);
-  const [reserveDate, setReserveDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [reserveDate, setReserveDate] = useState(todayDateInputValue);
   const [reserveRate, setReserveRate] = useState(DEFAULT_RESERVE_RATE);
 
   const [fireBalance, setFireBalance] = useState(0);
-  const [fireDate, setFireDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [fireDate, setFireDate] = useState(todayDateInputValue);
   const [fireRate, setFireRate] = useState(DEFAULT_FIRE_RATE);
 
   const [reserveCategoryIds, setReserveCategoryIds] = useState<string[]>([]);

@@ -38,16 +38,16 @@ app/
     register/
     account-deleted/
   (dashboard)/      ← route group: protected pages (require authentication)
-    layout.tsx      ← client-side auth guard + main shell (sidebar, header, mobile-nav)
+    layout.tsx      ← client-side auth guard + main shell (sidebar, header, mobile-nav); removes the legacy push service worker
     template.tsx
     page.tsx        ← dashboard home
     transactions/
     accounts/
-    bancos-e-contas/
+    bancos-e-contas/ ← unified accounts + credit cards list; the "Cartões de Crédito" section holds the invoice import entry points ("Importar fatura", "Importações de fatura")
     bank-connections/
     budgets/
     categories/
-    credit-cards/   ← cards, invoices and invoice-imports/ (AI invoice import: new = upload, [importId] = tracking, review/confirmation, result)
+    credit-cards/   ← cards, invoices and invoice-imports/ (AI invoice import: list of the 20 most recent, new = upload, [importId] = tracking, review/confirmation, result)
     financial-health/
     reports/        ← financial reports (data from GET /api/reports/overview)
     report/         ← user feedback / bug report form
@@ -71,7 +71,7 @@ components/
   bank-connections/
   budgets/
   credit-cards/
-  invoice-imports/  ← AI invoice import (upload: card picker, file picker with drag-and-drop/camera; status badge, processing steps, invoice summary/warnings, review: holders, items list, item editor sheet, totals/confirmation, result)
+  invoice-imports/  ← AI invoice import (header indicator, transition watcher with toasts; upload: card picker, file picker with drag-and-drop/camera; status badge, processing steps, invoice summary/warnings, review: holders, items list, item editor sheet, totals/confirmation, result)
   dashboard/        ← dashboard blocks (data from /api/reports/overview + /api/dashboard/summary)
   financial-health/
   receipts/
@@ -94,6 +94,8 @@ i18n/
 lib/
   api-client.ts     ← fetch wrapper (fetchWithAuth, apiClient object)
   api-errors.ts     ← ApiClientError class + error message extraction
+  dates.ts          ← date-only values from the API (format, date input value, local today) — no time-zone conversion
+  legacy-service-worker-cleanup.ts ← temporary removal of the old push service worker (/sw.js)
   invoice-import.ts ← invoice import labels, route helper, active statuses, polling interval, date formatting
   invoice-import-review.ts ← review rules mirrored from the backend (blocking warnings, 60-day/future date, card schedule tolerance, totals, confirm payload) — guidance only, the API revalidates
   money-privacy.ts  ← currency formatting / value masking helpers
@@ -104,6 +106,7 @@ lib/
 stores/
   auth-store.ts     ← Zustand auth state
   breadcrumb-store.ts
+  invoice-import-draft-store.ts ← persisted (localStorage) review drafts of invoice imports
   money-privacy-store.ts
   settings-store.ts
   ui-store.ts
@@ -483,6 +486,7 @@ export const useMyStore = create<MyState>((set) => ({
 Existing stores:
 - `auth-store.ts` — user, token, isAuthenticated, isHydrated; `login`, `logout`, `hydrate`
 - `breadcrumb-store.ts` — page breadcrumb labels
+- `invoice-import-draft-store.ts` — local draft of the invoice import review (selected holders, item selection and edits), per import, persisted in `localStorage` (`mm_invoice_import_drafts`) with zustand `persist`; see "Local drafts of server data" below
 - `money-privacy-store.ts` — whether monetary values are hidden
 - `settings-store.ts` — persisted user display preferences (currency, locale)
 - `ui-store.ts` — sidebar open/collapsed state
@@ -612,15 +616,21 @@ New protected pages placed inside the `(dashboard)/` route group are automatical
 
 - **Money privacy toggle**: `money-privacy-store.ts` + `use-money-privacy.ts` allow users to hide all monetary values across the app. Components read from this store rather than implementing their own hide/show logic.
 
-- **Conditional polling for background jobs**: `use-invoice-imports.ts` polls an import only while it is active (`Queued`, `Processing`, `Confirming`) through a `refetchInterval` function that returns `false` in final states; the interval pauses with the tab hidden (TanStack Query default) and the query refetches on window focus. Follow this pattern for any job processed by the Worker — never poll unconditionally.
+- **Conditional polling for background jobs**: `use-invoice-imports.ts` polls an import only while it is active (`Queued`, `Processing`, `Confirming`) through a `refetchInterval` function that returns `false` in final states; the interval pauses with the tab hidden (TanStack Query default) and the query refetches on window focus. Follow this pattern for any job processed by the Worker — never poll unconditionally. The list (`useRecentInvoiceImports`, shared by the list page, the header indicator `InvoiceImportIndicator` and the toast watcher `InvoiceImportWatcher` rendered in the dashboard layout) polls every 10 s only while some job is active; with none, it queries only on load and on window focus.
+
+- **Background job notifications**: `InvoiceImportWatcher` compares each list response with the previous one and shows a `sonner` toast when an import goes from active to `AwaitingReview` or `Failed`. The first response after loading the page only records the statuses (nothing is notified again after a reload), and the toast is skipped when the user is on that import's page or the import detail cache already shows the new status.
 
 - **Multipart upload with progress**: `useCreateInvoiceImport` (`use-invoice-imports.ts`) sends the invoice files with `XMLHttpRequest` instead of `apiClient.postForm`, because `fetch` does not report upload progress. It sends the same Bearer token and cookie as `apiClient`, handles `401` the same way and exposes `progress` (0–100). Upload limits and messages mirror `CreateInvoiceImportValidator` in `lib/invoice-import.ts` (`validateInvoiceImportFiles`), so invalid batches are refused without calling the API; files without a browser-reported type get it from the extension before sending. On errors the page keeps the chosen files.
+
+- **No service worker / no push**: the Web has no service worker and no browser (Web Push) notifications — users are notified only inside the app (header indicator and toasts). `lib/legacy-service-worker-cleanup.ts`, called once by the dashboard layout, unregisters the old `/sw.js` and its push subscription in browsers that installed it before it was removed (spec 004); it is temporary and can be deleted in a future version. Do not add a service worker for notifications.
+
+- **Local drafts of server data**: the invoice import review keeps the user's unsaved work in `invoice-import-draft-store.ts`, never the server data itself (that stays in TanStack Query). A draft stores the import `version`; `InvoiceImportReview` restores it only when the version still matches (`restoreReviewState` in `lib/invoice-import-review.ts`) and otherwise discards it with a warning. It saves only when the state differs from the server's (`isSameReviewState`) and offers "Desfazer alterações". Drafts hold invoice descriptions and amounts, so they are cleared on confirm/discard (mutation `onSuccess`), when the import leaves `AwaitingReview` or returns `404`, on `logout()` and when another user logs in on the same browser (`ensureOwner`); drafts untouched for 30 days are dropped.
 
 - **`useSearchParams` needs `<Suspense>`**: a client page that reads query parameters (e.g. `credit-cards/invoice-imports/new?cardId=`) wraps the component that calls `useSearchParams` in `<Suspense>`; otherwise the production build fails while prerendering the route.
 
 - **Mirrored business rules are guidance only**: `lib/invoice-import-review.ts` repeats backend rules (item warnings, card closing/due tolerance) so the review can explain and block early, but the confirmation is always revalidated by the API. Keep these rules in that single file and update them together with the backend. For error lists, read `message` and `errors` from the `ApiErrorResponse` (`error.data`) with `readInvoiceImportApiError` (`lib/invoice-import.ts`) — `getApiErrorMessages` also collects `traceId`, `path` and the timestamp.
 
-- **Date-only values from the API**: dates without time (invoice closing/due dates, purchase dates) arrive as UTC midnight. Format them by calendar parts (`formatDateOnly` in `lib/invoice-import.ts`), not with `new Date(iso)`, which shows the previous day in Brazilian time.
+- **Date-only values from the API**: dates without time (transaction and purchase dates, invoice closing/due/payment dates, next occurrence) arrive as UTC midnight (e.g. `2026-10-22T00:00:00Z`). Always go through `lib/dates.ts`: `formatDateOnly(value)` / `formatDateOnly(value, { short: true })` for display (`dd/MM/aaaa` / `dd/MM`), `toDateInputValue(value)` to fill an `<input type="date">` and `todayDateInputValue()` for "today" in the local calendar. They read the `yyyy-MM-dd` part of the string, with no time-zone conversion. Never use `new Date(iso)` + `format`/`Intl` for these values — in Brazilian time it shows (and, in edit forms, saves) the previous day — nor `new Date().toISOString().slice(0, 10)` for today, which is already tomorrow after 21:00 in Brasília. Instants with a real time (`lastSyncAt`, `createdAt` of an import, terms `lastUpdatedAt`) keep using `new Date(iso)` in the browser time zone (`formatDateTime` in `lib/invoice-import.ts`).
 
 - **Centralized constants**: `src/config/constants.ts` holds `DEFAULT_PAGE_SIZE`, `DEFAULT_CURRENCY`, color presets, and threshold percentages. No magic numbers are scattered through the codebase.
 

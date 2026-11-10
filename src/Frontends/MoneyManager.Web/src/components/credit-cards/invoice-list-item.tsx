@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { InvoiceStatusBadge } from "@/components/credit-cards/invoice-status-badge";
+import { formatDateOnly } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import type { CreditCardInvoiceResponseDto } from "@/types/credit-card";
@@ -14,15 +15,6 @@ interface InvoiceListItemProps {
   onOpenInvoice?: () => void;
   isOpeningInvoice?: boolean;
 }
-
-const fmtDate = (iso: string) => {
-  const d = new Date(iso);
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
-};
 
 const fmtRefMonth = (ref: string) => {
   const [year, month] = ref.split("-").map(Number);
@@ -57,8 +49,8 @@ export function InvoiceListItem({
           <InvoiceStatusBadge status={invoice.status} />
         </div>
         <p className="text-[11px] text-muted-foreground">
-          Fechamento {fmtDate(invoice.closingDate)} · Vencimento{" "}
-          {fmtDate(invoice.dueDate)}
+          Fechamento {formatDateOnly(invoice.closingDate)} · Vencimento{" "}
+          {formatDateOnly(invoice.dueDate)}
         </p>
       </div>
       <div className="flex items-center gap-3">
@@ -68,7 +60,7 @@ export function InvoiceListItem({
           </p>
           {invoice.status === "paid" && invoice.paidAt && (
             <p className="text-[11px] text-muted-foreground">
-              Pago em {fmtDate(invoice.paidAt)}
+              Pago em {formatDateOnly(invoice.paidAt)}
             </p>
           )}
         </div>

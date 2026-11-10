@@ -2,13 +2,12 @@
 
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
-import { Palette, Bell, DollarSign } from "lucide-react";
+import { Palette, DollarSign } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -151,74 +150,6 @@ export default function SettingsPage() {
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Push notifications */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notificações Push
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Habilitar Notificações</p>
-              <p className="text-xs text-muted-foreground">
-                Receba notificações sobre sua conta
-              </p>
-            </div>
-            <Switch
-              checked={settings.pushNotificationsEnabled}
-              onCheckedChange={(v) =>
-                handleUpdate({ pushNotificationsEnabled: v })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">
-                Notificar Recorrentes Processadas
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Aviso quando transações recorrentes forem processadas
-              </p>
-            </div>
-            <Switch
-              checked={settings.notifyRecurringProcessed}
-              onCheckedChange={(v) =>
-                handleUpdate({ notifyRecurringProcessed: v })
-              }
-              disabled={!settings.pushNotificationsEnabled}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Lembrete Diário</p>
-              <p className="text-xs text-muted-foreground">
-                Resumo diário das suas finanças
-              </p>
-            </div>
-            <Switch
-              checked={settings.notifyDailyReminder}
-              onCheckedChange={(v) =>
-                handleUpdate({ notifyDailyReminder: v })
-              }
-              disabled={!settings.pushNotificationsEnabled}
-            />
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!settings.pushNotificationsEnabled}
-          >
-            Testar Notificação
-          </Button>
         </CardContent>
       </Card>
 

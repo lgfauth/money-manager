@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileUp, FileX, Loader2, RotateCcw, Trash2, XCircle } from "lucide-react";
 
@@ -17,8 +17,9 @@ import { InvoiceImportResult } from "@/components/invoice-imports/invoice-import
 import { useCreditCard } from "@/hooks/use-credit-cards";
 import { useDiscardInvoiceImport, useInvoiceImport } from "@/hooks/use-invoice-imports";
 import { ApiClientError } from "@/lib/api-errors";
-import { formatDateTime, newInvoiceImportHref } from "@/lib/invoice-import";
+import { INVOICE_IMPORTS_HREF, formatDateTime, newInvoiceImportHref } from "@/lib/invoice-import";
 import { useBreadcrumbLabel } from "@/stores/breadcrumb-store";
+import { useInvoiceImportDraftStore } from "@/stores/invoice-import-draft-store";
 import type { CreditCardResponseDto } from "@/types/credit-card";
 import type { CreditCardInvoiceImportResponseDto } from "@/types/invoice-import";
 
@@ -34,19 +35,26 @@ export default function InvoiceImportPage() {
 
   useBreadcrumbLabel(importId, "Importação");
 
+  // Rascunho da revisão só serve enquanto ela aguarda revisão (ex.: confirmada em outra aba)
+  const clearDraft = useInvoiceImportDraftStore((s) => s.clearDraft);
+  const notFound = error instanceof ApiClientError && error.statusCode === 404;
+  const leftReview = job !== undefined && job.status !== "AwaitingReview";
+  useEffect(() => {
+    if (importId && (leftReview || (!job && notFound))) clearDraft(importId);
+  }, [importId, leftReview, job, notFound, clearDraft]);
+
   if (isLoading) {
     return <TableSkeleton rows={4} />;
   }
 
   if (!job) {
-    const notFound = error instanceof ApiClientError && error.statusCode === 404;
     return notFound ? (
       <EmptyState
         icon={FileX}
         title="Importação não encontrada"
         description="Esta importação de fatura não existe ou não pertence à sua conta."
-        actionLabel="Ir para Bancos e Contas"
-        onAction={() => router.push("/bancos-e-contas")}
+        actionLabel="Ver importações de fatura"
+        onAction={() => router.push(INVOICE_IMPORTS_HREF)}
       />
     ) : (
       <EmptyState

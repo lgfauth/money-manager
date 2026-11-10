@@ -1,3 +1,28 @@
+# Versão 1.3.1-beta
+
+*Lançamento: 10 de novembro de 2026*
+
+---
+
+## 🐛 Correções e melhorias
+
+### 📅 Data da compra mantida ao editar transação do cartão
+Ao editar uma compra do cartão de crédito, o campo de data vinha com o dia anterior e, ao salvar, a compra recuava um dia — mesmo quando você mudava só a descrição ou a categoria. Agora a data aparece e é salva no dia certo. Compras que já tiveram a data alterada por esse problema precisam ser corrigidas manualmente.
+
+### 🗓️ Datas no dia certo em cartões, faturas, transações e recorrências
+Várias telas mostravam as datas um dia antes: uma compra do dia 22 aparecia como dia 21, e o fechamento do dia 3 como dia 2. Agora aparecem no dia cadastrado a data das compras, o fechamento, o vencimento e o pagamento das faturas (página da fatura, lista de faturas, cartão em Bancos e Contas e lista de compras do cartão), a data das transações e a próxima e a última ocorrência das recorrências.
+
+### 💰 Data inicial da Saúde Financeira no dia de hoje
+Ao configurar a Saúde Financeira à noite (depois das 21h), a data do saldo inicial já vinha preenchida com o dia seguinte. Agora ela vem com a data de hoje.
+
+### 🏦 Importação de fatura também em Bancos e Contas
+O botão **Importar fatura** agora aparece na seção de cartões de crédito de **Bancos e Contas**, junto com o atalho **Importações de fatura** para voltar às importações anteriores. Se você tiver só um cartão disponível para importação, ele já vem escolhido. Quando a importação não estiver disponível (nenhum cartão cadastrado ou apenas cartões sincronizados pelo Open Finance), a tela explica o motivo.
+
+### 💾 Revisão da fatura salva para continuar depois
+Agora você pode sair da revisão de uma fatura importada no meio do caminho e voltar mais tarde, pelo ícone do topo ou pela lista de importações, sem perder o que já fez: titulares escolhidos, lançamentos marcados e correções continuam lá, mesmo se a página for recarregada. As alterações ficam guardadas só neste navegador e são apagadas ao importar, descartar ou sair da conta. Se quiser recomeçar, use **Desfazer alterações**.
+
+---
+
 # Versão 1.3.0-beta
 
 *Lançamento: 9 de novembro de 2026*
@@ -11,6 +36,9 @@ Agora você pode cadastrar os lançamentos de uma fatura fechada de uma só vez.
 
 ### ✅ Você revisa antes de cadastrar
 Quando a leitura termina, você confere cada lançamento: escolhe de quais titulares importar, corrige data, descrição, valor, parcelas e categoria, e marca só o que deve entrar. Alertas explicam o que precisa de atenção, como compras repetidas ou fora do período de 60 dias. Os totais são comparados com o valor da fatura, e nada é cadastrado até você confirmar.
+
+### 🔔 Acompanhe a importação de qualquer tela
+Enquanto a fatura é lida, um ícone no topo da tela mostra as importações em andamento e as que esperam sua revisão. Quando a leitura termina, um aviso aparece onde você estiver, com o atalho para revisar. No mesmo ícone, **Ver todas as importações** mostra as 20 mais recentes, para você voltar a qualquer uma delas.
 
 ### 💳 Disponível para cartões cadastrados manualmente
 Cartões sincronizados pelo Open Finance já recebem as compras automaticamente, por isso a importação fica disponível apenas para os demais cartões.

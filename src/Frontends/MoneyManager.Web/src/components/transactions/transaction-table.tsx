@@ -1,7 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -10,6 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateOnly } from "@/lib/dates";
 import { TransactionType, type TransactionResponseDto } from "@/types/transaction";
 
 import {
@@ -111,7 +110,7 @@ function MobileCard({
             {formatMonetaryValue(transaction.amount, transaction.currency || "BRL")}
           </p>
           <p className="text-[10px] text-muted-foreground">
-            {format(new Date(transaction.date), "dd/MM", { locale: ptBR })}
+            {formatDateOnly(transaction.date, { short: true })}
           </p>
         </div>
         <DropdownMenu>
@@ -164,7 +163,7 @@ export function TransactionTable({
               return (
                 <TableRow key={tx.id}>
                   <TableCell className="whitespace-nowrap">
-                    {format(new Date(tx.date), "dd/MM/yyyy", { locale: ptBR })}
+                    {formatDateOnly(tx.date)}
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate">
                     {tx.description}

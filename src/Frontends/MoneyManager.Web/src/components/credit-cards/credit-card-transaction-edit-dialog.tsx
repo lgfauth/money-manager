@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
 
 import {
   updateCreditCardTransactionSchema,
@@ -11,6 +10,7 @@ import {
 } from "@/lib/validators";
 import { useUpdateCreditCardTransaction } from "@/hooks/use-credit-cards";
 import { useCategories } from "@/hooks/use-categories";
+import { toDateInputValue, todayDateInputValue } from "@/lib/dates";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +63,7 @@ export function CreditCardTransactionEditDialog({
     defaultValues: {
       description: "",
       categoryId: "",
-      purchaseDate: format(new Date(), "yyyy-MM-dd"),
+      purchaseDate: todayDateInputValue(),
       totalAmount: 0,
     },
   });
@@ -77,7 +77,8 @@ export function CreditCardTransactionEditDialog({
     reset({
       description: transaction.description,
       categoryId: transaction.categoryId ?? "",
-      purchaseDate: format(new Date(transaction.purchaseDate), "yyyy-MM-dd"),
+      // Dia do calendário gravado: new Date() recuaria um dia no horário de Brasília
+      purchaseDate: toDateInputValue(transaction.purchaseDate),
       totalAmount: transaction.totalAmount,
     });
   }, [open, transaction, reset, updateTx]);

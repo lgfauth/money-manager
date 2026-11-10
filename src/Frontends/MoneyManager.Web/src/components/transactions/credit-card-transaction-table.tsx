@@ -1,11 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { CreditCard as CreditCardIcon, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatDateOnly } from "@/lib/dates";
 import {
   Table,
   TableBody,
@@ -84,9 +83,7 @@ export function CreditCardTransactionTable({
               return (
                 <TableRow key={tx.id}>
                   <TableCell className="whitespace-nowrap">
-                    {format(new Date(tx.purchaseDate), "dd/MM/yyyy", {
-                      locale: ptBR,
-                    })}
+                    {formatDateOnly(tx.purchaseDate)}
                   </TableCell>
                   <TableCell className="max-w-[220px] truncate">
                     <Link

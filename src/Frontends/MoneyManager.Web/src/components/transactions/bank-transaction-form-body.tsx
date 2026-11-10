@@ -32,6 +32,7 @@ import {
 import { MoneyInput } from "@/components/shared/money-input";
 import { FormErrorSummary } from "@/components/shared/form-error-summary";
 import { cn } from "@/lib/utils";
+import { toDateInputValue } from "@/lib/dates";
 
 interface BankTransactionFormBodyProps {
   open: boolean;
@@ -109,7 +110,7 @@ export function BankTransactionFormBody({
       reset({
         description: editingTransaction.description,
         amount: editingTransaction.amount,
-        date: editingTransaction.date.split("T")[0],
+        date: toDateInputValue(editingTransaction.date),
         type: editingTransaction.type,
         accountId: editingTransaction.accountId,
         categoryId: editingTransaction.categoryId,

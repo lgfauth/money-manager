@@ -1,7 +1,5 @@
 "use client";
 
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   Calendar,
   Clock,
@@ -12,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateOnly } from "@/lib/dates";
 import type { RecurringTransactionResponseDto } from "@/types/recurring";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -115,18 +114,14 @@ export function RecurringCard({
             <p className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               Próxima:{" "}
-              {format(new Date(recurring.nextOccurrence), "dd/MM/yyyy", {
-                locale: ptBR,
-              })}
+              {formatDateOnly(recurring.nextOccurrence)}
             </p>
           )}
           {recurring.lastProcessedDate && (
             <p className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               Ultima:{" "}
-              {format(new Date(recurring.lastProcessedDate), "dd/MM/yyyy", {
-                locale: ptBR,
-              })}
+              {formatDateOnly(recurring.lastProcessedDate)}
             </p>
           )}
         </div>

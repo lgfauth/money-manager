@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Info, Loader2, Pencil } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { AlertTriangle, CheckCircle2, History, Info, Loader2, Pencil, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
@@ -20,7 +21,7 @@ import { useCategories } from "@/hooks/use-categories";
 import { useConfirmInvoiceImport } from "@/hooks/use-invoice-imports";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import { ApiClientError } from "@/lib/api-errors";
-import { readInvoiceImportApiError } from "@/lib/invoice-import";
+import { formatDateTime, readInvoiceImportApiError } from "@/lib/invoice-import";
 import { cn } from "@/lib/utils";
 import {
   blockingScheduleMismatches,
@@ -32,16 +33,41 @@ import {
   isAlreadyImported,
   isBlockingItemWarning,
   isItemIncluded,
+  isSameReviewState,
   requiresHolderChoice,
+  restoreReviewState,
   signedAmount,
   toConfirmItem,
   type ReviewItemState,
   type ReviewState,
 } from "@/lib/invoice-import-review";
+import { useAuthStore } from "@/stores/auth-store";
+import { useInvoiceImportDraftStore } from "@/stores/invoice-import-draft-store";
 import type { CreditCardResponseDto } from "@/types/credit-card";
 import type { CreditCardInvoiceImportResponseDto } from "@/types/invoice-import";
 
 const CONFIRM_FALLBACK_MESSAGE = "Não foi possível importar os lançamentos. Tente de novo.";
+
+interface InitialReview {
+  review: ReviewState;
+  /** Quando o rascunho recuperado foi salvo (ISO), ou null se a revisão partiu do servidor. */
+  restoredAt: string | null;
+  /** Havia rascunho de outra versão da importação: foi descartado. */
+  staleDraft: boolean;
+}
+
+/** Parte do rascunho salvo no navegador quando ele é da mesma versão da importação. */
+function loadInitialReview(
+  job: CreditCardInvoiceImportResponseDto,
+  userId: string | null
+): InitialReview {
+  const { drafts, userId: owner } = useInvoiceImportDraftStore.getState();
+  const draft = userId && owner === userId ? drafts[job.id] : undefined;
+  if (!draft) return { review: buildInitialReviewState(job), restoredAt: null, staleDraft: false };
+  if (draft.version !== job.version)
+    return { review: buildInitialReviewState(job), restoredAt: null, staleDraft: true };
+  return { review: restoreReviewState(job, draft.review), restoredAt: draft.savedAt, staleDraft: false };
+}
 
 interface ConfirmErrors {
   general: string[];
@@ -55,14 +81,22 @@ interface InvoiceImportReviewProps {
 
 /**
  * Revisão de uma importação aguardando confirmação: titulares, lançamentos (seleção e edição),
- * totais e confirmação. As edições ficam só no navegador até a confirmação.
+ * totais e confirmação. As edições ficam só no navegador até a confirmação, salvas como
+ * rascunho por importação e versão (`invoice-import-draft-store`).
  */
 export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
   const { formatMonetaryValue } = useMoneyPrivacy();
   const { data: categories } = useCategories();
   const confirm = useConfirmInvoiceImport();
 
-  const [review, setReview] = useState<ReviewState>(() => buildInitialReviewState(job));
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const saveDraft = useInvoiceImportDraftStore((s) => s.saveDraft);
+  const clearDraft = useInvoiceImportDraftStore((s) => s.clearDraft);
+
+  const [initial] = useState(() => loadInitialReview(job, userId));
+  const [review, setReview] = useState<ReviewState>(initial.review);
+  const [restoredAt, setRestoredAt] = useState(initial.restoredAt);
+  const [undoOpen, setUndoOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cardFormOpen, setCardFormOpen] = useState(false);
@@ -71,6 +105,26 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
   const closingDate = job.invoice?.closingDate ?? null;
   const today = brazilToday();
   const holderChoice = requiresHolderChoice(job);
+
+  // Estado lido do servidor: base para saber se há alterações e para desfazê-las
+  const serverReview = useMemo(() => buildInitialReviewState(job), [job]);
+  const isDirty = !isSameReviewState(review, serverReview);
+
+  // Rascunho de outra versão (a importação mudou no servidor): descartado com aviso
+  useEffect(() => {
+    if (!initial.staleDraft) return;
+    clearDraft(job.id);
+    toast.info("A importação foi atualizada. Suas alterações anteriores foram descartadas.", {
+      id: `invoice-import-draft-stale-${job.id}`,
+    });
+  }, [initial.staleDraft, clearDraft, job.id]);
+
+  // Salva o rascunho a cada alteração; sem alterações, não guarda nada
+  useEffect(() => {
+    if (!userId) return;
+    if (isDirty) saveDraft(userId, job.id, job.version, review);
+    else clearDraft(job.id);
+  }, [review, isDirty, userId, job.id, job.version, saveDraft, clearDraft]);
 
   const categoryNames = useMemo(
     () => new Map((categories ?? []).map((c) => [c.id, c.name])),
@@ -190,6 +244,14 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
     );
   };
 
+  const handleUndo = () => {
+    setUndoOpen(false);
+    setReview(serverReview);
+    setRestoredAt(null);
+    setErrors(null);
+    clearDraft(job.id);
+  };
+
   const editingRow = rows.find((r) => r.item.id === editingId) ?? null;
 
   return (
@@ -249,6 +311,36 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
       )}
 
       <InvoiceImportSummary job={job} />
+
+      {(isDirty || initial.staleDraft) && (
+        <div
+          role="status"
+          className="flex flex-col gap-3 rounded-lg border bg-muted/40 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="flex gap-2 text-muted-foreground">
+            <History className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              {!isDirty
+                ? "Esta importação foi atualizada desde a sua última visita, por isso as alterações que você tinha feito foram descartadas. A revisão mostra os dados atuais."
+                : restoredAt
+                  ? `Você voltou de onde parou: recuperamos as alterações feitas em ${formatDateTime(restoredAt)}. Elas ficam salvas neste navegador até você importar ou descartar.`
+                  : "Suas alterações ficam salvas neste navegador: você pode sair e voltar depois sem perdê-las."}
+            </span>
+          </p>
+          {isDirty && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => setUndoOpen(true)}
+              disabled={confirm.isPending}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Desfazer alterações
+            </Button>
+          )}
+        </div>
+      )}
 
       {holderChoice && (
         <InvoiceImportHolders
@@ -360,6 +452,15 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
           .join(" ")}
         confirmLabel="Importar"
         onConfirm={handleConfirm}
+      />
+
+      <ConfirmDialog
+        open={undoOpen}
+        onOpenChange={setUndoOpen}
+        title="Desfazer alterações?"
+        description="Titulares, seleções e edições voltam a ser os sugeridos na leitura da fatura."
+        confirmLabel="Desfazer"
+        onConfirm={handleUndo}
       />
 
       {card && (

@@ -136,6 +136,49 @@ export function buildInitialReviewState(job: CreditCardInvoiceImportResponseDto)
   };
 }
 
+/**
+ * Aplica um rascunho salvo sobre os dados do servidor. Itens e titulares que não existem mais
+ * são ignorados; itens sem rascunho partem do estado inicial. `AlreadyImported` nunca volta
+ * marcado.
+ */
+export function restoreReviewState(
+  job: CreditCardInvoiceImportResponseDto,
+  draft: ReviewState
+): ReviewState {
+  const initial = buildInitialReviewState(job);
+  const holderNames = new Set(job.holders.map((h) => h.name));
+  const items: Record<string, ReviewItemState> = {};
+  for (const item of job.items) {
+    const saved = draft.items?.[item.id];
+    items[item.id] = saved
+      ? { ...initial.items[item.id], ...saved, selected: saved.selected && !isAlreadyImported(item) }
+      : initial.items[item.id];
+  }
+  return {
+    selectedHolders: (draft.selectedHolders ?? []).filter((name) => holderNames.has(name)),
+    items,
+  };
+}
+
+const sameItemState = (a: ReviewItemState, b: ReviewItemState) =>
+  a.selected === b.selected &&
+  a.date === b.date &&
+  a.description === b.description &&
+  a.amount === b.amount &&
+  a.categoryId === b.categoryId &&
+  a.installmentNumber === b.installmentNumber &&
+  a.totalInstallments === b.totalInstallments;
+
+/** Compara dois estados da revisão (titulares sem considerar a ordem). */
+export function isSameReviewState(a: ReviewState, b: ReviewState): boolean {
+  if (a.selectedHolders.length !== b.selectedHolders.length) return false;
+  const holders = new Set(a.selectedHolders);
+  if (b.selectedHolders.some((h) => !holders.has(h))) return false;
+  const ids = Object.keys(a.items);
+  if (ids.length !== Object.keys(b.items).length) return false;
+  return ids.every((id) => b.items[id] !== undefined && sameItemState(a.items[id], b.items[id]));
+}
+
 /** Item entra na revisão quando o titular dele foi escolhido (ou há só um titular). */
 export function isItemIncluded(
   job: CreditCardInvoiceImportResponseDto,

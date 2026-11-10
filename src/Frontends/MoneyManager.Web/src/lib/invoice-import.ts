@@ -1,4 +1,5 @@
 import { ApiClientError, getApiErrorMessage } from "@/lib/api-errors";
+import { formatDateOnly as formatDateOnlyValue } from "@/lib/dates";
 import type {
   InvoiceImportSourceType,
   InvoiceImportStatus,
@@ -23,6 +24,16 @@ export const isActiveInvoiceImport = (status: InvoiceImportStatus | undefined) =
 
 /** Intervalo de consulta da tela da importação enquanto o job está ativo. */
 export const INVOICE_IMPORT_DETAIL_POLL_MS = 5_000;
+
+/** Intervalo de consulta da lista (indicador do header e avisos) enquanto houver job ativo. */
+export const INVOICE_IMPORT_LIST_POLL_MS = 10_000;
+
+/** Importações que o indicador do header mostra: em andamento ou aguardando a revisão. */
+export const needsInvoiceImportAttention = (status: InvoiceImportStatus) =>
+  isActiveInvoiceImport(status) || status === "AwaitingReview";
+
+/** Lista de importações. */
+export const INVOICE_IMPORTS_HREF = "/credit-cards/invoice-imports";
 
 /** Tempo na fila a partir do qual a tela orienta o usuário (sem prometer prazo). */
 export const INVOICE_IMPORT_LONG_QUEUE_MS = 10 * 60 * 1000;
@@ -59,17 +70,10 @@ export function describeInvoiceImportFiles(
 
 /**
  * Formata uma data sem horário vinda da API (ex.: "2026-10-05T00:00:00Z") pelo calendário,
- * sem converter fuso — senão a meia-noite UTC vira o dia anterior no horário de Brasília.
+ * sem converter fuso — delega a `formatDateOnly` de `lib/dates.ts`.
  */
 export function formatDateOnly(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
-  if (!year || !month || !day) return "—";
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(year, month - 1, day));
+  return formatDateOnlyValue(iso);
 }
 
 /** Data e hora de um instante (ex.: envio da importação), no fuso do navegador. */

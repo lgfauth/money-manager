@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Building2,
   CreditCard,
+  FileUp,
+  History,
   Info,
   Link2Off,
   Plus,
@@ -47,6 +50,11 @@ import {
 } from "@/hooks/use-bank-connections";
 import { useCreditCards, useDeleteCreditCard } from "@/hooks/use-credit-cards";
 import { useBankSyncStatus } from "@/hooks/use-bank-sync-status";
+import {
+  useInvoiceImportEligibleCards,
+  useRecentInvoiceImports,
+} from "@/hooks/use-invoice-imports";
+import { INVOICE_IMPORTS_HREF, newInvoiceImportHref } from "@/lib/invoice-import";
 import { AccountType, type AccountResponseDto } from "@/types/account";
 import type { CreditCardResponseDto } from "@/types/credit-card";
 import type { BankConnectionDto } from "@/types/bank-connection";
@@ -58,6 +66,7 @@ const typeOrder: Record<string, number> = {
 };
 
 export default function BancosEContasPage() {
+  const router = useRouter();
   const isPremium = useIsPremium();
   const { data: accounts = [], isLoading: loadingAccounts } = useAccounts();
   const { data: creditCards = [], isLoading: loadingCards } = useCreditCards();
@@ -68,6 +77,9 @@ export default function BancosEContasPage() {
   const disconnectBank = useDisconnectBank();
   const unlinkBankAccount = useUnlinkBankAccount();
   const syncStatus = useBankSyncStatus(); // único hook de sync — passado como prop para os cards
+  const { data: eligibleCards, isLoading: loadingEligibleCards } =
+    useInvoiceImportEligibleCards();
+  const { data: recentImports = [] } = useRecentInvoiceImports();
 
   const deleteAccount = useDeleteAccount();
   const deleteCard = useDeleteCreditCard();
@@ -99,6 +111,22 @@ export default function BancosEContasPage() {
   );
   const sortedCards = [...creditCards].sort((a, b) =>
     a.name.localeCompare(b.name)
+  );
+
+  // Importação de fatura: a API decide os cartões elegíveis; o mapa de sync só explica o motivo
+  const eligibleCount = eligibleCards?.length ?? 0;
+  const canImportInvoice = !loadingEligibleCards && eligibleCount > 0;
+  const importUnavailableReason =
+    loadingEligibleCards || loadingCards || canImportInvoice
+      ? null
+      : creditCards.length === 0
+        ? "Cadastre um cartão para importar a fatura."
+        : creditCards.every((c) => syncStatus[c.id])
+          ? "As compras de cartões sincronizados já chegam pelo Open Finance, por isso a importação de fatura não está disponível para eles."
+          : "A importação de fatura não está disponível para seus cartões no momento.";
+  // Com um só cartão elegível, a tela de envio já abre com ele escolhido
+  const importHref = newInvoiceImportHref(
+    eligibleCount === 1 ? eligibleCards?.[0]?.id : undefined
   );
 
   function handleSync(connectionId: string) {
@@ -187,7 +215,41 @@ export default function BancosEContasPage() {
 
       {/* Seção Cartões de Crédito */}
       <section>
-        <h2 className="text-base font-semibold mb-3">Cartões de Crédito</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-base font-semibold">Cartões de Crédito</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            {recentImports.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push(INVOICE_IMPORTS_HREF)}
+              >
+                <History className="mr-1 h-4 w-4" />
+                Importações de fatura
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(importHref)}
+              disabled={!canImportInvoice}
+              aria-describedby={
+                importUnavailableReason ? "invoice-import-unavailable" : undefined
+              }
+            >
+              <FileUp className="mr-1 h-4 w-4" />
+              Importar fatura
+            </Button>
+          </div>
+        </div>
+        {importUnavailableReason && (
+          <p
+            id="invoice-import-unavailable"
+            className="-mt-1 mb-3 text-xs text-muted-foreground"
+          >
+            {importUnavailableReason}
+          </p>
+        )}
         {loadingCards ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Skeleton className="h-40 rounded-xl" />

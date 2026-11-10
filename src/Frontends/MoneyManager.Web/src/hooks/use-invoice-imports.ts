@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { ApiClientError, createApiClientError, getApiErrorMessage } from "@/lib/api-errors";
 import { useAuthStore } from "@/stores/auth-store";
+import { useInvoiceImportDraftStore } from "@/stores/invoice-import-draft-store";
 import { invalidateFinancialSummaries, queryKeys } from "@/lib/query-client";
 import {
   INVOICE_IMPORT_DETAIL_POLL_MS,
+  INVOICE_IMPORT_LIST_POLL_MS,
   INVOICE_IMPORT_NETWORK_ERROR,
   INVOICE_IMPORT_UPLOAD_ERROR_FALLBACKS,
   isActiveInvoiceImport,
@@ -41,13 +43,21 @@ export function useInvoiceImport(id: string | undefined) {
   });
 }
 
-/** As importações mais recentes do usuário (até 20, definidas pela API). */
+/**
+ * As importações mais recentes do usuário (até 20, definidas pela API). Alimenta a lista, o
+ * indicador do header e os avisos de transição: consulta periodicamente só enquanto houver job
+ * ativo; sem nenhum, só ao carregar e ao focar a janela.
+ */
 export function useRecentInvoiceImports() {
   return useQuery({
     queryKey: queryKeys.invoiceImports,
     queryFn: () => apiClient.get<CreditCardInvoiceImportResponseDto[]>(BASE_PATH),
     staleTime: 0,
     refetchOnWindowFocus: true,
+    refetchInterval: (query) =>
+      query.state.data?.some((job) => isActiveInvoiceImport(job.status))
+        ? INVOICE_IMPORT_LIST_POLL_MS
+        : false,
   });
 }
 
@@ -71,6 +81,7 @@ export function useConfirmInvoiceImport() {
       apiClient.post<CreditCardInvoiceImportResponseDto>(`${BASE_PATH}/${id}/confirm`, data),
     onSuccess: (result) => {
       qc.setQueryData(queryKeys.invoiceImport(result.id), result);
+      useInvoiceImportDraftStore.getState().clearDraft(result.id);
       qc.invalidateQueries({ queryKey: queryKeys.invoiceImports, exact: true });
       // Faturas e transações do cartão mudaram (inclusive parcelas em faturas futuras)
       qc.invalidateQueries({ queryKey: queryKeys.creditCards });
@@ -99,6 +110,7 @@ export function useDiscardInvoiceImport() {
   return useMutation({
     mutationFn: (id: string) => apiClient.delete<void>(`${BASE_PATH}/${id}`),
     onSuccess: (_data, id) => {
+      useInvoiceImportDraftStore.getState().clearDraft(id);
       // A API não devolve importações descartadas (404): marca no cache para a tela mostrar
       // "Descartada" em vez de "não encontrada"
       qc.setQueryData<CreditCardInvoiceImportResponseDto>(queryKeys.invoiceImport(id), (old) =>

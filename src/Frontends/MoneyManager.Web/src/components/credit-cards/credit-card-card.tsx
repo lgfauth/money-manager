@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FinancialEntityCard } from "@/components/shared/financial-entity-card";
+import { formatDateOnly } from "@/lib/dates";
 import { CardBrandIcon } from "@/components/shared/card-brand-icon";
 import { BankSyncStatus } from "@/components/shared/bank-sync-status";
 import { InvoiceStatusBadge } from "@/components/credit-cards/invoice-status-badge";
@@ -35,15 +36,6 @@ interface CreditCardCardProps {
   onDelete: () => void;
   onUnlink?: () => void;
 }
-
-const fmtDate = (iso: string) => {
-  const d = new Date(iso);
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
-};
 
 export function CreditCardCard({
   card,
@@ -153,7 +145,7 @@ export function CreditCardCard({
                 <InvoiceStatusBadge status={card.currentInvoice.status} />
               </div>
               <p className="mt-1 text-muted-foreground">
-                Vence em {fmtDate(card.currentInvoice.dueDate)}
+                Vence em {formatDateOnly(card.currentInvoice.dueDate)}
               </p>
               {syncInfo && (
                 <p className="mt-1 text-[10px] text-muted-foreground/70">
