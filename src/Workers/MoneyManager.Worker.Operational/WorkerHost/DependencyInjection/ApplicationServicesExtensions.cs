@@ -33,9 +33,6 @@ internal static class ApplicationServicesExtensions
         services.AddScoped<ICreditCardInvoiceService, CreditCardInvoiceService>();
         services.AddScoped<ICreditCardService, CreditCardService>();
         services.AddScoped<ICreditCardTransactionService, CreditCardTransactionService>();
-        // Push notifications
-        services.Configure<VapidSettings>(configuration.GetSection(VapidSettings.SectionName));
-        services.AddScoped<IPushService, PushService>();
 
         // Conexão bancária
         services.AddHttpClient("bancoMcp");

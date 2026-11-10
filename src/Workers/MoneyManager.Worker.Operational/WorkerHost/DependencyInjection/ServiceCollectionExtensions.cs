@@ -24,11 +24,6 @@ public static class ServiceCollectionExtensions
             .ValidateOnStart();
 
         services
-            .AddOptions<DailyReminderScheduleOptions>()
-            .Bind(configuration.GetSection(DailyReminderScheduleOptions.SectionName))
-            .ValidateOnStart();
-
-        services
             .AddOptions<CreditCardInvoiceScheduleOptions>()
             .Bind(configuration.GetSection(CreditCardInvoiceScheduleOptions.SectionName))
             .ValidateOnStart();
@@ -58,7 +53,6 @@ public static class ServiceCollectionExtensions
 
         // Only recurring transactions are processed by the worker.
         services.AddScoped<ITransactionScheduleProcessor, RecurringTransactionsProcessor>();
-        services.AddScoped<DailyReminderProcessor>();
         services.AddScoped<CreditCardInvoiceProcessor>();
         services.AddScoped<FinancialHealthSnapshotProcessor>();
 
@@ -67,7 +61,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<InvoiceImportProcessor>();
 
         services.AddHostedService<ScheduledTransactionWorker>();
-        services.AddHostedService<DailyReminderWorker>();
         services.AddHostedService<CreditCardInvoiceWorker>();
         services.AddHostedService<FinancialHealthSnapshotWorker>();
         services.AddHostedService<SubscriptionExpirationWorker>();

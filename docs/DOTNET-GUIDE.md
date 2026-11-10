@@ -6,7 +6,7 @@ The .NET solution (`MoneyManager.sln`) is organized into four project groups und
 
 | Project | Type | Role |
 |---|---|---|
-| `src/APIs/MoneyManager.Api.Operational` | ASP.NET Core Web API (.NET 10) | Main user-facing API; handles auth, transactions, budgets, accounts, credit cards, reports, push notifications, AI receipt analysis |
+| `src/APIs/MoneyManager.Api.Operational` | ASP.NET Core Web API (.NET 10) | Main user-facing API; handles auth, transactions, budgets, accounts, credit cards, reports, AI receipt analysis |
 | `src/APIs/MoneyManager.Api.Backoffice` | ASP.NET Core Web API (.NET 10) | Internal admin API; serves the observability portal (jobs, audit, financial maintenance, legal documents) |
 | `src/Supports/MoneyManager.Domain` | Class Library (.NET 10) | Entities, enums, domain exceptions, seeds, repository and unit-of-work interfaces. Only depends on `MongoDB.Bson` (mapping attributes) and `FluentValidation` |
 | `src/Supports/MoneyManager.Application` | Class Library (.NET 10) | Application services, DTOs, FluentValidation validators |
@@ -41,7 +41,7 @@ There is **no CQRS, no MediatR, no AutoMapper** in this codebase.
 |---|---|---|
 | **Domain** `MoneyManager.Domain` | Entities, enums, domain exceptions, repository interfaces, unit-of-work interface | `Transaction`, `User`, `Category`, `IRepository<T>`, `IUnitOfWork`, `ConcurrencyException` |
 | **Application** `MoneyManager.Application` | Service interfaces, service implementations, request/response DTOs, FluentValidation validators | `TransactionService`, `ITransactionService`, `CreateTransactionRequestDto`, `TransactionResponseDto`, `CreateTransactionValidator` |
-| **Infrastructure** `MoneyManager.Infrastructure` | Concrete repository implementations, MongoDB context, security (JWT), AI integration, push service, observability store | `Repository<T>`, `TransactionRepository`, `UnitOfWork`, `MongoContext`, `TokenService`, `AnthropicReceiptAnalysisService` |
+| **Infrastructure** `MoneyManager.Infrastructure` | Concrete repository implementations, MongoDB context, security (JWT), AI integration, observability store | `Repository<T>`, `TransactionRepository`, `UnitOfWork`, `MongoContext`, `TokenService`, `AnthropicReceiptAnalysisService` |
 | **Presentation** `MoneyManager.Api.Operational` | Thin controllers, middleware pipeline, error extensions, HttpContext helpers | `TransactionsController`, `ExceptionHandlingMiddleware`, `ControllerBaseErrorExtensions`, `HttpContextExtensions` |
 | **Observability** `MoneyManager.Observability` | Structured process logger interfaces and implementations | `IProcessLogger`, `ProcessLogger`, `IProcessLogStore`, `ProcessLogDocument` |
 
@@ -432,7 +432,7 @@ internal sealed class MyJobProcessor(
 ```
 
 **Step 2 — Create the Worker** by following `ScheduledTransactionWorker` or
-`DailyReminderWorker` for scheduling, time zones, cancellation and backoffice
+`SubscriptionExpirationWorker` for scheduling, time zones, cancellation and backoffice
 commands. The loop must execute the processor only when a scheduled run is due
 or an allowed `run-now` command is claimed, not on every polling iteration.
 
@@ -469,7 +469,7 @@ services.AddScoped<MyJobProcessor>();
 services.AddHostedService<MyJobWorker>();
 ```
 
-**Step 4 — Add schedule options**: each worker has its own `*ScheduleOptions` class in `WorkerHost/Options/` with a `SectionName` constant (e.g. `DailyReminderScheduleOptions`), bound in `ServiceCollectionExtensions` with `.ValidateOnStart()`, plus the matching section in the Worker's `appsettings.json`.
+**Step 4 — Add schedule options**: each worker has its own `*ScheduleOptions` class in `WorkerHost/Options/` with a `SectionName` constant (e.g. `SubscriptionExpirationScheduleOptions`), bound in `ServiceCollectionExtensions` with `.ValidateOnStart()`, plus the matching section in the Worker's `appsettings.json`.
 
 > Real workers receive `WorkerCommandQueueService` to honour backoffice commands.
 > The worker starts and finishes the process log around the processor call so the

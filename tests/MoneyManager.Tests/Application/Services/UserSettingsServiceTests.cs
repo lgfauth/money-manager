@@ -83,8 +83,6 @@ public class UserSettingsServiceTests
         Assert.Equal("BRL", result.Currency);
         Assert.Equal("dd/MM/yyyy", result.DateFormat);
         Assert.Equal(1, result.MonthClosingDay);
-        Assert.True(result.PushRecurringProcessed);
-        Assert.True(result.PushDailyReminder);
         Assert.Equal("auto", result.Theme);
     }
 
@@ -107,8 +105,6 @@ public class UserSettingsServiceTests
             DateFormat = "MM/dd/yyyy",
             MonthClosingDay = 5,
             DefaultBudget = 5000m,
-            PushRecurringProcessed = false,
-            PushDailyReminder = false,
             Theme = "light",
             PrimaryColor = "#ff0000"
         };
@@ -127,8 +123,6 @@ public class UserSettingsServiceTests
         Assert.Equal("MM/dd/yyyy", result.DateFormat);
         Assert.Equal(5, result.MonthClosingDay);
         Assert.Equal(5000m, result.DefaultBudget);
-        Assert.False(result.PushRecurringProcessed);
-        Assert.False(result.PushDailyReminder);
         Assert.Equal("light", result.Theme);
         await settingsRepo.Received(1).UpdateAsync(Arg.Any<UserSettings>());
     }

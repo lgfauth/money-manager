@@ -9,8 +9,8 @@ namespace MoneyManager.Application.Services;
 
 /// <summary>
 /// Processamento das importações de fatura pelo Worker: recupera jobs presos, expira jobs antigos,
-/// reserva e processa os jobs da fila (IA → revisão), grava o resultado, apaga os arquivos e avisa
-/// o usuário por push. Nunca registra em log conteúdo do documento, nomes de titulares ou base64.
+/// reserva e processa os jobs da fila (IA → revisão), grava o resultado e apaga os arquivos.
+/// O usuário é avisado pelo frontend, que acompanha o status do job. Nunca registra em log conteúdo do documento, nomes de titulares ou base64.
 /// </summary>
 public interface IInvoiceImportProcessingService
 {
@@ -55,7 +55,6 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
     private readonly IInvoiceDocumentAnalysisService _analysisService;
     private readonly IInvoiceImportReviewService _reviewService;
     private readonly ICreditCardImportEligibilityService _eligibilityService;
-    private readonly IPushService _pushService;
     private readonly IProcessLogger _processLogger;
 
     public InvoiceImportProcessingService(
@@ -63,19 +62,14 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
         IInvoiceDocumentAnalysisService analysisService,
         IInvoiceImportReviewService reviewService,
         ICreditCardImportEligibilityService eligibilityService,
-        IPushService pushService,
         IProcessLogger processLogger)
     {
         _unitOfWork = unitOfWork;
         _analysisService = analysisService;
         _reviewService = reviewService;
         _eligibilityService = eligibilityService;
-        _pushService = pushService;
         _processLogger = processLogger;
     }
-
-    /// <summary>URL do frontend para revisar a importação (aberta pela notificação push).</summary>
-    public static string ReviewUrl(string importId) => $"/credit-cards/invoice-imports/{importId}";
 
     public async Task<bool> HasPendingWorkAsync(DateTime nowUtc, InvoiceImportProcessingSettings settings)
     {
@@ -238,8 +232,6 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
                 ["warnings"] = job.Warnings.Count
             });
 
-            await NotifyAsync(job, "Fatura pronta para revisão",
-                $"Encontramos {job.Items.Count} lançamento(s) na fatura. Revise e confirme a importação.");
             return JobOutcome.Succeeded;
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -297,7 +289,6 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
 
         _processLogger.AddWarning("Importação de fatura falhou", JobData(job));
 
-        await NotifyAsync(job, "Não foi possível importar a fatura", message);
         return JobOutcome.Failed;
     }
 
@@ -317,28 +308,6 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
         {
             // O índice TTL de 24 h remove o que sobrar
             _processLogger.AddError("Falha ao apagar arquivos da importação", ex, JobData(job));
-        }
-    }
-
-    private async Task NotifyAsync(CreditCardInvoiceImport job, string title, string body)
-    {
-        try
-        {
-            await _pushService.SendToUserAsync(job.UserId, new PushNotificationPayload
-            {
-                Title = title,
-                Body = body,
-                Url = ReviewUrl(job.Id)
-            });
-        }
-        catch (Exception ex)
-        {
-            // Falha no push não altera o resultado do job
-            _processLogger.AddWarning("Falha ao enviar push da importação de fatura", new Dictionary<string, object?>
-            {
-                ["importId"] = job.Id,
-                ["error"] = ex.GetType().Name
-            });
         }
     }
 

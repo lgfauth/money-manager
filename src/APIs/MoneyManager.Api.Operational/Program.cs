@@ -102,11 +102,6 @@ builder.Services.AddHttpClient("efiBank")
 builder.Services.AddScoped<IPaymentGateway, EfiBankPaymentGateway>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 
-// Register VAPID settings and push service
-builder.Services.Configure<VapidSettings>(
-    builder.Configuration.GetSection(VapidSettings.SectionName));
-builder.Services.AddScoped<IPushService, PushService>();
-
 // Registro de serviços de conexão bancária via Banco MCP
 builder.Services.AddHttpClient("bancoMcp");
 builder.Services.AddScoped<IBankMcpClient, BankMcpClient>();

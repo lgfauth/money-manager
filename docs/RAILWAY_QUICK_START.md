@@ -45,7 +45,6 @@ ASPNETCORE_ENVIRONMENT=Production
 # Integrações (quando usadas):
 Anthropic__ApiKey=...
 Efi__ClientId=...  Efi__ClientSecret=...  Efi__CertificatePath=...
-Vapid__PublicKey=...  Vapid__PrivateKey=...
 
 # Opcionais — normalização das imagens da importação de fatura (padrões abaixo):
 ImageNormalization__MaxLongSide=1568
@@ -249,3 +248,23 @@ Somente no modo `/api/proxy` (URL pública
 ausente ou placeholder) o proxy lê o cookie e encaminha a autenticação. Para usar
 esse modo, mantenha `ADMIN_API_URL` no servidor e ajuste a configuração de build
 para não embutir a URL pública. Consulte o [guia Next.js](NEXTJS-GUIDE.md#23-data-flow).
+
+## 🧹 Limpeza após a remoção das notificações push (especificação 004)
+
+As notificações Web Push e o lembrete diário foram removidos do código. Passos manuais,
+uma única vez, no ambiente publicado:
+
+1. **Variáveis órfãs:** apague `Vapid__PublicKey`, `Vapid__PrivateKey` e `Vapid__Subject`
+   (ou `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`) dos serviços **API** e **Worker** no
+   Railway. A chave VAPID que esteve versionada no repositório deve ser considerada
+   comprometida e não pode ser reaproveitada.
+2. **Dados (MongoDB):** a coleção de assinaturas deixou de ser usada e criada. Apague-a
+   (irreversível — faça backup antes, se quiser):
+   ```js
+   db.push_subscriptions.drop()
+   ```
+   Opcional: os campos antigos de preferências são ignorados pela aplicação, mas podem
+   ser removidos:
+   ```js
+   db.user_settings.updateMany({}, { $unset: { pushRecurringProcessed: "", pushDailyReminder: "" } })
+   ```

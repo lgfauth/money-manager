@@ -14,8 +14,7 @@ public sealed class AdminObservabilityController : ControllerBase
     private static readonly (string JobName, string ProcessName)[] JobCatalog =
     [
         ("ScheduledTransactionWorker", "RecurringTransactions"),
-        ("CreditCardInvoiceWorker", "CreditCardInvoiceStatus"),
-        ("DailyReminderWorker", "DailyReminder")
+        ("CreditCardInvoiceWorker", "CreditCardInvoiceStatus")
     ];
 
     private readonly MongoContext _mongoContext;

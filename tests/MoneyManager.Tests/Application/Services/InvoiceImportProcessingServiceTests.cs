@@ -26,7 +26,6 @@ public class InvoiceImportProcessingServiceTests
     private readonly IInvoiceDocumentAnalysisService _analysis = Substitute.For<IInvoiceDocumentAnalysisService>();
     private readonly IInvoiceImportReviewService _review = Substitute.For<IInvoiceImportReviewService>();
     private readonly ICreditCardImportEligibilityService _eligibility = Substitute.For<ICreditCardImportEligibilityService>();
-    private readonly IPushService _push = Substitute.For<IPushService>();
     private readonly IProcessLogger _logger = Substitute.For<IProcessLogger>();
     private readonly InvoiceImportProcessingService _service;
 
@@ -47,7 +46,7 @@ public class InvoiceImportProcessingServiceTests
         _eligibility.IsSyncedByOpenFinanceAsync(UserId, CardId).Returns(false);
         _analysis.AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>()).Returns(AnalysisResult);
 
-        _service = new InvoiceImportProcessingService(_unitOfWork, _analysis, _review, _eligibility, _push, _logger);
+        _service = new InvoiceImportProcessingService(_unitOfWork, _analysis, _review, _eligibility, _logger);
     }
 
     // --- Helpers ---
@@ -127,7 +126,7 @@ public class InvoiceImportProcessingServiceTests
     }
 
     [Fact]
-    public async Task ProcessPendingAsync_WithValidJob_ShouldSaveReviewDeleteFilesAndNotify()
+    public async Task ProcessPendingAsync_WithValidJob_ShouldSaveReviewAndDeleteFiles()
     {
         // Arrange
         var job = Claim(Job());
@@ -150,24 +149,6 @@ public class InvoiceImportProcessingServiceTests
         await _analysis.Received(1).AnalyzeAsync(
             Arg.Is<InvoiceDocumentAnalysisRequestDto>(r => r.SourceType == InvoiceImportSourceType.Pdf && r.Files.Count == 1 && r.Today == Today),
             Arg.Any<CancellationToken>());
-        await _push.Received(1).SendToUserAsync(UserId, Arg.Is<PushNotificationPayload>(p =>
-            p.Title == "Fatura pronta para revisão" && p.Url == $"/credit-cards/invoice-imports/{job.Id}"));
-    }
-
-    [Fact]
-    public async Task ProcessPendingAsync_WhenPushFails_ShouldKeepJobResult()
-    {
-        // Arrange
-        var job = Claim(Job());
-        ReviewSucceeds();
-        _push.SendToUserAsync(Arg.Any<string>(), Arg.Any<PushNotificationPayload>()).ThrowsAsync(new InvalidOperationException("sem VAPID"));
-
-        // Act
-        var summary = await Run();
-
-        // Assert
-        Assert.Equal(1, summary.Succeeded);
-        Assert.Equal(InvoiceImportStatus.AwaitingReview, job.Status);
     }
 
     [Fact]
@@ -228,8 +209,6 @@ public class InvoiceImportProcessingServiceTests
         Assert.Equal(InvoiceImportReviewService.NotClosedMessage, job.ErrorMessage);
         Assert.Empty(job.Items);
         await _files.Received(1).DeleteByImportAsync(UserId, job.Id);
-        await _push.Received(1).SendToUserAsync(UserId, Arg.Is<PushNotificationPayload>(p =>
-            p.Title == "Não foi possível importar a fatura" && p.Body == InvoiceImportReviewService.NotClosedMessage));
     }
 
     [Fact]
@@ -300,7 +279,6 @@ public class InvoiceImportProcessingServiceTests
         Assert.Equal(InvoiceImportStatus.Failed, job.Status);
         Assert.Equal(InvoiceImportProcessingService.ExpiredFilesMessage, job.ErrorMessage);
         await _analysis.DidNotReceive().AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>());
-        await _push.Received(1).SendToUserAsync(UserId, Arg.Is<PushNotificationPayload>(p => p.Body == InvoiceImportProcessingService.ExpiredFilesMessage));
     }
 
     [Fact]
@@ -335,7 +313,6 @@ public class InvoiceImportProcessingServiceTests
         Assert.Equal(1, job.Attempts);
         Assert.Null(job.ProcessingStartedAt);
         await _files.DidNotReceive().DeleteByImportAsync(Arg.Any<string>(), Arg.Any<string>());
-        await _push.DidNotReceive().SendToUserAsync(Arg.Any<string>(), Arg.Any<PushNotificationPayload>());
     }
 
     [Fact]
@@ -458,7 +435,6 @@ public class InvoiceImportProcessingServiceTests
         // Assert
         Assert.Equal(InvoiceImportStatus.Failed, stuck.Status);
         Assert.Equal(InvoiceImportProcessingService.ExpiredFilesMessage, stuck.ErrorMessage);
-        await _push.Received(1).SendToUserAsync(UserId, Arg.Any<PushNotificationPayload>());
     }
 
     [Fact]

@@ -187,22 +187,6 @@ public class MongoContext
                 .Ascending(c => c.IsDeleted)
         ));
 
-        // Create push_subscriptions collection
-        if (!collectionNames.Contains("push_subscriptions"))
-        {
-            await _database.CreateCollectionAsync("push_subscriptions");
-        }
-        var pushSubsCollection = _database.GetCollection<MoneyManager.Domain.Entities.PushSubscription>("push_subscriptions");
-        await pushSubsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.PushSubscription>(
-            Builders<MoneyManager.Domain.Entities.PushSubscription>.IndexKeys
-                .Ascending(s => s.UserId)
-        ));
-        await pushSubsCollection.Indexes.CreateOneAsync(new CreateIndexModel<MoneyManager.Domain.Entities.PushSubscription>(
-            Builders<MoneyManager.Domain.Entities.PushSubscription>.IndexKeys
-                .Ascending(s => s.Endpoint),
-            new CreateIndexOptions { Unique = true, Sparse = true }
-        ));
-
         // Create user_reports collection
         if (!collectionNames.Contains("user_reports"))
         {

@@ -11,7 +11,6 @@ public interface IUnitOfWork : IDisposable
     IRepository<Budget> Budgets { get; }
     IRepository<RecurringTransaction> RecurringTransactions { get; }
     IRepository<UserSettings> UserSettings { get; }
-    IPushSubscriptionRepository PushSubscriptions { get; }
     IRepository<UserReport> UserReports { get; }
     ICreditCardRepository CreditCards { get; }
     ICreditCardInvoiceRepository CreditCardInvoices { get; }

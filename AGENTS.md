@@ -26,12 +26,14 @@ e aguarde aprovação explícita entre tarefas, conforme `docs/SPEC-MONEY.md`.
 
 ## ✅ Checklist obrigatório — toda alteração de código
 
-Uma alteração só está concluída quando os quatro itens abaixo foram feitos. Ao final, informe ao
-usuário o resultado de cada item (ou por que ele não se aplica).
+Uma alteração só está concluída quando os itens abaixo que se aplicam a ela foram feitos. Ao final,
+informe em poucas linhas o que foi validado e o que ficou de fora.
 
 ### 1. Testes unitários
 
-- Rode `dotnet test MoneyManager.sln` **depois** das alterações e garanta que tudo passa.
+- **Backend alterado** (`src/APIs`, `src/Supports`, `src/Workers` ou `tests/`): rode
+  `dotnet test MoneyManager.sln` **depois** das alterações e garanta que tudo passa.
+  Alteração só de frontend, docs ou specs não exige rodar a suíte .NET.
 - Para cada comportamento alterado, **atualize os testes existentes** em `tests/MoneyManager.Tests`
   (espelha as camadas: `Domain/`, `Application/`, `Presentation/`).
 - Para comportamento novo, **adicione testes**: caminho feliz + ao menos um caso de erro/borda.
@@ -39,7 +41,8 @@ usuário o resultado de cada item (ou por que ele não se aplica).
 - Nunca apague, comente ou pule (`Skip`) um teste só para a suíte passar. Se um teste quebrou
   porque a regra mudou de propósito, ajuste o teste e explique a mudança.
 - Frontend (não há suíte de testes): rode `npx tsc --noEmit -p .` e `npx eslint <arquivos alterados>`
-  no projeto Next.js alterado.
+  no projeto Next.js alterado. `next build` só quando a mudança envolver rotas novas,
+  `next.config`, `middleware` ou renderização no servidor.
 
 ### 2. Documentação
 
@@ -73,7 +76,8 @@ Arquivo: `src/Frontends/MoneyManager.Web/public/changelog.md` (exibido no modal 
 
 ### 4. Validação final
 
-- `dotnet build MoneyManager.sln` sem erros.
+- `dotnet build MoneyManager.sln` sem erros, quando o backend for alterado (o `dotnet test`
+  já compila; não é preciso rodar os dois em sequência).
 - Se a feature persiste dados de usuário, inclua-a no fluxo LGPD (`AccountDeletionService`).
 - Ao remover uma feature, remova-a em todos os pontos: frontend, backend, worker, testes e docs.
 

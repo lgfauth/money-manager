@@ -73,7 +73,6 @@ projetos Next.js independentes, cada um consumindo apenas a sua respectiva API.
 | Logging | NLog via `ILogger<T>` (`NLog.Web.AspNetCore`) |
 | Documentação de API | Swashbuckle (Swagger) — habilitado apenas em `Development` |
 | Cache | `Microsoft.Extensions.Caching.Memory` |
-| Web Push | `WebPush` (notificações push) |
 | Markdown (backoffice) | `Markdig` |
 | Imagens (importação de fatura) | `SkiaSharp` + `SkiaSharp.NativeAssets.Linux.NoDependencies` 3.119 (no `MoneyManager.Infrastructure`; a biblioteca nativa de Linux vem no pacote, sem pacotes de sistema no Docker) |
 | Nullable / ImplicitUsings | Habilitados em todos os projetos |
@@ -165,7 +164,7 @@ financeiras do usuário autenticado. Controllers atuais:
 `Auth`, `Users`, `Profile`, `Categories`, `Accounts`, `Transactions`, `Budgets`,
 `CreditCards`, `CreditCardTransactions`, `CreditCardInvoiceImports`, `RecurringTransactions`, `Reports`, `Dashboard`,
 `FinancialHealth`, `BankConnections`, `Subscriptions`, `Receipts`, `Documents`,
-`Push`, `Onboarding`, `Settings`, `UserReports`, `AccountDeletion`, `Webhooks`, `Admin`.
+`Onboarding`, `Settings`, `UserReports`, `AccountDeletion`, `Webhooks`, `Admin`.
 
 Destaques:
 
@@ -256,7 +255,6 @@ Destaques:
   antiga); transações já conciliadas, manuais, de comprovante ou do próprio sync nunca
   são adotadas; compras `PENDING` e compras sem correspondência seguem o fluxo normal.
 - **Assinaturas / pagamento** (`Subscriptions`) — cobrança via gateway EfiBank.
-- **Web Push** (`Push`) — assinaturas de notificações do usuário.
 - **Fluxo LGPD** (`AccountDeletion`) — exclusão completa dos dados do usuário.
 - **ExceptionHandlingMiddleware** — erros padronizados no formato `ApiErrorResponse`
   (montado por `ApiErrorResponseFactory`).
@@ -282,8 +280,8 @@ Destaques:
 - **JWT com secret separado** do JWT operacional (`ADMIN_AUTH_SECRET`).
 - **Fila de comandos de worker** (`WorkerCommandQueueService`) — enfileira
   `run-now`/`pause`/`resume` para os workers via MongoDB (`AdminJobsController`:
-  `ScheduledTransactionWorker`, `CreditCardInvoiceWorker`, `DailyReminderWorker`,
-  `BankSyncWorker`, `InvoiceImportWorker`).
+  `ScheduledTransactionWorker`, `CreditCardInvoiceWorker`, `BankSyncWorker`,
+  `InvoiceImportWorker`).
 - **Audit log** de todas as ações sensíveis de operadores.
 - **CORS restrito** às origens de `ADMIN_PORTAL_ALLOWED_ORIGINS`.
 - Edição de **documentos legais** (termos de uso e política de privacidade) em
@@ -298,7 +296,6 @@ sobre Application + Infrastructure. Cada worker tem um par
 | Worker | Processo | Descrição |
 |---|---|---|
 | `ScheduledTransactionWorker` | `RecurringTransactions` | Lança transações recorrentes vencidas |
-| `DailyReminderWorker` | `DailyReminder` | Push diário para usuários com assinatura ativa |
 | `CreditCardInvoiceWorker` | `CreditCardInvoiceStatus` | Fecha faturas e atualiza status das invoices |
 | `FinancialHealthSnapshotWorker` | `FinancialHealthSnapshot` | Gera snapshots mensais dos baldes de patrimônio (reserva/FIRE) |
 | `BankSyncWorker` | `BankSync` | Sincroniza transações das conexões bancárias (Open Finance) |
@@ -343,9 +340,9 @@ Destaques:
   `Queued` até `MaxAttempts` (3). Os arquivos são apagados ao fim (sucesso ou falha
   definitiva) e mantidos em falha temporária. Desligamento do host devolve o job à
   fila sem contar tentativa.
-- Push ao usuário (sucesso ou falha) com URL `/credit-cards/invoice-imports/{id}`;
-  falha no push não altera o job. Logs sem conteúdo do documento, nomes de titulares
-  ou base64.
+- O usuário é avisado pelo Web (indicador no header e toast), que acompanha o status
+  do job; o Worker não envia notificação. Logs sem conteúdo do documento, nomes de
+  titulares ou base64.
 
 ### 4.4 Frontend Web — `src/Frontends/MoneyManager.Web`
 
@@ -385,7 +382,7 @@ ficam nos services da Application.
 ### `MoneyManager.Application`
 Services (um por feature, com a interface no mesmo arquivo), DTOs em
 `DTOs/Request` e `DTOs/Response` e Validators FluentValidation. Também abriga
-serviços sem dependência de infraestrutura, como `PushService` e
+serviços sem dependência de infraestrutura, como
 `TokenBlacklistService`, e as interfaces `IPaymentGateway`/`IEncryptionService`.
 Expõe `InternalsVisibleTo` para o projeto de testes.
 
@@ -427,7 +424,6 @@ Entidades principais (`src/Supports/MoneyManager.Domain/Entities`):
 | `FinancialHealthSettings` | Metas do usuário (perfil, percentuais de aporte, reserva, FIRE) |
 | `PatrimonyBucket` | Balde de patrimônio (reserva de emergência ou FIRE) |
 | `MonthlySnapshot` | Snapshot mensal do patrimônio |
-| `PushSubscription` | Assinatura Web Push |
 | `UserReport` | Relato/feedback do usuário |
 
 Enums: `AccountType`, `CategoryType`, `TransactionType`, `TransactionStatus`,
@@ -550,7 +546,7 @@ Configurado via arquivos `railway.*.toml` (`railway.api.toml`,
 - **Frontends:** `NEXT_PUBLIC_API_URL` (web, embutida no build) /
   `ADMIN_API_URL` e `NEXT_PUBLIC_ADMIN_API_URL` (backoffice).
 - **Integrações:** `Anthropic__ApiKey`/`Anthropic__Model` (IA — compartilhadas entre API e Worker), `Efi__*`
-  (EfiBank), `Vapid__*` (Web Push). A API key do Banco MCP (Pluggy) é informada
+  (EfiBank). A API key do Banco MCP (Pluggy) é informada
   por cada usuário e salva criptografada.
 
 ---
@@ -563,7 +559,6 @@ Configurado via arquivos `railway.*.toml` (`railway.api.toml`,
 | **Anthropic (Claude)** | `AnthropicInvoiceDocumentAnalysisService` / `IInvoiceDocumentAnalysisService` | Leitura de fatura de cartão (PDF como bloco `document`, imagens como blocos `image` em ordem, planilha como texto) com resposta por streaming → dados da fatura, lançamentos (data, descrição, valor, compra/estorno, parcela, titular, cartão, origem, categoria, confiança) e pendências. Falhas lançam `InvoiceDocumentAnalysisException` com `IsTransient` (rede, 429, 5xx/529) ou definitiva (chave ausente, recusa, `max_tokens`, JSON inválido). Registrado no Worker |
 | **Open Finance (Pluggy via MCP)** | `BankMcpClient` / `IBankMcpClient` | Sincronização de contas e transações bancárias |
 | **EfiBank** | `EfiBankPaymentGateway` / `IPaymentGateway` | Gateway de pagamento para assinaturas |
-| **Web Push** | `PushService` + `WebPush` | Notificações push ao usuário |
 | **AES** | `AesEncryptionService` / `IEncryptionService` | Criptografia de dados sensíveis (ex.: credenciais de conexão bancária) |
 
 ---

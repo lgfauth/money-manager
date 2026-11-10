@@ -45,8 +45,6 @@ public class UserSettingsService : IUserSettingsService
                 Currency = "BRL",
                 DateFormat = "dd/MM/yyyy",
                 MonthClosingDay = 1,
-                PushRecurringProcessed = true,
-                PushDailyReminder = true,
                 Theme = "auto",
                 PrimaryColor = "#667eea"
             };
@@ -66,8 +64,6 @@ public class UserSettingsService : IUserSettingsService
         existingSettings.DateFormat = settings.DateFormat;
         existingSettings.MonthClosingDay = settings.MonthClosingDay;
         existingSettings.DefaultBudget = settings.DefaultBudget;
-        existingSettings.PushRecurringProcessed = settings.PushRecurringProcessed;
-        existingSettings.PushDailyReminder = settings.PushDailyReminder;
         existingSettings.Theme = settings.Theme;
         existingSettings.PrimaryColor = settings.PrimaryColor;
         existingSettings.UpdatedAt = DateTime.UtcNow;

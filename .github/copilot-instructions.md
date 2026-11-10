@@ -20,16 +20,17 @@ entre tarefas; veja o [guia SDD](../docs/SPEC-MONEY.md).
 - Testes: xUnit + NSubstitute
 
 ## ✅ Checklist obrigatório — toda alteração de código
-1. **Testes unitários:** rode `dotnet test MoneyManager.sln`; atualize os testes afetados em
+1. **Testes unitários:** com backend alterado, rode `dotnet test MoneyManager.sln`; atualize os testes afetados em
    `tests/MoneyManager.Tests` e adicione testes para comportamento novo (caminho feliz + erro).
    Nunca apague ou pule testes para a suíte passar. No frontend alterado, rode
-   `npx tsc --noEmit -p .` e `npx eslint <arquivos alterados>`.
+   `npx tsc --noEmit -p .` e `npx eslint <arquivos alterados>` (`next build` só para rotas,
+   config, middleware ou renderização no servidor).
 2. **Documentação:** ajuste em `docs/` tudo que a alteração deixou desatualizado.
 3. **Changelog:** registre a mudança visível ao usuário em
    `src/Frontends/MoneyManager.Web/public/changelog.md`, com nova versão no topo
    (patch para correções, minor para funcionalidades; mesmo dia → acrescente na versão do topo).
    Mudanças só internas (refatoração, testes, docs, CI) não entram no changelog.
-4. **Validação final:** `dotnet build MoneyManager.sln` sem erros; dados de usuário novos entram no
+4. **Validação final:** com backend alterado, `dotnet build MoneyManager.sln` sem erros; dados de usuário novos entram no
    fluxo LGPD (`AccountDeletionService`); features removidas saem de todos os pontos.
 
 ## Arquitetura — Clean Architecture

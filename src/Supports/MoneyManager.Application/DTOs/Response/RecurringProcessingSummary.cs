@@ -2,8 +2,8 @@ namespace MoneyManager.Application.DTOs.Response;
 
 /// <summary>
 /// Resultado do processamento em lote de recorrências.
-/// Carrega o número de transações criadas por userId para que o Worker
-/// possa enviar push notifications sem precisar re-consultar o banco.
+/// Carrega o número de transações criadas por userId, registrado pelo Worker no log
+/// do processamento.
 /// </summary>
 public sealed class RecurringProcessingSummary
 {

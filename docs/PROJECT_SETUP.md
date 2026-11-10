@@ -121,8 +121,7 @@ A API Operacional lê as configurações do `appsettings.json` e de variáveis d
   "AllowedOrigins": ["http://localhost:5002"],
   "Encryption": { "Key": "strong_text_for_secret_here" },
   "Anthropic": { "ApiKey": "", "Model": "claude-haiku-5-5" },
-  "Efi": { "ClientId": "...", "ClientSecret": "...", "CertificatePath": "..." },
-  "Vapid": { "Subject": "mailto:admin@moneymanager.app", "PublicKey": "...", "PrivateKey": "..." }
+  "Efi": { "ClientId": "...", "ClientSecret": "...", "CertificatePath": "..." }
 }
 ```
 
@@ -178,7 +177,7 @@ A lista completa está no Swagger (em `Development`). Alguns exemplos:
 
 - `GET /api/dashboard/summary` - Patrimônio líquido (contas − faturas em aberto) e próximos vencimentos (faturas e recorrências)
 
-Outros grupos: cartões de crédito e faturas, transações recorrentes, saúde financeira, conexões bancárias (Open Finance), assinaturas, análise de comprovantes, push, onboarding, configurações e exclusão de conta (LGPD).
+Outros grupos: cartões de crédito e faturas, transações recorrentes, saúde financeira, conexões bancárias (Open Finance), assinaturas, análise de comprovantes, onboarding, configurações e exclusão de conta (LGPD).
 
 ## 🏗️ Arquitetura
 
@@ -200,7 +199,7 @@ Segue Clean Architecture com as seguintes camadas:
 - ✅ Open Finance (Pluggy via Banco MCP) para sincronizar contas e cartões
 - ✅ Análise de comprovantes por IA (Anthropic Claude)
 - ✅ Importação de fatura de cartão por IA (PDF, imagens ou planilha `.xlsx`), processada em segundo plano pelo Worker
-- ✅ Assinatura premium (gateway EfiBank) e notificações Web Push
+- ✅ Assinatura premium (gateway EfiBank)
 - ✅ Validação com FluentValidation
 - ✅ Isolamento de dados por usuário
 - ✅ Logging estruturado com NLog e logs de processo (`IProcessLogger`)

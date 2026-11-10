@@ -15,7 +15,6 @@ public sealed class AdminJobsController : ControllerBase
     [
         "ScheduledTransactionWorker",
         "CreditCardInvoiceWorker",
-        "DailyReminderWorker",
         "BankSyncWorker",
         "InvoiceImportWorker"
     ];

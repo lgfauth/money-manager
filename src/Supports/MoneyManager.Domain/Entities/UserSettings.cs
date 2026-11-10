@@ -26,13 +26,6 @@ public class UserSettings
     [BsonElement("defaultBudget")]
     public decimal? DefaultBudget { get; set; }
 
-    // Notificações Push
-    [BsonElement("pushRecurringProcessed")]
-    public bool PushRecurringProcessed { get; set; } = true;
-
-    [BsonElement("pushDailyReminder")]
-    public bool PushDailyReminder { get; set; } = true;
-
     // Aparência
     [BsonElement("theme")]
     public string Theme { get; set; } = "auto"; // light, dark, auto
