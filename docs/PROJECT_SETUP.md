@@ -40,7 +40,8 @@ money-manager/
 
 - **.NET 10 SDK**
 - **Node.js + npm**
-- **MongoDB** acessível em `mongodb://localhost:27017` — por exemplo, via Docker:
+- **MongoDB** acessível em `mongodb://localhost:27017` — os cenários operativos do `dev.sh`
+  sobem o contêiner Docker `mongodb` (mongo:7) automaticamente; sem o script:
   ```bash
   docker run -d --name mongodb -p 27017:27017 mongo:7
   ```
@@ -52,8 +53,23 @@ Na raiz do repositório, `./dev.sh` sobe os cenários de desenvolvimento com um 
 ```bash
 ./dev.sh admin         # Ambiente administrativo: API Backoffice + Frontend Backoffice
 ./dev.sh operational   # Ambiente operativo: API Operacional + Frontend Web
-./dev.sh all           # As 4 aplicações acima
+./dev.sh full          # Ambiente operativo completo: API Operacional + Frontend Web + Worker
+./dev.sh worker        # Só o Worker Operacional
+./dev.sh all           # Todas as aplicações (administrativo + operativo + Worker)
+./dev.sh setup         # Só prepara MongoDB e a configuração local, sem iniciar nada
 ```
+
+Nos cenários operativos (`operational`, `full`, `worker`, `all` e `setup`), o script antes:
+- sobe o MongoDB no Docker se a porta 27017 estiver livre;
+- roda `scripts/dev-setup.mjs`, que completa `appsettings.Development.json` (API e Worker) e
+  `src/Frontends/MoneyManager.Web/.env.local` — MongoDB local (banco `MoneyManagerDev`),
+  `Jwt:SecretKey` e `Encryption:Key` gerados quando são placeholder (a mesma chave de
+  criptografia na API e no Worker), chave da Anthropic copiada entre API e Worker e
+  `http://localhost:3000` no CORS. Valores já configurados não são alterados, nenhum segredo
+  é impresso e esses arquivos são ignorados pelo git;
+- inicia a API Operacional com `PORT=5000` (sem `PORT`, ela escuta na 8080, padrão do Railway).
+
+Para agentes de IA, o mesmo fluxo está na skill `.claude/skills/run-money/`.
 
 Pré-requisitos adicionais:
 - `npm ci` executado em `src/Frontends/MoneyManager.Web` e `src/Frontends/MoneyManager.Backoffice` (o script roda automaticamente se `node_modules` estiver ausente)
@@ -65,10 +81,10 @@ URLs por cenário:
 | Cenário | API | Frontend |
 |---|---|---|
 | `admin` | http://localhost:5243 | http://localhost:3010 |
-| `operational` | http://localhost:5000 | http://localhost:3000 |
+| `operational` / `full` | http://localhost:5000 | http://localhost:3000 |
 | `all` | ambas acima | ambos acima |
 
-> O Worker (`src/Workers/MoneyManager.Worker.Operational`) não é iniciado pelo `dev.sh`; rode-o à parte quando precisar testar os jobs agendados.
+> O Worker (`src/Workers/MoneyManager.Worker.Operational`) não tem porta: é iniciado em `full`, `worker` e `all` e processa os jobs agendados e a importação de fatura.
 
 ### Opção 2: Executar por processo
 
@@ -77,12 +93,13 @@ URLs por cenário:
    dotnet restore MoneyManager.sln
    ```
 
-2. **Configurar MongoDB e segredos** em `appsettings.Development.json` (ignorado pelo git) ou via variáveis de ambiente — veja [Configuração](#-configuração).
+2. **Configurar MongoDB e segredos** em `appsettings.Development.json` (ignorado pelo git) ou via variáveis de ambiente — veja [Configuração](#-configuração). `./dev.sh setup` (ou `node scripts/dev-setup.mjs`) preenche o que faltar.
 
 3. **Executar a API Operacional:**
    ```bash
-   dotnet run --project src/APIs/MoneyManager.Api.Operational
+   PORT=5000 dotnet run --project src/APIs/MoneyManager.Api.Operational
    ```
+   (sem `PORT`, a API escuta na 8080 — padrão do Railway — e o Web local, que aponta para a 5000, não a encontra)
 
 4. **Executar o frontend Web:**
    ```bash
