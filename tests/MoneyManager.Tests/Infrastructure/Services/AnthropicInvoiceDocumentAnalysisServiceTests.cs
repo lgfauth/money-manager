@@ -344,6 +344,14 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
     [InlineData("12/10/26", 12, 10, 2026)]
     [InlineData("12/10", 12, 10, null)]
     [InlineData("02-29", 29, 2, null)]
+    [InlineData("16 NOV 2026", 16, 11, 2026)]
+    [InlineData("09 OUT", 9, 10, null)]
+    [InlineData("09 out", 9, 10, null)]
+    [InlineData("16 de novembro de 2026", 16, 11, 2026)]
+    [InlineData("05 MARÇO", 5, 3, null)]
+    [InlineData("16/NOV/26", 16, 11, 2026)]
+    [InlineData("01-FEV", 1, 2, null)]
+    [InlineData("12 Oct 2026", 12, 10, 2026)]
     public void ParseDate_WithSupportedFormats_ShouldParse(string value, int day, int month, int? year)
     {
         // Act
@@ -362,6 +370,28 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
         Assert.DoesNotContain("MM-DD", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
     }
 
+    [Fact]
+    public void SystemPrompt_ShouldAskToConvertMonthNamesToNumbers()
+    {
+        // Assert — a fatura Nubank imprime "16 NOV 2026" e a IA às vezes copiava o mês por extenso
+        Assert.Contains("always numeric", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
+        Assert.Contains("\"16 NOV 2026\" -> \"16/11/2026\"", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
+    }
+
+    [Fact]
+    public void ParseResult_WithMonthAbbreviationDates_ShouldReadInvoiceAndItemDates()
+    {
+        // Arrange — formato copiado da fatura Nubank
+        const string text = """{"invoice":{"due":"16 NOV 2026","status":"closed"},"items":[{"d":"09 OUT","ds":"MERCEARIA","v":11.98}]}""";
+
+        // Act
+        var result = AnthropicInvoiceDocumentAnalysisService.ParseResult(text);
+
+        // Assert
+        Assert.Equal(new InvoiceDocumentDateDto(16, 11, 2026), result.Invoice.DueDate);
+        Assert.Equal(new InvoiceDocumentDateDto(9, 10, null), Assert.Single(result.Items).Date);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("ontem")]
@@ -369,6 +399,10 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
     [InlineData("2025-02-29")]
     [InlineData("32/01")]
     [InlineData("2026-10")]
+    [InlineData("NOV 2026")]
+    [InlineData("31 NOV")]
+    [InlineData("16 XYZ 2026")]
+    [InlineData("16 NOV 2026 10")]
     public void ParseDate_WithInvalidValue_ShouldReturnNull(string value)
     {
         // Act & Assert

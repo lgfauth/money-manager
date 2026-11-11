@@ -339,7 +339,11 @@ Destaques:
   fatura "aberta"/"parcial" ou com fechamento depois de hoje → `Failed`; sem
   fechamento no documento ele é calculado pelo `ClosingDay` (alerta informativo);
   datas sem ano assumem o ano corrente (ano anterior se caírem depois do fechamento);
-  a IA devolve datas na ordem brasileira (`DD/MM/AAAA` ou `DD/MM`) e, se o vencimento
+  a IA devolve datas numéricas na ordem brasileira (`DD/MM/AAAA` ou `DD/MM`), mas o
+  parser também aceita o mês por nome ou abreviação em português/inglês (`16 NOV 2026`,
+  `09 OUT`, como na fatura Nubank); o Worker registra no `ProcessLogger` o passo
+  "Fatura lida pela IA" só com contagens (itens, itens sem data/valor, presença de
+  fechamento/vencimento/total, pendências), sem conteúdo do documento; se o vencimento
   não cair de 1 a 45 dias após o fechamento, a revisão tenta inverter dia e mês de uma
   ou das duas datas e, achando um par coerente, usa-o com alerta informativo
   `DocumentDateCorrected`; categoria de cada item: a IA escolhe entre as categorias de

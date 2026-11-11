@@ -60,8 +60,9 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         }
 
         Fields:
-        - Dates: copy them in the Brazilian day-first order printed on the statement: "DD/MM/YYYY" when the year is
-          printed, "DD/MM" when it is not. Never reorder day and month and never invent a year.
+        - Dates: always numeric, in the Brazilian day-first order: "DD/MM/YYYY" when the year is printed, "DD/MM"
+          when it is not. Convert month names or abbreviations to their number ("16 NOV 2026" -> "16/11/2026",
+          "09 OUT" -> "09/10"). Never reorder day and month and never invent a year.
         - invoice.status: "open" or "partial" if the document declares itself an open/partial/current statement
           ("fatura aberta", "parcial", "fatura atual", "lançamentos futuros"); "closed" if it is a closed statement; else "unknown".
         - invoice.total: the statement total in BRL.
@@ -477,7 +478,8 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
     };
 
     /// <summary>
-    /// Aceita "YYYY-MM-DD", "MM-DD" / "--MM-DD" (sem ano), "DD/MM/YYYY" e "DD/MM". Datas inválidas viram null.
+    /// Aceita "YYYY-MM-DD", "MM-DD" / "--MM-DD" (sem ano), "DD/MM/YYYY", "DD/MM" e mês por nome ou abreviação
+    /// em português ou inglês ("16 NOV 2026", "09 OUT", "16 de novembro de 2026", "16/NOV"). Datas inválidas viram null.
     /// </summary>
     internal static InvoiceDocumentDateDto? ParseDate(string? value)
     {
@@ -488,7 +490,13 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         int? year = null;
         int month, day;
 
-        if (value.Contains('/'))
+        if (value.Any(char.IsLetter))
+        {
+            // Mês por extenso: a IA às vezes copia a data como impressa (ex.: fatura Nubank "16 NOV 2026")
+            if (!TryParseNamedMonthDate(value, out day, out month, out year))
+                return null;
+        }
+        else if (value.Contains('/'))
         {
             var parts = value.Split('/');
             if (parts.Length is < 2 or > 3
@@ -534,6 +542,64 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
             return null;
 
         return new InvoiceDocumentDateDto(day, month, year);
+    }
+
+    // Chaves sem acento, em minúsculas: abreviações e nomes completos em português e inglês
+    private static readonly Dictionary<string, int> MonthNames = new(StringComparer.Ordinal)
+    {
+        ["jan"] = 1, ["janeiro"] = 1, ["january"] = 1,
+        ["fev"] = 2, ["fevereiro"] = 2, ["feb"] = 2, ["february"] = 2,
+        ["mar"] = 3, ["marco"] = 3, ["march"] = 3,
+        ["abr"] = 4, ["abril"] = 4, ["apr"] = 4, ["april"] = 4,
+        ["mai"] = 5, ["maio"] = 5, ["may"] = 5,
+        ["jun"] = 6, ["junho"] = 6, ["june"] = 6,
+        ["jul"] = 7, ["julho"] = 7, ["july"] = 7,
+        ["ago"] = 8, ["agosto"] = 8, ["aug"] = 8, ["august"] = 8,
+        ["set"] = 9, ["setembro"] = 9, ["sep"] = 9, ["sept"] = 9, ["september"] = 9,
+        ["out"] = 10, ["outubro"] = 10, ["oct"] = 10, ["october"] = 10,
+        ["nov"] = 11, ["novembro"] = 11, ["november"] = 11,
+        ["dez"] = 12, ["dezembro"] = 12, ["dec"] = 12, ["december"] = 12
+    };
+
+    /// <summary>
+    /// Data com o mês escrito: dia, mês e ano opcional, separados por espaço, "/", "-", "." ou "de".
+    /// </summary>
+    private static bool TryParseNamedMonthDate(string value, out int day, out int month, out int? year)
+    {
+        day = 0;
+        month = 0;
+        year = null;
+
+        var tokens = RemoveDiacritics(value).ToLowerInvariant()
+            .Split([' ', '/', '-', '.', ','], StringSplitOptions.RemoveEmptyEntries)
+            .Where(t => t != "de")
+            .ToArray();
+
+        if (tokens.Length is < 2 or > 3
+            || !int.TryParse(tokens[0], NumberStyles.None, CultureInfo.InvariantCulture, out day)
+            || !MonthNames.TryGetValue(tokens[1], out month))
+            return false;
+
+        if (tokens.Length == 3)
+        {
+            if (!int.TryParse(tokens[2], NumberStyles.None, CultureInfo.InvariantCulture, out var y))
+                return false;
+            year = y < 100 ? 2000 + y : y;
+        }
+
+        return true;
+    }
+
+    private static string RemoveDiacritics(string value)
+    {
+        var normalized = value.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder(normalized.Length);
+        foreach (var c in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                builder.Append(c);
+        }
+        return builder.ToString();
     }
 
     private static string? GetString(JsonElement element, string name)

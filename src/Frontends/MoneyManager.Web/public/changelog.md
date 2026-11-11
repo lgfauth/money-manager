@@ -1,3 +1,16 @@
+# Versão 1.3.1-beta
+
+*Lançamento: 11 de novembro de 2026*
+
+---
+
+## 🐛 Correções e melhorias
+
+### 📅 Importação da fatura Nubank não falha mais pelas datas
+Faturas que mostram as datas com o mês escrito, como **16 NOV 2026** ou **09 OUT** (caso da Nubank), às vezes falhavam com a mensagem "Não foi possível identificar o mês da fatura". Agora essas datas são reconhecidas e a fatura segue para a revisão normalmente.
+
+---
+
 # Versão 1.3.0-beta
 
 *Lançamento: 10 de novembro de 2026*

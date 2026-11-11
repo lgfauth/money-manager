@@ -207,6 +207,8 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
                 }
             }
 
+            _processLogger.AddStep("Fatura lida pela IA", AnalysisData(job, analysis));
+
             // Planilha: o texto gravado é a própria fonte da conferência de cada item
             var spreadsheet = job.SourceType == InvoiceImportSourceType.Spreadsheet
                 ? SpreadsheetText.Parse(System.Text.Encoding.UTF8.GetString(files[0].Content))
@@ -323,6 +325,23 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
         ["fileCount"] = job.FileCount,
         ["attempts"] = job.Attempts,
         ["status"] = job.Status.ToString()
+    };
+
+    /// <summary>
+    /// Resumo numérico do que a IA devolveu, para diagnosticar falhas da revisão (ex.: datas não lidas).
+    /// Só contagens e presença de campos: nunca descrições, valores, datas ou nomes.
+    /// </summary>
+    internal static Dictionary<string, object?> AnalysisData(CreditCardInvoiceImport job, InvoiceDocumentAnalysisResultDto analysis) => new()
+    {
+        ["importId"] = job.Id,
+        ["items"] = analysis.Items.Count,
+        ["itemsWithoutDate"] = analysis.Items.Count(i => i.Date is null),
+        ["itemsWithoutAmount"] = analysis.Items.Count(i => i.Amount is null),
+        ["hasClosingDate"] = analysis.Invoice.ClosingDate is not null,
+        ["hasDueDate"] = analysis.Invoice.DueDate is not null,
+        ["hasTotal"] = analysis.Invoice.TotalAmount is not null,
+        ["isOpenOrPartial"] = analysis.Invoice.IsOpenOrPartial,
+        ["issues"] = analysis.Issues.Count
     };
 
     /// <summary>

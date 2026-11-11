@@ -218,6 +218,56 @@ public class InvoiceImportProcessingServiceTests
     }
 
     [Fact]
+    public async Task ProcessPendingAsync_ShouldLogAnalysisCountsEvenWhenReviewFails()
+    {
+        // Arrange — IA leu itens, mas nenhuma data: a revisão falha e o log precisa mostrar o porquê
+        var job = Claim(Job());
+        var analysis = new InvoiceDocumentAnalysisResultDto(
+            new InvoiceDocumentInfoDto("Nubank", null, null, new InvoiceDocumentDateDto(16, 11, 2026), 100m, false),
+            [
+                new InvoiceDocumentItemDto(null, "MERCADO SIGILOSO", 10m, CreditCardTransactionType.Purchase, null, null,
+                    null, InvoiceImportHolderType.Unknown, null, InvoiceImportCardType.Unknown, null, null, null, null),
+                new InvoiceDocumentItemDto(new InvoiceDocumentDateDto(9, 10, null), "PADARIA", null, CreditCardTransactionType.Purchase,
+                    null, null, null, InvoiceImportHolderType.Unknown, null, InvoiceImportCardType.Unknown, null, null, null, null)
+            ],
+            ["pagina ilegivel"]);
+        _analysis.AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>()).Returns(analysis);
+        _review.BuildReviewAsync(UserId, _card, analysis, Today).Returns(InvoiceImportReviewResult.Failure("falhou"));
+        Dictionary<string, object?>? data = null;
+        _logger.AddStep("Fatura lida pela IA", Arg.Do<Dictionary<string, object?>?>(d => data = d));
+
+        // Act
+        await Run();
+
+        // Assert
+        Assert.NotNull(data);
+        Assert.Equal(job.Id, data!["importId"]);
+        Assert.Equal(2, data["items"]);
+        Assert.Equal(1, data["itemsWithoutDate"]);
+        Assert.Equal(1, data["itemsWithoutAmount"]);
+        Assert.Equal(false, data["hasClosingDate"]);
+        Assert.Equal(true, data["hasDueDate"]);
+        Assert.Equal(true, data["hasTotal"]);
+        Assert.Equal(1, data["issues"]);
+        Assert.DoesNotContain(data.Values, v => v?.ToString()?.Contains("SIGILOSO") == true);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenAnalysisFails_ShouldNotLogAnalysisCounts()
+    {
+        // Arrange
+        Claim(Job());
+        _analysis.AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>())
+            .Throws(new InvoiceDocumentAnalysisException("erro", isTransient: false));
+
+        // Act
+        await Run();
+
+        // Assert
+        _logger.DidNotReceive().AddStep("Fatura lida pela IA", Arg.Any<Dictionary<string, object?>?>());
+    }
+
+    [Fact]
     public async Task ProcessPendingAsync_ShouldRespectMaxJobsPerCycle()
     {
         // Arrange
