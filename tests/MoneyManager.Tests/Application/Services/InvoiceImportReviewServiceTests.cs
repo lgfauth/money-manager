@@ -675,6 +675,89 @@ public class InvoiceImportReviewServiceTests
     }
 
     [Fact]
+    public async Task BuildReviewAsync_WithSections_ShouldSumPrintedSubtotalsPerHolderIncludingTruncatedNames()
+    {
+        // Arrange — caso Itaú: titular com bloco nacional (nome completo) e internacional (nome cortado + IOF)
+        const string full = "YOLANDA SARABELLA NUNES FRANCA";
+        const string cut = "YOLANDA SARABELLA NU";
+        var iof = Item(null, "Repasse de IOF", 1.75m, holder: cut) with { DatedAtClosing = true };
+        var analysis = StandardAnalysis(
+            Item(D(2026, 10, 20), "MERCADO", 100m, holder: full, holderType: InvoiceImportHolderType.Primary),
+            Item(D(2026, 10, 21), "BOOKING", 50m, holder: cut),
+            iof,
+            Item(D(2026, 10, 20), "RAPPI", 1.12m, holder: "LUAN FAUTH"),
+            Item(D(2026, 10, 20), "CANCELAMENTO DE COMPRA", 1.12m, holder: "LUAN FAUTH", type: CreditCardTransactionType.Refund),
+            Item(D(2026, 10, 22), "LOJA", 200m, holder: "LUAN FAUTH")) with
+        {
+            Sections =
+            [
+                new InvoiceDocumentSectionDto(full, InvoiceImportHolderType.Primary, "d", 100m, 1),
+                new InvoiceDocumentSectionDto(cut, InvoiceImportHolderType.Primary, "i", 51.75m, 2),
+                new InvoiceDocumentSectionDto("LUAN FAUTH", InvoiceImportHolderType.Additional, "d", 200m, 3)
+            ]
+        };
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        var yolanda = result.Holders.Single(h => h.Name == full);
+        Assert.Equal(151.75m, yolanda.PrintedTotalAmount);
+        Assert.Equal(151.75m, yolanda.TotalAmount);
+        var luan = result.Holders.Single(h => h.Name == "LUAN FAUTH");
+        Assert.Equal(200m, luan.PrintedTotalAmount);
+        Assert.Equal(200m, luan.TotalAmount); // estorno soma negativo
+
+        // Repasse de IOF recebe a data de fechamento, sem alerta de data ausente
+        var iofItem = result.Items.Single(i => i.Description == "Repasse de IOF");
+        Assert.Equal(new DateTime(2026, 11, 2), iofItem.Date);
+        Assert.Empty(iofItem.Warnings);
+        Assert.True(iofItem.IsSelectedByDefault);
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WhenAHolderSectionHasNoSubtotal_ShouldLeavePrintedTotalNull()
+    {
+        // Arrange
+        var analysis = StandardAnalysis(
+            Item(D(2026, 10, 20), "A", 10m, holder: "ANA"),
+            Item(D(2026, 10, 20), "B", 20m, holder: "ANA"),
+            Item(D(2026, 10, 20), "C", 30m, holder: "BRUNO"),
+            Item(D(2026, 10, 20), "D", 40m)) with
+        {
+            Sections =
+            [
+                new InvoiceDocumentSectionDto("ANA", InvoiceImportHolderType.Unknown, "d", 10m, 1),
+                new InvoiceDocumentSectionDto("ANA", InvoiceImportHolderType.Unknown, "i", null, 1)
+            ]
+        };
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert — soma parcial não serve de conferência; titular sem bloco e grupo sem titular ficam sem subtotal
+        Assert.All(result.Holders, h => Assert.Null(h.PrintedTotalAmount));
+    }
+
+    [Fact]
+    public async Task BuildReviewAsync_WithPeriodTotal_ShouldKeepItBesideStatementTotal()
+    {
+        // Arrange
+        var analysis = StandardAnalysis(Item(D(2026, 10, 20))) with
+        {
+            Invoice = new InvoiceDocumentInfoDto("Itaú", null, D(2026, 11, 2), D(2026, 11, 10), 24872.94m, false, 24833.95m)
+        };
+
+        // Act
+        var result = await Build(analysis);
+
+        // Assert
+        Assert.Equal(24872.94m, result.Invoice!.TotalAmount);
+        Assert.Equal(24833.95m, result.Invoice.PeriodTotalAmount);
+        Assert.Null(result.Holders.SingleOrDefault()?.PrintedTotalAmount);
+    }
+
+    [Fact]
     public async Task BuildReviewAsync_WithoutHolderInformation_ShouldUseImplicitHolder()
     {
         // Act

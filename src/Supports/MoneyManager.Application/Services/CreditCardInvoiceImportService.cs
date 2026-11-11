@@ -565,6 +565,7 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
                 DueDate = job.Invoice.DueDate,
                 ReferenceMonth = job.Invoice.ReferenceMonth,
                 TotalAmount = job.Invoice.TotalAmount,
+                PeriodTotalAmount = job.Invoice.PeriodTotalAmount,
                 IsOpenOrPartial = job.Invoice.IsOpenOrPartial
             },
         Holders = job.Holders
@@ -575,6 +576,7 @@ public class CreditCardInvoiceImportService : ICreditCardInvoiceImportService
                 CardLastDigits = [.. h.CardLastDigits],
                 ItemCount = h.ItemCount,
                 TotalAmount = h.TotalAmount,
+                PrintedTotalAmount = h.PrintedTotalAmount,
                 IsSuggested = h.IsSuggested
             })
             .ToList(),

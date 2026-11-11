@@ -98,7 +98,7 @@ lib/
   dates.ts          ← date-only values from the API (format, date input value, local today) — no time-zone conversion
   legacy-service-worker-cleanup.ts ← temporary removal of the old push service worker (/sw.js)
   invoice-import.ts ← invoice import labels, route helper, active statuses, polling interval, date formatting
-  invoice-import-review.ts ← review rules mirrored from the backend (blocking warnings, 60-day/future date, card schedule tolerance, totals, confirm payload) — guidance only, the API revalidates
+  invoice-import-review.ts ← review rules mirrored from the backend (blocking warnings, 60-day/future date, card schedule tolerance, totals, confirm payload) — guidance only, the API revalidates. `documentComparisonTotal` picks the invoice total compared with the selected items: the printed totals of the chosen holders (`printedTotalAmount`), else the period total (`periodTotalAmount`), else the statement total
   money-privacy.ts  ← currency formatting / value masking helpers
   query-client.ts   ← QueryClient singleton + queryKeys registry
   user-display.ts   ← user name/avatar display helpers

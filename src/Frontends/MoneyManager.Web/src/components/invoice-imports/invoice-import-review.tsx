@@ -37,6 +37,7 @@ import {
   isItemIncluded,
   isSameReviewState,
   requiresHolderChoice,
+  documentComparisonTotal,
   restoreReviewState,
   signedAmount,
   toConfirmItem,
@@ -200,7 +201,10 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
     );
   const canConfirm = blockers.length === 0 && !confirm.isPending;
 
-  const documentTotal = job.invoice?.totalAmount ?? null;
+  const { amount: documentTotal, label: documentTotalLabel } = documentComparisonTotal(
+    job,
+    review.selectedHolders
+  );
   const difference = documentTotal !== null ? documentTotal - selectedTotal : null;
   const hasDifference = difference !== null && Math.abs(difference) >= 0.01;
 
@@ -425,7 +429,7 @@ export function InvoiceImportReview({ job, card }: InvoiceImportReviewProps) {
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Total da fatura</dt>
+            <dt className="text-muted-foreground">{documentTotalLabel}</dt>
             <dd className="font-semibold">
               {documentTotal !== null ? formatMonetaryValue(documentTotal) : "—"}
             </dd>

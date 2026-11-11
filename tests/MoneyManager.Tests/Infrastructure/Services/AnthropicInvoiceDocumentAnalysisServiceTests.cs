@@ -120,6 +120,89 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_WithDefaultHaiku_ShouldNotSendOutputConfig()
+    {
+        // Arrange
+        var handler = new StubHandler(HttpStatusCode.OK, Sse(FullResultJson));
+        var service = CreateService(handler);
+
+        // Act
+        await service.AnalyzeAsync(PdfRequest);
+
+        // Assert — requisição do modelo padrão continua igual à anterior
+        using var request = JsonDocument.Parse(handler.LastRequestBody!);
+        Assert.False(request.RootElement.TryGetProperty("output_config", out _));
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_WithModelInRequest_ShouldUseItOnlyForThatCall()
+    {
+        // Arrange
+        var handler = new StubHandler(HttpStatusCode.OK, Sse(FullResultJson));
+        var service = CreateService(handler);
+
+        // Act
+        await service.AnalyzeAsync(PdfRequest with { Model = "claude-sonnet-5-5" });
+        using var withOverride = JsonDocument.Parse(handler.LastRequestBody!);
+        await service.AnalyzeAsync(PdfRequest);
+        using var withoutOverride = JsonDocument.Parse(handler.LastRequestBody!);
+
+        // Assert — Sonnet 5.5 recusa thinking "disabled" (400); a chamada seguinte volta ao modelo padrão
+        Assert.Equal("claude-sonnet-5-5", withOverride.RootElement.GetProperty("model").GetString());
+        Assert.Equal("between_tools", withOverride.RootElement.GetProperty("thinking").GetProperty("type").GetString());
+        Assert.Equal("claude-haiku-5-5", withoutOverride.RootElement.GetProperty("model").GetString());
+        Assert.Equal("disabled", withoutOverride.RootElement.GetProperty("thinking").GetProperty("type").GetString());
+    }
+
+    [Fact]
+    public async Task AnalyzeAsync_WithOpus55_ShouldOmitThinkingAndUseLowEffort()
+    {
+        // Arrange
+        var handler = new StubHandler(HttpStatusCode.OK, Sse(FullResultJson));
+        var service = CreateService(handler);
+
+        // Act
+        await service.AnalyzeAsync(PdfRequest with { Model = "claude-opus-5-5" });
+
+        // Assert — Opus 5.5 recusa thinking "disabled" em qualquer esforço
+        using var request = JsonDocument.Parse(handler.LastRequestBody!);
+        Assert.False(request.RootElement.TryGetProperty("thinking", out _));
+        Assert.Equal("low", request.RootElement.GetProperty("output_config").GetProperty("effort").GetString());
+    }
+
+    [Theory]
+    [InlineData("claude-haiku-5-5", "disabled", null)]
+    [InlineData("claude-sonnet-5-5", "between_tools", null)]
+    [InlineData("CLAUDE-SONNET-5-5", "between_tools", null)]
+    [InlineData("claude-sonnet-5", "disabled", null)]
+    [InlineData("claude-opus-5", "disabled", null)]
+    [InlineData("claude-opus-4-8", "disabled", null)]
+    [InlineData("claude-sonnet-4-6", "disabled", null)]
+    [InlineData("claude-haiku-4-5", "disabled", null)]
+    [InlineData("claude-opus-5-5", null, "low")]
+    [InlineData("claude-fable-5-2", null, "low")]
+    [InlineData("claude-mythos-5-2", null, "low")]
+    [InlineData("claude-novo-modelo", null, null)]
+    public void ResolveReasoning_ShouldUseFormAcceptedByEachModel(string model, string? thinkingType, string? effort)
+    {
+        // Act
+        var (thinking, outputConfig) = AnthropicInvoiceDocumentAnalysisService.ResolveReasoning(model);
+
+        // Assert
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(new { thinking, outputConfig }));
+        var root = json.RootElement;
+        if (thinkingType is null)
+            Assert.Equal(JsonValueKind.Null, root.GetProperty("thinking").ValueKind);
+        else
+            Assert.Equal(thinkingType, root.GetProperty("thinking").GetProperty("type").GetString());
+
+        if (effort is null)
+            Assert.Equal(JsonValueKind.Null, root.GetProperty("outputConfig").ValueKind);
+        else
+            Assert.Equal(effort, root.GetProperty("outputConfig").GetProperty("effort").GetString());
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_WithCategoryNames_ShouldSendCategoriesBlockAfterDocument()
     {
         // Arrange
@@ -376,6 +459,140 @@ public class AnthropicInvoiceDocumentAnalysisServiceTests
         // Assert — a fatura Nubank imprime "16 NOV 2026" e a IA às vezes copiava o mês por extenso
         Assert.Contains("always numeric", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
         Assert.Contains("\"16 NOV 2026\" -> \"16/11/2026\"", AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
+    }
+
+    [Fact]
+    public void SystemPrompt_ShouldAskForIssuesInPortugueseOnlyForRealProblems()
+    {
+        // Assert — pendências em inglês e confirmações ("subtotal is consistent") apareciam como alertas
+        var prompt = AnthropicInvoiceDocumentAnalysisService.SystemPrompt;
+        Assert.Contains("issues: written in Brazilian Portuguese", prompt);
+        Assert.Contains("Only real reading problems", prompt);
+        Assert.Contains("Never report", prompt);
+        Assert.Contains("confirmations", prompt);
+    }
+
+    [Theory]
+    [InlineData("Compras parceladas - próximas faturas")]
+    [InlineData("Limites de crédito")]
+    [InlineData("Encargos cobrados nesta fatura")]
+    [InlineData("Resumo da fatura")]
+    [InlineData("Simulação")]
+    public void SystemPrompt_ShouldExcludeSectionsOutsideCurrentTransactions(string section)
+    {
+        // Assert — parcelas de próximas faturas (Itaú) eram lidas como lançamentos
+        Assert.Contains(section, AnthropicInvoiceDocumentAnalysisService.SystemPrompt);
+    }
+
+    // --- Blocos por titular ---
+
+    // Estrutura da fatura Itaú: titular com bloco nacional e internacional (com repasse de IOF), nome cortado
+    private const string SectionsJson = """
+        {"invoice":{"closing":"08/11/2026","due":"15/11/2026","total":24872.94,"period":24833.95,"status":"closed"},
+         "holders":[{"name":"YOLANDA SARABELLA NUNES FRANCA","type":"p"},{"name":"LUAN FAUTH","type":"a"}],
+         "sections":[
+           {"holder":"YOLANDA SARABELLA NU","type":"p","kind":"d","subtotal":8693.36,
+            "items":[{"d":"09/03","ds":"AMAZON BR","v":70.80,"i":8,"n":10,"h":1}]},
+           {"holder":"LUAN FAUTH","kind":"d","subtotal":9593.61,
+            "items":[{"d":"20/10","ds":"RAPPI","v":1.12,"k":"p"},{"d":"20/10","ds":"CANCELAMENTO DE COMPRA","v":1.12,"k":"r"}]},
+           {"holder":"LUAN FAUTH","type":"a","kind":"i","subtotal":246.03,"iof":8.33,
+            "items":[{"d":"12/10","ds":"PAYPAL *GITHUB","v":52.80,"o":"USD 10.00 @ 5.28"}]}
+         ],
+         "items":[{"d":"05/10","ds":"SEM TITULAR","v":10}]}
+        """;
+
+    [Fact]
+    public void ParseResult_WithSections_ShouldUseSectionHolderAndIgnoreItemIndex()
+    {
+        // Act
+        var result = AnthropicInvoiceDocumentAnalysisService.ParseResult(SectionsJson);
+
+        // Assert — "h":1 do item apontaria LUAN; vale o titular do bloco
+        var amazon = result.Items.Single(i => i.Description == "AMAZON BR");
+        Assert.Equal("YOLANDA SARABELLA NU", amazon.HolderName);
+        Assert.Equal(InvoiceImportHolderType.Primary, amazon.HolderType);
+        Assert.Equal(8, amazon.InstallmentNumber);
+
+        // Bloco sem "type" usa o tipo da lista de titulares
+        Assert.All(result.Items.Where(i => i.Description is "RAPPI" or "CANCELAMENTO DE COMPRA"),
+            i => Assert.Equal(InvoiceImportHolderType.Additional, i.HolderType));
+        Assert.Equal(CreditCardTransactionType.Refund, result.Items.Single(i => i.Description == "CANCELAMENTO DE COMPRA").Type);
+
+        // Item fora de bloco continua aceito, sem titular
+        var loose = result.Items.Single(i => i.Description == "SEM TITULAR");
+        Assert.Null(loose.HolderName);
+    }
+
+    [Fact]
+    public void ParseResult_WithSectionIof_ShouldAddIofItemDatedAtClosing()
+    {
+        // Act
+        var result = AnthropicInvoiceDocumentAnalysisService.ParseResult(SectionsJson);
+
+        // Assert
+        var iof = Assert.Single(result.Items, i => i.DatedAtClosing);
+        Assert.Equal(AnthropicInvoiceDocumentAnalysisService.IofRepassDescription, iof.Description);
+        Assert.Equal(8.33m, iof.Amount);
+        Assert.Null(iof.Date);
+        Assert.Equal("LUAN FAUTH", iof.HolderName);
+        Assert.Equal(CreditCardTransactionType.Purchase, iof.Type);
+    }
+
+    [Fact]
+    public void ParseResult_WithSections_ShouldReturnSectionsAndPeriodTotal()
+    {
+        // Act
+        var result = AnthropicInvoiceDocumentAnalysisService.ParseResult(SectionsJson);
+
+        // Assert
+        Assert.Equal(24872.94m, result.Invoice.TotalAmount);
+        Assert.Equal(24833.95m, result.Invoice.PeriodTotalAmount);
+        Assert.NotNull(result.Sections);
+        Assert.Equal(3, result.Sections!.Count);
+        Assert.Equal(new InvoiceDocumentSectionDto("YOLANDA SARABELLA NU", InvoiceImportHolderType.Primary, "d", 8693.36m, 1), result.Sections[0]);
+        Assert.Equal(new InvoiceDocumentSectionDto("LUAN FAUTH", InvoiceImportHolderType.Additional, "i", 246.03m, 2), result.Sections[2]);
+        Assert.Equal(6, result.Items.Count);
+    }
+
+    [Fact]
+    public void ParseResult_WithSectionWithoutSubtotalOrIof_ShouldKeepSubtotalNull()
+    {
+        // Arrange
+        const string text = """{"sections":[{"holder":"MARIA","items":[{"d":"01/10","ds":"LOJA","v":5}]}]}""";
+
+        // Act
+        var result = AnthropicInvoiceDocumentAnalysisService.ParseResult(text);
+
+        // Assert
+        var section = Assert.Single(result.Sections!);
+        Assert.Null(section.PrintedSubtotal);
+        Assert.Null(result.Invoice.PeriodTotalAmount);
+        Assert.False(Assert.Single(result.Items).DatedAtClosing);
+    }
+
+    [Fact]
+    public void ParseResult_WithLegacyFormat_ShouldHaveNoSections()
+    {
+        // Act
+        var result = AnthropicInvoiceDocumentAnalysisService.ParseResult(FullResultJson);
+
+        // Assert — formato antigo (itens soltos com "h") continua igual
+        Assert.Null(result.Sections);
+        Assert.Equal("JOAO DA SILVA", result.Items[0].HolderName);
+        Assert.Equal("MARIA DA SILVA", result.Items[1].HolderName);
+    }
+
+    [Fact]
+    public void SystemPrompt_ShouldDescribeSectionsAndPeriodTotal()
+    {
+        // Assert — blocos por titular continuam em colunas/páginas sem o nome (causa dos itens sem titular)
+        var prompt = AnthropicInvoiceDocumentAnalysisService.SystemPrompt;
+        Assert.Contains("\"sections\"", prompt);
+        Assert.Contains("Lançamentos no cartão", prompt);
+        Assert.Contains("without the name: keep those items in the same section", prompt);
+        Assert.Contains("invoice.period", prompt);
+        Assert.Contains("Total dos lançamentos atuais", prompt);
+        Assert.Contains("sections[].iof", prompt);
     }
 
     [Fact]

@@ -50,6 +50,7 @@ public class InvoiceImportDocumentInfoResponseDto
     public DateTime? DueDate { get; set; }
     public string? ReferenceMonth { get; set; }
     public decimal? TotalAmount { get; set; }
+    public decimal? PeriodTotalAmount { get; set; }
     public bool IsOpenOrPartial { get; set; }
 }
 
@@ -60,6 +61,7 @@ public class InvoiceImportHolderResponseDto
     public List<string> CardLastDigits { get; set; } = [];
     public int ItemCount { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal? PrintedTotalAmount { get; set; }
     public bool IsSuggested { get; set; }
 }
 

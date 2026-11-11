@@ -126,6 +126,12 @@ public class InvoiceImportDocumentInfo
     [BsonIgnoreIfNull]
     public decimal? TotalAmount { get; set; }
 
+    // Soma dos lançamentos do período impressa no documento (ex.: "Total dos lançamentos atuais" no Itaú),
+    // sem saldo anterior, pagamentos e saldo financiado. Base da conferência do total geral.
+    [BsonElement("periodTotalAmount")]
+    [BsonIgnoreIfNull]
+    public decimal? PeriodTotalAmount { get; set; }
+
     // Documento que se declara fatura "aberta" ou "parcial".
     [BsonElement("isOpenOrPartial")]
     public bool IsOpenOrPartial { get; set; }
@@ -152,6 +158,12 @@ public class InvoiceImportHolder
 
     [BsonElement("totalAmount")]
     public decimal TotalAmount { get; set; }
+
+    // Soma dos subtotais impressos dos blocos do titular (nacional + internacional, com IOF).
+    // Null quando o documento não imprime subtotal para algum bloco do titular.
+    [BsonElement("printedTotalAmount")]
+    [BsonIgnoreIfNull]
+    public decimal? PrintedTotalAmount { get; set; }
 
     // Titular sugerido como selecionado na revisão.
     [BsonElement("isSuggested")]

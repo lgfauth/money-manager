@@ -22,7 +22,9 @@ internal sealed class InvoiceImportProcessor(
         QueuedExpiration = TimeSpan.FromHours(options.Value.QueuedExpirationHours),
         // O job precisa terminar antes de ser considerado preso
         JobTimeout = TimeSpan.FromMinutes(Math.Clamp(options.Value.JobTimeoutMinutes, 1, Math.Max(1, options.Value.StuckAfterMinutes - 1))),
-        MaxJobsPerCycle = options.Value.MaxJobsPerCycle
+        MaxJobsPerCycle = options.Value.MaxJobsPerCycle,
+        DefaultModelReads = options.Value.DefaultModelReads,
+        FallbackModel = options.Value.FallbackModel
     };
 
     public Task<bool> HasPendingWorkAsync() =>

@@ -38,7 +38,9 @@ export type InvoiceImportWarningCode =
   | "InvoiceAlreadyImported"
   | "UnreadableContent"
   | "CellTruncated"
-  | "DocumentDateCorrected";
+  | "DocumentDateCorrected"
+  | "HolderTotalMismatch"
+  | "PeriodTotalMismatch";
 
 export interface InvoiceImportCreatedResponseDto {
   id: string;
@@ -62,6 +64,8 @@ export interface InvoiceImportDocumentInfoResponseDto {
   dueDate: string | null;
   referenceMonth: string | null;
   totalAmount: number | null;
+  /** Soma dos lançamentos do período impressa na fatura (sem saldo anterior, pagamentos e saldo financiado). */
+  periodTotalAmount: number | null;
   isOpenOrPartial: boolean;
 }
 
@@ -71,6 +75,8 @@ export interface InvoiceImportHolderResponseDto {
   cardLastDigits: string[];
   itemCount: number;
   totalAmount: number;
+  /** Soma dos subtotais impressos dos blocos do titular; null quando a fatura não os imprime. */
+  printedTotalAmount: number | null;
   isSuggested: boolean;
 }
 

@@ -1,13 +1,32 @@
-# Versão 1.3.1-beta
+# Versão 1.4.0-beta
 
 *Lançamento: 11 de novembro de 2026*
 
 ---
 
+## ✨ Novidades
+
+### 🔁 Fatura conferida com os totais e relida automaticamente
+Depois de ler a fatura, o MoneyManager compara a soma dos lançamentos de cada titular com o total que a própria fatura mostra para ele, e a soma de todos com o total de lançamentos da fatura. Se não bater, a fatura é relida automaticamente antes de chegar até você, sem precisar enviá-la de novo. Se mesmo assim houver diferença, a revisão mostra um aviso com os valores do titular que não confere, para você checar antes de importar.
+
+---
+
 ## 🐛 Correções e melhorias
+
+### 🧮 Total da revisão considera só os titulares escolhidos
+Ao revisar uma fatura com vários titulares, a comparação de valores agora usa o total que a fatura mostra para os titulares que você escolheu, e não o da fatura inteira. Escolhendo só o seu titular, a diferença deixa de aparecer quando os lançamentos conferem. Cada titular também mostra o total impresso na fatura e avisa quando a soma dos lançamentos é diferente.
 
 ### 📅 Importação da fatura Nubank não falha mais pelas datas
 Faturas que mostram as datas com o mês escrito, como **16 NOV 2026** ou **09 OUT** (caso da Nubank), às vezes falhavam com a mensagem "Não foi possível identificar o mês da fatura". Agora essas datas são reconhecidas e a fatura segue para a revisão normalmente.
+
+### 💬 Avisos da leitura da fatura em português
+Os avisos que a leitura da fatura mostra na revisão agora aparecem sempre em português e só quando algo pode ter ficado errado ou faltando. Mensagens de confirmação, como "o subtotal confere", não aparecem mais como aviso.
+
+### 📆 Parcelas de próximas faturas ficam de fora
+Faturas que listam as parcelas que ainda vão vencer (como a seção "Compras parceladas – próximas faturas" do Itaú) não trazem mais essas parcelas para a importação. Entram só os lançamentos da fatura enviada.
+
+### 👥 Lançamentos de faturas com vários titulares ficam com o titular certo
+Em faturas longas com mais de um titular, como as do Itaú, os lançamentos que continuavam em outra coluna ou página às vezes iam para "Titular não identificado" ou para a pessoa errada. Agora a leitura segue cada bloco da fatura até o seu subtotal, e o repasse de IOF das compras internacionais entra como lançamento do titular, na data de fechamento.
 
 ---
 

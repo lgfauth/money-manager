@@ -2,6 +2,7 @@
 
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { hasTotalDifference } from "@/lib/invoice-import-review";
 import { useMoneyPrivacy } from "@/hooks/use-money-privacy";
 import type {
   InvoiceImportHolderResponseDto,
@@ -43,6 +44,8 @@ export function InvoiceImportHolders({ holders, selected, onToggle }: InvoiceImp
       <div className="grid gap-2 sm:grid-cols-2">
         {holders.map((holder) => {
           const checked = selected.includes(holder.name);
+          const printed = holder.printedTotalAmount;
+          const diverges = printed !== null && hasTotalDifference(holder.totalAmount, printed);
           return (
             <label
               key={holder.name}
@@ -68,6 +71,20 @@ export function InvoiceImportHolders({ holders, selected, onToggle }: InvoiceImp
                   {holder.itemCount === 1 ? "1 lançamento" : `${holder.itemCount} lançamentos`} ·{" "}
                   {formatMonetaryValue(holder.totalAmount)}
                 </span>
+                {printed !== null && (
+                  <span
+                    className={cn(
+                      "mt-1 block text-xs",
+                      diverges
+                        ? "font-medium text-amber-700 dark:text-amber-400"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    Total na fatura: {formatMonetaryValue(printed)}
+                    {diverges &&
+                      ` · diferença de ${formatMonetaryValue(holder.totalAmount - printed)}`}
+                  </span>
+                )}
               </span>
             </label>
           );

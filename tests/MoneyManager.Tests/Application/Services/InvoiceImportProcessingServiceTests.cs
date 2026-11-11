@@ -267,6 +267,278 @@ public class InvoiceImportProcessingServiceTests
         _logger.DidNotReceive().AddStep("Fatura lida pela IA", Arg.Any<Dictionary<string, object?>?>());
     }
 
+    // --- Conferência e releitura ---
+
+    private const string Fallback = InvoiceImportProcessingSettings.DefaultFallbackModel;
+
+    /// <summary>Revisão com um titular cuja soma lida é <paramref name="itemsTotal"/> e o total impresso <paramref name="printed"/>.</summary>
+    private static InvoiceImportReviewResult ReviewWithTotal(decimal itemsTotal, decimal? printed = 100m) =>
+        new(true, null, "2026-11", new InvoiceImportDocumentInfo { ReferenceMonth = "2026-11" },
+            [new InvoiceImportHolder { Name = "MARIA SIGILOSA", TotalAmount = itemsTotal, PrintedTotalAmount = printed }],
+            [],
+            [new InvoiceImportItem { Date = new DateTime(2026, 10, 20), Description = "MERCADO", Amount = itemsTotal, HolderName = "MARIA SIGILOSA" }]);
+
+    private void Reviews(params InvoiceImportReviewResult[] reviews) =>
+        _review.BuildReviewAsync(UserId, _card, Arg.Any<InvoiceDocumentAnalysisResultDto>(), Today, Arg.Any<SpreadsheetContent?>())
+            .Returns(reviews[0], reviews[1..]);
+
+    private Task AnalyzeCalls(int count) =>
+        _analysis.Received(count).AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>());
+
+    private Task FallbackCalls(int count) =>
+        _analysis.Received(count).AnalyzeAsync(Arg.Is<InvoiceDocumentAnalysisRequestDto>(r => r.Model == Fallback), Arg.Any<CancellationToken>());
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenFirstReadMatchesPrintedTotals_ShouldReadOnce()
+    {
+        // Arrange
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(100m));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(1);
+        await FallbackCalls(0);
+        Assert.Equal(InvoiceImportStatus.AwaitingReview, job.Status);
+        Assert.Empty(job.Warnings);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WithoutPrintedTotals_ShouldReadOnceWithoutReconciliation()
+    {
+        // Arrange — documento sem subtotais nem total do período: comportamento anterior
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(80m, printed: null));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(1);
+        Assert.Equal(InvoiceImportStatus.AwaitingReview, job.Status);
+        Assert.Empty(job.Warnings);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenSecondReadMatches_ShouldUseItWithoutFallback()
+    {
+        // Arrange
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(90m), ReviewWithTotal(100m));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(2);
+        await FallbackCalls(0);
+        Assert.Equal(100m, Assert.Single(job.Holders).TotalAmount);
+        Assert.Empty(job.Warnings);
+        Assert.Equal(0, job.Attempts); // releitura não conta como tentativa de falha
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenThreeDefaultReadsDiverge_ShouldReadOnceWithFallbackModel()
+    {
+        // Arrange
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(90m), ReviewWithTotal(95m), ReviewWithTotal(110m), ReviewWithTotal(100m));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(4);
+        await FallbackCalls(1);
+        await _analysis.Received(3).AnalyzeAsync(Arg.Is<InvoiceDocumentAnalysisRequestDto>(r => r.Model == null), Arg.Any<CancellationToken>());
+        Assert.Equal(100m, Assert.Single(job.Holders).TotalAmount);
+        Assert.Empty(job.Warnings);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenNoReadMatches_ShouldUseSmallestDivergenceAndWarn()
+    {
+        // Arrange — divergências 50, 3, 30 e 20: vale a 2ª leitura
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(150m), ReviewWithTotal(103m), ReviewWithTotal(70m), ReviewWithTotal(120m));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(4);
+        Assert.Equal(InvoiceImportStatus.AwaitingReview, job.Status);
+        Assert.Equal(103m, Assert.Single(job.Holders).TotalAmount);
+        var warning = Assert.Single(job.Warnings);
+        Assert.Equal(InvoiceImportWarningCode.HolderTotalMismatch, warning.Code);
+        Assert.False(warning.IsBlocking);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WithDefinitiveErrorOnReread_ShouldFailWithoutMoreReads()
+    {
+        // Arrange
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(90m));
+        _analysis.AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(_ => AnalysisResult, _ => throw new InvoiceDocumentAnalysisException("Não foi possível ler.", isTransient: false));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(2);
+        Assert.Equal(InvoiceImportStatus.Failed, job.Status);
+        Assert.Equal("Não foi possível ler.", job.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WithTransientErrorOnReread_ShouldKeepBestRead()
+    {
+        // Arrange
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(90m));
+        _analysis.AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(_ => AnalysisResult, _ => throw new InvoiceDocumentAnalysisException("instável", isTransient: true));
+
+        // Act
+        await Run();
+
+        // Assert
+        Assert.Equal(InvoiceImportStatus.AwaitingReview, job.Status);
+        Assert.Equal(0, job.Attempts);
+        Assert.Equal(InvoiceImportWarningCode.HolderTotalMismatch, Assert.Single(job.Warnings).Code);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenTimeIsUpAfterAValidRead_ShouldUseBestRead()
+    {
+        // Arrange
+        var job = Claim(Job());
+        Reviews(ReviewWithTotal(90m));
+        _analysis.AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>())
+            .Returns(_ => AnalysisResult, _ => throw new OperationCanceledException());
+
+        // Act
+        await Run();
+
+        // Assert
+        Assert.Equal(InvoiceImportStatus.AwaitingReview, job.Status);
+        Assert.Equal(InvoiceImportWarningCode.HolderTotalMismatch, Assert.Single(job.Warnings).Code);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenTimeIsUpWithoutValidRead_ShouldRetryLater()
+    {
+        // Arrange
+        var job = Claim(Job());
+        _analysis.AnalyzeAsync(Arg.Any<InvoiceDocumentAnalysisRequestDto>(), Arg.Any<CancellationToken>())
+            .Throws(new OperationCanceledException());
+
+        // Act
+        var summary = await Run();
+
+        // Assert
+        Assert.Equal(1, summary.Retried);
+        Assert.Equal(InvoiceImportStatus.Queued, job.Status);
+        Assert.Equal(1, job.Attempts);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenReviewFailsWithUnknownMonth_ShouldRereadAndUseNextRead()
+    {
+        // Arrange — mês não identificado costuma ser leitura ruim (datas não lidas)
+        var job = Claim(Job());
+        Reviews(InvoiceImportReviewResult.Failure(InvoiceImportReviewService.UnknownReferenceMonthMessage), ReviewWithTotal(100m));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(2);
+        Assert.Equal(InvoiceImportStatus.AwaitingReview, job.Status);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenEveryReadFailsToBuildReview_ShouldFailWithLastMessage()
+    {
+        // Arrange
+        var job = Claim(Job());
+        Reviews(
+            InvoiceImportReviewResult.Failure(InvoiceImportReviewService.UnknownReferenceMonthMessage),
+            InvoiceImportReviewResult.Failure(InvoiceImportReviewService.UnknownReferenceMonthMessage),
+            InvoiceImportReviewResult.Failure(InvoiceImportReviewService.UnknownReferenceMonthMessage),
+            InvoiceImportReviewResult.Failure(InvoiceImportReviewService.NoItemsMessage));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(4);
+        await FallbackCalls(1);
+        Assert.Equal(InvoiceImportStatus.Failed, job.Status);
+        Assert.Equal(InvoiceImportReviewService.NoItemsMessage, job.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_WhenInvoiceIsNotClosed_ShouldFailWithoutRereading()
+    {
+        // Arrange — fatura aberta não muda ao reler
+        var job = Claim(Job());
+        Reviews(InvoiceImportReviewResult.Failure(InvoiceImportReviewService.NotClosedMessage));
+
+        // Act
+        await Run();
+
+        // Assert
+        await AnalyzeCalls(1);
+        Assert.Equal(InvoiceImportReviewService.NotClosedMessage, job.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ProcessPendingAsync_ShouldLogEachReadWithModelAndReconciliationWithoutNames()
+    {
+        // Arrange
+        Claim(Job());
+        Reviews(ReviewWithTotal(90m), ReviewWithTotal(100m));
+        var logged = new List<Dictionary<string, object?>>();
+        _logger.AddStep("Fatura lida pela IA", Arg.Do<Dictionary<string, object?>?>(d => logged.Add(d!)));
+
+        // Act
+        await Run();
+
+        // Assert
+        Assert.Equal(2, logged.Count);
+        Assert.Equal(1, logged[0]["read"]);
+        Assert.Equal("padrão", logged[0]["model"]);
+        Assert.Equal(false, logged[0]["reconciled"]);
+        Assert.Equal(1, logged[0]["divergentHolders"]);
+        Assert.Equal(10m, logged[0]["divergence"]);
+        Assert.Equal(2, logged[1]["read"]);
+        Assert.Equal(true, logged[1]["reconciled"]);
+        Assert.DoesNotContain(logged.SelectMany(d => d.Values), v => v?.ToString()?.Contains("SIGILOSA") == true);
+    }
+
+    [Fact]
+    public void Settings_ShouldDefaultToThreeReadsAndJobTimeoutBelowStuckLimit()
+    {
+        // Arrange
+        var settings = new InvoiceImportProcessingSettings();
+
+        // Assert — até 4 leituras de fatura longa cabem no tempo do job, que termina antes de ser considerado preso
+        Assert.Equal(3, settings.DefaultModelReads);
+        Assert.True(settings.JobTimeout < settings.StuckAfter);
+    }
+
+    [Fact]
+    public void Settings_ShouldDefaultFallbackModelToSonnet55()
+    {
+        // Assert
+        Assert.Equal("claude-sonnet-5-5", new InvoiceImportProcessingSettings().FallbackModel);
+    }
+
     [Fact]
     public async Task ProcessPendingAsync_ShouldRespectMaxJobsPerCycle()
     {
@@ -486,7 +758,7 @@ public class InvoiceImportProcessingServiceTests
     {
         // Arrange
         var stuck = Job(attempts: 0);
-        _imports.GetStuckProcessingAsync(Now.AddMinutes(-10)).Returns([stuck]);
+        _imports.GetStuckProcessingAsync(Now - Settings.StuckAfter).Returns([stuck]);
         _files.CountByImportAsync(UserId, stuck.Id).Returns(1);
 
         // Act
@@ -504,7 +776,7 @@ public class InvoiceImportProcessingServiceTests
     {
         // Arrange
         var stuck = Job(attempts: 2);
-        _imports.GetStuckProcessingAsync(Now.AddMinutes(-10)).Returns([stuck]);
+        _imports.GetStuckProcessingAsync(Now - Settings.StuckAfter).Returns([stuck]);
         _files.CountByImportAsync(UserId, stuck.Id).Returns(1);
 
         // Act
@@ -520,7 +792,7 @@ public class InvoiceImportProcessingServiceTests
     {
         // Arrange
         var stuck = Job();
-        _imports.GetStuckProcessingAsync(Now.AddMinutes(-10)).Returns([stuck]);
+        _imports.GetStuckProcessingAsync(Now - Settings.StuckAfter).Returns([stuck]);
         _files.CountByImportAsync(UserId, stuck.Id).Returns(0);
 
         // Act
@@ -564,7 +836,7 @@ public class InvoiceImportProcessingServiceTests
 
         // Só job preso
         _imports.AnyQueuedAsync().Returns(false);
-        _imports.GetStuckProcessingAsync(Now.AddMinutes(-10)).Returns([Job()]);
+        _imports.GetStuckProcessingAsync(Now - Settings.StuckAfter).Returns([Job()]);
         Assert.True(await _service.HasPendingWorkAsync(Now, Settings));
     }
 }

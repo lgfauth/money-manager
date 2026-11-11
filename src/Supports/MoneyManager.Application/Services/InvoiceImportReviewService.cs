@@ -184,6 +184,7 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
             DueDate = docDue,
             ReferenceMonth = referenceMonth,
             TotalAmount = doc.TotalAmount,
+            PeriodTotalAmount = doc.PeriodTotalAmount,
             IsOpenOrPartial = false
         };
 
@@ -225,6 +226,7 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
 
         // 6. Titulares
         var holders = GroupHolders(items);
+        ApplyPrintedTotals(holders, analysis.Sections);
         await SuggestHoldersAsync(userId, card.Id, holders);
 
         // 7. Duplicidade e parcelamentos, considerando só os titulares sugeridos (todos, se nenhum for sugerido)
@@ -447,7 +449,10 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
 
         var item = new InvoiceImportItem
         {
-            Date = ResolveItemDate(source.Date, closingDate, today),
+            // Cobrança sem data própria (repasse de IOF de um bloco) é lançada na data de fechamento
+            Date = source.DatedAtClosing && source.Date is null
+                ? closingDate.Date
+                : ResolveItemDate(source.Date, closingDate, today),
             Description = source.Description.Trim(),
             Amount = source.Amount ?? 0m,
             Type = source.Type,
@@ -573,6 +578,28 @@ public class InvoiceImportReviewService : IInvoiceImportReviewService
             holders.Add(BuildHolder(UnidentifiedHolderName, unidentified));
 
         return holders;
+    }
+
+    /// <summary>
+    /// Subtotal impresso de cada titular: soma dos subtotais dos blocos com o mesmo nome (nomes cortados
+    /// incluídos). Fica null quando o titular não tem bloco ou algum bloco dele não imprime subtotal, pois a
+    /// soma parcial não serve de conferência.
+    /// </summary>
+    internal static void ApplyPrintedTotals(List<InvoiceImportHolder> holders, IReadOnlyList<InvoiceDocumentSectionDto>? sections)
+    {
+        if (sections is null || sections.Count == 0)
+            return;
+
+        foreach (var holder in holders.Where(h => h.Name != UnidentifiedHolderName))
+        {
+            var holderSections = sections
+                .Where(s => InvoiceImportText.NamesMatch(holder.Name, s.HolderName))
+                .ToList();
+
+            holder.PrintedTotalAmount = holderSections.Count > 0 && holderSections.All(s => s.PrintedSubtotal is not null)
+                ? holderSections.Sum(s => s.PrintedSubtotal!.Value)
+                : null;
+        }
     }
 
     private static InvoiceImportHolder BuildHolder(string name, List<InvoiceImportItem> items)

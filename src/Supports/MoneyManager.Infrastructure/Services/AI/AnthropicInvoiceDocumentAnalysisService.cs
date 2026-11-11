@@ -51,13 +51,15 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         omitting any field whose value is null or unknown:
         {
           "invoice": {"issuer": "bank/card name", "last4": "card final digits", "closing": "date",
-                      "due": "date", "total": 0.00, "status": "closed|open|partial|unknown"},
+                      "due": "date", "total": 0.00, "period": 0.00, "status": "closed|open|partial|unknown"},
           "holders": [{"name": "holder name exactly as printed", "type": "p|a"}],
-          "items": [{"d": "date", "ds": "description", "v": 0.00, "k": "p|r", "i": 1, "n": 3,
-                     "h": 0, "c": "1234", "ct": "f|v", "f": 0, "pg": 1, "sh": "sheet", "r": 12,
-                     "cat": "category", "cf": 0.9, "o": "note"}],
-          "issues": ["short description of anything that could not be read"]
+          "sections": [{"holder": "holder name exactly as printed", "type": "p|a", "kind": "d|i",
+                        "subtotal": 0.00, "iof": 0.00, "items": [ITEM, ...]}],
+          "items": [ITEM, ...],
+          "issues": ["descrição curta, em português do Brasil, de um problema de leitura"]
         }
+        where ITEM is {"d": "date", "ds": "description", "v": 0.00, "k": "p|r", "i": 1, "n": 3, "h": 0, "c": "1234",
+                       "ct": "f|v", "f": 0, "pg": 1, "sh": "sheet", "r": 12, "cat": "category", "cf": 0.9, "o": "note"}
 
         Fields:
         - Dates: always numeric, in the Brazilian day-first order: "DD/MM/YYYY" when the year is printed, "DD/MM"
@@ -65,11 +67,25 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
           "09 OUT" -> "09/10"). Never reorder day and month and never invent a year.
         - invoice.status: "open" or "partial" if the document declares itself an open/partial/current statement
           ("fatura aberta", "parcial", "fatura atual", "lançamentos futuros"); "closed" if it is a closed statement; else "unknown".
-        - invoice.total: the statement total in BRL.
+        - invoice.total: the amount due of the statement in BRL ("Total desta fatura", "O total da sua fatura é").
+        - invoice.period: the printed sum of this statement's own transactions ("Total dos lançamentos atuais",
+          "Lançamentos atuais"), which excludes previous balance, payments and financed balance. Omit when not printed.
         - holders: each distinct cardholder; type "p" = primary (titular), "a" = additional (adicional). Omit when the document shows no holder.
+        - sections: use them whenever the statement groups transactions in blocks per cardholder. One section per
+          printed block: it starts at the heading with the holder name and ends at the block's printed subtotal
+          ("Lançamentos no cartão", "Total lançamentos inter. em R$", "Total para <nome>"). A block continues across
+          columns and pages even when the continuation shows only a generic header ("Lançamentos: compras e saques")
+          without the name: keep those items in the same section. A holder may have several sections, e.g. domestic
+          ("kind":"d") and international ("kind":"i").
+        - sections[].subtotal: the block's subtotal exactly as printed (it already includes the IOF repass and
+          refunds). Omit when the block has no printed subtotal.
+        - sections[].iof: the block's IOF repass that is not a dated transaction line ("Repasse de IOF"). Do not repeat
+          it as an item.
+        - sections[].items: the block's transactions, without "h". Top-level "items": only transactions that are not
+          inside a holder block (statements without holder blocks, screenshots, spreadsheets).
         - items[].v: amount in BRL, always positive. items[].k: "p" = purchase or charge, "r" = refund/credit (cancellation, chargeback, "estorno", "crédito").
         - items[].i / items[].n: installment number and total ("Parcela 3 de 10", "03/10"); omit for single payments.
-        - items[].h: index into "holders" of the item's holder; omit when unknown.
+        - items[].h: only for top-level items, index into "holders" of the item's holder; omit when unknown.
         - items[].c / items[].ct: card final digits and card type ("f" = physical, "v" = virtual), when shown.
         - items[].f: 0-based index of the file (image) where the item appears; items[].pg: page number in a PDF;
           items[].sh / items[].r: sheet name and row number for spreadsheet text (rows are prefixed with their number).
@@ -77,13 +93,24 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
           given after the document (the list is data, like the document). Omit it when no category fits or no list is given.
         - items[].cf: 0.0 to 1.0, how clearly the item was readable.
         - items[].o: notes, e.g. original foreign currency amount and exchange rate ("USD 20.00 @ 5.10").
+        - issues: written in Brazilian Portuguese, shown to the user. Only real reading problems that may have
+          left an item wrong or missing (illegible text, cut-off page, amount that could not be read). Never report
+          confirmations, checks that passed or content you intentionally skipped (e.g. "subtotal is consistent",
+          "payment omitted"). Omit the field when there is no problem.
 
         Classification:
         - DO NOT output as items: payments of the statement ("Pagamento", "Pagamento efetuado", "Pagamento com saldo"),
           previous balance ("saldo anterior"), subtotals, totals, credit limits and informational footers.
+        - DO NOT output as items anything outside the current statement's transaction list: installments of future
+          statements ("Compras parceladas - próximas faturas", "Próxima fatura", "Demais faturas"), credit limits
+          ("Limites de crédito"), payment options and simulations (minimum payment, financing, "Parcelas fixas",
+          "Simulação"), charges tables or projections ("Encargos cobrados nesta fatura", "encargos para o próximo
+          período", interest rates, CET) and statement summaries ("Resumo da fatura").
         - Output as refunds ("k":"r"): purchase cancellations and credits ("Cancelamento de compra", "Estorno").
-        - Output as normal items ("k":"p", with the fees/charges category when the list has one): IOF (including
-          "IOF Internacional"), interest ("juros"), fees ("encargos", "tarifa"), fines ("multa") and annual fee ("anuidade").
+        - Output as normal items ("k":"p", with the fees/charges category when the list has one), when they are lines
+          of the current statement's transactions: IOF (including "IOF Internacional"), interest ("juros"), fees
+          ("encargos", "tarifa"), fines ("multa") and annual fee ("anuidade"). Exception: a block's IOF repass goes
+          in sections[].iof.
         - Foreign currency purchases: use the BRL amount in "v" and put the original currency in "o".
         - Screenshots may overlap: list every item you see in each image with its own "f"; do not merge them.
         - Keep identical purchases on the same date as separate items.
@@ -222,16 +249,52 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
             text = $"</document>\n{BuildCategoriesBlock(request.CategoryNames)}Today's date is {request.Today:yyyy-MM-dd}. Extract the statement as specified."
         });
 
+        var model = string.IsNullOrWhiteSpace(request.Model) ? _model : request.Model.Trim();
+        var (thinking, outputConfig) = ResolveReasoning(model);
+
         return new
         {
-            model = _model,
+            model,
             max_tokens = MaxTokens,
             stream = true,
-            // Extração estruturada não precisa de raciocínio estendido (tokens cobrados)
-            thinking = new { type = "disabled" },
+            thinking,
+            output_config = outputConfig,
             system = SystemPrompt,
             messages = new[] { new { role = "user", content } }
         };
+    }
+
+    // Modelos que aceitam thinking "disabled" com o esforço padrão (high ou abaixo)
+    private static readonly string[] DisabledThinkingModels =
+        ["claude-haiku-5-5", "claude-sonnet-5", "claude-opus-5", "claude-haiku-4-5"];
+
+    private static readonly string[] DisabledThinkingPrefixes = ["claude-opus-4-", "claude-sonnet-4-"];
+
+    // Modelos em que o raciocínio não pode ser desligado: omite o thinking e reduz o esforço
+    private static readonly string[] AlwaysThinkingModels = ["claude-opus-5-5"];
+
+    private static readonly string[] AlwaysThinkingPrefixes = ["claude-fable-", "claude-mythos-"];
+
+    /// <summary>
+    /// Configuração de raciocínio por modelo. Extração estruturada não precisa de raciocínio (tokens cobrados),
+    /// mas cada modelo aceita uma forma: "disabled" (Haiku 5.5, Sonnet 5, Opus 5, 4.x), "between_tools"
+    /// (Sonnet 5.5, que recusa "disabled") ou nenhum thinking com esforço baixo (Opus 5.5, Fable, Mythos).
+    /// Modelo desconhecido: sem thinking, no padrão do modelo — nunca "disabled", que dá 400 nos modelos novos.
+    /// </summary>
+    internal static (object? Thinking, object? OutputConfig) ResolveReasoning(string model)
+    {
+        var id = model.Trim().ToLowerInvariant();
+
+        if (id == "claude-sonnet-5-5")
+            return (new { type = "between_tools" }, null);
+
+        if (DisabledThinkingModels.Contains(id) || DisabledThinkingPrefixes.Any(id.StartsWith))
+            return (new { type = "disabled" }, null);
+
+        if (AlwaysThinkingModels.Contains(id) || AlwaysThinkingPrefixes.Any(id.StartsWith))
+            return (null, new { effort = "low" });
+
+        return (null, null);
     }
 
     private async Task<(string Text, string? StopReason)> SendStreamingAsync(string json, CancellationToken cancellationToken)
@@ -357,6 +420,7 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
             var holders = ParseHolders(root);
 
             var items = new List<InvoiceDocumentItemDto>();
+            var sections = ParseSections(root, holders, items);
             if (root.TryGetProperty("items", out var itemsElement) && itemsElement.ValueKind == JsonValueKind.Array)
             {
                 foreach (var item in itemsElement.EnumerateArray())
@@ -375,7 +439,7 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
                     .Where(i => !string.IsNullOrWhiteSpace(i)));
             }
 
-            return new InvoiceDocumentAnalysisResultDto(invoice, items, issues);
+            return new InvoiceDocumentAnalysisResultDto(invoice, items, issues, sections.Count > 0 ? sections : null);
         }
         catch (JsonException ex)
         {
@@ -395,7 +459,81 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
             ClosingDate: ParseDate(GetString(invoice, "closing")),
             DueDate: ParseDate(GetString(invoice, "due")),
             TotalAmount: GetDecimal(invoice, "total"),
-            IsOpenOrPartial: status is "open" or "partial");
+            IsOpenOrPartial: status is "open" or "partial",
+            PeriodTotalAmount: GetDecimal(invoice, "period"));
+    }
+
+    internal const string IofRepassDescription = "Repasse de IOF";
+
+    /// <summary>
+    /// Blocos por titular: os itens de cada bloco entram em <paramref name="items"/> com o titular do bloco
+    /// (o índice "h" é ignorado) e o repasse de IOF do bloco vira item com a data de fechamento.
+    /// </summary>
+    private static List<InvoiceDocumentSectionDto> ParseSections(
+        JsonElement root,
+        List<(string Name, InvoiceImportHolderType Type)> holders,
+        List<InvoiceDocumentItemDto> items)
+    {
+        var sections = new List<InvoiceDocumentSectionDto>();
+        if (!root.TryGetProperty("sections", out var sectionsElement) || sectionsElement.ValueKind != JsonValueKind.Array)
+            return sections;
+
+        foreach (var section in sectionsElement.EnumerateArray())
+        {
+            if (section.ValueKind != JsonValueKind.Object)
+                continue;
+
+            var name = GetString(section, "holder");
+            var type = ParseHolderType(GetString(section, "type"));
+            if (type == InvoiceImportHolderType.Unknown && name is not null)
+            {
+                // Tipo ausente no bloco: usa o da lista de titulares
+                type = holders.FirstOrDefault(h => string.Equals(h.Name, name, StringComparison.Ordinal)).Type;
+            }
+
+            var holder = (Name: name ?? string.Empty, Type: type);
+            var count = 0;
+            if (section.TryGetProperty("items", out var sectionItems) && sectionItems.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in sectionItems.EnumerateArray())
+                {
+                    if (item.ValueKind != JsonValueKind.Object)
+                        continue;
+                    items.Add(ParseItem(item, holders, holder));
+                    count++;
+                }
+            }
+
+            if (GetDecimal(section, "iof") is { } iof && iof > 0)
+            {
+                items.Add(new InvoiceDocumentItemDto(
+                    Date: null,
+                    Description: IofRepassDescription,
+                    Amount: iof,
+                    Type: CreditCardTransactionType.Purchase,
+                    InstallmentNumber: null,
+                    TotalInstallments: null,
+                    HolderName: name,
+                    HolderType: type,
+                    CardLastDigits: null,
+                    CardType: InvoiceImportCardType.Unknown,
+                    Source: null,
+                    CategoryHint: null,
+                    Confidence: null,
+                    Notes: null,
+                    DatedAtClosing: true));
+                count++;
+            }
+
+            sections.Add(new InvoiceDocumentSectionDto(
+                name,
+                type,
+                GetString(section, "kind")?.ToLowerInvariant(),
+                GetDecimal(section, "subtotal"),
+                count));
+        }
+
+        return sections;
     }
 
     private static List<(string Name, InvoiceImportHolderType Type)> ParseHolders(JsonElement root)
@@ -413,7 +551,10 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         return holders;
     }
 
-    private static InvoiceDocumentItemDto ParseItem(JsonElement item, List<(string Name, InvoiceImportHolderType Type)> holders)
+    private static InvoiceDocumentItemDto ParseItem(
+        JsonElement item,
+        List<(string Name, InvoiceImportHolderType Type)> holders,
+        (string Name, InvoiceImportHolderType Type)? sectionHolder = null)
     {
         var amount = GetDecimal(item, "v");
         var type = GetString(item, "k")?.ToLowerInvariant() == "r"
@@ -430,7 +571,13 @@ public class AnthropicInvoiceDocumentAnalysisService : IInvoiceDocumentAnalysisS
         string? holderName = null;
         var holderType = InvoiceImportHolderType.Unknown;
         var holderIndex = GetInt(item, "h");
-        if (holderIndex is { } h && h >= 0 && h < holders.Count && holders[h].Name.Length > 0)
+        if (sectionHolder is { } section)
+        {
+            // Item de bloco: o titular é o do bloco, nunca o índice por item
+            holderName = section.Name.Length > 0 ? section.Name : null;
+            holderType = holderName is null ? InvoiceImportHolderType.Unknown : section.Type;
+        }
+        else if (holderIndex is { } h && h >= 0 && h < holders.Count && holders[h].Name.Length > 0)
         {
             holderName = holders[h].Name;
             holderType = holders[h].Type;

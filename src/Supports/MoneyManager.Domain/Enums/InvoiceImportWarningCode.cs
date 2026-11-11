@@ -30,5 +30,9 @@ public enum InvoiceImportWarningCode
     UnreadableContent,
     CellTruncated,
     /// <summary>Fechamento ou vencimento lido com dia e mês invertidos e corrigido pela coerência entre as duas datas.</summary>
-    DocumentDateCorrected
+    DocumentDateCorrected,
+    /// <summary>Soma dos lançamentos de um titular diferente do total impresso para ele, após as releituras.</summary>
+    HolderTotalMismatch,
+    /// <summary>Soma de todos os lançamentos diferente do total de lançamentos do período, após as releituras.</summary>
+    PeriodTotalMismatch
 }

@@ -275,8 +275,8 @@ public class CreditCardInvoiceImportServiceTests
             Status = InvoiceImportStatus.AwaitingReview,
             SourceType = InvoiceImportSourceType.Pdf,
             ReferenceMonth = "2026-10",
-            Invoice = new InvoiceImportDocumentInfo { Issuer = "Banco X", TotalAmount = 150m },
-            Holders = [new InvoiceImportHolder { Name = "MARIA", Type = InvoiceImportHolderType.Primary, IsSuggested = true }],
+            Invoice = new InvoiceImportDocumentInfo { Issuer = "Banco X", TotalAmount = 150m, PeriodTotalAmount = 140m },
+            Holders = [new InvoiceImportHolder { Name = "MARIA", Type = InvoiceImportHolderType.Primary, IsSuggested = true, PrintedTotalAmount = 150m }],
             Warnings = [new InvoiceImportWarning { Code = InvoiceImportWarningCode.ClosingDayMismatch, Message = "m", IsBlocking = true }],
             Items =
             [
@@ -298,7 +298,9 @@ public class CreditCardInvoiceImportServiceTests
         Assert.Equal("AwaitingReview", dto.Status);
         Assert.Equal("Pdf", dto.SourceType);
         Assert.Equal("Banco X", dto.Invoice!.Issuer);
+        Assert.Equal(140m, dto.Invoice.PeriodTotalAmount);
         Assert.Equal("Primary", Assert.Single(dto.Holders).Type);
+        Assert.Equal(150m, dto.Holders[0].PrintedTotalAmount);
         Assert.True(Assert.Single(dto.Warnings).IsBlocking);
         var item = Assert.Single(dto.Items);
         Assert.Equal(2, item.Source!.Page);

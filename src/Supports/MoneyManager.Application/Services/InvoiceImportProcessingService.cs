@@ -32,16 +32,30 @@ public sealed record InvoiceImportProcessingSettings
     public int MaxAttempts { get; init; } = 3;
 
     /// <summary>Job em Processing há mais tempo que isto é considerado preso e volta para a fila.</summary>
-    public TimeSpan StuckAfter { get; init; } = TimeSpan.FromMinutes(10);
+    public TimeSpan StuckAfter { get; init; } = TimeSpan.FromMinutes(25);
 
     /// <summary>Job Queued há mais tempo que isto expira (os arquivos já foram removidos pelo TTL).</summary>
     public TimeSpan QueuedExpiration { get; init; } = TimeSpan.FromHours(24);
 
     /// <summary>Limite de tempo do processamento de um job; deve ser menor que <see cref="StuckAfter"/>.</summary>
-    public TimeSpan JobTimeout { get; init; } = TimeSpan.FromMinutes(8);
+    public TimeSpan JobTimeout { get; init; } = TimeSpan.FromMinutes(20);
 
     /// <summary>Máximo de jobs processados por ciclo do Worker.</summary>
     public int MaxJobsPerCycle { get; init; } = 5;
+
+    /// <summary>
+    /// Leituras com o modelo padrão enquanto a soma não confere com os totais impressos, antes da leitura de
+    /// contingência.
+    /// </summary>
+    public int DefaultModelReads { get; init; } = 3;
+
+    /// <summary>
+    /// Modelo de contingência, usado numa última leitura quando as leituras com o modelo padrão
+    /// não conferem com os totais da fatura.
+    /// </summary>
+    public string FallbackModel { get; init; } = DefaultFallbackModel;
+
+    public const string DefaultFallbackModel = "claude-sonnet-5-5";
 }
 
 public sealed record InvoiceImportProcessingSummary(int Recovered, int Expired, int Succeeded, int Failed, int Retried);
@@ -162,6 +176,12 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
 
     private enum JobOutcome { Succeeded, Failed, Retried }
 
+    private sealed record ReadResult(InvoiceImportReviewResult Review, InvoiceImportReconciliationResult Reconciliation);
+
+    /// <summary>Falhas da montagem da revisão que costumam vir de uma leitura ruim e podem mudar ao reler.</summary>
+    private static bool IsRereadableFailure(string? message) =>
+        message is InvoiceImportReviewService.UnknownReferenceMonthMessage or InvoiceImportReviewService.NoItemsMessage;
+
     private async Task<JobOutcome> ProcessJobAsync(
         CreditCardInvoiceImport job,
         DateOnly today,
@@ -185,38 +205,86 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
                 return await FailAsync(job, ExpiredFilesMessage);
 
             var categoryNames = await GetCategoryNamesForAnalysisAsync(job.UserId);
-
-            InvoiceDocumentAnalysisResultDto analysis;
-            using (var jobTimeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken))
-            {
-                jobTimeout.CancelAfter(settings.JobTimeout);
-                try
-                {
-                    analysis = await _analysisService.AnalyzeAsync(
-                        new InvoiceDocumentAnalysisRequestDto(
-                            job.SourceType,
-                            files.Select(f => new InvoiceDocumentFileDto(f.ContentType, f.Content)).ToList(),
-                            today,
-                            categoryNames),
-                        jobTimeout.Token);
-                }
-                catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
-                {
-                    // Tempo do job esgotado: tratado como falha temporária
-                    return await RetryOrFailAsync(job, settings, "Tempo de leitura da fatura esgotado");
-                }
-            }
-
-            _processLogger.AddStep("Fatura lida pela IA", AnalysisData(job, analysis));
+            var documentFiles = files.Select(f => new InvoiceDocumentFileDto(f.ContentType, f.Content)).ToList();
 
             // Planilha: o texto gravado é a própria fonte da conferência de cada item
             var spreadsheet = job.SourceType == InvoiceImportSourceType.Spreadsheet
                 ? SpreadsheetText.Parse(System.Text.Encoding.UTF8.GetString(files[0].Content))
                 : null;
 
-            var review = await _reviewService.BuildReviewAsync(job.UserId, card, analysis, today, spreadsheet);
-            if (!review.IsSuccess)
-                return await FailAsync(job, review.FailureMessage!);
+            // Leituras: o modelo padrão até DefaultModelReads vezes enquanto a soma não confere com os totais
+            // impressos; depois, uma leitura com o modelo de contingência. Vale a primeira que conferir.
+            var models = Enumerable.Repeat<string?>(null, Math.Max(1, settings.DefaultModelReads)).ToList();
+            if (!string.IsNullOrWhiteSpace(settings.FallbackModel))
+                models.Add(settings.FallbackModel);
+
+            ReadResult? best = null;
+            InvoiceImportReviewResult? lastFailure = null;
+
+            using (var jobTimeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken))
+            {
+                jobTimeout.CancelAfter(settings.JobTimeout);
+
+                for (var read = 1; read <= models.Count; read++)
+                {
+                    var model = models[read - 1];
+
+                    InvoiceDocumentAnalysisResultDto analysis;
+                    try
+                    {
+                        analysis = await _analysisService.AnalyzeAsync(
+                            new InvoiceDocumentAnalysisRequestDto(job.SourceType, documentFiles, today, categoryNames, model),
+                            jobTimeout.Token);
+                    }
+                    catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+                    {
+                        // Tempo do job esgotado: com uma leitura válida segue com ela; sem nenhuma, falha temporária
+                        if (best is not null)
+                        {
+                            _processLogger.AddWarning("Tempo esgotado nas releituras; usando a melhor leitura", ReadData(job, read, model));
+                            break;
+                        }
+                        return await RetryOrFailAsync(job, settings, "Tempo de leitura da fatura esgotado");
+                    }
+                    catch (InvoiceDocumentAnalysisException ex) when (ex.IsTransient && best is not null)
+                    {
+                        // Falha temporária numa releitura não descarta a leitura válida já obtida
+                        _processLogger.AddWarning("Falha temporária na releitura; usando a melhor leitura", ReadData(job, read, model));
+                        break;
+                    }
+
+                    var readReview = await _reviewService.BuildReviewAsync(job.UserId, card, analysis, today, spreadsheet);
+                    var reconciliation = readReview.IsSuccess
+                        ? InvoiceImportReconciliation.Check(readReview.Holders, readReview.Items, readReview.Invoice?.PeriodTotalAmount)
+                        : null;
+
+                    _processLogger.AddStep("Fatura lida pela IA", AnalysisData(job, analysis, read, model, readReview, reconciliation));
+
+                    if (!readReview.IsSuccess)
+                    {
+                        // Só falhas que indicam leitura ruim justificam reler; as demais (ex.: fatura aberta) encerram
+                        if (!IsRereadableFailure(readReview.FailureMessage))
+                            return await FailAsync(job, readReview.FailureMessage!);
+                        lastFailure = readReview;
+                        continue;
+                    }
+
+                    var current = new ReadResult(readReview, reconciliation!);
+                    if (best is null || current.Reconciliation.Divergence < best.Reconciliation.Divergence)
+                        best = current;
+
+                    // Confere (ou não há totais impressos para conferir): não precisa reler
+                    if (reconciliation!.Matches)
+                        break;
+                }
+            }
+
+            if (best is null)
+                return await FailAsync(job, lastFailure?.FailureMessage ?? TooManyAttemptsMessage);
+
+            var review = best.Review;
+            if (!best.Reconciliation.Matches)
+                review.Warnings.AddRange(best.Reconciliation.Warnings);
 
             job.Status = InvoiceImportStatus.AwaitingReview;
             job.ErrorMessage = null;
@@ -328,20 +396,42 @@ public class InvoiceImportProcessingService : IInvoiceImportProcessingService
     };
 
     /// <summary>
-    /// Resumo numérico do que a IA devolveu, para diagnosticar falhas da revisão (ex.: datas não lidas).
-    /// Só contagens e presença de campos: nunca descrições, valores, datas ou nomes.
+    /// Resumo numérico de uma leitura, para diagnosticar falhas da revisão (ex.: datas não lidas) e a conferência.
+    /// Só contagens, presença de campos e a divergência total: nunca nomes, descrições, valores de itens ou datas.
     /// </summary>
-    internal static Dictionary<string, object?> AnalysisData(CreditCardInvoiceImport job, InvoiceDocumentAnalysisResultDto analysis) => new()
+    internal static Dictionary<string, object?> AnalysisData(
+        CreditCardInvoiceImport job,
+        InvoiceDocumentAnalysisResultDto analysis,
+        int read = 1,
+        string? model = null,
+        InvoiceImportReviewResult? review = null,
+        InvoiceImportReconciliationResult? reconciliation = null) => new()
     {
         ["importId"] = job.Id,
+        ["read"] = read,
+        ["model"] = model ?? "padrão",
         ["items"] = analysis.Items.Count,
-        ["itemsWithoutDate"] = analysis.Items.Count(i => i.Date is null),
+        ["itemsWithoutDate"] = analysis.Items.Count(i => i.Date is null && !i.DatedAtClosing),
         ["itemsWithoutAmount"] = analysis.Items.Count(i => i.Amount is null),
+        ["sections"] = analysis.Sections?.Count ?? 0,
         ["hasClosingDate"] = analysis.Invoice.ClosingDate is not null,
         ["hasDueDate"] = analysis.Invoice.DueDate is not null,
         ["hasTotal"] = analysis.Invoice.TotalAmount is not null,
+        ["hasPeriodTotal"] = analysis.Invoice.PeriodTotalAmount is not null,
         ["isOpenOrPartial"] = analysis.Invoice.IsOpenOrPartial,
-        ["issues"] = analysis.Issues.Count
+        ["issues"] = analysis.Issues.Count,
+        ["reviewBuilt"] = review?.IsSuccess,
+        ["reconciled"] = reconciliation is null ? null : reconciliation.IsApplicable ? reconciliation.Matches : "não se aplica",
+        ["divergentHolders"] = reconciliation?.DivergentHolders,
+        ["periodDivergent"] = reconciliation?.PeriodDivergent,
+        ["divergence"] = reconciliation?.Divergence
+    };
+
+    private static Dictionary<string, object?> ReadData(CreditCardInvoiceImport job, int read, string? model) => new()
+    {
+        ["importId"] = job.Id,
+        ["read"] = read,
+        ["model"] = model ?? "padrão"
     };
 
     /// <summary>

@@ -326,19 +326,37 @@ Destaques:
 **Importação de fatura de cartão** (`InvoiceImportWorker`, opções na seção `InvoiceImport`):
 
 - Cada ciclo: recupera jobs presos em `Processing` há mais de `StuckAfterMinutes`
-  (10; voltam para `Queued` contando tentativa), expira jobs `Queued` há mais de
+  (25; voltam para `Queued` contando tentativa), expira jobs `Queued` há mais de
   `QueuedExpirationHours` (24) com "Os arquivos da fatura expiraram. Envie a fatura
   novamente." e reserva atomicamente até `MaxJobsPerCycle` jobs
   (`ClaimNextQueuedAsync`).
 - Por job: confere o cartão (do usuário, não excluído e **não sincronizado pelo Open
   Finance** — `CreditCardImportEligibilityService`), lê os arquivos (ausentes → falha
   de arquivos expirados, sem chamar a IA), chama `IInvoiceDocumentAnalysisService`
-  com limite `JobTimeoutMinutes` (8, sempre menor que o tempo de job preso) e monta a
+  com limite `JobTimeoutMinutes` (20, sempre menor que o tempo de job preso) e monta a
   revisão com `InvoiceImportReviewService`.
+- Conferência e releitura (`InvoiceImportReconciliation`): cada leitura é conferida —
+  soma dos lançamentos de cada titular × `PrintedTotalAmount` e soma geral (estornos
+  negativos) × `PeriodTotalAmount`, tolerância R$ 0,01. Com divergência, relê com o
+  modelo padrão até `DefaultModelReads` (3) leituras e depois faz uma leitura com
+  `FallbackModel` (`claude-sonnet-5-5`); vale a primeira que conferir. Sem nenhuma,
+  usa a de menor divergência (soma dos módulos das diferenças) com alertas não
+  bloqueantes `HolderTotalMismatch` (por titular) e `PeriodTotalMismatch`. Documento
+  sem totais impressos: uma leitura, sem conferência. Revisão que falha por mês não
+  identificado ou sem lançamentos conta como leitura divergente (relê); as demais
+  falhas (ex.: fatura aberta) encerram o job. Releitura não conta em `Attempts`; erro
+  definitivo da IA encerra o job; erro temporário ou tempo esgotado depois de uma
+  leitura válida seguem com a melhor leitura (sem nenhuma, falha temporária). O
+  `ProcessLogger` registra cada leitura ("Fatura lida pela IA": número, modelo,
+  contagens, conferência e divergência total), sem nomes nem conteúdo.
 - Revisão (`InvoiceImportReviewService` + `InvoiceImportDuplicateDetector`):
   fatura "aberta"/"parcial" ou com fechamento depois de hoje → `Failed`; sem
   fechamento no documento ele é calculado pelo `ClosingDay` (alerta informativo);
   datas sem ano assumem o ano corrente (ano anterior se caírem depois do fechamento);
+  item marcado com `DatedAtClosing` (repasse de IOF de um bloco) recebe a data de fechamento;
+  cada titular guarda `PrintedTotalAmount`, a soma dos subtotais impressos dos seus blocos
+  (nomes cortados incluídos; null se algum bloco não imprime subtotal), e o documento guarda
+  `PeriodTotalAmount` (total dos lançamentos do período), bases da conferência;
   a IA devolve datas numéricas na ordem brasileira (`DD/MM/AAAA` ou `DD/MM`), mas o
   parser também aceita o mês por nome ou abreviação em português/inglês (`16 NOV 2026`,
   `09 OUT`, como na fatura Nubank); o Worker registra no `ProcessLogger` o passo
@@ -571,7 +589,7 @@ Configurado via arquivos `railway.*.toml` (`railway.api.toml`,
   `AdminCors__AllowedOrigins__*`).
 - **Frontends:** `NEXT_PUBLIC_API_URL` (web, embutida no build) /
   `ADMIN_API_URL` e `NEXT_PUBLIC_ADMIN_API_URL` (backoffice).
-- **Integrações:** `Anthropic__ApiKey`/`Anthropic__Model` (IA — compartilhadas entre API e Worker), `Efi__*`
+- **Integrações:** `Anthropic__ApiKey`/`Anthropic__Model` (IA — compartilhadas entre API e Worker), `InvoiceImport__FallbackModel` (Worker — modelo da leitura de contingência da importação de fatura, padrão `claude-sonnet-5-5`), `Efi__*`
   (EfiBank). A API key do Banco MCP (Pluggy) é informada
   por cada usuário e salva criptografada.
 
@@ -587,7 +605,7 @@ um segredo ou integração novo, inclua-o em `EnvironmentRequirements`.
 | Integração | Componente | Uso |
 |---|---|---|
 | **Anthropic (Claude)** | `AnthropicReceiptAnalysisService` | Análise de comprovantes por imagem → JSON estruturado (descrição, valor, data, categoria) |
-| **Anthropic (Claude)** | `AnthropicInvoiceDocumentAnalysisService` / `IInvoiceDocumentAnalysisService` | Leitura de fatura de cartão (PDF como bloco `document`, imagens como blocos `image` em ordem, planilha como texto) com resposta por streaming → dados da fatura, lançamentos (data, descrição, valor, compra/estorno, parcela, titular, cartão, origem, categoria, confiança) e pendências. Falhas lançam `InvoiceDocumentAnalysisException` com `IsTransient` (rede, 429, 5xx/529) ou definitiva (chave ausente, recusa, `max_tokens`, JSON inválido). Registrado no Worker |
+| **Anthropic (Claude)** | `AnthropicInvoiceDocumentAnalysisService` / `IInvoiceDocumentAnalysisService` | Leitura de fatura de cartão (PDF como bloco `document`, imagens como blocos `image` em ordem, planilha como texto) com resposta por streaming → dados da fatura, lançamentos (data, descrição, valor, compra/estorno, parcela, titular, cartão, origem, categoria, confiança) e pendências (em português, só problemas reais de leitura; viram alertas `UnreadableContent`). O modelo vem de `Anthropic:Model` ou, por chamada, de `InvoiceDocumentAnalysisRequestDto.Model`; o parâmetro de raciocínio é escolhido por modelo (`ResolveReasoning`: `disabled` no Haiku 5.5, `between_tools` no Sonnet 5.5, sem `thinking` e esforço `low` no Opus 5.5/Fable/Mythos, sem `thinking` em modelo desconhecido). Faturas com blocos por titular vêm em `sections` (titular, tipo nacional/internacional, subtotal impresso, repasse de IOF e itens): os itens herdam o titular do bloco (o índice `h` vale só para itens soltos, formato antigo ainda aceito), o repasse de IOF vira item com `DatedAtClosing` e o documento informa também o total dos lançamentos do período (`invoice.period`), separado do total a pagar. O prompt exclui da lista de itens pagamentos, saldo anterior, subtotais/totais, parcelas de próximas faturas, limites, opções/simulações de pagamento, tabelas de encargos e resumos. Falhas lançam `InvoiceDocumentAnalysisException` com `IsTransient` (rede, 429, 5xx/529) ou definitiva (chave ausente, recusa, `max_tokens`, JSON inválido). Registrado no Worker |
 | **Open Finance (Pluggy via MCP)** | `BankMcpClient` / `IBankMcpClient` | Sincronização de contas e transações bancárias |
 | **EfiBank** | `EfiBankPaymentGateway` / `IPaymentGateway` | Gateway de pagamento para assinaturas |
 | **AES** | `AesEncryptionService` / `IEncryptionService` | Criptografia de dados sensíveis (ex.: credenciais de conexão bancária) |

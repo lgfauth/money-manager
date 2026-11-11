@@ -228,6 +228,7 @@ Anthropic__Model=claude-haiku-5-5   # opcional; padrão claude-haiku-5-5
 **`Anthropic__ApiKey` / `Anthropic__Model` — variáveis compartilhadas:**
 - Usadas pela API (análise de comprovantes) e pelo Worker (leitura de faturas de cartão importadas, `AnthropicInvoiceDocumentAnalysisService`).
 - Configure-as como **Shared Variables** do projeto no Railway e referencie nos dois serviços, para que tenham sempre o mesmo valor.
+- A leitura de fatura aceita qualquer modelo atual em `Anthropic__Model`: o parâmetro de raciocínio é escolhido por modelo (`thinking: disabled` no Haiku 5.5, `between_tools` no Sonnet 5.5, sem `thinking` e esforço `low` no Opus 5.5/Fable/Mythos), porque os modelos novos recusam `disabled` com erro 400.
 - Sem a chave no Worker (ou com o placeholder `${Anthropic__ApiKey}` do `appsettings.Production.json`, que o .NET não expande), a leitura da fatura falha com a mensagem "O serviço de leitura de faturas não está configurado" e a verificação de ambiente aponta a variável na subida (veja abaixo).
 
 **Importação de fatura (`InvoiceImportWorker`) — opções opcionais** (padrões em `appsettings.json`):
@@ -235,10 +236,12 @@ Anthropic__Model=claude-haiku-5-5   # opcional; padrão claude-haiku-5-5
 ```
 InvoiceImport__PollIntervalSeconds=10     # intervalo de verificação da fila
 InvoiceImport__MaxAttempts=3              # tentativas em falha temporária da IA
-InvoiceImport__StuckAfterMinutes=10       # job em processamento além disso volta para a fila
+InvoiceImport__StuckAfterMinutes=25       # job em processamento além disso volta para a fila
 InvoiceImport__QueuedExpirationHours=24   # job na fila além disso falha (arquivos expiram em 24 h)
-InvoiceImport__JobTimeoutMinutes=8        # limite de um job; mantenha menor que StuckAfterMinutes
+InvoiceImport__JobTimeoutMinutes=20       # limite de um job (todas as leituras); mantenha menor que StuckAfterMinutes
 InvoiceImport__MaxJobsPerCycle=5          # jobs processados por ciclo
+InvoiceImport__DefaultModelReads=3        # leituras com o modelo padrão enquanto os totais não conferem
+InvoiceImport__FallbackModel=claude-sonnet-5-5  # modelo da leitura de contingência (depois das leituras acima)
 ```
 
 ---

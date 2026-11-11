@@ -180,6 +180,41 @@ export function isSameReviewState(a: ReviewState, b: ReviewState): boolean {
   return ids.every((id) => b.items[id] !== undefined && sameItemState(a.items[id], b.items[id]));
 }
 
+/** Diferença a partir da qual dois valores não conferem (mesma tolerância do backend). */
+export const TOTAL_TOLERANCE = 0.01;
+
+export const hasTotalDifference = (a: number, b: number) => Math.abs(a - b) >= TOTAL_TOLERANCE;
+
+/**
+ * Total da fatura comparado com a soma dos lançamentos selecionados:
+ * - com escolha de titular, a soma dos totais impressos dos titulares escolhidos (se todos tiverem);
+ * - sem escolha, o total de lançamentos do período, ou o total impresso do único titular;
+ * - sem esses dados (faturas sem subtotais ou lidas antes da conferência), o total da fatura.
+ */
+export function documentComparisonTotal(
+  job: CreditCardInvoiceImportResponseDto,
+  selectedHolders: string[]
+): { amount: number | null; label: string } {
+  const fallback = { amount: job.invoice?.totalAmount ?? null, label: "Total da fatura" };
+
+  if (requiresHolderChoice(job)) {
+    const chosen = job.holders.filter((h) => selectedHolders.includes(h.name));
+    if (chosen.length === 0 || chosen.some((h) => h.printedTotalAmount === null)) return fallback;
+    return {
+      amount: chosen.reduce((sum, h) => sum + (h.printedTotalAmount ?? 0), 0),
+      label: chosen.length === 1 ? "Total na fatura do titular" : "Total na fatura dos titulares",
+    };
+  }
+
+  const period = job.invoice?.periodTotalAmount ?? null;
+  if (period !== null) return { amount: period, label: "Total de lançamentos da fatura" };
+
+  const printed = job.holders.length === 1 ? job.holders[0].printedTotalAmount : null;
+  if (printed !== null) return { amount: printed, label: "Total na fatura do titular" };
+
+  return fallback;
+}
+
 /** Item entra na revisão quando o titular dele foi escolhido (ou há só um titular). */
 export function isItemIncluded(
   job: CreditCardInvoiceImportResponseDto,
